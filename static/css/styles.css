@@ -12,12 +12,30 @@ body{
  	color: #333;
 }
 main{
+	margin-top: 7rem;
 	margin-bottom: 2rem;
 }
 .menu-list{
   list-style: none;
 }
+.menu-list li{
 
+}
+.logo-wrap{
+	width: 200px;
+}
+.logo-wrap h1{
+	font-size: 2rem;
+	text-transform: uppercase;
+	line-height: .9;
+}
+.logo-wrap a{
+	color: #555;
+}
+.logo-wrap a:hover{
+	text-decoration: unset;
+	color: #111;
+}
 @media (min-width: 769px) {
 	div.teamlogo-wrapper {
         max-width: 30%;
