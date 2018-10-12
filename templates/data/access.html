@@ -1,0 +1,43 @@
+{% extends "dash/data.html" %}
+{% block content %}
+{% set sidebar = True %}
+<table class="table">
+  <thead>
+  	<tr>
+	  <th>Role</th>
+	  <th>Permissions</th>
+	  <th>Date Modified</th>
+	  <th></th>
+	</tr>
+  </thead>
+  <tbody>
+    <tr>
+	  <td>TEP</td>
+	  <td>READ, WRITE</td>
+	  <td>2018/10/12 06:30:00</td>
+	  <td><a href="#">Edit Permissions</a></td>
+	</tr>
+	<tr>
+	  <td>TrialN</td>
+	  <td>READ</td>
+	  <td>2018/10/12 06:30:30</td>
+	  <td><a href="#">Edit Permissions</a></td>
+
+	</tr>
+	<tr>
+	  <td>Sandia</td>
+	  <td>READ</td>
+	  <td>2018/10/12 06:30:00</td>
+	  <td><a href="#">Edit Permissions</a></td>
+
+	</tr>
+	<tr>
+	  <td>UA</td>
+	  <td>READ</td>
+      <td>2018/10/12 06:30:00</td>
+	  <td><a href="#">Edit Permissions</a></td>
+
+	</tr>
+  </tbody>
+</table> 
+{% endblock %}

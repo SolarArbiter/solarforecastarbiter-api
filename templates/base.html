@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" class="h-100">
+  <head>
+    {% include "head.html" %}
+  </head>
+
+  <body class="d-flex flex-column h-100">
+    <header>
+      {% include "navbar.html" %}
+    </header>
+    <main role="main" class="flex-shrink-0">
+      <div class="container mt-4">
+	  	<!-- Content Block -->
+		  <div class="row">
+			{% if sidebar is defined %}
+		    {% include "sidebar.html" %} 
+		    <div class="col-sm-9 col-xs-12">
+			{% else %}
+			<div>
+			{% endif %}
+			  {% block dash %}
+			  {% endblock %}
+		    </div>
+		  </div>
+      </div>
+    </main>
+
+    <footer class="footer bg-light mt-auto">
+      <div class="container">
+  	  	{% include "footer.html" %}
+      </div>
+    </footer>
+  </body>
+</html>

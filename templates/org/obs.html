@@ -1,0 +1,110 @@
+<!-- Observational Data -->
+{% extends "dash/org.html" %}
+{% set sidebar = True %}
+{% block content %}
+<div class="tools obs-tools mt-1">
+  <input type="text" placeholder="Search" class="search">
+  <button type="button" class="btn btn-outline-primary btn-sm">Add New Resource</button>
+</div>
+
+<table class="obs-table table results">
+  <thead class="obs-thead">
+    <tr>
+      <th scope="col">Site</th>
+      <th scope="col">Type</th>
+      <th scope="col">Name</th>
+      <th scope="col">Owner</th>
+      <th scope="col">UUID</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i> No result</td>
+	</tr>
+    <tr>
+      <td><a href="data">Avalon 2</a></td>
+	  <td>AC Power</td>
+	  <td>ac_avalon</td>
+	  <td>TEP</td>
+	  <td>00001</td>
+    </tr>
+      <tr>
+	  <td>Avalon 2</td>
+	  <td>GHI</td>
+	  <td>sensor1</td>
+	  <td>TEP</td>
+	  <td>00002</td>
+    </tr>
+    <tr>
+	  <td>Avalon 2</td>
+	  <td>Temp</td>
+	  <td>sensor2</td>
+	  <td>TEP</td>
+	  <td>00003</td>
+    </tr>
+	<tr>
+	  <td>Solon</td>
+	  <td>AC Power</td>
+	  <td>ac_solon</td>
+	  <td>TEP</td>
+	  <td>00004</td>
+    </tr>
+	<tr>
+	  <td>NRG</td>
+	  <td>AC Power</td>
+	  <td>ac_nrg</td>
+	  <td>TEP</td>
+	  <td>00005</td>
+    </tr>
+	<tr>
+	  <td>NRG</td>
+	  <td>GHI</td>
+	  <td>sensor7</td>
+	  <td>TEP</td>
+	  <td>09006</td>
+    </tr>
+    <tr>
+      <td>Avalon 2</td>
+	  <td>AC Power</td>
+	  <td>ac_avalon</td>
+	  <td>TEP</td>
+	  <td>07001</td>
+    </tr>
+      <tr>
+	  <td>Avalon 2</td>
+	  <td>GHI</td>
+	  <td>sensor1</td>
+	  <td>TEP</td>
+	  <td>00042</td>
+    </tr>
+    <tr>
+	  <td>Avalon 2</td>
+	  <td>Temp</td>
+	  <td>sensor2</td>
+	  <td>TEP</td>
+	  <td>00083</td>
+    </tr>
+	<tr>
+	  <td>Solon</td>
+	  <td>AC Power</td>
+	  <td>ac_solon</td>
+	  <td>TEP</td>
+	  <td>00034</td>
+    </tr>
+	<tr>
+	  <td>NRG</td>
+	  <td>AC Power</td>
+	  <td>ac_nrg</td>
+	  <td>TEP</td>
+	  <td>00015</td>
+    </tr>
+	<tr>
+	  <td>NRG</td>
+	  <td>GHI</td>
+	  <td>sensor7</td>
+	  <td>TEP</td>
+	  <td>35483</td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}

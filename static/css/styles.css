@@ -1,0 +1,121 @@
+/* Bootstrap overrides */
+table.table th{
+	border-top: unset;
+}
+
+/* General css */
+*{
+	margin: 0;
+	padding: 0;
+}
+body{
+ 	color: #333;
+}
+main{
+	margin-bottom: 2rem;
+}
+.menu-list{
+  list-style: none;
+}
+
+@media (min-width: 769px) {
+	div.teamlogo-wrapper {
+        max-width: 30%;
+    }
+}
+@media (max-width: 768px) {
+	div.teamlogo-wrapper {
+		max-width: 45%;
+    }
+}
+img.teamlogo {
+    max-height: 150px;
+	max-width: 100%;
+	display: inline-block;
+	vertical-align: middle;
+}
+div.teamlogo-wrapper{
+	max-height: 150px;
+	display: inline-block;
+	margin: 1.5%;
+}
+.page-title{
+ 	margin-top: .5em;
+}
+.section-title{
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+/* Nav */
+header nav{
+	box-shadow: 0 1px 3px #DDD;
+}
+.account-link{
+ 	float: right;
+}
+
+/* Secondary Nav */
+.sub-nav{
+	border-bottom: 1px solid #dee2e6;
+}
+.sub-nav-list{
+	list-style: none;
+	padding-inline-start: unset;
+	margin-bottom: 0;
+}
+.sub-nav-item{
+	display: inline-block;
+	margin-right: 1em;
+}
+.sub-nav-link{
+	padding: .5em 0;
+	display: inline-block;
+	border-bottom: 1px solid transparent;
+}
+.sub-nav-link:hover{
+	text-decoration: none;
+	border-bottom: 1px solid #0056b3;
+}
+/* Footer */
+.footer{
+	padding-top: 2rem;
+	padding-bottom: 1rem;
+	box-shadow: 0 -1px 3px #DDD;
+}
+.footer-link{
+	display: inline-block;
+	vertical-align: middle;
+	float: right;
+}
+/* Observations Table */
+
+/* Data/Data */
+.data-plot-content{
+	width: inherit;
+}
+.data-metadata{
+	padding: 1em;
+}
+ul.data-metadata-fields{
+	list-style: none;
+}
+.data-metadata-label{
+	font-weight: 700;
+}
+.metadata-field{
+	width: 50%;
+}
+
+.results tr[visible='false'],
+.no-result{
+  display:none;
+}
+
+.results tr[visible='true']{
+  display:table-row;
+}
+
+.counter{
+  padding:8px; 
+  color:#ccc;
+}
