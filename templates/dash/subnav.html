@@ -1,0 +1,11 @@
+<nav class="sub-nav">
+  <ul class="sub-nav-list">
+    {% for path, link_text in subnav.items() %}
+      {% if path|string() == current_path|string() %}
+         <li class="sub-nav-item"><a class="sub-nav-link active" href="{{ path }}">{{ link_text }}</a></li>
+      {% else %}
+        <li class="sub-nav-item"><a class="sub-nav-link" href="{{ path }}">{{ link_text }}</a></li>
+      {% endif %}
+    {% endfor %}
+   </ul>
+</nav>

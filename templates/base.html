@@ -14,9 +14,9 @@
 		  <div class="row">
 			{% if sidebar is defined %}
 		    {% include "sidebar.html" %} 
-		    <div class="col-sm-9 col-xs-12">
+		    <div class="content col-sm-9 col-xs-12">
 			{% else %}
-			<div>
+			<div class="content col-md-12">
 			{% endif %}
 			  {% block dash %}
 			  {% endblock %}

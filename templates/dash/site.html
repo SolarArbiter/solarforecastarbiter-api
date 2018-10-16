@@ -2,6 +2,10 @@
 {% block dash %}
 <!-- org name -->
 <h2 class="page-title">{{ breadcrumb|safe }}</h2>
-{% include "dash/subnav.html" %}
+<nav class="sub-nav">
+  <ul class="sub-nav-list">
+    <li class="sub-nav-item"><a class="sub-nav-link" href="/tep/avalon_2">Data</a></li>
+  </ul>
+</nav>
 {% block content %}{% endblock %}
 {% endblock %}

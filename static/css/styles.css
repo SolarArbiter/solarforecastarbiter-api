@@ -25,9 +25,9 @@ main{
 	width: 200px;
 }
 .logo-wrap h1{
-	font-size: 2rem;
+	font-size: 1.8rem;
 	text-transform: uppercase;
-	line-height: .9;
+	line-height: .85;
 }
 .logo-wrap a{
 	color: #555;
@@ -83,16 +83,15 @@ header nav{
 }
 .sub-nav-item{
 	display: inline-block;
-	margin-right: 1em;
 }
 .sub-nav-link{
-	padding: .5em 0;
+	padding: .5em 1em .5em 0;
 	display: inline-block;
-	border-bottom: 1px solid transparent;
+	border-bottom: 2px solid transparent;
 }
-.sub-nav-link:hover{
+.sub-nav-link:hover, .sub-nav-link.active{
 	text-decoration: none;
-	border-bottom: 1px solid #0056b3;
+	border-bottom: 2px solid #0056b3;
 }
 /* Footer */
 .footer{
@@ -105,7 +104,6 @@ header nav{
 	vertical-align: middle;
 	float: right;
 }
-/* Observations Table */
 
 /* Data/Data */
 .data-plot-content{
@@ -124,6 +122,7 @@ ul.data-metadata-fields{
 	width: 50%;
 }
 
+/* Table Search CSS */
 .results tr[visible='false'],
 .no-result{
   display:none;

@@ -1,0 +1,46 @@
+{% extends "dash/site.html" %}
+{% set page_title = "TEP/Avalon 2" %}
+{% block content %}
+
+<div class="data-metadata border border-top-0 mb-3">
+  <h3 class="section-title">Metadata</h3>
+  <div class="row">
+    <ul class="data-metadata-fields col-md-6 col-xs-12">
+      <li class="metadata-field"><span class="data-metadata-label">Longitude: </span>32.1</li>
+      <li class="metadata-field"><span class="data-metadata-label">Latitude: </span>-111.10</li>
+    </ul>
+    <ul class="data-metadata-fields col-md-6 col-xs-12">
+    </ul>
+  </div>
+</div>
+
+<table class="obs-table table results">
+  <thead class="obs-thead">
+    <tr>
+      <th scope="col">Type</th>
+      <th scope="col">Name</th>
+      <th scope="col">UUID</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i> No result</td>
+    </tr>
+    <tr>
+      <td><a href="/tep/avalon_2/ac_power">AC Power</a></td>
+      <td>ac_avalon</td>
+      <td>00001</td>
+    </tr>
+      <tr>
+      <td><a href="#">GHI</a></td>
+      <td>sensor1</td>
+      <td>00002</td>
+    </tr>
+    <tr>
+      <td><a href="#">Temp</a></td>
+      <td>sensor2</td>
+      <td>00003</td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}
