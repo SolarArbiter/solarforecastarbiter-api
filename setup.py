@@ -2,13 +2,17 @@ from setuptools import setup, find_packages
 from os import path
 
 
+import versioneer
+
+
 with open(path.join(path.abspath(path.dirname(__file__)), 'README.md')) as f:
     long_description = f.read()
 
 
 setup(
     name='sfa-api',
-    version='0.1.0',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description='The backend API for Solar Forecast Arbiter',
     long_description=long_description,
     long_description_content_type='text/markdown',
