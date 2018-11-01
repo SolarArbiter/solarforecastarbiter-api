@@ -1,7 +1,9 @@
 # Solar Forecast Arbiter API
 
 This repository contains the code and development of the Solar Forecast Arbiter
-API available at api.solarforecastarbiter.org.
+API available at api.solarforecastarbiter.org. At the moment, classes are
+skeletons to aid in API design.
+
 
 The API is built with Python and depends on the following libraries:
 - Flask
@@ -10,4 +12,4 @@ The API is built with Python and depends on the following libraries:
 - flask-talisman
 - flask-seasurf
 - apispec
-- flask-apisped
+- flask-rest-api
