@@ -4,6 +4,10 @@ import marshmallow as ma
 
 
 from sfa_api.api import api
+blp = Blueprint(
+    'observations', 'observations', url_prefix='/observations',
+    description='Operations on observations'
+)
 
 
 @api.definition('Site')
@@ -36,17 +40,11 @@ class ObservationQueryArgsSchema(ma.Schema):
     uuid = ma.fields.UUID(description='query UUID')
 
 
-blp = Blueprint(
-    'observations', 'observations', url_prefix='/observations',
-    description='Operations on observations'
-)
-
 
 @blp.route('/')
 class Observations(MethodView):
     @blp.arguments(ObservationQueryArgsSchema, location='query')
     @blp.response(ObservationSchema)
-    @blp.response(code=401, description='fail')
     def get(self, args):
         """List all observations
 
