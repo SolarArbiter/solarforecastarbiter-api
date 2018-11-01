@@ -1,17 +1,9 @@
-from flask import Flask
 from flask.views import MethodView
-from flask_rest_api import Api, Blueprint
+from flask_rest_api import Blueprint
 import marshmallow as ma
 
 
-app = Flask(__name__)
-app.config['API_SPEC_OPTIONS'] = {'basepath': '/v0'}
-app.config['API_VERSION'] = '0.1'
-app.config['OPENAPI_VERSION'] = '3.0'
-app.config['OPENAPI_URL_PREFIX'] = '/'
-app.config['OPENAPI_REDOC_PATH'] = '/docs'
-app.config['OPENAPI_REDOC_VERSION'] = 'next'
-api = Api(app)
+from sfa_api.api import api
 
 
 @api.definition('Site')
@@ -22,6 +14,7 @@ class SiteSchema(ma.Schema):
     name = ma.fields.String()
     latitude = ma.fields.Float()
     longitude = ma.fields.Float()
+    owner = ma.fields.String()
 
 
 @api.definition('Observation')
@@ -62,10 +55,3 @@ class Observations(MethodView):
         blah
         """
         return {'uid': 'asdfasdf', 'value': 999}
-
-
-api.register_blueprint(blp)
-
-
-if __name__ == '__main__':
-    app.run(port=18888)
