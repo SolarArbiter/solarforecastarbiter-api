@@ -2,4 +2,3 @@ flask
 marshmallow
 apispec
 webargs
-flask-rest-api
