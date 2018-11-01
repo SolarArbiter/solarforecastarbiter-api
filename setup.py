@@ -30,7 +30,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'flask',
-        'flask-rest-api',
+        'apispec',
         'marshmallow'
     ],
     extra_requires={

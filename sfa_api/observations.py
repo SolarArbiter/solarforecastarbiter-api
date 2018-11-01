@@ -1,16 +1,17 @@
+from flask import Blueprint
 from flask.views import MethodView
-from flask_rest_api import Blueprint
 import marshmallow as ma
 
 
-from sfa_api.api import api
+from sfa_api import spec
+
+
 blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
-    description='Operations on observations'
 )
 
 
-@api.definition('Site')
+@spec.define_schema('Site')
 class SiteSchema(ma.Schema):
     class Meta:
         strict = True
@@ -21,7 +22,7 @@ class SiteSchema(ma.Schema):
     owner = ma.fields.String()
 
 
-@api.definition('Observation')
+@spec.define_schema('Observation')
 class ObservationSchema(ma.Schema):
     class Meta:
         strict = True
@@ -40,16 +41,20 @@ class ObservationQueryArgsSchema(ma.Schema):
     uuid = ma.fields.UUID(description='query UUID')
 
 
-
-@blp.route('/')
 class Observations(MethodView):
-    @blp.arguments(ObservationQueryArgsSchema, location='query')
-    @blp.response(ObservationSchema)
-    def get(self, args):
-        """List all observations
-
-        Return observations
+    def get(self, *args):
+        """Observation view
         ---
-        blah
+        description: get some stuff
+        responses:
+            200:
+                schema:
+                    $ref: '#/definitions/Observation'
         """
-        return {'uid': 'asdfasdf', 'value': 999}
+        return 'good'
+
+    def post(self, *args):
+        pass
+
+
+blp.add_url_rule('/', view_func=Observations.as_view('observations'))
