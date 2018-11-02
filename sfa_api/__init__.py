@@ -3,7 +3,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-from flask import Flask, Response, jsonify  # NOQA
+from flask import Flask, Response, jsonify, render_template, url_for  # NOQA
 from sfa_api.spec import spec   # NOQA
 
 
@@ -26,5 +26,11 @@ def create_app(config_name='ProductionConfig'):
     @app.route('/openapi.json')
     def get_apispec_json():
         return jsonify(spec.to_dict())
+
+    @app.route('/docs')
+    def render_docs():
+        return render_template('doc.html',
+                               apispec_path=url_for('get_apispec_json'),
+                               redoc_version=app.config['REDOC_VERSION'])
 
     return app

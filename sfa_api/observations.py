@@ -45,15 +45,29 @@ class Observations(MethodView):
     def get(self, *args):
         """Observation view
         ---
-        description: get some stuff
+        summary: List observations
+        description: List all observations that the user has access to
+        tags:
+          - observations
         responses:
-            200:
+          200:
+            description: A list of observations
+            content:
+              application/json:
                 schema:
-                    $ref: '#/definitions/Observation'
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Observation'
         """
         return 'good'
 
     def post(self, *args):
+        """
+        ---
+        summary: post to obs
+        tags:
+          - observations
+        """
         pass
 
 
