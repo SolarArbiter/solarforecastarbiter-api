@@ -5,7 +5,7 @@ del get_versions
 
 from flask import Flask, Response, jsonify, render_template, url_for  # NOQA
 from sfa_api.spec import spec   # NOQA
-
+import yaml
 
 def create_app(config_name='ProductionConfig'):
     app = Flask(__name__)
@@ -21,7 +21,8 @@ def create_app(config_name='ProductionConfig'):
 
     @app.route('/openapi.yaml')
     def get_apispec_yaml():
-        return Response(spec.to_yaml(), mimetype='application/yaml')
+        return spec.to_yaml(spec.to_yaml())
+        #return Response(spec.to_yaml(), mimetype='application/yaml')
 
     @app.route('/openapi.json')
     def get_apispec_json():
