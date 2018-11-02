@@ -4,6 +4,11 @@ table.table th{
 }
 
 /* General css */
+
+/* Always display scrollbar to stop jumping*/
+html{
+	overflow-y: scroll;
+}
 *{
 	margin: 0;
 	padding: 0;

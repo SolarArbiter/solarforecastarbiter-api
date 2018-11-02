@@ -14,9 +14,26 @@ class BaseHandler(RequestHandler):
             loader=FileSystemLoader(str(template_dir)),
             autoescape=select_autoescape([])
         )
-    def make_breadcrumb_html(self):
+
+    def path_parts(self, index=None):
         path = self.request.uri
+        path = path[:path.find('?')] if '?' in path else path
         parts = path.split('/')
+        if index is not None:
+            return parts[index+1]
+        return parts
+
+    def format_subnav(self, **kwargs):
+        formatted_subnav = {}
+        for url, linktext in self.subnav_format.items():
+            formatted_subnav[url.format(**kwargs)] = linktext
+        return formatted_subnav
+    
+    # def verify_path
+    # do some sort of verification on the path
+
+    def make_breadcrumb_html(self):
+        parts = self.path_parts()
         breadcrumb = ""
         for idx, part in enumerate(parts):
             if part == "":
@@ -46,15 +63,21 @@ class SiteHandler(BaseHandler):
 
 
 class DataDashHandler(BaseHandler):
-    subnav = { 
-        "/tep/avalon_2/ac_power": "Data",
-        "/tep/avalon_2/ac_power/access": "Access",
-        "/tep/avalon_2/ac_power/trials": "Active Trials",
-        "/tep/avalon_2/ac_power/reports": "Reports",
+    subnav_format = { 
+        "/tep/avalon_2/{asset}": "Data",
+        "/tep/avalon_2/{asset}/access": "Access",
+        "/tep/avalon_2/{asset}/trials": "Active Trials",
+        "/tep/avalon_2/{asset}/reports": "Reports",
     }
+    def initialize(self):
+        asset = self.path_parts(2)
+        self.subnav = self.format_subnav(asset=asset)
+        super().initialize()
+
 
 class DataHandler(DataDashHandler):
     template = 'data/asset.html'
+
 
 class AccessHandler(DataDashHandler):
     template = 'data/access.html'
@@ -67,20 +90,21 @@ class ReportsHandler(DataDashHandler):
 class TrialsHandler(DataDashHandler):
     template = 'data/trials.html'
 
+class TestRegex(DataDashHandler):
+    template = 'data/test.html'
+
 
 logger=logging.getLogger()
 logger.setLevel(logging.DEBUG)
 static_files = Path(__file__).parent / 'static'
 app = Application([(r'/tep', OrgHandler),
                    (r'/tep/avalon_2', SiteHandler),
-                   (r'/tep/avalon_2/ac_power', DataHandler),
-                   (r'/tep/avalon_2/ac_power/trials', TrialsHandler),
-                   (r'/tep/avalon_2/ac_power/access', AccessHandler),
-                   (r'/tep/avalon_2/ac_power/reports', ReportsHandler),],
+                   (r'/tep/avalon_2/\w+', DataHandler),
+                   (r'/tep/avalon_2/\w+/trials', TrialsHandler),
+                   (r'/tep/avalon_2/\w+/access', AccessHandler),
+                   (r'/tep/avalon_2/\w+/reports', ReportsHandler),],
                    static_path=str(static_files),
                    autoreload=True)
 
 app.listen('8080')
 tornado.ioloop.IOLoop.current().start()
-
-
