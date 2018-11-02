@@ -2,3 +2,5 @@ flask
 marshmallow
 apispec
 webargs
+gunicorn
+gevent
