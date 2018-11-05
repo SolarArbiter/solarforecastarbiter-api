@@ -17,8 +17,9 @@ blp = Blueprint(
 )
 
 
-# TODO: Replace the demo content in these classes.
+# TODO: Replace the static demo content in these classes.
 class Site(object):
+    uuid = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR'
     resolution = '1 min'
     latitude = 42.19
@@ -33,7 +34,22 @@ class Site(object):
 
 class Observation(object):
     uuid = '123e4567-e89b-12d3-a456-426655440000'
-    site = Site()
+    variable = 'ghi'
+    site = '123e4567-e89b-12d3-a456-426655440001'
+
+
+class ObservationValue(object):
+    timestamp = '2018-11-05T18:19:33+00:00'
+    value = 35
+
+
+@spec.define_schema('ObservationValue')
+class ObservationValueSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    timestamp = ma.fields.DateTime()
+    value = ma.fields.Float()
 
 
 @spec.define_schema('Site')
@@ -41,6 +57,7 @@ class SiteSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
+    uuid = ma.fields.UUID()
     name = ma.fields.String()
     latitude = ma.fields.Float()
     longitude = ma.fields.Float()
@@ -57,12 +74,14 @@ class ObservationSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    uuid = ma.fields.UUID(description='UUID response')
-    site = ma.fields.Nested(SiteSchema)
+    uuid = ma.fields.UUID()
+    variable = ma.fields.String()
+    site = ma.fields.UUID()
 
 
 class ObservationsView(MethodView):
     schema = ObservationSchema(many=True)
+
     def get(self, *args):
         """Observation view
         ---
@@ -88,14 +107,28 @@ class ObservationsView(MethodView):
             observations.append(Observation())
         return jsonify(self.schema.dump(observations))
 
-
     def post(self, *args):
         """
         ---
         summary: Create observation.
         tags:
           - Observations
-        description: Create a new Observation.
+        description: Create a new Observation by posting metadata.
+        requestBody:
+          description: JSON respresentation of an observation.
+          required: True
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  site:
+                    description: UUID of associated site.
+                    type: string
+                    format: uuid
+                  variable:
+                    description: Variable recorded by Observation entry.
+                    type: string
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -105,61 +138,52 @@ class ObservationsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         # TODO: replace demo response
-        return f'Created.'
+        return f'Created an observation resource.'
+
 
 class ObservationView(MethodView):
     schema = ObservationSchema()
+
     def get(self, uuid, **kwargs):
-        """Loop up an observation by uuid
+        """Get options for an Observation by uuid.
         ---
-        summary: Get observation.
-        description: Get an observation by uuid.
+        summary: Get Observation options.
+        description: List options available for Observation.
         tags:
           - Observations
         parameters:
           - $ref: '#/components/parameters/uuid'
-
         responses:
           200:
-            description: Observation retrieved successfully.
+            description: Observation options retrieved successfully.
             content:
-              aplication/json:
+              application/json:
                 schema:
-                  $ref: '#/components/schemas/Observation'
+                  type: object
+                  properties:
+                    metadata:
+                      description: URI of resource metadata.
+                      type: string
+                    values:
+                      description: URI of resource values.
+                      type: string
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
         # TODO: replace demo response
-        observation = Observation()
-        return jsonify(self.schema.dump(observation))
+        links = {
+            'metadata': f'/observations/{uuid}/metadata',
+            'values': f'/observations/{uuid}/values',
+        }
+        return jsonify(links)
 
-    def patch(self, *args): 
-        """
-        ---
-        summary: Update observation.
-        description: Update an observation.
-        tags:
-          - Observations
-        parameters:
-          - $ref: '#/components/parameters/uuid'
-        responses:
-          200:
-            description: Observation updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        # TODO: replace demo response
-        return f'{uuid} updated.'
-
-    def delete(self, *args):
+    def delete(self, uuid, *args):
         """
         ---
         summary: Delete observation.
-        description: Delete an observation by uuid.
+        description: Delete an Observation, including its values and metadata.
         tags:
           - Observations
         parameters:
@@ -176,6 +200,129 @@ class ObservationView(MethodView):
         return f'{uuid} deleted.'
 
 
+class ObservationValuesView(MethodView):
+    schema = ObservationValueSchema()
+
+    def get(self, uuid, *args):
+        """Get the timeseries values for the Observation entry.
+        ---
+        summary: Get Observation data.
+        description: Get the timeseries values from the Observation entry.
+        tags:
+        - Observations
+        parameters:
+          - $ref: '#/components/parameters/uuid'
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ObservationValue'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return f'Get values for {uuid}'
+
+    def post(self, uuid, *args):
+        """Create new timeseries values for the Observation entry.
+        ---
+        summary: Add Observation data.
+        description: Add new timeseries values to the Observation entry.
+        tags:
+        - Observations
+        parameters:
+        - $ref: '#/components/parameters/uuid'
+        requestBody:
+          description: JSON respresentation of an observation.
+          required: True
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Observation'
+
+        responses:
+          201:
+            $ref: '#/components/responses/201-Created'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+
+        """
+        return f'Added timeseries values to {uuid}'
+
+
+class ObservationMetadataView(MethodView):
+    schema = ObservationSchema()
+
+    def get(self, uuid, *args):
+        """ Get Observation metadata by uuid.
+        ---
+        summary: Get Observation metadata.
+        tags:
+        - Observations
+        parameters:
+        - $ref: '#/components/parameters/uuid'
+        responses:
+          200:
+            description: Successfully retrieved observation metadata.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Observation'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
+        """
+        # TODO: replace demo data
+        demo_obs = Observation()
+        return self.schema.dumps(demo_obs)
+
+    def put(self, uuid, *args):
+        """ Update Observation metadata by uuid.
+        ---
+        summary: Update observation metadata.
+        description: Update an observation's metadata.
+        tags:
+          - Observations
+        parameters:
+          - $ref: '#/components/parameters/uuid'
+        requestBody:
+          description: JSON representation of an observation's metadata.
+          required: True
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  site:
+                    description: UUID of associated site.
+                    type: string
+                    format: uuid
+                  variable:
+                    description: Variable recorded by Observation entry.
+                    type: string
+        responses:
+          200:
+            description: Observation updated successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return 'OK'
+
+
 blp.add_url_rule('/', view_func=ObservationsView.as_view('observations'))
 blp.add_url_rule('/<uuid>', view_func=ObservationView.as_view('observation'))
-
+blp.add_url_rule('/<uuid>/values',
+                 view_func=ObservationValuesView.as_view('observation_values'))
+blp.add_url_rule('/<uuid>/metadata',
+                 view_func=ObservationMetadataView.as_view('observation_metadata'))
