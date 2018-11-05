@@ -82,7 +82,7 @@ class ObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # TODO: replace demo response
+        # TODO: replace demo response, also do not allow top-level json array
         observations = []
         for i in range(5):
             observations.append(Observation())
