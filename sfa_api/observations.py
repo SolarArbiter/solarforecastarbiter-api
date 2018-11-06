@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint
 from flask.views import MethodView
 
 
@@ -22,8 +22,10 @@ class ObservationPostSchema(ma.Schema):
         strict = True
         ordered = True
     variable = ma.String(
-        description="Name of variable recorded by this observation")
-    site_id = ma.UUID(description="UUID the assocaiated site")
+        description="Name of variable recorded by this observation",
+        required=True)
+    site_id = ma.UUID(description="UUID the assocaiated site",
+                      required=True)
 
 
 @spec.define_schema('ObservationMetadata')
@@ -90,7 +92,11 @@ class ObservationsView(MethodView):
                   $ref: '#/components/schemas/ObservationDefinition'
         responses:
           201:
-            $ref: '#/components/responses/201-Created'
+            description: Observation created successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationMetadata'
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -118,7 +124,7 @@ class ObservationView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationMetadata'
+                  $ref: '#/components/schemas/ObservationLinks'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -253,7 +259,7 @@ class ObservationMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return 'OK'
+        return
 
 
 # Add path parameters used by these endpoints to the spec.
