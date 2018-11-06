@@ -2,7 +2,7 @@
 class Site(object):
     """Object for serializing site metadata.
     """
-    uuid = '123e4567-e89b-12d3-a456-426655440001'
+    site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR'
     resolution = '1 min'
     latitude = 42.19

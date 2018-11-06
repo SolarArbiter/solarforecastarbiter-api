@@ -54,6 +54,12 @@ spec = APISpec(
         FlaskPlugin()
     ],
     components=spec_components,
+    tags=[
+        {'name': 'Observations',
+         'description': 'Access and upload observation metadata and values.'},
+        {'name': 'Sites',
+         'description': 'Access and upload observation site metadata and values.'}  # NOQA
+    ]
 )
 
 ma_plugin.map_to_openapi_type('string', 'url')(URLFor)

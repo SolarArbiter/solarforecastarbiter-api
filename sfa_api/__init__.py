@@ -19,7 +19,9 @@ def create_app(config_name='ProductionConfig'):
     ma.init_app(app)
 
     from sfa_api.observations import obs_blp
+    from sfa_api.sites import site_blp
     app.register_blueprint(obs_blp)
+    app.register_blueprint(site_blp)
     with app.test_request_context():
         for k, view in app.view_functions.items():
             if k == 'static':

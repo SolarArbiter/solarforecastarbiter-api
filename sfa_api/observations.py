@@ -3,7 +3,7 @@ from flask.views import MethodView
 
 
 from sfa_api import spec, ma
-from sfa_api.site import SiteSchema
+from sfa_api.sites import SiteSchema
 from sfa_api.demo import Observation
 
 
@@ -50,7 +50,7 @@ class ObservationLinksSchema(ma.Schema):
     })
 
 
-class ObservationsView(MethodView):
+class AllObservationsView(MethodView):
     schema = ObservationSchema(many=True)
 
     def get(self, *args):
@@ -290,9 +290,9 @@ obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
 )
 
-obs_blp.add_url_rule('/', view_func=ObservationsView.as_view('list'))
+obs_blp.add_url_rule('/', view_func=AllObservationsView.as_view('all'))
 obs_blp.add_url_rule(
-    '/<uuid>', view_func=ObservationView.as_view('links'))
+    '/<uuid>', view_func=ObservationView.as_view('single'))
 obs_blp.add_url_rule(
     '/<uuid>/values',
     view_func=ObservationValuesView.as_view('values'))
