@@ -35,7 +35,8 @@ class Site(object):
 class Observation(object):
     uuid = '123e4567-e89b-12d3-a456-426655440000'
     variable = 'ghi'
-    site = '123e4567-e89b-12d3-a456-426655440001'
+    site_id = '123e4567-e89b-12d3-a456-426655440001'
+    site = Site()
 
 
 class ObservationValue(object):
@@ -76,7 +77,8 @@ class ObservationSchema(ma.Schema):
         ordered = True
     uuid = ma.fields.UUID()
     variable = ma.fields.String()
-    site = ma.fields.UUID()
+    site_id = ma.fields.UUID()
+    site = ma.fields.Nested(SiteSchema)
 
 
 class ObservationsView(MethodView):
@@ -244,8 +246,7 @@ class ObservationValuesView(MethodView):
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Observation'
-
+                  $ref: '#/components/schemas/ObservationValue'
         responses:
           201:
             $ref: '#/components/responses/201-Created'
