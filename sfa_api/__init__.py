@@ -41,7 +41,7 @@ def create_app(config_name='ProductionConfig'):
 
     redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA
 
-    @app.route('/docs')
+    @app.route('/')
     @talisman(content_security_policy={
         'script-src': f"{redoc_script} 'self' blob:",
     })
