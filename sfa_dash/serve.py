@@ -4,6 +4,7 @@ import pdb
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 import tornado.ioloop
+from tornado import httpserver
 from tornado.web import RequestHandler, Application 
 
 
@@ -109,5 +110,10 @@ app = Application([(r'/', RootHandler),
                    static_path=str(static_files),
                    autoreload=True)
 
-app.listen('8080')
+
+server = httpserver.HTTPServer(app, ssl_options={
+    "certfile": "/certs/tls.crt",
+    "keyfile": "/certs/tls.key",
+})
+server.listen(8080)
 tornado.ioloop.IOLoop.current().start()
