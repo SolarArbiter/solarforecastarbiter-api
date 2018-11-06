@@ -16,6 +16,31 @@ class APISpec(apispec.APISpec):
         return decorator
 
 
+# Reusable, endpoint-agnostic components.
+spec_components = {
+    'responses': {
+        '201-Created': {
+            'description': 'Resource created successfully.',
+        },
+        '204-NoContent': {
+            'description': 'Operation completed successfully.',
+        },
+        '400-BadRequest': {
+            'description': 'Could not process request due to invalid syntax.',
+        },
+        '401-Unauthorized': {
+            'description': 'User must authenticate to access resource.',
+        },
+        '403-Forbidden': {
+            'description': 'User does not have authorization to access resource',
+        },
+        '404-NotFound':{
+            'description': 'The resource could not be found.',
+        },
+    },
+}
+
+
 spec = APISpec(
     title='Solar Forecast Arbiter API',
     version=__version__,
@@ -26,5 +51,8 @@ spec = APISpec(
     plugins=[
         MarshmallowPlugin(),
         FlaskPlugin()
-    ]
+    ],
+    components=spec_components,
 )
+
+
