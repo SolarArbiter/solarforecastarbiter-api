@@ -44,8 +44,8 @@ class ObservationValueSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    timestamp = ma.fields.DateTime()
-    value = ma.fields.Float()
+    timestamp = ma.fields.DateTime(description="ISO 8601 Datetime")
+    value = ma.fields.Float(description="Value of the measurement")
 
 
 @spec.define_schema('SiteRequest')
@@ -53,15 +53,15 @@ class SiteSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    name = ma.fields.String()
-    latitude = ma.fields.Float()
-    longitude = ma.fields.Float()
-    elevation = ma.fields.Float()
-    station_id = ma.fields.String()
-    abbreviation = ma.fields.String()
-    timezone = ma.fields.String()
-    attribution = ma.fields.String()
-    owner = ma.fields.String()
+    name = ma.fields.String(description="Name of the Site")
+    latitude = ma.fields.Float(description="Latitude in degrees North")
+    longitude = ma.fields.Float(description="Longitude in degrees East of the Prime Meridian")
+    elevation = ma.fields.Float(description="Elevation in meters")
+    station_id = ma.fields.String(description="Unique ID used by data provider")
+    abbreviation = ma.fields.String(description="Abbreviated station name used by data provider")
+    timezone = ma.fields.String(description="Timezone")
+    attribution = ma.fields.String(description="Attribution to be included in derived works")
+    owner = ma.fields.String(description="Data provider")
 
 
 @spec.define_schema('SiteResponse')
@@ -73,8 +73,8 @@ class ObservationSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    variable = ma.fields.String()
-    site_id = ma.fields.UUID()
+    variable = ma.fields.String(description="Name of variable recorded by this observation")
+    site_id = ma.fields.UUID(description="UUID the assocaiated site")
     site = ma.fields.Nested(SiteSchema)
 
 @spec.define_schema('ObservationResponse')
@@ -225,7 +225,6 @@ class ObservationValuesView(MethodView):
         parameters:
         - $ref: '#/components/parameters/uuid'
         requestBody:
-          description: JSON respresentation of an observation.
           required: True
           content:
             application/json:
