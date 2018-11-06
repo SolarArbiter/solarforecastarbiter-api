@@ -41,13 +41,29 @@ spec_components = {
     },
 }
 
+api_description = """The backend RESTful API for Solar Forecast Arbiter.
+
+# Introduction
+...
+
+# Authentication
+
+OAuth2
+"""
 ma_plugin = MarshmallowPlugin()
 spec = APISpec(
     title='Solar Forecast Arbiter API',
     version=__version__,
     openapi_version='3.0.2',
     info={
-        'description': 'The backend API for Solar Forecast Arbiter'
+        'description': api_description,
+        'contact': {
+            'name': 'Solar Forecast Arbiter Team',
+            'email': 'info@solarforecastarbiter.org',
+            'url': 'https://github.com/solararbiter/solarforecastarbiter-api'
+        },
+        'license': {'name': 'MIT',
+                    'url': 'https://opensource.org/licenses/MIT'},
     },
     plugins=[
         ma_plugin,
@@ -59,6 +75,14 @@ spec = APISpec(
          'description': 'Access and upload observation metadata and values.'},
         {'name': 'Sites',
          'description': 'Access and upload observation site metadata and values.'}  # NOQA
+    ],
+    servers=[
+        {'url': '//dev-api.solarforecastarbiter.org/',
+         'description': 'Development server'},
+        {'url': '//testing-api.solarforecastarbiter.org/',
+         'description': 'Testing server'},
+        {'url': '//api.solarforecastarbiter.org/',
+         'description': 'Prodution server'}
     ]
 )
 
