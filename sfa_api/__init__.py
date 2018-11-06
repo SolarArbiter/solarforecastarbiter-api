@@ -16,10 +16,25 @@ talisman = Talisman()
 
 
 def create_app(config_name='ProductionConfig'):
+
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
     ma.init_app(app)
-    talisman.init_app(app)
+
+    redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA
+    talisman.init_app(app,
+                      content_security_policy={
+                          'default-src': "'self'",
+                          'style-src': "'unsafe-inline' 'self'",
+                          'img-src': "'self' data:",
+                          'object-src': "'none'",
+                          'script-src': ["'unsafe-inline'",
+                                         'blob:',
+                                         redoc_script,
+                                         "'strict-dynamic'"],
+                          'base-uri': "'none'"
+                      },
+                      content_security_policy_nonce_in=['script-src'])
 
     from sfa_api.observations import obs_blp
     from sfa_api.sites import site_blp
@@ -39,12 +54,7 @@ def create_app(config_name='ProductionConfig'):
     def get_apispec_json():
         return jsonify(spec.to_dict())
 
-    redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA
-
     @app.route('/')
-    @talisman(content_security_policy={
-        'script-src': f"{redoc_script} 'self' blob:",
-    })
     def render_docs():
         return render_template('doc.html',
                                apispec_path=url_for('get_apispec_json'),

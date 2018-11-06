@@ -9,6 +9,6 @@
   </head>
   <body>
     <redoc spec-url='{{ apispec_path }}' hide-loading></redoc>
-    <script src="{{ redoc_script }}"> </script>
+    <script nonce="{{ csp_nonce() }}" src="{{ redoc_script }}"> </script>
   </body>
 </html>
