@@ -1,6 +1,7 @@
 import apispec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from apispec.ext.flask import FlaskPlugin
+from flask_marshmallow.fields import URLFor, AbsoluteURLFor, Hyperlinks
 
 
 from sfa_api import __version__
@@ -32,15 +33,15 @@ spec_components = {
             'description': 'User must authenticate to access resource.',
         },
         '403-Forbidden': {
-            'description': 'User does not have authorization to access resource',
+            'description': 'User does not have authorization to access resource',  # NOQA
         },
-        '404-NotFound':{
+        '404-NotFound': {
             'description': 'The resource could not be found.',
         },
     },
 }
 
-
+ma_plugin = MarshmallowPlugin()
 spec = APISpec(
     title='Solar Forecast Arbiter API',
     version=__version__,
@@ -49,10 +50,12 @@ spec = APISpec(
         'description': 'The backend API for Solar Forecast Arbiter'
     },
     plugins=[
-        MarshmallowPlugin(),
+        ma_plugin,
         FlaskPlugin()
     ],
     components=spec_components,
 )
 
-
+ma_plugin.map_to_openapi_type('string', 'url')(URLFor)
+ma_plugin.map_to_openapi_type('string', 'url')(AbsoluteURLFor)
+ma_plugin.map_to_openapi_type('object', None)(Hyperlinks)
