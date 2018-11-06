@@ -48,6 +48,10 @@ class BaseHandler(RequestHandler):
         rendered = template.render(breadcrumb=self.make_breadcrumb_html(), current_path=self.request.uri, subnav=subnav)
         self.write(rendered)
 
+class RootHandler(BaseHandler):
+    def get(self):
+        return self.redirect('/tep')
+
 
 class OrgHandler(BaseHandler):
     template = 'org/obs.html'
@@ -95,7 +99,8 @@ class TestRegex(DataDashHandler):
 logger=logging.getLogger()
 logger.setLevel(logging.DEBUG)
 static_files = Path(__file__).parent / 'static'
-app = Application([(r'/tep', OrgHandler),
+app = Application([(r'/', RootHandler),
+                   (r'/tep', OrgHandler),
                    (r'/tep/avalon_2', SiteHandler),
                    (r'/tep/avalon_2/\w+', DataHandler),
                    (r'/tep/avalon_2/\w+/trials', TrialsHandler),
