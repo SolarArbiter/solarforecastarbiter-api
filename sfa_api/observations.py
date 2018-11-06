@@ -16,7 +16,7 @@ class ObservationValueSchema(ma.Schema):
     value = ma.Float(description="Value of the measurement")
 
 
-@spec.define_schema('ObservationRequest')
+@spec.define_schema('ObservationDefinition')
 class ObservationPostSchema(ma.Schema):
     class Meta:
         strict = True
@@ -26,10 +26,24 @@ class ObservationPostSchema(ma.Schema):
     site_id = ma.UUID(description="UUID the assocaiated site")
 
 
-@spec.define_schema('ObservationResponse')
+@spec.define_schema('ObservationMetadata')
 class ObservationSchema(ObservationPostSchema):
     site = ma.Nested(SiteSchema)
     uuid = ma.UUID()
+
+
+@spec.define_schema('ObservationLinks')
+class ObservationLinksSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    uuid = ma.UUID()
+    _links = ma.Hyperlinks({
+        'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                      uuid='<uuid>'),
+        'values': ma.AbsoluteURLFor('observations.values',
+                                    uuid='<uuid>')
+    })
 
 
 class ObservationsView(MethodView):
@@ -50,7 +64,7 @@ class ObservationsView(MethodView):
                 schema:
                   type: array
                   items:
-                    $ref: '#/components/schemas/ObservationResponse'
+                    $ref: '#/components/schemas/ObservationMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -73,7 +87,7 @@ class ObservationsView(MethodView):
           content:
             application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationRequest'
+                  $ref: '#/components/schemas/ObservationDefinition'
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -87,7 +101,7 @@ class ObservationsView(MethodView):
 
 
 class ObservationView(MethodView):
-    schema = ObservationSchema()
+    schema = ObservationLinksSchema()
 
     def get(self, uuid, **kwargs):
         """
@@ -104,18 +118,13 @@ class ObservationView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationResponse'
+                  $ref: '#/components/schemas/ObservationMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # TODO: replace demo response
-        links = {
-            'metadata': f'/observations/{uuid}/metadata',
-            'values': f'/observations/{uuid}/values',
-        }
-        return jsonify(links)
+        return self.schema.jsonify({'uuid': uuid})
 
     def delete(self, uuid, *args):
         """
@@ -210,7 +219,7 @@ class ObservationMetadataView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationResponse'
+                  $ref: '#/components/schemas/ObservationMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -235,7 +244,7 @@ class ObservationMetadataView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObservationRequest'
+                $ref: '#/components/schemas/ObservationDefinition'
         responses:
           200:
             description: Observation updated successfully.
@@ -257,12 +266,12 @@ obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
 )
 
-obs_blp.add_url_rule('/', view_func=ObservationsView.as_view('observations'))
+obs_blp.add_url_rule('/', view_func=ObservationsView.as_view('list'))
 obs_blp.add_url_rule(
-    '/<uuid>', view_func=ObservationView.as_view('observation'))
+    '/<uuid>', view_func=ObservationView.as_view('links'))
 obs_blp.add_url_rule(
     '/<uuid>/values',
-    view_func=ObservationValuesView.as_view('observation_values'))
+    view_func=ObservationValuesView.as_view('values'))
 obs_blp.add_url_rule(
     '/<uuid>/metadata',
-    view_func=ObservationMetadataView.as_view('observation_metadata'))
+    view_func=ObservationMetadataView.as_view('metadata'))
