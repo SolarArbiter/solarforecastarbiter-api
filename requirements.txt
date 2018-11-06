@@ -1,5 +1,6 @@
 flask
 marshmallow
+flask-marshmallow
 apispec
 webargs
 gunicorn

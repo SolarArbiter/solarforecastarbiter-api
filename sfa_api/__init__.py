@@ -4,12 +4,19 @@ del get_versions
 
 
 from flask import Flask, Response, jsonify, render_template, url_for  # NOQA
+from flask_marshmallow import Marshmallow  # NOQA
+
+
 from sfa_api.spec import spec   # NOQA
+
+
+ma = Marshmallow()
 
 
 def create_app(config_name='ProductionConfig'):
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
+    ma.init_app(app)
 
     from sfa_api.observations import obs_blp
     app.register_blueprint(obs_blp)

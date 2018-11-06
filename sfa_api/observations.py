@@ -1,9 +1,8 @@
 from flask import Blueprint, jsonify
 from flask.views import MethodView
-import marshmallow as ma
 
 
-from sfa_api import spec
+from sfa_api import spec, ma
 from sfa_api.site import SiteSchema
 from sfa_api.demo import Observation
 
@@ -13,24 +12,24 @@ class ObservationValueSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    timestamp = ma.fields.DateTime(description="ISO 8601 Datetime")
-    value = ma.fields.Float(description="Value of the measurement")
+    timestamp = ma.DateTime(description="ISO 8601 Datetime")
+    value = ma.Float(description="Value of the measurement")
 
 
 @spec.define_schema('ObservationRequest')
-class ObservationSchema(ma.Schema):
+class ObservationPostSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    variable = ma.fields.String(
+    variable = ma.String(
         description="Name of variable recorded by this observation")
-    site_id = ma.fields.UUID(description="UUID the assocaiated site")
-    site = ma.fields.Nested(SiteSchema)
+    site_id = ma.UUID(description="UUID the assocaiated site")
 
 
 @spec.define_schema('ObservationResponse')
-class ObservationResponseSchema(ObservationSchema):
-    uuid = ma.fields.UUID()
+class ObservationSchema(ObservationPostSchema):
+    site = ma.Nested(SiteSchema)
+    uuid = ma.UUID()
 
 
 class ObservationsView(MethodView):
@@ -59,7 +58,7 @@ class ObservationsView(MethodView):
         observations = []
         for i in range(5):
             observations.append(Observation())
-        return jsonify(self.schema.dump(observations))
+        return self.schema.jsonify(observations)
 
     def post(self, *args):
         """
@@ -219,7 +218,7 @@ class ObservationMetadataView(MethodView):
         """
         # TODO: replace demo data
         demo_obs = Observation()
-        return self.schema.dumps(demo_obs)
+        return self.schema.jsonify(demo_obs)
 
     def put(self, uuid, *args):
         """
