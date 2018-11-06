@@ -1,42 +1,10 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint
 from flask.views import MethodView
-import marshmallow as ma
 
 
-from sfa_api import spec
-
-
-# TODO: Replace the static demo content in these classes.
-class Site(object):
-    """Object for serializing site metadata. 
-    """
-    uuid = '123e4567-e89b-12d3-a456-426655440001'
-    name = 'Ashland OR'
-    resolution = '1 min'
-    latitude = 42.19
-    longitude = -122.70
-    elevation = 595
-    station_id = 94040
-    abbreviation = 'AS'
-    timezone = 'Etc/GMT+8'
-    attribution = ''
-    source = 'UO SMRL'
-
-
-class Observation(object):
-    """Container for serializing observation metadata.
-    """
-    uuid = '123e4567-e89b-12d3-a456-426655440000'
-    variable = 'ghi'
-    site_id = '123e4567-e89b-12d3-a456-426655440001'
-    site = Site()
-
-
-class ObservationValue(object):
-    """Object for serializing observation's timeseries data.
-    """
-    timestamp = '2018-11-05T18:19:33+00:00'
-    value = 35
+from sfa_api import spec, ma
+from sfa_api.sites import SiteSchema
+from sfa_api.demo import Observation
 
 
 @spec.define_schema('ObservationValue')
@@ -44,45 +12,47 @@ class ObservationValueSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    timestamp = ma.fields.DateTime(description="ISO 8601 Datetime")
-    value = ma.fields.Float(description="Value of the measurement")
+    timestamp = ma.DateTime(description="ISO 8601 Datetime")
+    value = ma.Float(description="Value of the measurement")
+    questionable = ma.Boolean(description="Whether the value is questionable",
+                              default=False, missing=False)
 
 
-@spec.define_schema('SiteRequest')
-class SiteSchema(ma.Schema):
+@spec.define_schema('ObservationDefinition')
+class ObservationPostSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    name = ma.fields.String(description="Name of the Site")
-    latitude = ma.fields.Float(description="Latitude in degrees North")
-    longitude = ma.fields.Float(description="Longitude in degrees East of the Prime Meridian")
-    elevation = ma.fields.Float(description="Elevation in meters")
-    station_id = ma.fields.String(description="Unique ID used by data provider")
-    abbreviation = ma.fields.String(description="Abbreviated station name used by data provider")
-    timezone = ma.fields.String(description="Timezone")
-    attribution = ma.fields.String(description="Attribution to be included in derived works")
-    owner = ma.fields.String(description="Data provider")
+    type = ma.String(
+        description="Type of variable recorded by this observation",
+        required=True)
+    site_id = ma.UUID(description="UUID the assocaiated site",
+                      required=True)
+    name = ma.String(description='Human friendly name for the observation',
+                     required=True)
 
 
-@spec.define_schema('SiteResponse')
-class SiteResponseSchema(SiteSchema):
-    uuid = ma.fields.UUID()
+@spec.define_schema('ObservationMetadata')
+class ObservationSchema(ObservationPostSchema):
+    site = ma.Nested(SiteSchema)
+    uuid = ma.UUID()
 
-@spec.define_schema('ObservationRequest')
-class ObservationSchema(ma.Schema):
+
+@spec.define_schema('ObservationLinks')
+class ObservationLinksSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    variable = ma.fields.String(description="Name of variable recorded by this observation")
-    site_id = ma.fields.UUID(description="UUID the assocaiated site")
-    site = ma.fields.Nested(SiteSchema)
+    uuid = ma.UUID()
+    _links = ma.Hyperlinks({
+        'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                      uuid='<uuid>'),
+        'values': ma.AbsoluteURLFor('observations.values',
+                                    uuid='<uuid>')
+    })
 
-@spec.define_schema('ObservationResponse')
-class ObservationResponseSchema(ObservationSchema):
-    uuid = ma.fields.UUID()
 
-
-class ObservationsView(MethodView):
+class AllObservationsView(MethodView):
     schema = ObservationSchema(many=True)
 
     def get(self, *args):
@@ -100,7 +70,7 @@ class ObservationsView(MethodView):
                 schema:
                   type: array
                   items:
-                    $ref: '#/components/schemas/ObservationResponse'
+                    $ref: '#/components/schemas/ObservationMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -108,7 +78,7 @@ class ObservationsView(MethodView):
         observations = []
         for i in range(5):
             observations.append(Observation())
-        return jsonify(self.schema.dump(observations))
+        return self.schema.jsonify(observations)
 
     def post(self, *args):
         """
@@ -123,10 +93,14 @@ class ObservationsView(MethodView):
           content:
             application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationRequest'
+                  $ref: '#/components/schemas/ObservationDefinition'
         responses:
           201:
-            $ref: '#/components/responses/201-Created'
+            description: Observation created successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationMetadata'
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -137,7 +111,7 @@ class ObservationsView(MethodView):
 
 
 class ObservationView(MethodView):
-    schema = ObservationSchema()
+    schema = ObservationLinksSchema()
 
     def get(self, uuid, **kwargs):
         """
@@ -154,18 +128,13 @@ class ObservationView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationResponse'
+                  $ref: '#/components/schemas/ObservationLinks'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # TODO: replace demo response
-        links = {
-            'metadata': f'/observations/{uuid}/metadata',
-            'values': f'/observations/{uuid}/values',
-        }
-        return jsonify(links)
+        return self.schema.jsonify({'uuid': uuid})
 
     def delete(self, uuid, *args):
         """
@@ -193,6 +162,7 @@ class ObservationValuesView(MethodView):
 
     def get(self, uuid, *args):
         """
+        TODO: Limits???
         ---
         summary: Get Observation data.
         description: Get the timeseries values from the Observation entry.
@@ -232,6 +202,20 @@ class ObservationValuesView(MethodView):
                 type: array
                 items:
                   $ref: '#/components/schemas/ObservationValue'
+            text/csv:
+              schema:
+                type: string
+                description: |
+                  Text file with fields separated by ',' and
+                  lines separated by '\\n'. The first line must
+                  be a header with the following fields:
+                  timestamp, value, questionable. Timestamp must be
+                  an ISO 8601 datetime, value may be an integer or float,
+                  questionable may be 0 or 1 (indicating the value is not
+                  to be trusted).
+              example: |-
+                timestamp,value,questionable
+                2018-10-29T12:04:23Z,32.93,0
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -260,7 +244,7 @@ class ObservationMetadataView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationResponse'
+                  $ref: '#/components/schemas/ObservationMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -268,10 +252,11 @@ class ObservationMetadataView(MethodView):
         """
         # TODO: replace demo data
         demo_obs = Observation()
-        return self.schema.dumps(demo_obs)
+        return self.schema.jsonify(demo_obs)
 
     def put(self, uuid, *args):
         """
+        TODO: MAY NOT MAKE SENSE TO KEEP if schema is so simple
         ---
         summary: Update observation metadata.
         description: Update an observation's metadata.
@@ -285,7 +270,7 @@ class ObservationMetadataView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObservationRequest'
+                $ref: '#/components/schemas/ObservationDefinition'
         responses:
           200:
             description: Observation updated successfully.
@@ -294,7 +279,8 @@ class ObservationMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return 'OK'
+        return
+
 
 # Add path parameters used by these endpoints to the spec.
 spec.add_parameter('uuid', 'path',
@@ -302,13 +288,16 @@ spec.add_parameter('uuid', 'path',
                    description="Resource's unique identifier.",
                    required='true')
 
-blp = Blueprint(
+obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
 )
 
-blp.add_url_rule('/', view_func=ObservationsView.as_view('observations'))
-blp.add_url_rule('/<uuid>', view_func=ObservationView.as_view('observation'))
-blp.add_url_rule('/<uuid>/values',
-                 view_func=ObservationValuesView.as_view('observation_values'))
-blp.add_url_rule('/<uuid>/metadata',
-                 view_func=ObservationMetadataView.as_view('observation_metadata'))
+obs_blp.add_url_rule('/', view_func=AllObservationsView.as_view('all'))
+obs_blp.add_url_rule(
+    '/<uuid>', view_func=ObservationView.as_view('single'))
+obs_blp.add_url_rule(
+    '/<uuid>/values',
+    view_func=ObservationValuesView.as_view('values'))
+obs_blp.add_url_rule(
+    '/<uuid>/metadata',
+    view_func=ObservationMetadataView.as_view('metadata'))
