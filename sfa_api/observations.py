@@ -14,6 +14,8 @@ class ObservationValueSchema(ma.Schema):
         ordered = True
     timestamp = ma.DateTime(description="ISO 8601 Datetime")
     value = ma.Float(description="Value of the measurement")
+    questionable = ma.Boolean(description="Whether the value is questionable",
+                              default=False, missing=False)
 
 
 @spec.define_schema('ObservationDefinition')
@@ -158,6 +160,7 @@ class ObservationValuesView(MethodView):
 
     def get(self, uuid, *args):
         """
+        TODO: Limits???
         ---
         summary: Get Observation data.
         description: Get the timeseries values from the Observation entry.
@@ -197,6 +200,20 @@ class ObservationValuesView(MethodView):
                 type: array
                 items:
                   $ref: '#/components/schemas/ObservationValue'
+            text/csv:
+              schema:
+                type: string
+                description: |
+                  Text file with fields separated by ',' and
+                  lines separated by '\\n'. The first line must
+                  be a header with the following fields:
+                  timestamp, value, questionable. Timestamp must be
+                  an ISO 8601 datetime, value may be an integer or float,
+                  questionable may be 0 or 1 (indicating the value is not
+                  to be trusted).
+              example: |-
+                timestamp,value,questionable
+                2018-10-29T12:04:23Z,32.93,0
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -237,6 +254,7 @@ class ObservationMetadataView(MethodView):
 
     def put(self, uuid, *args):
         """
+        TODO: MAY NOT MAKE SENSE TO KEEP if schema is so simple
         ---
         summary: Update observation metadata.
         description: Update an observation's metadata.
