@@ -4,39 +4,8 @@ import marshmallow as ma
 
 
 from sfa_api import spec
-
-
-# TODO: Replace the static demo content in these classes.
-class Site(object):
-    """Object for serializing site metadata. 
-    """
-    uuid = '123e4567-e89b-12d3-a456-426655440001'
-    name = 'Ashland OR'
-    resolution = '1 min'
-    latitude = 42.19
-    longitude = -122.70
-    elevation = 595
-    station_id = 94040
-    abbreviation = 'AS'
-    timezone = 'Etc/GMT+8'
-    attribution = ''
-    source = 'UO SMRL'
-
-
-class Observation(object):
-    """Container for serializing observation metadata.
-    """
-    uuid = '123e4567-e89b-12d3-a456-426655440000'
-    variable = 'ghi'
-    site_id = '123e4567-e89b-12d3-a456-426655440001'
-    site = Site()
-
-
-class ObservationValue(object):
-    """Object for serializing observation's timeseries data.
-    """
-    timestamp = '2018-11-05T18:19:33+00:00'
-    value = 35
+from sfa_api.site import SiteSchema
+from sfa_api.demo import Observation
 
 
 @spec.define_schema('ObservationValue')
@@ -48,34 +17,16 @@ class ObservationValueSchema(ma.Schema):
     value = ma.fields.Float(description="Value of the measurement")
 
 
-@spec.define_schema('SiteRequest')
-class SiteSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    name = ma.fields.String(description="Name of the Site")
-    latitude = ma.fields.Float(description="Latitude in degrees North")
-    longitude = ma.fields.Float(description="Longitude in degrees East of the Prime Meridian")
-    elevation = ma.fields.Float(description="Elevation in meters")
-    station_id = ma.fields.String(description="Unique ID used by data provider")
-    abbreviation = ma.fields.String(description="Abbreviated station name used by data provider")
-    timezone = ma.fields.String(description="Timezone")
-    attribution = ma.fields.String(description="Attribution to be included in derived works")
-    owner = ma.fields.String(description="Data provider")
-
-
-@spec.define_schema('SiteResponse')
-class SiteResponseSchema(SiteSchema):
-    uuid = ma.fields.UUID()
-
 @spec.define_schema('ObservationRequest')
 class ObservationSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    variable = ma.fields.String(description="Name of variable recorded by this observation")
+    variable = ma.fields.String(
+        description="Name of variable recorded by this observation")
     site_id = ma.fields.UUID(description="UUID the assocaiated site")
     site = ma.fields.Nested(SiteSchema)
+
 
 @spec.define_schema('ObservationResponse')
 class ObservationResponseSchema(ObservationSchema):
@@ -296,19 +247,23 @@ class ObservationMetadataView(MethodView):
         """
         return 'OK'
 
+
 # Add path parameters used by these endpoints to the spec.
 spec.add_parameter('uuid', 'path',
                    type='string',
                    description="Resource's unique identifier.",
                    required='true')
 
-blp = Blueprint(
+obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
 )
 
-blp.add_url_rule('/', view_func=ObservationsView.as_view('observations'))
-blp.add_url_rule('/<uuid>', view_func=ObservationView.as_view('observation'))
-blp.add_url_rule('/<uuid>/values',
-                 view_func=ObservationValuesView.as_view('observation_values'))
-blp.add_url_rule('/<uuid>/metadata',
-                 view_func=ObservationMetadataView.as_view('observation_metadata'))
+obs_blp.add_url_rule('/', view_func=ObservationsView.as_view('observations'))
+obs_blp.add_url_rule(
+    '/<uuid>', view_func=ObservationView.as_view('observation'))
+obs_blp.add_url_rule(
+    '/<uuid>/values',
+    view_func=ObservationValuesView.as_view('observation_values'))
+obs_blp.add_url_rule(
+    '/<uuid>/metadata',
+    view_func=ObservationMetadataView.as_view('observation_metadata'))

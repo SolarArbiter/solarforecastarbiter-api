@@ -6,12 +6,13 @@ del get_versions
 from flask import Flask, Response, jsonify, render_template, url_for  # NOQA
 from sfa_api.spec import spec   # NOQA
 
+
 def create_app(config_name='ProductionConfig'):
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
 
-    from sfa_api.observations import blp
-    app.register_blueprint(blp)
+    from sfa_api.observations import obs_blp
+    app.register_blueprint(obs_blp)
     with app.test_request_context():
         for k, view in app.view_functions.items():
             if k == 'static':
