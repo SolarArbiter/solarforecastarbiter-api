@@ -29,8 +29,6 @@ class BaseHandler(RequestHandler):
             formatted_subnav[url.format(**kwargs)] = linktext
         return formatted_subnav
     
-    # def verify_path
-    # do some sort of verification on the path
 
     def make_breadcrumb_html(self):
         parts = self.path_parts()
