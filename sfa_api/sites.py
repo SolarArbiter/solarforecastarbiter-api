@@ -160,10 +160,65 @@ class SiteView(MethodView):
         return
 
 
+class SiteObservations(MethodView):
+    def get(self, site_id, *args):
+        """
+        ---
+        summary: Get site observations
+        description: >
+          Get all observations associated with site that user has access to
+        tags:
+        - Sites
+        parameters:
+        - $ref: '#/components/parameters/site_id'
+        responses:
+          200:
+            description: Successfully retrieved site observations.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ObservationMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
+        """
+        return
+
+
+class SiteForecasts(MethodView):
+    def get(self, site_id, *args):
+        """
+        ---
+        summary: Get site forecasts
+        description: >
+          Get all forecasts associated with site that user has access to
+        tags:
+        - Sites
+        parameters:
+        - $ref: '#/components/parameters/site_id'
+        responses:
+          200:
+            description: Successfully retrieved site forecasts
+            content:
+              application/json:
+                schema:
+                  type: array
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
+        """
+        return
+
+
 spec.add_parameter('site_id', 'path',
                    type='string',
                    description="Site's unique identifier.",
                    required='true')
+
 
 site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',
@@ -171,3 +226,7 @@ site_blp = Blueprint(
 site_blp.add_url_rule('/', view_func=AllSitesView.as_view('all'))
 site_blp.add_url_rule(
     '/<site_id>', view_func=SiteView.as_view('single'))
+site_blp.add_url_rule('/<site_id>/observations',
+                      view_func=SiteObservations.as_view('observations'))
+site_blp.add_url_rule('/<site_id>/forecasts',
+                      view_func=SiteForecasts.as_view('forecasts'))

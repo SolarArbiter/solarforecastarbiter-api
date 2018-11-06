@@ -23,11 +23,13 @@ class ObservationPostSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    variable = ma.String(
-        description="Name of variable recorded by this observation",
+    type = ma.String(
+        description="Type of variable recorded by this observation",
         required=True)
     site_id = ma.UUID(description="UUID the assocaiated site",
                       required=True)
+    name = ma.String(description='Human friendly name for the observation',
+                     required=True)
 
 
 @spec.define_schema('ObservationMetadata')
