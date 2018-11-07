@@ -3,7 +3,7 @@ from flask.views import MethodView
 
 
 from sfa_api import spec, ma
-from sfa_api.demo import Site
+from sfa_api.demo import Site, Observation, Forecast
 
 
 @spec.define_schema('SiteDefinition')
@@ -185,7 +185,7 @@ class SiteObservations(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        return
+        return f'List Observations for {site_id}'
 
 
 class SiteForecasts(MethodView):
@@ -206,12 +206,14 @@ class SiteForecasts(MethodView):
               application/json:
                 schema:
                   type: array
+                  items:
+                    $ref: '#/componens/schemas/ForecastMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        return
+        return f'List Forecasts for site {site_id}'
 
 
 spec.add_parameter('site_id', 'path',
