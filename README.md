@@ -1,15 +1,19 @@
 # Solar Forecast Arbiter Dashboard
-A simple tornado web app to demo dashboard design. There are lots of dead links and unresponsive buttons, that lead to pages/functionality that have yet to be decided on.
+Currently just a simple tornado web server to demo the dashboard layout/design and get feedback. Contains dead links and buttons to assets that have not yet been discussed. The data and figures presented should be considered as placeholders and not representative of the intended final product.
+
+Development dashboard hosted at [https://dev-dashboard.solarforecastarbiter.org/tep](https://dev-dashboard.solarforecastarbiter.org/tep).
 
 ### Usage/ Installation
+
+#### Local
 Install requirements with `pip install -r requirements.txt`
 
-Run the script with `python serve.py`
+Run the script with `python sfa_dash/serve.py`
 
 Open [http://localhost:8080/tep](http://localhost:8080/tep) in a browser to view the dashboard.
 
 
-#### Template Layout
+### Template Layout
 
 base.html
 
