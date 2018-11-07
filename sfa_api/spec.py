@@ -134,6 +134,11 @@ spec = APISpec(
         },
         'license': {'name': 'MIT',
                     'url': 'https://opensource.org/licenses/MIT'},
+        'x-logo': {
+            'url': '/static/logo.png',
+            'backgroundColor': '#528',
+            'altText': 'SFA logo'
+        }
     },
     plugins=[
         ma_plugin,
