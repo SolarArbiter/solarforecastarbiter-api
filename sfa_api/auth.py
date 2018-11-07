@@ -51,5 +51,5 @@ def requires_auth(f):
             return Response(
                 render_template('auth_error.html'),
                 401,
-                {'WWW-Authenticate': f"Bearer realm='{current_app.config['AUTH0_BASE_URL']}'"})  # NOQA
+                {'WWW-Authenticate': 'Bearer'})
     return decorated
