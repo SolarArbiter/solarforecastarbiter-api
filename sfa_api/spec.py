@@ -39,6 +39,29 @@ spec_components = {
             'description': 'The resource could not be found.',
         },
     },
+    'securitySchemes': {
+        'auth0': {
+            'type': 'oauth2',
+            'description': """Authorization request must include
+client_id='c16EJo48lbTCQEhqSztGGlmxxxmZ4zX' and
+audience='https://api.solarforecastarbiter.org'""",
+            'flows': {
+                'password': {
+                    'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
+                    'scopes': {},
+                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
+                    'audience': 'https://api.solarforecastarbiter.org'
+                },
+                'authorizationCode': {
+                    'authorizationUrl': 'https://solarforecastarbiter.auth0.com/authorize',  # NOQA
+                    'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
+                    'scopes': {},
+                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
+                    'audience': 'https://api.solarforecastarbiter.org'
+                }
+            }
+        }
+    }
 }
 
 api_description = """The backend RESTful API for Solar Forecast Arbiter.
@@ -48,7 +71,54 @@ api_description = """The backend RESTful API for Solar Forecast Arbiter.
 
 # Authentication
 
-OAuth2
+We utilize OAuth 2.0 and OpenID Connect via [Auth0](https://auth0.com)
+with JSON Web Tokens (JWT) for authentication. A valid JWT issued by
+Auth0 must be included as a Bearer token in the Authorization header
+for all requests to the API. A JWT will expire after a set period and
+a valid one will be required to access the API.
+
+
+A request to Auth0 for a valid JWT may be made in the following way
+(with non-testing username and password when appropriate):
+
+```
+curl --request POST \\
+     --url 'https://solarforecastarbiter.auth0.com/oauth/token' \\
+     --header 'content-type: application/json' \\
+     --data '{"grant_type": "password", "username": "testing@solarforecastarbiter.org", "password": "Thepassword123!", "audience": "https://api.solarforecastarbiter.org", "client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}'
+```
+
+A valid response will resemble:
+
+```json
+{"access_token":"BASE64_ENCODED_JWT","expires_in":10800,"token_type":"Bearer"}
+```
+
+Requests to the API need to send the access token in the Authorization header:
+
+```
+curl --header "Authorization: Bearer BASE64_ENCODED_JWT" \\
+     --url "https://api.solarforecastarbiter.org/endpoint"
+```
+
+A full example follows:
+
+```
+export ACCESS_TOKEN=\\
+$(curl -s --request POST \\
+     --url 'https://solarforecastarbiter.auth0.com/oauth/token' \\
+     --header 'content-type: application/json' \\
+     --data '{"grant_type": "password", "username": "testing@solarforecastarbiter.org", "password": "Thepassword123!", "audience": "https://api.solarforecastarbiter.org", "client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}' \\
+| jq '.["access_token"]' | sed 's/"//g')
+
+curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
+     --url "https://api.solarforecastarbiter.org/observations"
+```
+
+For more about how to obtain a JWT using the Resource Owner Password flow, see
+https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant
+and
+https://auth0.com/docs/api/authentication#resource-owner-password.
 """
 ma_plugin = MarshmallowPlugin()
 spec = APISpec(
