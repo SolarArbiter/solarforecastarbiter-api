@@ -67,7 +67,15 @@ audience='https://api.solarforecastarbiter.org'""",
 api_description = """The backend RESTful API for Solar Forecast Arbiter.
 
 # Introduction
-...
+
+This webpage documents the public Solar Forecast Arbiter API. This
+RESTful API is primarily meant to be accessed by the Solar Forecast
+Arbiter dashboard. Forecast providers will likely make use of the
+[forecast post](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
+endpoint to upload forecasts programmatically. The API relies primarily on
+JSON data structures in requests and responses, with the notable exception
+of the forecast and observation get/post data endpoints which also support
+CSV files.
 
 # Authentication
 
@@ -101,7 +109,7 @@ curl --header "Authorization: Bearer BASE64_ENCODED_JWT" \\
      --url "https://api.solarforecastarbiter.org/endpoint"
 ```
 
-A full example follows:
+Extracting and using the access token might look like:
 
 ```
 export ACCESS_TOKEN=\\
@@ -146,10 +154,16 @@ spec = APISpec(
     ],
     components=spec_components,
     tags=[
+        {'name': 'Sites',
+         'description': 'Access and upload observation site metadata and values.'},  # NOQA
         {'name': 'Observations',
          'description': 'Access and upload observation metadata and values.'},
-        {'name': 'Sites',
-         'description': 'Access and upload observation site metadata and values.'}  # NOQA
+        {'name': 'Forecasts',
+         'description': 'Access and upload forecast metadata and values.'},
+        {'name': 'Reports',
+         'description': 'Access reports.'},
+        {'name': 'Trials',
+         'description': 'Access information about forecast trials.'}
     ],
     servers=[
         {'url': '//dev-api.solarforecastarbiter.org/',
