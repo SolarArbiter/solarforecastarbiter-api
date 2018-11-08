@@ -2,9 +2,9 @@ from flask import Blueprint
 from flask.views import MethodView
 
 
-from sfa_api import spec
-from sfa_api.schema import (SiteResponseSchema,
-                            ForecastSchema, ObservationSchema)
+from sfa_api import spec, ma
+from sfa_api.schema import SiteSchema, SiteResponseSchema, \
+                           ForecastSchema, ObservationSchema
 from sfa_api.demo import Site, Observation, Forecast
 
 
@@ -157,7 +157,7 @@ class SiteObservations(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        observations = [Observation() for i in range(3)]
+        observations = [ Observation() for i in range(3) ]
         return ObservationSchema(many=True).jsonify(observations)
 
 
@@ -186,7 +186,7 @@ class SiteForecasts(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        forecasts = [Forecast() for i in range(3)]
+        forecasts = [ Forecast() for i in range(3) ]
         return ForecastSchema(many=True).jsonify(forecasts)
 
 

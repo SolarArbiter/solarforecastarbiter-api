@@ -2,10 +2,9 @@ from flask import Blueprint
 from flask.views import MethodView
 
 
-from sfa_api import spec
-from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
-                            ObservationValueSchema)
-
+from sfa_api import spec, ma
+from sfa_api.schema import SiteSchema, ObservationSchema, \
+                           ObservationPostSchema, ObservationLinksSchema
 from sfa_api.demo import Observation, TimeseriesValue
 
 
@@ -30,7 +29,7 @@ class AllObservationsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         # TODO: replace demo response, also do not allow top-level json array
-        observations = [Observation() for i in range(5)]
+        observations = [ Observation() for i in range(5) ]
         return ObservationSchema().jsonify(observations)
 
     def post(self, *args):
@@ -132,7 +131,7 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        values = [TimeseriesValue() for i in range(5)]
+        values = [ TimeseriesValue() for i in range(5) ]
         return ObservationValueSchema(many=True).jsonify(values)
 
     def post(self, obs_id, *args):

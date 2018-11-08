@@ -2,10 +2,10 @@ from flask import Blueprint
 from flask.views import MethodView
 
 
-from sfa_api import spec
-from sfa_api.schema import (ForecastValueSchema,
-                            ForecastSchema, ForecastResponseSchema,
-                            ForecastLinksSchema)
+from sfa_api import spec, ma
+from sfa_api.schema import SiteSchema, ForecastValueSchema, \
+                           ForecastPostSchema, ForecastSchema, \
+                           ForecastLinksSchema
 from sfa_api.demo import Forecast, TimeseriesValue
 
 
@@ -28,7 +28,7 @@ class AllForecastsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        forecasts = [Forecast() for i in range(3)]
+        forecasts = [ Forecast() for i in range(3)]
         return ForecastSchema(many=True).jsonify(forecasts)
 
     def post(self, *args):
@@ -60,7 +60,6 @@ class AllForecastsView(MethodView):
         forecast = Forecast()
         return ForecastResponseSchema().jsonify(forecast)
 
-
 class ForecastView(MethodView):
     def get(self, forecast_id, *args):
         """
@@ -84,6 +83,7 @@ class ForecastView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         return ForecastLinksSchema().jsonify(Forecast())
+
 
     def delete(self, forecast_id, *args):
         """
@@ -128,8 +128,9 @@ class ForecastValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        forecast_values = [TimeseriesValue() for i in range(3)]
+        forecast_values = [ TimeseriesValue() for i in range(3) ]
         return ForecastValueSchema(many=True).jsonify(forecast_values)
+
 
     def post(self, forecast_id, *args):
         """
@@ -198,6 +199,7 @@ class ForecastMetadataView(MethodView):
         """
         return ForecastSchema().jsonify(Forecast())
 
+
     def put(self, forecast_id, *args):
         """
         ---
@@ -236,9 +238,6 @@ forecast_blp = Blueprint(
     'forecasts', 'forecasts', url_prefix="/forecasts",
 )
 forecast_blp.add_url_rule('/', view_func=AllForecastsView.as_view('all'))
-forecast_blp.add_url_rule('/<forecast_id>',
-                          view_func=ForecastView.as_view('single'))
-forecast_blp.add_url_rule('/<forecast_id>/values',
-                          view_func=ForecastValuesView.as_view('values'))
-forecast_blp.add_url_rule('/<forecast_id>/metadata',
-                          view_func=ForecastMetadataView.as_view('metadata'))
+forecast_blp.add_url_rule('/<forecast_id>', view_func=ForecastView.as_view('single'))
+forecast_blp.add_url_rule('/<forecast_id>/values', view_func=ForecastValuesView.as_view('values'))
+forecast_blp.add_url_rule('/<forecast_id>/metadata',view_func=ForecastMetadataView.as_view('metadata'))
