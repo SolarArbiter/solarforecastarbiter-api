@@ -4,7 +4,7 @@ from flask.views import MethodView
 
 from sfa_api import spec
 from sfa_api.schema import (ForecastValueSchema,
-                            ForecastSchema, ForecastResponseSchema,
+                            ForecastSchema,
                             ForecastLinksSchema)
 from sfa_api.demo import Forecast, TimeseriesValue
 
@@ -58,7 +58,7 @@ class AllForecastsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         forecast = Forecast()
-        return ForecastResponseSchema().jsonify(forecast)
+        return ForecastSchema().jsonify(forecast)
 
 
 class ForecastView(MethodView):
