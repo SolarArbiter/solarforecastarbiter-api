@@ -1,5 +1,6 @@
 from sfa_api import spec, ma
 
+
 # Sites
 @spec.define_schema('SiteDefinition')
 class SiteSchema(ma.Schema):
@@ -93,24 +94,29 @@ class ForecastPostSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    type = ma.String(
-        description="Type of variable forecasted",
-        required=True)
     site_id = ma.UUID(description="UUID of the associated site",
                       required=True)
     name = ma.String(description="Human friendly name for forecast",
                      required=True)
+    type = ma.String(
+        description="Type of variable forecasted",
+        required=True)
+    lead_time = ma.String(description="Lead time to start of forecast",
+                          required=True)
+    duration = ma.String(description="Interval duration",
+                         required=True)
+    intervals =  ma.Integer(description="Intervals per submission",
+                            required=True)
+    issue_frequency = ma.String(description="Forecast issue frequency",
+                                required=True)
+    value_type = ma.String(
+        description="Value type (e.g. mean, max, 95th percentile, instantaneous)",  # NOQA
+        required=True)
 
 
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
     site = ma.Nested(SiteSchema)
-    type = ma.String(description="Type of variable forecasted")
-    lead_time = ma.String(description="Lead time to start of forecast")
-    duration = ma.String(description="Interval duration")
-    intervals =  ma.Integer(description="Intervals per submission")
-    issue_frequency = ma.String(description="Forecast issue frequency")
-    value_type = ma.String(description="Value type (e.g. mean, max, 95th percentile, instantaneous)")
     forecast_id = ma.UUID()
 
 
