@@ -3,53 +3,9 @@ from flask.views import MethodView
 
 
 from sfa_api import spec, ma
-from sfa_api.sites import SiteSchema
+from sfa_api.schema import SiteSchema, ObservationSchema, \
+                           ObservationPostSchema, ObservationLinksSchema
 from sfa_api.demo import Observation, TimeseriesValue
-
-
-@spec.define_schema('ObservationValue')
-class ObservationValueSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    timestamp = ma.DateTime(description="ISO 8601 Datetime")
-    value = ma.Float(description="Value of the measurement")
-    questionable = ma.Boolean(description="Whether the value is questionable",
-                              default=False, missing=False)
-
-
-@spec.define_schema('ObservationDefinition')
-class ObservationPostSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    type = ma.String(
-        description="Type of variable recorded by this observation",
-        required=True)
-    site_id = ma.UUID(description="UUID the assocaiated site",
-                      required=True)
-    name = ma.String(description='Human friendly name for the observation',
-                     required=True)
-
-
-@spec.define_schema('ObservationMetadata')
-class ObservationSchema(ObservationPostSchema):
-    site = ma.Nested(SiteSchema)
-    uuid = ma.UUID()
-
-
-@spec.define_schema('ObservationLinks')
-class ObservationLinksSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    uuid = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                      obs_id='<uuid>'),
-        'values': ma.AbsoluteURLFor('observations.values',
-                                    obs_id='<uuid>')
-    })
 
 
 class AllObservationsView(MethodView):
@@ -271,7 +227,6 @@ class ObservationMetadataView(MethodView):
         return
 
 
-iam_a_variable = "hi"
 # Add path parameters used by these endpoints to the spec.
 spec.add_parameter('obs_id', 'path',
                    type='string',

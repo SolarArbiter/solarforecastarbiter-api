@@ -3,37 +3,9 @@ from flask.views import MethodView
 
 
 from sfa_api import spec, ma
+from sfa_api.schema import SiteSchema, SiteResponseSchema, \
+                           ForecastSchema, ObservationSchema
 from sfa_api.demo import Site, Observation, Forecast
-
-
-@spec.define_schema('SiteDefinition')
-class SiteSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    name = ma.String(description="Name of the Site",
-                     required=True)
-    latitude = ma.Float(description="Latitude in degrees North",
-                        required=True)
-    longitude = ma.Float(
-        description="Longitude in degrees East of the Prime Meridian",
-        required=True)
-    elevation = ma.Float(description="Elevation in meters",
-                         required=True)
-    station_id = ma.String(
-        description="Unique ID used by data provider")
-    abbreviation = ma.String(
-        description="Abbreviated station name used by data provider")
-    timezone = ma.String(description="Timezone",
-                         required=True)
-    attribution = ma.String(
-        description="Attribution to be included in derived works")
-    provider = ma.String(description="Data provider")
-
-
-@spec.define_schema('SiteMetadata')
-class SiteResponseSchema(SiteSchema):
-    site_id = ma.UUID(required=True)
 
 
 class AllSitesView(MethodView):
@@ -185,7 +157,8 @@ class SiteObservations(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        return f'List Observations for {site_id}'
+        observations = [ Observation() for i in range(3) ]
+        return ObservationSchema(many=True).jsonify(observations)
 
 
 class SiteForecasts(MethodView):
@@ -207,13 +180,14 @@ class SiteForecasts(MethodView):
                 schema:
                   type: array
                   items:
-                    $ref: '#/componens/schemas/ForecastMetadata'
+                    $ref: '#/components/schemas/ForecastMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        return f'List Forecasts for site {site_id}'
+        forecasts = [ Forecast() for i in range(3) ]
+        return ForecastSchema(many=True).jsonify(forecasts)
 
 
 spec.add_parameter('site_id', 'path',

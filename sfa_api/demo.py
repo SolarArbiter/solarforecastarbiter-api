@@ -9,7 +9,7 @@ class Site(object):
     latitude = 42.19
     longitude = -122.70
     elevation = 595
-    station_id = 94040
+    provider_api_id = 94040
     abbreviation = 'AS'
     timezone = 'Etc/GMT+8'
     attribution = ''
@@ -19,8 +19,8 @@ class Site(object):
 class Observation(object):
     """Container for serializing observation metadata.
     """
-    uuid = '123e4567-e89b-12d3-a456-426655440000'
-    variable = 'ghi'
+    obs_id = '123e4567-e89b-12d3-a456-426655440000'
+    type = 'ghi'
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR, ghi'
     site = Site()
@@ -37,7 +37,7 @@ class TimeseriesValue(object):
 class Forecast(object):
     """Object for serializing forecast metadata.
     """
-    uuid = "f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1"
+    forecast_id = "f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1"
     variable = 'ghi'
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR, ghi'

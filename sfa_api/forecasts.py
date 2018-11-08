@@ -3,53 +3,10 @@ from flask.views import MethodView
 
 
 from sfa_api import spec, ma
-from sfa_api.sites import SiteSchema
+from sfa_api.schema import SiteSchema, ForecastValueSchema, \
+                           ForecastPostSchema, ForecastSchema, \
+                           ForecastLinksSchema
 from sfa_api.demo import Forecast, TimeseriesValue
-
-
-@spec.define_schema('ForecastValue')
-class ForecastValueSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    timestamp = ma.DateTime(description="ISO 8601 Datetime")
-    value = ma.Float(description="Value of the measurement")
-    questionable = ma.Boolean(description="Whether the value is questionable",
-                              default=False, missing=False)
-
-
-@spec.define_schema('ForecastDefinition')
-class ForecastPostSchema(ma.Schema):
-    class Meta:
-        strict = True
-        ordered = True
-    type = ma.String(
-        description="Type of variable forecasted",
-        required=True)
-    site_id = ma.UUID(description="UUID of associated site",
-                      required=True)
-    name = ma.String(description="Human friendly name for forecast",
-                     required=True)
-
-
-@spec.define_schema('ForecastMetadata')
-class ForecastSchema(ForecastPostSchema):
-    site = ma.Nested(SiteSchema)
-    uuid = ma.UUID()
-
-
-@spec.define_schema('ForecastLinks')
-class ForecastLinkSchema(ma.Schema):
-    class Meta:
-        string = True
-        ordered = True
-    uuid = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                      forecast_id='<uuid>'),
-        'values': ma.AbsoluteURLFor('forecasts.values',
-                                    forecast_id='<uuid>')
-    })
 
 
 class AllForecastsView(MethodView):
@@ -125,7 +82,7 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return ForecastLinkSchema().jsonify(Forecast())
+        return ForecastLinksSchema().jsonify(Forecast())
 
 
     def delete(self, forecast_id, *args):
@@ -192,6 +149,20 @@ class ForecastValuesView(MethodView):
                 type: array
                 items:
                   $ref: '#/components/schemas/ForecastValue'
+            text/csv:
+              schema:
+                type: string
+                description: |
+                  Text file with fields separated by ',' and
+                  lines separated by '\\n'. The first line must
+                  be a header with the following fields:
+                  timestamp, value, questionable. Timestamp must be
+                  an ISO 8601 datetime, value may be an integer or float,
+                  questionable may be 0 or 1 (indicating the value is not
+                  to be trusted).
+              example: |-
+                timestamp,value,questionable
+                2018-10-29T12:04:23Z,32.93,0
         responses:
           201:
             $ref: '#/components/responses/201-Created'
