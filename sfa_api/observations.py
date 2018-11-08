@@ -229,7 +229,10 @@ class ObservationMetadataView(MethodView):
 
 # Add path parameters used by these endpoints to the spec.
 spec.add_parameter('obs_id', 'path',
-                   type='string',
+                   schema={
+                       'type': 'string',
+                       'format': 'uuid'
+                   },
                    description="Resource's unique identifier.",
                    required='true')
 

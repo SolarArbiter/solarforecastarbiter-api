@@ -227,7 +227,10 @@ class ForecastMetadataView(MethodView):
 
 
 spec.add_parameter('forecast_id', 'path',
-                   type='string',
+                   schema={
+                       'type': 'string',
+                       'format': 'uuid'
+                   },
                    description="Forecast's unique identifier.",
                    required='true')
 

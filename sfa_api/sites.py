@@ -191,7 +191,10 @@ class SiteForecasts(MethodView):
 
 
 spec.add_parameter('site_id', 'path',
-                   type='string',
+                   schema={
+                       'type': 'string',
+                       'format': 'uuid'
+                   },
                    description="Site's unique identifier.",
                    required='true')
 
