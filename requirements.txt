@@ -6,3 +6,6 @@ apispec
 webargs
 gunicorn
 gevent
+requests
+cryptography
+python-jose
