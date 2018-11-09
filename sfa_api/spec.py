@@ -70,12 +70,87 @@ api_description = """The backend RESTful API for Solar Forecast Arbiter.
 
 This webpage documents the public Solar Forecast Arbiter API. This
 RESTful API is primarily meant to be accessed by the Solar Forecast
-Arbiter dashboard. Forecast providers will likely make use of the
-[forecast post](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
-endpoint to upload forecasts programmatically. The API relies primarily on
-JSON data structures in requests and responses, with the notable exception
-of the forecast and observation get/post data endpoints which also support
-CSV files.
+Arbiter dashboard. The API relies primarily on JSON data structures in
+requests and responses, with the notable exception of the forecast and
+observation get/post data endpoints which also support CSV files.
+
+Most users will interact with the API indirectly through actions on the
+[dashboard](https://dashboard.solarforecastarbiter.org). Those users
+who require direct access to the API may include data providers and
+reference data users.
+
+## Interaction for Reference Data Providers
+
+Reference data providers will likely use the API to
+programmatically upload data to the Solar Forecast Arbiter
+framework. A typical upload may have the following steps:
+
+1. A provider retrieves an access token or loads a token that is still
+   valid; see [Authentication](/#section/Authentication) below.
+
+2. A provider loads the known ID for the site and variable of
+   interest, or finds the correct ID by querying the
+   [observations](/#tag/Observations/paths/~1observations~1/get)
+   endpoint
+
+3. The provider prepares the data to POST in either JSON or CSV format
+   (see options of
+   [POST](#tag/Observations/paths/~1observations~1{obs_id}~1values/post)
+   for application/json and text/csv Request Body Schema)
+
+4. The provider sends the POST request to the [add observation
+   endpoint](#tag/Observations/paths/~1observations~1{obs_id}~1values/post)
+   with the ID from step 2 in the URL and the token from step 1 as the
+   Authorization Bearer header
+
+5. The provider checks the response of the POST request to ensure there were
+   no errors with the upload.
+
+## Interaction for Forecast Providers
+
+Forecast providers will likely use the API to programmatically upload
+forecasts to the Solar Forecast Arbiter framework. A typical upload
+may have the following steps:
+
+1. A provider retrieves an access token or loads a token that is still
+   valid; see [Authentication](/#section/Authentication) below.
+
+2. A provider loads the known ID for the site and variable of
+   interest, or finds the correct ID by querying the
+   [forecasts](/#tag/Forecasts/paths/~1forecasts~1/get)
+   endpoint
+
+3. The provider prepares the data to POST in either JSON or CSV format
+   (see options of
+   [POST](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
+   for application/json and text/csv Request Body Schema)
+
+4. The provider sends the POST request to the [add forecast
+   endpoint](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
+   with the ID from step 2 in the URL and the token from step 1 as the
+   Authorization Bearer header
+
+5. The provider checks the response of the POST request to ensure there were
+   no errors with the upload.
+
+## Interaction for Reference Data Consumer
+
+Users wishing to pull reference data for forecast development or other
+purposes will likely programmatically pull the data. A typical workflow
+may be:
+
+1. A user retrieves an access token or loads a token that is still
+   valid; see [Authentication](/#section/Authentication) below.
+
+2. A user loads the known ID for the site and variable of
+   interest, or finds the correct ID by querying the
+   [observations](/#tag/Observations/paths/~1observations~1/get)
+   endpoint
+
+3. The user requests the data from the [get observation data
+   endpoint](/#tag/Observations/paths/~1observations~1{obs_id}~1values/get)
+   in either JSON or CSV format
+
 
 # Authentication
 
@@ -83,7 +158,9 @@ We utilize OAuth 2.0 and OpenID Connect via [Auth0](https://auth0.com)
 with JSON Web Tokens (JWT) for authentication. A valid JWT issued by
 Auth0 must be included as a Bearer token in the Authorization header
 for all requests to the API. A JWT will expire after a set period and
-a valid one will be required to access the API.
+a valid one will be required to access the API. Access control is strictly
+enforced so that only data owners and authorized users have access to
+any data.
 
 
 A request to Auth0 for a valid JWT may be made in the following way
