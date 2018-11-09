@@ -106,6 +106,8 @@ framework. A typical upload may have the following steps:
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
 
+This process will need to be repeated for each variable and each site.
+
 ## Interaction for Forecast Providers
 
 Forecast providers will likely use the API to programmatically upload
@@ -132,6 +134,9 @@ may have the following steps:
 
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
+
+This process will need to be repeated for each forecast.
+
 
 ## Interaction for Reference Data Consumer
 
