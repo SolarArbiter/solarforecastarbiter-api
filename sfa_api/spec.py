@@ -72,16 +72,16 @@ This webpage documents the public Solar Forecast Arbiter API. This
 RESTful API is primarily meant to be accessed by the Solar Forecast
 Arbiter dashboard. The API relies primarily on JSON data structures in
 requests and responses, with the notable exception of the forecast and
-observation get/post data endpoints which also support CSV files.
+observation GET/POST data endpoints which also support CSV files.
 
-Most users will interact with the API indirectly through actions on the
-[dashboard](https://dashboard.solarforecastarbiter.org). Those users
-who require direct access to the API may include data providers and
-reference data users.
+Most users will interact with the API indirectly through actions on
+the [dashboard](https://dashboard.solarforecastarbiter.org). Those
+users who require direct access to the API may include observational
+data providers, forecast data providers, and reference data users.
 
-## Interaction for Reference Data Providers
+## Interaction for Observational Data Providers
 
-Reference data providers will likely use the API to
+Observational data providers will likely use the API to
 programmatically upload data to the Solar Forecast Arbiter
 framework. A typical upload may have the following steps:
 
@@ -106,7 +106,9 @@ framework. A typical upload may have the following steps:
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
 
-This process will need to be repeated for each variable and each site.
+This process will need to be repeated for each variable and each
+site. For example, a user uploading both AC Power and GHI data for a
+power plant must make two different POST requests.
 
 ## Interaction for Forecast Providers
 
@@ -135,13 +137,15 @@ may have the following steps:
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
 
-This process will need to be repeated for each forecast.
+This process will need to be repeated for each forecast. For example,
+a user uploading both a five minute lead time forecast and a one hour
+lead time forecast must make two POST requests.
 
 
 ## Interaction for Reference Data Consumer
 
 Users wishing to pull reference data for forecast development or other
-purposes will likely programmatically pull the data. A typical workflow
+purposes may wish to programmatically pull the data. A typical workflow
 may be:
 
 1. A user retrieves an access token or loads a token that is still
@@ -156,16 +160,28 @@ may be:
    endpoint](/#tag/Observations/paths/~1observations~1{obs_id}~1values/get)
    in either JSON or CSV format
 
+This process will need to be repeated for each observation site and
+variable the user wants. For example, a request for the Desert Rock
+SURFRAD DNI and GHI will require two requests, one for each variable.
 
 # Authentication
 
 We utilize OAuth 2.0 and OpenID Connect via [Auth0](https://auth0.com)
-with JSON Web Tokens (JWT) for authentication. A valid JWT issued by
-Auth0 must be included as a Bearer token in the Authorization header
-for all requests to the API. A JWT will expire after a set period and
-a valid one will be required to access the API. Access control is strictly
-enforced so that only data owners and authorized users have access to
-any data.
+with JSON Web Tokens (JWT) for authentication. Auth0 has numereous
+[security credentials and undergoes routine
+audits](https://auth0.com/security). Since Auth0 stores and manages
+user credentials, a compromise in the framework will not compromise
+user credentials. Furthermore, by utilizing JWT access tokens that
+have a short expiration time (typically a few hours), an accidentally
+leaked access token can only be used to access the API for a limited
+amount of time unlike API keys which often have no expiration.
+
+
+A valid JWT issued by Auth0 must be included as a Bearer token in the
+Authorization header for all requests to the API. A JWT will expire
+after a set period and a valid one will be required to access the
+API. Access control is strictly enforced so that only data owners and
+authorized users have access to any data.
 
 
 A request to Auth0 for a valid JWT may be made in the following way
