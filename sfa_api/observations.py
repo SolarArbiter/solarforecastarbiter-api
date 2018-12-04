@@ -31,7 +31,7 @@ class AllObservationsView(MethodView):
         """
         # TODO: replace demo response, also do not allow top-level json array
         observations = [Observation() for i in range(5)]
-        return ObservationSchema().jsonify(observations)
+        return ObservationSchema(many=True).jsonify(observations)
 
     def post(self, *args):
         """
