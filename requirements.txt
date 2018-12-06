@@ -1,5 +1,6 @@
 flask
 marshmallow
+marshmallow-jsonschema
 flask-marshmallow
 flask-talisman
 apispec
