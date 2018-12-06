@@ -39,7 +39,9 @@ def create_app(config_name='ProductionConfig'):
     from sfa_api.observations import obs_blp
     from sfa_api.forecasts import forecast_blp
     from sfa_api.sites import site_blp
+    from sfa_api.schema import schema_blp
     app.register_blueprint(obs_blp)
+    app.register_blueprint(schema_blp)
     app.register_blueprint(site_blp)
     app.register_blueprint(forecast_blp)
     with app.test_request_context():
