@@ -1,8 +1,11 @@
-from flask import Blueprint
+from flask import Blueprint, request, jsonify
 from flask.views import MethodView
+from io import StringIO
+import pandas as pd
 
 
 from sfa_api import spec
+from sfa_api.utils import storage
 from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
                             ObservationValueSchema)
 
@@ -59,8 +62,13 @@ class AllObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # TODO: replace demo response
-        return f'Created an observation resource.'
+        # TODO: Authorization/Authentication
+
+        observation = request.get_json()
+        ObservationSchema.load(observation)
+        return '', 400
+        return '', 201
+
 
 
 class ObservationView(MethodView):
@@ -80,6 +88,8 @@ class ObservationView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ObservationLinks'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -169,12 +179,66 @@ class ObservationValuesView(MethodView):
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return f'Added timeseries values to {obs_id}'
+        # TODO: Authorize User for this observation
+
+        # Check content-type and parse data conditionally
+        if request.content_type == 'application/json':
+            raw_data = request.get_json()
+            try:
+                raw_values = raw_data['values']
+            except (TypeError, KeyError):
+                return 'Supplied JSON does not contain "values" field.', 400
+            try:
+                observation_df = pd.DataFrame(raw_values)
+            except ValueError:
+                return 'Malformed JSON', 400
+        elif request.content_type == 'text/csv':
+            raw_data = StringIO(request.get_data(as_text=True))
+            try:
+                observation_df = pd.read_csv(raw_data, comment='#')
+            except pd.errors.EmptyDataError:
+                return 'Malformed JSON', 400
+            raw_data.close()
+        else:
+            return 'Invalid Content-type.', 400
+
+        # Verify data format and types are parseable.
+        # create list of errors to return meaningful messages to the user.
+        errors = []
+        try:
+            observation_df['value'] = pd.to_numeric(observation_df['value'],
+                                                    downcast='float')
+        except ValueError:
+            errors.append('Invalid item in "value" field.')
+        except KeyError:
+            errors.append('Missing "value" field.')
+
+        try:
+            observation_df['timestamp'] = pd.to_datetime(
+                observation_df['timestamp'],
+                utc=True)
+        except ValueError:
+            errors.append('Invalid item in "timestamp" field.')
+        except KeyError:
+            errors.append('Missing "timestamp" field.')
+
+        if 'questionable' not in observation_df.columns:
+            errors.append('Missing "questionable" field.')
+        elif not observation_df['questionable'].isin([0, 1]).all():
+            errors.append('Invalid item in "questionable" field.')
+
+        if errors:
+            return jsonify({'errors': errors}), 400
+
+        stored = storage.store_observation_values(obs_id, observation_df)
+        return stored, 201
 
 
 class ObservationMetadataView(MethodView):

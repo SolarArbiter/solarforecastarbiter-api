@@ -1,5 +1,5 @@
 from datetime import datetime
-# TODO: Replace the static demo content in these classes.
+
 class Site(object):
     """Object for serializing site metadata.
     """
@@ -20,7 +20,7 @@ class Observation(object):
     """Container for serializing observation metadata.
     """
     obs_id = '123e4567-e89b-12d3-a456-426655440000'
-    type = 'ghi'
+    variable = 'ghi'
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR, ghi'
     site = Site()
@@ -29,7 +29,8 @@ class Observation(object):
 class TimeseriesValue(object):
     """Object for serializing timeseries data.
     """
-    timestamp = datetime.strptime('2018-11-05T18:19:33+0000','%Y-%m-%dT%H:%M:%S%z')
+    timestamp = datetime.strptime('2018-11-05T18:19:33+0000',
+                                  '%Y-%m-%dT%H:%M:%S%z')
     value = 35
     questionable = False
 

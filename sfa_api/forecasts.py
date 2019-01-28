@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask.views import MethodView
 
 
-from sfa_api import spec
+from sfa_api import spec, ma
 from sfa_api.schema import (ForecastValueSchema,
                             ForecastSchema,
                             ForecastLinksSchema)

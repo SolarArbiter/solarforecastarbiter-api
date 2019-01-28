@@ -77,6 +77,7 @@ class ObservationLinksSchema(ma.Schema):
                                     obs_id='<obd_id>')
     })
 
+
 # Forecasts
 @spec.define_schema('ForecastValue')
 class ForecastValueSchema(ma.Schema):
@@ -105,8 +106,8 @@ class ForecastPostSchema(ma.Schema):
                           required=True)
     duration = ma.String(description="Interval duration",
                          required=True)
-    intervals =  ma.Integer(description="Intervals per submission",
-                            required=True)
+    intervals = ma.Integer(description="Intervals per submission",
+                           required=True)
     issue_frequency = ma.String(description="Forecast issue frequency",
                                 required=True)
     value_type = ma.String(
