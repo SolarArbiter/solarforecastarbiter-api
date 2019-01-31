@@ -1,3 +1,6 @@
+from sfa_api import demo
+
+
 def store_observation_values(obs_id, observation_df):
     """Insert the observation data into the database.
 
@@ -7,12 +10,18 @@ def store_observation_values(obs_id, observation_df):
         UUID of the associated observation.
     observation_df: DataFrame
         Dataframe with DatetimeIndex, value, and questionable column.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created resource
     """
     # Method stub for storing observation time-series in the database.
-    return 'OK'
+
+    return demo.Observation.obs_id
 
 
-def read_observation_values(obs_id, start, end):
+def read_observation_values(obs_id, start=None, end=None):
     """Read observation values between start and end.
 
     Parameters
@@ -25,16 +34,47 @@ def read_observation_values(obs_id, start, end):
         End of the peried for which to request data.
 
     """
-    raise NotImplementedError
+    return [demo.TimeseriesValue for i in range(5)]
 
 
-def store_observation():
+def store_observation(observation):
     """
+    Parameters
+    ----------
+    observation: dictionary
+        A dictionary of observation fields to insert.
     """
-    raise NotImplementedError
+    return 200
 
 
-def read_observation():
+def read_observation(obs_id):
     """
+    Parameters
+    ----------
+    obs_id: String
+        UUID of the observation to retrieve
+
+    Returns
+    -------
+
     """
-    raise NotImplementedError
+    return demo.Observation
+
+
+def delete_observation(obs_id):
+    """
+    Parameters
+    ----------
+    obs_id: String
+        UUID of observation to delete
+
+    Returns
+    -------
+    """
+    return 200
+
+
+def list_observations():
+    """Lists all observations a user has access to.
+    """
+    return [demo.Observation() for i in range(5)]

@@ -1,19 +1,31 @@
 from datetime import datetime
 
+
 class Site(object):
     """Object for serializing site metadata.
     """
+
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR'
-    resolution = '1 min'
     latitude = 42.19
     longitude = -122.70
     elevation = 595
-    provider_api_id = 94040
-    abbreviation = 'AS'
     timezone = 'Etc/GMT+8'
-    attribution = ''
-    source = 'UO SMRL'
+    network = 'UO SMRL'
+    well_known_text = None
+    modeling_parameters = {
+        "ac_power": "",
+        "axis_azimuth": 45.0,
+        "axis_tilt": 45.0,
+        "backtrack": True,
+        "dc_power": "",
+        "temperature_coefficient": "",
+        "ground_coverage_ratio": 0.5,
+        "surface_azimuth": 45.0,
+        "surface_tilt": 45.0,
+        "tracking_type": "fixed"
+    }
+    extra_parameters = "{'provider_api_id': 94040,'abbreviation': 'AS'}"
 
 
 class Observation(object):
