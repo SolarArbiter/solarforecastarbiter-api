@@ -9,3 +9,4 @@ gevent
 requests
 cryptography
 python-jose
+pandas
