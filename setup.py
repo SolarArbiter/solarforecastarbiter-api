@@ -31,7 +31,8 @@ setup(
     install_requires=[
         'flask',
         'apispec',
-        'marshmallow'
+        'marshmallow',
+        'pandas'
     ],
     extra_requires={
         'test': ['pytest', 'coverage']
