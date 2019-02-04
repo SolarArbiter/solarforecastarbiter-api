@@ -187,12 +187,12 @@ class ObservationValuesView(MethodView):
                   Text file with fields separated by ',' and
                   lines separated by '\\n'. The first line must
                   be a header with the following fields:
-                  timestamp, value, questionable. Timestamp must be
+                  timestamp, value, quality_flag. Timestamp must be
                   an ISO 8601 datetime, value may be an integer or float,
-                  questionable may be 0 or 1 (indicating the value is not
+                  quality_flag may be 0 or 1 (indicating the value is not
                   to be trusted).
               example: |-
-                timestamp,value,questionable
+                timestamp,value,quality_flag
                 2018-10-29T12:04:23Z,32.93,0
         responses:
           201:
@@ -220,7 +220,7 @@ class ObservationValuesView(MethodView):
             try:
                 observation_df = pd.read_csv(raw_data, comment='#')
             except pd.errors.EmptyDataError:
-                return 'Malformed JSON', 400
+                return 'Malformed CSV', 400
             raw_data.close()
         else:
             return 'Invalid Content-type.', 400
@@ -245,10 +245,10 @@ class ObservationValuesView(MethodView):
         except KeyError:
             errors.append('Missing "timestamp" field.')
 
-        if 'questionable' not in observation_df.columns:
-            errors.append('Missing "questionable" field.')
-        elif not observation_df['questionable'].isin([0, 1]).all():
-            errors.append('Invalid item in "questionable" field.')
+        if 'quality_flag' not in observation_df.columns:
+            errors.append('Missing "quality_flag" field.')
+        elif not observation_df['quality_flag'].isin([0, 1]).all():
+            errors.append('Invalid item in "quality_flag" field.')
 
         if errors:
             return jsonify({'errors': errors}), 400

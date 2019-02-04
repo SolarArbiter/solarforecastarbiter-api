@@ -155,12 +155,12 @@ class ForecastValuesView(MethodView):
                   Text file with fields separated by ',' and
                   lines separated by '\\n'. The first line must
                   be a header with the following fields:
-                  timestamp, value, questionable. Timestamp must be
+                  timestamp, value, quality_flag. Timestamp must be
                   an ISO 8601 datetime, value may be an integer or float,
-                  questionable may be 0 or 1 (indicating the value is not
+                  quality_flag may be 0 or 1 (indicating the value is not
                   to be trusted).
               example: |-
-                timestamp,value,questionable
+                timestamp,value,quality_flag
                 2018-10-29T12:04:23Z,32.93,0
         responses:
           201:

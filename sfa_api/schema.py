@@ -19,10 +19,10 @@ EXTRA_PARAMETERS_FIELD = ma.String(
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
-    ac_power = ma.String(
+    ac_power = ma.Float(
         title="AC Power",
         description="Nameplate AC power rating.")
-    dc_power = ma.String(
+    dc_power = ma.Float(
         title="DC Power",
         description="Nameplate DC power rating.")
     temperature_coefficient = ma.String(
@@ -109,9 +109,11 @@ class ObservationValueSchema(ma.Schema):
     timestamp = ma.DateTime(
         title="Timestamp",
         description="ISO 8601 Datetime")
-    value = ma.Float(description="Value of the measurement")
-    questionable = ma.Boolean(description="Whether the value is questionable",
-                              default=False, missing=False)
+    value = ma.Float(
+        description="Value of the measurement")
+    quality_flag = ma.Integer(
+        description="A flag indicating data quality.",
+        default=0, missing=False)
 
 
 @spec.define_schema('ObservationDefinition')
@@ -176,10 +178,10 @@ class ForecastValueSchema(ma.Schema):
     value = ma.Float(
         title="Value",
         description="Value of the forecast variable.")
-    questionable = ma.Boolean(
+    quality_flag = ma.Integer(
         title="Questionable",
-        description="Whether the value is questionable",
-        default=False, missing=False)
+        description="A flag indicating data quality.",
+        default=0, missing=False)
 
 
 @spec.define_schema('ForecastDefinition')
@@ -209,6 +211,7 @@ class ForecastPostSchema(ma.Schema):
         title='Lead time to start',
         description="Lead time to start of forecast",
         required=True)
+
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
@@ -218,19 +221,22 @@ class ForecastPostSchema(ma.Schema):
     duration = ma.String(
         title='Duration',
         description="Interval duration",
-        required=True)
+        required=True
+    )
     intervals = ma.Integer(
         title='Intervals',
         description="Intervals per submission",
-        required=True)
+        required=True
+    )
     issue_frequency = ma.String(
         title='Issue Frequency',
         description="Forecast issue frequency",
-        required=True)
+        required=True,
+    )
     value_type = ma.String(
         title='Value Type',
         description="Value type (e.g. mean, max, 95th percentile, instantaneous)",  # NOQA
-        required=True)
+    )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 

@@ -14,12 +14,12 @@ class Site(object):
     network = 'UO SMRL'
     well_known_text = None
     modeling_parameters = {
-        "ac_power": "",
+        "ac_power": 0.015,
+        "dc_power": 0.015,
         "axis_azimuth": 45.0,
         "axis_tilt": 45.0,
         "backtrack": True,
-        "dc_power": "",
-        "temperature_coefficient": "",
+        "temperature_coefficient": -.002,
         "ground_coverage_ratio": 0.5,
         "surface_azimuth": 45.0,
         "surface_tilt": 45.0,
@@ -44,7 +44,7 @@ class TimeseriesValue(object):
     timestamp = datetime.strptime('2018-11-05T18:19:33+0000',
                                   '%Y-%m-%dT%H:%M:%S%z')
     value = 35
-    questionable = False
+    quality_flag = 0
 
 
 class Forecast(object):

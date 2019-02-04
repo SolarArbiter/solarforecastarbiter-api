@@ -9,7 +9,7 @@ def store_observation_values(obs_id, observation_df):
     obs_id: string
         UUID of the associated observation.
     observation_df: DataFrame
-        Dataframe with DatetimeIndex, value, and questionable column.
+        Dataframe with DatetimeIndex, value, and quality_flag column.
 
     Returns
     -------
