@@ -209,28 +209,27 @@ class ForecastPostSchema(ma.Schema):
                      'the run length & issue frequency attribute.'))
     lead_time_to_start = ma.String(
         title='Lead time to start',
-        description="Lead time to start of forecast",
+        description=("The difference between the issue time and the start of "
+                     "the first forecast interval, e.g. 1 hour."),
         required=True)
-
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
                      'labels the beginning or ending of the interval. N/A for '
                      'instantaneous data'),
-        validate=validate.OneOf(['start', 'end']))
-    duration = ma.String(
-        title='Duration',
-        description="Interval duration",
+        validate=validate.OneOf(['beginning', 'ending', 'instant']))
+    interval_length = ma.String(
+        title='Interval length',
+        description=('The length of time that each data point represents '
+                     'e.g. 5 minutes, 1 hour.'),
         required=True
     )
-    intervals = ma.Integer(
-        title='Intervals',
-        description="Intervals per submission",
-        required=True
-    )
-    issue_frequency = ma.String(
-        title='Issue Frequency',
-        description="Forecast issue frequency",
+    run_length = ma.String(
+        title='Run Length / Issue Frequency',
+        description=('The total length of a single issued forecast run '
+                     'e.g. 1 hour. To enforce a continuous, non-overlapping '
+                     'sequence, this is equal to the forecast run issue '
+                     'frequency.'),
         required=True,
     )
     value_type = ma.String(
