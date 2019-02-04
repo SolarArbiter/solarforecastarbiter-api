@@ -21,7 +21,7 @@ class Site(object):
         "backtrack": True,
         "temperature_coefficient": -.002,
         "ground_coverage_ratio": 0.5,
-        "surface_azimuth": 45.0,
+        "surface_azimuth": 180,
         "surface_tilt": 45.0,
         "tracking_type": "fixed"
     }
