@@ -1,26 +1,38 @@
 from datetime import datetime
-# TODO: Replace the static demo content in these classes.
+
+
 class Site(object):
     """Object for serializing site metadata.
     """
+
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR'
-    resolution = '1 min'
     latitude = 42.19
     longitude = -122.70
     elevation = 595
-    provider_api_id = 94040
-    abbreviation = 'AS'
     timezone = 'Etc/GMT+8'
-    attribution = ''
-    source = 'UO SMRL'
+    network = 'UO SMRL'
+    well_known_text = None
+    modeling_parameters = {
+        "ac_power": 0.015,
+        "dc_power": 0.015,
+        "axis_azimuth": 45.0,
+        "axis_tilt": 45.0,
+        "backtrack": True,
+        "temperature_coefficient": -.002,
+        "ground_coverage_ratio": 0.5,
+        "surface_azimuth": 180,
+        "surface_tilt": 45.0,
+        "tracking_type": "fixed"
+    }
+    extra_parameters = "{'provider_api_id': 94040,'abbreviation': 'AS'}"
 
 
 class Observation(object):
     """Container for serializing observation metadata.
     """
     obs_id = '123e4567-e89b-12d3-a456-426655440000'
-    type = 'ghi'
+    variable = 'ghi'
     site_id = '123e4567-e89b-12d3-a456-426655440001'
     name = 'Ashland OR, ghi'
     site = Site()
@@ -29,9 +41,10 @@ class Observation(object):
 class TimeseriesValue(object):
     """Object for serializing timeseries data.
     """
-    timestamp = datetime.strptime('2018-11-05T18:19:33+0000','%Y-%m-%dT%H:%M:%S%z')
+    timestamp = datetime.strptime('2018-11-05T18:19:33+0000',
+                                  '%Y-%m-%dT%H:%M:%S%z')
     value = 35
-    questionable = False
+    quality_flag = 0
 
 
 class Forecast(object):

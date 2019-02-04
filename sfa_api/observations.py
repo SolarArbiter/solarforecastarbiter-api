@@ -1,12 +1,14 @@
-from flask import Blueprint
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
+from io import StringIO
+from marshmallow import ValidationError
+import pandas as pd
 
 
 from sfa_api import spec
+from sfa_api.utils import storage
 from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
-                            ObservationValueSchema)
-
-from sfa_api.demo import Observation, TimeseriesValue
+                            ObservationValueSchema, ObservationPostSchema)
 
 
 class AllObservationsView(MethodView):
@@ -29,9 +31,8 @@ class AllObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # TODO: replace demo response, also do not allow top-level json array
-        observations = [Observation() for i in range(5)]
-        return ObservationSchema().jsonify(observations)
+        observations = storage.list_observations()
+        return ObservationSchema(many=True).jsonify(observations)
 
     def post(self, *args):
         """
@@ -59,8 +60,17 @@ class AllObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # TODO: replace demo response
-        return f'Created an observation resource.'
+        data = request.get_json()
+        try:
+            observation = ObservationPostSchema().loads(data)
+        except ValidationError as err:
+            return jsonify(err.messages), 400
+        else:
+            obs_id = storage.store_observation(observation)
+            response = make_response('Observation created.', 201)
+            response.headers['Location'] = url_for('observations.single',
+                                                   obs_id=obs_id)
+            return response
 
 
 class ObservationView(MethodView):
@@ -71,8 +81,6 @@ class ObservationView(MethodView):
         description: List options available for Observation.
         tags:
           - Observations
-        parameters:
-          - $ref: '#/components/parameters/obs_id'
         responses:
           200:
             description: Observation options retrieved successfully.
@@ -80,12 +88,18 @@ class ObservationView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ObservationLinks'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return ObservationLinksSchema().jsonify(Observation())
+        observation = storage.read_observation(obs_id)
+        if observation is None:
+            return 404
+
+        return ObservationLinksSchema().jsonify(observation)
 
     def delete(self, obs_id, *args):
         """
@@ -104,14 +118,13 @@ class ObservationView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # TODO: replace demo response
-        return f'{obs_id} deleted.'
+        deletion_result = storage.delete_observation(obs_id)
+        return deletion_result
 
 
 class ObservationValuesView(MethodView):
     def get(self, obs_id, *args):
         """
-        TODO: Limits???
         ---
         summary: Get Observation data.
         description: Get the timeseries values from the Observation entry.
@@ -132,7 +145,22 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        values = [TimeseriesValue() for i in range(5)]
+        errors = []
+        start = request.args.get('start', None)
+        end = request.args.get('end', None)
+        if start is not None:
+            try:
+                start = pd.Timestamp(start)
+            except ValueError:
+                errors.append('Invalid start date format')
+        if end is not None:
+            try:
+                end = pd.Timestamp(end)
+            except ValueError:
+                errors.append('Invalid end date format')
+        if errors:
+            return jsonify({'errors': errors}), 400
+        values = storage.read_observation_values(obs_id, start, end)
         return ObservationValueSchema(many=True).jsonify(values)
 
     def post(self, obs_id, *args):
@@ -159,22 +187,74 @@ class ObservationValuesView(MethodView):
                   Text file with fields separated by ',' and
                   lines separated by '\\n'. The first line must
                   be a header with the following fields:
-                  timestamp, value, questionable. Timestamp must be
+                  timestamp, value, quality_flag. Timestamp must be
                   an ISO 8601 datetime, value may be an integer or float,
-                  questionable may be 0 or 1 (indicating the value is not
+                  quality_flag may be 0 or 1 (indicating the value is not
                   to be trusted).
               example: |-
-                timestamp,value,questionable
+                timestamp,value,quality_flag
                 2018-10-29T12:04:23Z,32.93,0
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return f'Added timeseries values to {obs_id}'
+        # Check content-type and parse data conditionally
+        if request.content_type == 'application/json':
+            raw_data = request.get_json()
+            try:
+                raw_values = raw_data['values']
+            except (TypeError, KeyError):
+                return 'Supplied JSON does not contain "values" field.', 400
+            try:
+                observation_df = pd.DataFrame(raw_values)
+            except ValueError:
+                return 'Malformed JSON', 400
+        elif request.content_type == 'text/csv':
+            raw_data = StringIO(request.get_data(as_text=True))
+            try:
+                observation_df = pd.read_csv(raw_data, comment='#')
+            except pd.errors.EmptyDataError:
+                return 'Malformed CSV', 400
+            raw_data.close()
+        else:
+            return 'Invalid Content-type.', 400
+
+        # Verify data format and types are parseable.
+        # create list of errors to return meaningful messages to the user.
+        errors = []
+        try:
+            observation_df['value'] = pd.to_numeric(observation_df['value'],
+                                                    downcast='float')
+        except ValueError:
+            errors.append('Invalid item in "value" field.')
+        except KeyError:
+            errors.append('Missing "value" field.')
+
+        try:
+            observation_df['timestamp'] = pd.to_datetime(
+                observation_df['timestamp'],
+                utc=True)
+        except ValueError:
+            errors.append('Invalid item in "timestamp" field.')
+        except KeyError:
+            errors.append('Missing "timestamp" field.')
+
+        if 'quality_flag' not in observation_df.columns:
+            errors.append('Missing "quality_flag" field.')
+        elif not observation_df['quality_flag'].isin([0, 1]).all():
+            errors.append('Invalid item in "quality_flag" field.')
+
+        if errors:
+            return jsonify({'errors': errors}), 400
+
+        stored = storage.store_observation_values(obs_id, observation_df)
+        return stored, 201
 
 
 class ObservationMetadataView(MethodView):
@@ -198,7 +278,8 @@ class ObservationMetadataView(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        return ObservationSchema().jsonify(Observation())
+        observation = storage.read_observation(obs_id)
+        return ObservationSchema().jsonify(observation)
 
     def put(self, obs_id, *args):
         """
