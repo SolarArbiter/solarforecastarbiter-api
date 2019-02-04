@@ -198,7 +198,7 @@ class ForecastPostSchema(ma.Schema):
         description="Human friendly name for forecast",
         required=True)
     variable = VARIABLE_FIELD
-    issue_time = ma.String(
+    issue_time_of_day = ma.String(
         title='Issue Time of Day',
         required=True,
         description=('The time of day that a forecast run is issued, '
