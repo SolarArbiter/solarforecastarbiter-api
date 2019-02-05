@@ -75,7 +75,7 @@ requests and responses, with the notable exception of the forecast and
 observation GET/POST data endpoints which also support CSV files.
 
 Most users will interact with the API indirectly through actions on
-the [dashboard](https://dashboard.solarforecastarbiter.org). Those
+the [dashboard](https://solarforecastarbiter.org/dashboarddoc). Those
 users who require direct access to the API may include observational
 data providers, forecast data providers, and reference data users.
 
