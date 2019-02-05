@@ -64,7 +64,7 @@ class SiteView(MethodView):
     def get(self, site_id, *args):
         """
         ---
-        summary: Get site information
+        summary: Get site metadata
         tags:
         - Sites
         parameters:
@@ -138,7 +138,7 @@ class SiteObservations(MethodView):
         ---
         summary: Get site observations
         description: >
-          Get all observations associated with site that user has access to
+          Get metadata for all observations associated with site that user has access to
         tags:
         - Sites
         parameters:
@@ -167,7 +167,7 @@ class SiteForecasts(MethodView):
         ---
         summary: Get site forecasts
         description: >
-          Get all forecasts associated with site that user has access to
+          Get metadata for all forecasts associated with site that user has access to
         tags:
         - Sites
         parameters:

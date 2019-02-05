@@ -4,7 +4,7 @@ from marshmallow import validate
 from sfa_api import spec, ma
 
 
-VARIABLES = ['ghi', 'dni', 'dhi', 'temp', 'wspd',
+VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power']
 VARIABLE_FIELD = variable = ma.String(
         title='Variable',
@@ -124,7 +124,7 @@ class ObservationPostSchema(ma.Schema):
     variable = VARIABLE_FIELD
     site_id = ma.UUID(
         title='Site ID',
-        description="UUID the assocaiated site",
+        description="UUID the associated site",
         required=True)
     name = ma.String(
         title='Name',
@@ -133,9 +133,10 @@ class ObservationPostSchema(ma.Schema):
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval. N/A for '
-                     'instantaneous data'),
-        validate=validate.OneOf(['start', 'end']))
+                     'labels the beginning or ending of the interval. '
+                     'instant for instantaneous data'),
+        validate=validate.OneOf(['beginning', 'ending', 'instant']),
+        required=True)
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
