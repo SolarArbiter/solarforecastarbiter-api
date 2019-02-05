@@ -193,7 +193,8 @@ class ObservationValuesView(MethodView):
                   to be trusted).
               example: |-
                 timestamp,value,quality_flag
-                2018-10-29T12:04:23Z,32.93,0
+                2018-10-29T12:00:00Z,32.93,0
+                2018-10-29T13:00:00Z,25.17,0
         responses:
           201:
             $ref: '#/components/responses/201-Created'
