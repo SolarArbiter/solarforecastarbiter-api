@@ -43,8 +43,8 @@ spec_components = {
         'auth0': {
             'type': 'oauth2',
             'description': """Authorization request must include
-client_id='c16EJo48lbTCQEhqSztGGlmxxxmZ4zX' and
-audience='https://api.solarforecastarbiter.org'""",
+`client_id='c16EJo48lbTCQEhqSztGGlmxxxmZ4zX'` and
+`audience='https://api.solarforecastarbiter.org'`""",
             'flows': {
                 'password': {
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
@@ -75,7 +75,7 @@ requests and responses, with the notable exception of the forecast and
 observation GET/POST data endpoints which also support CSV files.
 
 Most users will interact with the API indirectly through actions on
-the [dashboard](https://dashboard.solarforecastarbiter.org). Those
+the [dashboard](https://solarforecastarbiter.org/dashboarddoc). Those
 users who require direct access to the API may include observational
 data providers, forecast data providers, and reference data users.
 
@@ -222,9 +222,8 @@ curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
 ```
 
 For more about how to obtain a JWT using the Resource Owner Password flow, see
-https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant
-and
-https://auth0.com/docs/api/authentication#resource-owner-password.
+[What is the OAuth2 password grant](https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant)
+and [Auth0 Resource Owner Password](https://auth0.com/docs/api/authentication#resource-owner-password).
 """
 ma_plugin = MarshmallowPlugin()
 spec = APISpec(
@@ -259,9 +258,11 @@ spec = APISpec(
         {'name': 'Forecasts',
          'description': 'Access and upload forecast metadata and values.'},
         {'name': 'Reports',
-         'description': 'Access reports.'},
+         'description': 'Access reports. '
+                        'API to be determined in March/April 2019.'},
         {'name': 'Trials',
-         'description': 'Access information about forecast trials.'}
+         'description': 'Access information about forecast trials. '
+                        'API to be determined in March/April 2019.'}
     ],
     servers=[
         {'url': '//dev-api.solarforecastarbiter.org/',
