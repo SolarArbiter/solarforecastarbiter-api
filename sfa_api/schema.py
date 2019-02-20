@@ -7,13 +7,13 @@ from sfa_api import spec, ma
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power']
 VARIABLE_FIELD = variable = ma.String(
-        title='Variable',
-        description="The variable being forecast",
-        required=True,
-        validate=validate.OneOf(VARIABLES))
+    title='Variable',
+    description="The variable being forecast",
+    required=True,
+    validate=validate.OneOf(VARIABLES))
 EXTRA_PARAMETERS_FIELD = ma.String(
-        title='Extra Parameters',
-        description='Additional user specified parameters.')
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
 
 
 # Sites

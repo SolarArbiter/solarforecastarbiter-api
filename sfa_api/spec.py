@@ -1,6 +1,6 @@
 import apispec
 from apispec.ext.marshmallow import MarshmallowPlugin
-from apispec.ext.flask import FlaskPlugin
+from apispec_webframeworks.flask import FlaskPlugin
 from flask_marshmallow.fields import URLFor, AbsoluteURLFor, Hyperlinks
 
 
@@ -12,7 +12,7 @@ class APISpec(apispec.APISpec):
 
     def define_schema(self, name):
         def decorator(schema, **kwargs):
-            self.definition(name, schema=schema, **kwargs)
+            self.components.schema(name, schema=schema, **kwargs)
             return schema
         return decorator
 
@@ -60,6 +60,35 @@ spec_components = {
                     'audience': 'https://api.solarforecastarbiter.org'
                 }
             }
+        }
+    },
+    'parameters': {
+        'start_time': {
+            'in': 'query',
+            'name': 'start_time',
+            'description': 'End of the period for which to request data.',
+            'schema': {
+                'type': 'string',
+                'format': 'datetime',
+            },
+        },
+        'end_time': {
+            'name': 'end_time',
+            'in': 'query',
+            'description': 'End of the period for which to request data.',
+            'schema': {
+                'type': 'string',
+                'format': 'datetime',
+            },
+        },
+        'accepts': {
+            'name': 'Accepts',
+            'in': 'header',
+            'description': 'The mimetype the API should return "application/json" or "text/csv".',
+            'schema': {
+                'type': 'string',
+                'required': 'true',
+            },
         }
     }
 }

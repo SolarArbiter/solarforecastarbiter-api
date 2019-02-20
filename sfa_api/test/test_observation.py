@@ -11,7 +11,7 @@ VALID_JSON = {
     "name": "Ashland OR, ghi",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
-    "interval_label": "start"
+    "interval_label": "beginning"
 }
 INVALID_VARIABLE = VALID_JSON.copy()
 INVALID_VARIABLE['variable'] = 'banana'
@@ -19,7 +19,7 @@ INVALID_INTERVAL_LABEL = VALID_JSON.copy()
 INVALID_INTERVAL_LABEL['interval_label'] = 'up'
 
 
-empty_json_response = '{"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
 
 
 @pytest.fixture()
@@ -163,12 +163,19 @@ def test_post_observation_values_valid_csv(api, uuid):
     assert r.status_code == 201
 
 
-@pytest.mark.parametrize('start,end,code', [
-    ('bad-date', 'also_bad', 400),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200),
+@pytest.mark.parametrize('start,end,code,mimetype', [
+    ('bad-date', 'also_bad', 400, 'application/json'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'application/json'),
+    ('bad-date', 'also_bad', 400, 'text/csv'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'text/csv'),
 ])
-def test_get_observation_values(api, start, end, code, uuid):
+def test_get_observation_values_json(api, start, end, code, mimetype, uuid):
     r = api.get(f'/observations/{uuid}/values',
                 base_url='https://localhost',
+                headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == code
+    if code == 400:
+        assert r.mimetype == 'application/json'
+    else:
+        assert r.mimetype == mimetype

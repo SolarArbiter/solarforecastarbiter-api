@@ -3,6 +3,7 @@ marshmallow
 flask-marshmallow
 flask-talisman
 apispec
+apispec-webframeworks
 webargs
 gunicorn
 gevent

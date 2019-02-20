@@ -138,7 +138,8 @@ class SiteObservations(MethodView):
         ---
         summary: Get site observations
         description: >
-          Get metadata for all observations associated with site that user has access to
+          Get metadata for all observations associated with site
+          that user has access to.
         tags:
         - Sites
         parameters:
@@ -167,7 +168,8 @@ class SiteForecasts(MethodView):
         ---
         summary: Get site forecasts
         description: >
-          Get metadata for all forecasts associated with site that user has access to
+          Get metadata for all forecasts associated with site that
+          user has access to.
         tags:
         - Sites
         parameters:
@@ -190,14 +192,16 @@ class SiteForecasts(MethodView):
         return ForecastSchema(many=True).jsonify(forecasts)
 
 
-spec.add_parameter('site_id', 'path',
-                   schema={
-                       'type': 'string',
-                       'format': 'uuid'
-                   },
-                   description="Site's unique identifier.",
-                   required='true')
-
+spec.components.parameter(
+    'site_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid'
+        },
+        'description': "Site's unique identifier.",
+        'required': 'true'
+    })
 
 site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',
