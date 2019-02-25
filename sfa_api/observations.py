@@ -303,33 +303,6 @@ class ObservationMetadataView(MethodView):
         observation = storage.read_observation(obs_id)
         return jsonify(ObservationSchema().dump(observation).data)
 
-    def put(self, obs_id, *args):
-        """
-        TODO: MAY NOT MAKE SENSE TO KEEP if schema is so simple
-        ---
-        summary: Update observation metadata.
-        description: Update an observation's metadata.
-        tags:
-          - Observations
-        parameters:
-          - $ref: '#/components/parameters/obs_id'
-        requestBody:
-          description: JSON representation of an observation's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservationDefinition'
-        responses:
-          200:
-            description: Observation updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
-
 
 # Add path parameters used by these endpoints to the spec.
 spec.components.parameter(

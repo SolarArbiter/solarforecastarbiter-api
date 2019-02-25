@@ -292,32 +292,7 @@ class ForecastMetadataView(MethodView):
         """
         forecast = storage.read_forecast(forecast_id)
         return jsonify(ForecastSchema().dump(forecast).data)
-
-    #def put(self, forecast_id, *args):
-    #    """
-    #    ---
-    #    summary: Update forecast metadata
-    #    tags:
-    #    - Forecasts
-    #    parameters:
-    #    - $ref: '#/components/parameters/forecast_id'
-    #    requestBody:
-    #      description: JSON representation of a forecast's metadata.
-    #      required: True
-    #      content:
-    #        application/json:
-    #          schema:
-    #            $ref: '#/components/schemas/ForecastDefinition'
-    #    responses:
-    #      200:
-    #       description: Forecast updated successfully.
-    #      401:
-    #        $ref: '#/components/responses/401-Unauthorized'
-    #      404:
-    #        $ref: '#/components/responses/404-NotFound'
-    #    """
-    #    return
-
+    
 
 spec.components.parameter(
     'forecast_id', 'path',
