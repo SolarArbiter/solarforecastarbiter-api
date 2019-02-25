@@ -29,7 +29,7 @@ class AllSitesView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         sites = [Site() for i in range(3)]
-        return SiteResponseSchema(many=True).jsonify(sites)
+        return jsonify(SiteResponseSchema(many=True).dump(sites).data)
 
     def post(self, *args):
         """
@@ -57,7 +57,7 @@ class AllSitesView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        return SiteResponseSchema().jsonify(Site())
+        return jsonify(SiteResponseSchema().dump(Site()).data)
 
 
 class SiteView(MethodView):
@@ -83,7 +83,7 @@ class SiteView(MethodView):
         """
         # TODO: replace demo data
         demo_obs = Site()
-        return SiteResponseSchema().jsonify(demo_obs)
+        return jsonify(SiteResponseSchema().dump(demo_obs).data)
 
     def delete(self, site_id, *args):
         """
@@ -104,32 +104,6 @@ class SiteView(MethodView):
         """
         # TODO: replace demo response
         return f'{site_id} deleted.'
-
-    def put(self, site_id, *args):
-        """
-        ---
-        summary: Update site
-        description: Update a site's metadata.
-        tags:
-          - Sites
-        parameters:
-          - $ref: '#/components/parameters/site_id'
-        requestBody:
-          description: JSON representation of an site's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SiteDefinition'
-        responses:
-          200:
-            description: Site updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
 
 
 class SiteObservations(MethodView):
@@ -159,7 +133,7 @@ class SiteObservations(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         observations = [Observation() for i in range(3)]
-        return ObservationSchema(many=True).jsonify(observations)
+        return jsonify(ObservationSchema(many=True).dump(observations).data)
 
 
 class SiteForecasts(MethodView):
@@ -189,7 +163,7 @@ class SiteForecasts(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         forecasts = [Forecast() for i in range(3)]
-        return ForecastSchema(many=True).jsonify(forecasts)
+        return ForecastSchema(many=True).dump(forecasts)
 
 
 spec.components.parameter(
