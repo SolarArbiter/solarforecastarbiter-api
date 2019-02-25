@@ -1,9 +1,7 @@
-import pandas as pd
 import pytest
 
 
 import json
-import sfa_api
 
 
 VALID_FORECAST_JSON = {
@@ -19,22 +17,31 @@ VALID_FORECAST_JSON = {
     "value_type": "interval_mean",
 }
 
+
 def copy_update(json, key, value):
     new_json = json.copy()
     new_json[key] = value
     return new_json
 
 
-INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,'variable', 'invalid')
-INVALID_INTERVAL_LABEL = copy_update(VALID_FORECAST_JSON, 'interval_label', 'invalid')
-INVALID_ISSUE_TIME = copy_update(VALID_FORECAST_JSON, 'issue_time_of_day', 'invalid')
-INVALID_LEAD_TIME = copy_update(VALID_FORECAST_JSON, 'lead_time_to_start', 'invalid')
-INVALID_INTERVAL_LENGTH = copy_update(VALID_FORECAST_JSON, 'interval_length', 'invalid')
-INVALID_RUN_LENGTH = copy_update(VALID_FORECAST_JSON, 'run_length', 'invalid')
-INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON, 'value_type', 'invalid')
+INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,
+                               'variable', 'invalid')
+INVALID_INTERVAL_LABEL = copy_update(VALID_FORECAST_JSON,
+                                     'interval_label', 'invalid')
+INVALID_ISSUE_TIME = copy_update(VALID_FORECAST_JSON,
+                                 'issue_time_of_day', 'invalid')
+INVALID_LEAD_TIME = copy_update(VALID_FORECAST_JSON,
+                                'lead_time_to_start', 'invalid')
+INVALID_INTERVAL_LENGTH = copy_update(VALID_FORECAST_JSON,
+                                      'interval_length', 'invalid')
+INVALID_RUN_LENGTH = copy_update(VALID_FORECAST_JSON,
+                                 'run_length', 'invalid')
+INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON,
+                                 'value_type', 'invalid')
 
 
 empty_json_response = '{"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
+
 
 @pytest.fixture()
 def uuid():
@@ -46,9 +53,9 @@ def uuid():
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}\n', 400),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}\n',
      400),
-    (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in HH:MM format."]}\n', 400),
-    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Invalid time format."]}\n', 400),
-    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Invalid time format."]}\n', 400),
+    (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in HH:MM format."]}\n', 400), # NOQA
+    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Invalid time format."]}\n', 400), # NOQA
+    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Invalid time format."]}\n', 400), # NOQA
     (INVALID_RUN_LENGTH, '{"run_length":["Invalid time format."]}\n', 400),
     (INVALID_VALUE_TYPE, '{"value_type":["Not a valid choice."]}\n', 400),
     ({}, empty_json_response, 400)
@@ -122,10 +129,11 @@ def test_post_forecast_values_valid_json(api, uuid):
 def test_post_json_storage_call(api, uuid, mocker):
     storage = mocker.patch('sfa_api.utils.storage.store_forecast_values')
     storage.return_value = uuid
-    r = api.post(f'/forecasts/{uuid}/values',
-            base_url='https://localhost',
-            json=VALID_VALUE_JSON)
+    api.post(f'/forecasts/{uuid}/values',
+             base_url='https://localhost',
+             json=VALID_VALUE_JSON)
     storage.assert_called()
+
 
 @pytest.mark.parametrize('payload', [
     'taco',

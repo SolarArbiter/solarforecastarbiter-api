@@ -1,4 +1,3 @@
-import pdb
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from io import StringIO
@@ -33,7 +32,7 @@ class AllObservationsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         observations = storage.list_observations()
-        return jsonify(ObservationSchema(many=True).dump(observations))
+        return jsonify(ObservationSchema(many=True).dump(observations).data)
 
     def post(self, *args):
         """
@@ -100,7 +99,7 @@ class ObservationView(MethodView):
         if observation is None:
             return 404
 
-        return ObservationLinksSchema().jsonify(observation)
+        return jsonify(ObservationLinksSchema().dump(observation).data)
 
     def delete(self, obs_id, *args):
         """

@@ -251,7 +251,7 @@ class ForecastPostSchema(ma.Schema):
             pd.Timedelta(data)
         except ValueError:
             raise ValidationError('Invalid time format.')
-    
+
     @validates('interval_length')
     def validate_interval_length(self, data):
         try:

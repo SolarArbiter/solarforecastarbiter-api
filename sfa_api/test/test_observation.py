@@ -1,22 +1,28 @@
-import pandas as pd
 import pytest
 
 
 import json
-import sfa_api
 
 
-VALID_JSON = {
+VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
     "name": "Ashland OR, ghi",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
     "interval_label": "beginning"
 }
-INVALID_VARIABLE = VALID_JSON.copy()
-INVALID_VARIABLE['variable'] = 'banana'
-INVALID_INTERVAL_LABEL = VALID_JSON.copy()
-INVALID_INTERVAL_LABEL['interval_label'] = 'up'
+
+
+def copy_update(json, key, value):
+    new_json = json.copy()
+    new_json[key] = value
+    return new_json
+
+
+INVALID_VARIABLE = copy_update(VALID_OBS_JSON,
+                               'variable', 'invalid')
+INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
+                                     'interval_label', 'invalid')
 
 
 empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
@@ -28,7 +34,7 @@ def uuid():
 
 
 @pytest.mark.parametrize('payload,message,status_code', [
-    (VALID_JSON, 'Observation created.', 201),
+    (VALID_OBS_JSON, 'Observation created.', 201),
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}\n', 400),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}\n',
      400),
@@ -117,8 +123,8 @@ def test_post_json_storage_call(api, uuid, mocker):
     storage = mocker.patch('sfa_api.utils.storage.store_observation_values')
     storage.return_value = uuid
     api.post(f'/observations/{uuid}/values',
-            base_url='https://localhost',
-            json=VALID_JSON)
+             base_url='https://localhost',
+             json=VALID_JSON)
     storage.assert_called()
 
 

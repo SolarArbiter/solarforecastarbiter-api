@@ -46,12 +46,14 @@ class ObservationTimeseriesValue(object):
     value = 35
     quality_flag = 0
 
+
 class ForecastTimeseriesValue(object):
     """Object for serializing timeseries data.
     """
     timestamp = datetime.strptime('2018-11-05T18:19:33+0000',
                                   '%Y-%m-%dT%H:%M:%S%z')
     value = 35
+
 
 class Forecast(object):
     """Object for serializing forecast metadata.

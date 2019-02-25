@@ -1,4 +1,3 @@
-import pdb
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from io import StringIO
@@ -71,7 +70,7 @@ class AllForecastsView(MethodView):
             forecast_id = storage.store_forecast(forecast)
             response = make_response('Forecast created.', 201)
             response.headers['Location'] = url_for('forecasts.single',
-                                                    forecast_id=forecast_id)
+                                                   forecast_id=forecast_id)
             return response
 
 
@@ -292,7 +291,7 @@ class ForecastMetadataView(MethodView):
         """
         forecast = storage.read_forecast(forecast_id)
         return jsonify(ForecastSchema().dump(forecast).data)
-    
+
 
 spec.components.parameter(
     'forecast_id', 'path',
