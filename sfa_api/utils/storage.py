@@ -1,4 +1,4 @@
-from sfa_api import demo
+from sfa_api.demo import demo
 
 
 def store_observation_values(obs_id, observation_df):

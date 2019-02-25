@@ -5,7 +5,7 @@ from flask.views import MethodView
 from sfa_api import spec
 from sfa_api.schema import (SiteResponseSchema,
                             ForecastSchema, ObservationSchema)
-from sfa_api.demo import Site, Observation, Forecast
+from sfa_api.demo.demo import Site, Observation, Forecast
 
 
 class AllSitesView(MethodView):
