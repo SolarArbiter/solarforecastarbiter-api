@@ -113,17 +113,13 @@ def test_post_observation_values_valid_json(api, uuid):
     assert r.status_code == 201
 
 
-def test_post_json_storage_call(api, mocker):
-    mocker.patch('sfa_api.utils.storage.store_observation_values')
-    data = pd.DataFrame(VALID_JSON['values'])
-    data['timestamp'] = pd.to_datetime(data['timestamp'], utc=True)
-    data['value'] = pd.to_numeric(data['value'], downcast="float")
-    api.get('/observations/7365da38-2ee5-46ed-bd48-c84c4cc5a6c8/values',
+def test_post_json_storage_call(api, uuid, mocker):
+    storage = mocker.patch('sfa_api.utils.storage.store_observation_values')
+    storage.return_value = uuid
+    api.post(f'/observations/{uuid}/values',
             base_url='https://localhost',
             json=VALID_JSON)
-    sfa_api.utils.storage.store_observation_values.asser_called_with(
-        obs_id='7365da38-2ee5-46ed-bd48-c84c4cc5a6c8',
-        observation_df=data)
+    storage.assert_called()
 
 
 @pytest.mark.parametrize('payload', [

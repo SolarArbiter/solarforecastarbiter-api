@@ -1,3 +1,4 @@
+import pdb
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from io import StringIO
@@ -33,7 +34,7 @@ class AllForecastsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         forecasts = storage.list_forecasts()
-        return jsonify(ForecastSchema(many=True).dump(forecasts))
+        return jsonify(ForecastSchema(many=True).dump(forecasts).data)
 
     def post(self, *args):
         """
@@ -69,7 +70,7 @@ class AllForecastsView(MethodView):
         else:
             forecast_id = storage.store_forecast(forecast)
             response = make_response('Forecast created.', 201)
-            response.headsers['Location'] = url_for('forecasts.single',
+            response.headers['Location'] = url_for('forecasts.single',
                                                     forecast_id=forecast_id)
             return response
 
@@ -99,7 +100,7 @@ class ForecastView(MethodView):
         forecast = storage.read_forecast(forecast_id)
         if forecast is None:
             return 404
-        return jsonify(ForecastLinksSchema().dump(forecast))
+        return jsonify(ForecastLinksSchema().dump(forecast).data)
 
     def delete(self, forecast_id, *args):
         """
@@ -143,6 +144,13 @@ class ForecastValuesView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/ForecastValue'
+              text/csv:
+                schema:
+                  type: string
+                example: |-
+                  timestamp,value
+                  2018-10-29T12:00:00Z,32.93
+                  2018-10-29T13:00:00Z,25.17
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -283,32 +291,32 @@ class ForecastMetadataView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         forecast = storage.read_forecast(forecast_id)
-        return jsonify(ForecastSchema().dump(forecast))
+        return jsonify(ForecastSchema().dump(forecast).data)
 
-    def put(self, forecast_id, *args):
-        """
-        ---
-        summary: Update forecast metadata
-        tags:
-        - Forecasts
-        parameters:
-        - $ref: '#/components/parameters/forecast_id'
-        requestBody:
-          description: JSON representation of a forecast's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForecastDefinition'
-        responses:
-          200:
-           description: Forecast updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
+    #def put(self, forecast_id, *args):
+    #    """
+    #    ---
+    #    summary: Update forecast metadata
+    #    tags:
+    #    - Forecasts
+    #    parameters:
+    #    - $ref: '#/components/parameters/forecast_id'
+    #    requestBody:
+    #      description: JSON representation of a forecast's metadata.
+    #      required: True
+    #      content:
+    #        application/json:
+    #          schema:
+    #            $ref: '#/components/schemas/ForecastDefinition'
+    #    responses:
+    #      200:
+    #       description: Forecast updated successfully.
+    #      401:
+    #        $ref: '#/components/responses/401-Unauthorized'
+    #      404:
+    #        $ref: '#/components/responses/404-NotFound'
+    #    """
+    #    return
 
 
 spec.components.parameter(

@@ -34,7 +34,7 @@ def read_observation_values(obs_id, start=None, end=None):
         End of the peried for which to request data.
 
     """
-    return [demo.TimeseriesValue for i in range(5)]
+    return [demo.ObservationTimeseriesValue for i in range(5)]
 
 
 def store_observation(observation):
@@ -114,7 +114,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
         End of the peried for which to request data.
 
     """
-    return [demo.TimeseriesValue for i in range(5)]
+    return [demo.ForecastTimeseriesValue for i in range(5)]
 
 
 def store_forecast(forecast):

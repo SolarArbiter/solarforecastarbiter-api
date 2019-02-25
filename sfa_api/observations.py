@@ -1,3 +1,4 @@
+import pdb
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from io import StringIO
@@ -99,7 +100,7 @@ class ObservationView(MethodView):
         if observation is None:
             return 404
 
-        return jsonify(ObservationLinksSchema().dump(observation))
+        return ObservationLinksSchema().jsonify(observation)
 
     def delete(self, obs_id, *args):
         """
@@ -300,7 +301,7 @@ class ObservationMetadataView(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         observation = storage.read_observation(obs_id)
-        return jsonify(ObservationSchema().dump(observation))
+        return jsonify(ObservationSchema().dump(observation).data)
 
     def put(self, obs_id, *args):
         """
