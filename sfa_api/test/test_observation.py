@@ -1,25 +1,31 @@
-import pandas as pd
 import pytest
 
 
 import json
-import sfa_api
 
 
-VALID_JSON = {
+VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
     "name": "Ashland OR, ghi",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
-    "interval_label": "start"
+    "interval_label": "beginning"
 }
-INVALID_VARIABLE = VALID_JSON.copy()
-INVALID_VARIABLE['variable'] = 'banana'
-INVALID_INTERVAL_LABEL = VALID_JSON.copy()
-INVALID_INTERVAL_LABEL['interval_label'] = 'up'
 
 
-empty_json_response = '{"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
+def copy_update(json, key, value):
+    new_json = json.copy()
+    new_json[key] = value
+    return new_json
+
+
+INVALID_VARIABLE = copy_update(VALID_OBS_JSON,
+                               'variable', 'invalid')
+INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
+                                     'interval_label', 'invalid')
+
+
+empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
 
 
 @pytest.fixture()
@@ -28,7 +34,7 @@ def uuid():
 
 
 @pytest.mark.parametrize('payload,message,status_code', [
-    (VALID_JSON, 'Observation created.', 201),
+    (VALID_OBS_JSON, 'Observation created.', 201),
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}\n', 400),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}\n',
      400),
@@ -113,17 +119,13 @@ def test_post_observation_values_valid_json(api, uuid):
     assert r.status_code == 201
 
 
-def test_post_json_storage_call(api, mocker):
-    mocker.patch('sfa_api.utils.storage.store_observation_values')
-    data = pd.DataFrame(VALID_JSON['values'])
-    data['timestamp'] = pd.to_datetime(data['timestamp'], utc=True)
-    data['value'] = pd.to_numeric(data['value'], downcast="float")
-    api.get('/observations/7365da38-2ee5-46ed-bd48-c84c4cc5a6c8/values',
-            base_url='https://localhost',
-            json=VALID_JSON)
-    sfa_api.utils.storage.store_observation_values.asser_called_with(
-        obs_id='7365da38-2ee5-46ed-bd48-c84c4cc5a6c8',
-        observation_df=data)
+def test_post_json_storage_call(api, uuid, mocker):
+    storage = mocker.patch('sfa_api.utils.storage.store_observation_values')
+    storage.return_value = uuid
+    api.post(f'/observations/{uuid}/values',
+             base_url='https://localhost',
+             json=VALID_JSON)
+    storage.assert_called()
 
 
 @pytest.mark.parametrize('payload', [
@@ -163,12 +165,19 @@ def test_post_observation_values_valid_csv(api, uuid):
     assert r.status_code == 201
 
 
-@pytest.mark.parametrize('start,end,code', [
-    ('bad-date', 'also_bad', 400),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200),
+@pytest.mark.parametrize('start,end,code,mimetype', [
+    ('bad-date', 'also_bad', 400, 'application/json'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'application/json'),
+    ('bad-date', 'also_bad', 400, 'text/csv'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'text/csv'),
 ])
-def test_get_observation_values(api, start, end, code, uuid):
+def test_get_observation_values_json(api, start, end, code, mimetype, uuid):
     r = api.get(f'/observations/{uuid}/values',
                 base_url='https://localhost',
+                headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == code
+    if code == 400:
+        assert r.mimetype == 'application/json'
+    else:
+        assert r.mimetype == mimetype

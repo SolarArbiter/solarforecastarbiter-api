@@ -1,19 +1,24 @@
-from marshmallow import validate
+import time
 
+from marshmallow import validate, validates
+from marshmallow.exceptions import ValidationError
+import pandas as pd
 
 from sfa_api import spec, ma
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power']
-VARIABLE_FIELD = variable = ma.String(
-        title='Variable',
-        description="The variable being forecast",
-        required=True,
-        validate=validate.OneOf(VARIABLES))
+VALUE_TYPES = ['interval_mean', 'instantaneous']
+VARIABLE_FIELD = ma.String(
+    title='Variable',
+    description="The variable being forecast",
+    required=True,
+    validate=validate.OneOf(VARIABLES))
+
 EXTRA_PARAMETERS_FIELD = ma.String(
-        title='Extra Parameters',
-        description='Additional user specified parameters.')
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
 
 
 # Sites
@@ -236,8 +241,37 @@ class ForecastPostSchema(ma.Schema):
     value_type = ma.String(
         title='Value Type',
         description="Value type (e.g. mean, max, 95th percentile, instantaneous)",  # NOQA
+        validate=validate.OneOf(VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
+
+    @validates('lead_time_to_start')
+    def validate_lead_time(self, data):
+        try:
+            pd.Timedelta(data)
+        except ValueError:
+            raise ValidationError('Invalid time format.')
+
+    @validates('interval_length')
+    def validate_interval_length(self, data):
+        try:
+            pd.Timedelta(data)
+        except ValueError:
+            raise ValidationError('Invalid time format.')
+
+    @validates('run_length')
+    def validate_run_length(self, data):
+        try:
+            pd.Timedelta(data)
+        except ValueError:
+            raise ValidationError('Invalid time format.')
+
+    @validates('issue_time_of_day')
+    def validate_issue_time(self, data):
+        try:
+            time.strptime(data, '%H:%M')
+        except ValueError:
+            raise ValidationError('Time not in HH:MM format.')
 
 
 @spec.define_schema('ForecastMetadata')

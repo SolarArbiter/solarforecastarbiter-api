@@ -32,7 +32,7 @@ class AllObservationsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         observations = storage.list_observations()
-        return ObservationSchema(many=True).jsonify(observations)
+        return jsonify(ObservationSchema(many=True).dump(observations).data)
 
     def post(self, *args):
         """
@@ -99,7 +99,7 @@ class ObservationView(MethodView):
         if observation is None:
             return 404
 
-        return ObservationLinksSchema().jsonify(observation)
+        return jsonify(ObservationLinksSchema().dump(observation).data)
 
     def delete(self, obs_id, *args):
         """
@@ -132,6 +132,9 @@ class ObservationValuesView(MethodView):
         - Observations
         parameters:
           - $ref: '#/components/parameters/obs_id'
+          - $ref: '#/components/parameters/start_time'
+          - $ref: '#/components/parameters/end_time'
+          - $ref: '#/components/parameters/accepts'
         responses:
           200:
             content:
@@ -140,6 +143,14 @@ class ObservationValuesView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/ObservationValue'
+              text/csv:
+                schema:
+                  type: string
+                example: |-
+                  timestamp,value,quality_flag
+                  2018-10-29T12:00:00Z,32.93,0
+                  2018-10-29T13:00:00Z,25.17,0
+
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -161,7 +172,16 @@ class ObservationValuesView(MethodView):
         if errors:
             return jsonify({'errors': errors}), 400
         values = storage.read_observation_values(obs_id, start, end)
-        return ObservationValueSchema(many=True).jsonify(values)
+        data = ObservationValueSchema(many=True).dump(values).data
+        accepts = request.accept_mimetypes.best_match(['application/json',
+                                                       'text/csv'])
+        if accepts == 'application/json':
+            return jsonify(data)
+        else:
+            csv_data = pd.DataFrame(data).to_csv(index=False)
+            response = make_response(csv_data, 200)
+            response.mimetype = 'text/csv'
+            return response
 
     def post(self, obs_id, *args):
         """
@@ -280,44 +300,20 @@ class ObservationMetadataView(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         observation = storage.read_observation(obs_id)
-        return ObservationSchema().jsonify(observation)
-
-    def put(self, obs_id, *args):
-        """
-        TODO: MAY NOT MAKE SENSE TO KEEP if schema is so simple
-        ---
-        summary: Update observation metadata.
-        description: Update an observation's metadata.
-        tags:
-          - Observations
-        parameters:
-          - $ref: '#/components/parameters/obs_id'
-        requestBody:
-          description: JSON representation of an observation's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ObservationDefinition'
-        responses:
-          200:
-            description: Observation updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
+        return jsonify(ObservationSchema().dump(observation).data)
 
 
 # Add path parameters used by these endpoints to the spec.
-spec.add_parameter('obs_id', 'path',
-                   schema={
-                       'type': 'string',
-                       'format': 'uuid'
-                   },
-                   description="Resource's unique identifier.",
-                   required='true')
+spec.components.parameter(
+    'obs_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid',
+        },
+        'description': "Resource's unique identifier.",
+        'required': 'true'
+    })
 
 obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',

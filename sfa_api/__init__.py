@@ -46,7 +46,7 @@ def create_app(config_name='ProductionConfig'):
         for k, view in app.view_functions.items():
             if k == 'static':
                 continue
-            spec.add_path(view=view)
+            spec.path(view=view)
 
     @app.route('/openapi.yaml')
     def get_apispec_yaml():

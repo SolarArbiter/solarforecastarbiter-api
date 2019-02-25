@@ -1,11 +1,11 @@
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from flask.views import MethodView
 
 
 from sfa_api import spec
 from sfa_api.schema import (SiteResponseSchema,
                             ForecastSchema, ObservationSchema)
-from sfa_api.demo import Site, Observation, Forecast
+from sfa_api.demo.demo import Site, Observation, Forecast
 
 
 class AllSitesView(MethodView):
@@ -29,7 +29,7 @@ class AllSitesView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         sites = [Site() for i in range(3)]
-        return SiteResponseSchema(many=True).jsonify(sites)
+        return jsonify(SiteResponseSchema(many=True).dump(sites).data)
 
     def post(self, *args):
         """
@@ -57,7 +57,7 @@ class AllSitesView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        return SiteResponseSchema().jsonify(Site())
+        return jsonify(SiteResponseSchema().dump(Site()).data)
 
 
 class SiteView(MethodView):
@@ -83,7 +83,7 @@ class SiteView(MethodView):
         """
         # TODO: replace demo data
         demo_obs = Site()
-        return SiteResponseSchema().jsonify(demo_obs)
+        return jsonify(SiteResponseSchema().dump(demo_obs).data)
 
     def delete(self, site_id, *args):
         """
@@ -105,32 +105,6 @@ class SiteView(MethodView):
         # TODO: replace demo response
         return f'{site_id} deleted.'
 
-    def put(self, site_id, *args):
-        """
-        ---
-        summary: Update site
-        description: Update a site's metadata.
-        tags:
-          - Sites
-        parameters:
-          - $ref: '#/components/parameters/site_id'
-        requestBody:
-          description: JSON representation of an site's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SiteDefinition'
-        responses:
-          200:
-            description: Site updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
-
 
 class SiteObservations(MethodView):
     def get(self, site_id, *args):
@@ -138,7 +112,8 @@ class SiteObservations(MethodView):
         ---
         summary: Get site observations
         description: >
-          Get metadata for all observations associated with site that user has access to
+          Get metadata for all observations associated with site
+          that user has access to.
         tags:
         - Sites
         parameters:
@@ -158,7 +133,7 @@ class SiteObservations(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         observations = [Observation() for i in range(3)]
-        return ObservationSchema(many=True).jsonify(observations)
+        return jsonify(ObservationSchema(many=True).dump(observations).data)
 
 
 class SiteForecasts(MethodView):
@@ -167,7 +142,8 @@ class SiteForecasts(MethodView):
         ---
         summary: Get site forecasts
         description: >
-          Get metadata for all forecasts associated with site that user has access to
+          Get metadata for all forecasts associated with site that
+          user has access to.
         tags:
         - Sites
         parameters:
@@ -187,17 +163,19 @@ class SiteForecasts(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         forecasts = [Forecast() for i in range(3)]
-        return ForecastSchema(many=True).jsonify(forecasts)
+        return ForecastSchema(many=True).dump(forecasts)
 
 
-spec.add_parameter('site_id', 'path',
-                   schema={
-                       'type': 'string',
-                       'format': 'uuid'
-                   },
-                   description="Site's unique identifier.",
-                   required='true')
-
+spec.components.parameter(
+    'site_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid'
+        },
+        'description': "Site's unique identifier.",
+        'required': 'true'
+    })
 
 site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',

@@ -1,12 +1,16 @@
-from flask import Blueprint
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
+from io import StringIO
+from marshmallow import ValidationError
+import pandas as pd
 
 
 from sfa_api import spec
 from sfa_api.schema import (ForecastValueSchema,
                             ForecastSchema,
+                            ForecastPostSchema,
                             ForecastLinksSchema)
-from sfa_api.demo import Forecast, TimeseriesValue
+from sfa_api.utils import storage
 
 
 class AllForecastsView(MethodView):
@@ -28,8 +32,8 @@ class AllForecastsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        forecasts = [Forecast() for i in range(3)]
-        return ForecastSchema(many=True).jsonify(forecasts)
+        forecasts = storage.list_forecasts()
+        return jsonify(ForecastSchema(many=True).dump(forecasts).data)
 
     def post(self, *args):
         """
@@ -57,8 +61,17 @@ class AllForecastsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        forecast = Forecast()
-        return ForecastSchema().jsonify(forecast)
+        data = request.get_json()
+        try:
+            forecast = ForecastPostSchema().loads(data)
+        except ValidationError as err:
+            return jsonify(err.messages), 400
+        else:
+            forecast_id = storage.store_forecast(forecast)
+            response = make_response('Forecast created.', 201)
+            response.headers['Location'] = url_for('forecasts.single',
+                                                   forecast_id=forecast_id)
+            return response
 
 
 class ForecastView(MethodView):
@@ -83,7 +96,10 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return ForecastLinksSchema().jsonify(Forecast())
+        forecast = storage.read_forecast(forecast_id)
+        if forecast is None:
+            return 404
+        return jsonify(ForecastLinksSchema().dump(forecast).data)
 
     def delete(self, forecast_id, *args):
         """
@@ -102,7 +118,8 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return f'Delete forecast {forecast_id}'
+        deletion_result = storage.delete_forecast(forecast_id)
+        return deletion_result
 
 
 class ForecastValuesView(MethodView):
@@ -115,6 +132,9 @@ class ForecastValuesView(MethodView):
         - Forecasts
         parameters:
         - $ref: '#/components/parameters/forecast_id'
+        - $ref: '#/components/parameters/start_time'
+        - $ref: '#/components/parameters/end_time'
+        - $ref: '#/components/parameters/accepts'
         responses:
           200:
             content:
@@ -123,13 +143,44 @@ class ForecastValuesView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/ForecastValue'
+              text/csv:
+                schema:
+                  type: string
+                example: |-
+                  timestamp,value
+                  2018-10-29T12:00:00Z,32.93
+                  2018-10-29T13:00:00Z,25.17
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        forecast_values = [TimeseriesValue() for i in range(3)]
-        return ForecastValueSchema(many=True).jsonify(forecast_values)
+        errors = []
+        start = request.args.get('start', None)
+        end = request.args.get('end', None)
+        if start is not None:
+            try:
+                start = pd.Timestamp(start)
+            except ValueError:
+                errors.append('Invalid start date format')
+        if end is not None:
+            try:
+                end = pd.Timestamp(end)
+            except ValueError:
+                errors.append('Invalid end date format')
+        if errors:
+            return jsonify({'errors': errors}), 400
+        values = storage.read_forecast_values(forecast_id, start, end)
+        data = ForecastValueSchema(many=True).dump(values).data
+        accepts = request.accept_mimetypes.best_match(['application/json',
+                                                       'text/csv'])
+        if accepts == 'application/json':
+            return jsonify(data)
+        else:
+            csv_data = pd.DataFrame(data).to_csv(index=False)
+            response = make_response(csv_data, 200)
+            response.mimetype = 'text/csv'
+            return response
 
     def post(self, forecast_id, *args):
         """
@@ -171,7 +222,48 @@ class ForecastValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return
+        if request.content_type == 'application/json':
+            raw_data = request.get_json()
+            try:
+                raw_values = raw_data['values']
+            except (TypeError, KeyError):
+                return 'Supplied JSON does not contain "values" field.', 400
+            try:
+                forecast_df = pd.DataFrame(raw_values)
+            except ValueError:
+                return 'Malformed JSON', 400
+        elif request.content_type == 'text/csv':
+            raw_data = StringIO(request.get_data(as_text=True))
+            try:
+                forecast_df = pd.read_csv(raw_data, comment='#')
+            except pd.errors.EmptyDataError:
+                return 'Malformed CSV', 400
+            raw_data.close()
+        else:
+            return 'Invalid Content-type.', 400
+        errors = []
+        try:
+            forecast_df['value'] = pd.to_numeric(forecast_df['value'],
+                                                 downcast='float')
+        except ValueError:
+            errors.append('Invalid item in "value" field.')
+        except KeyError:
+            errors.append('Missing "value" field.')
+
+        try:
+            forecast_df['timestamp'] = pd.to_datetime(
+                forecast_df['timestamp'],
+                utc=True)
+        except ValueError:
+            errors.append('Invalid item in "timestamp" field.')
+        except KeyError:
+            errors.append('Missing "timestamp" field.')
+
+        if errors:
+            return jsonify({'errors': errors}), 400
+
+        stored = storage.store_forecast_values(forecast_id, forecast_df)
+        return stored, 201
 
 
 class ForecastMetadataView(MethodView):
@@ -197,41 +289,20 @@ class ForecastMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return ForecastSchema().jsonify(Forecast())
-
-    def put(self, forecast_id, *args):
-        """
-        ---
-        summary: Update forecast metadata
-        tags:
-        - Forecasts
-        parameters:
-        - $ref: '#/components/parameters/forecast_id'
-        requestBody:
-          description: JSON representation of a forecast's metadata.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ForecastDefinition'
-        responses:
-          200:
-           description: Forecast updated successfully.
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-        """
-        return
+        forecast = storage.read_forecast(forecast_id)
+        return jsonify(ForecastSchema().dump(forecast).data)
 
 
-spec.add_parameter('forecast_id', 'path',
-                   schema={
-                       'type': 'string',
-                       'format': 'uuid'
-                   },
-                   description="Forecast's unique identifier.",
-                   required='true')
+spec.components.parameter(
+    'forecast_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid'
+        },
+        'description': "Forecast's unique identifier.",
+        'required': 'true'
+    })
 
 forecast_blp = Blueprint(
     'forecasts', 'forecasts', url_prefix="/forecasts",
