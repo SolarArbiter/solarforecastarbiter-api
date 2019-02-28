@@ -84,7 +84,8 @@ spec_components = {
         'accepts': {
             'name': 'Accepts',
             'in': 'header',
-            'description': 'The mimetype the API should return "application/json" or "text/csv".',
+            'description': 'The mimetype the API should return '
+                           '"application/json" or "text/csv".',
             'schema': {
                 'type': 'string',
                 'required': 'true',

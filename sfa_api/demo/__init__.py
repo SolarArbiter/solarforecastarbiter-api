@@ -4,7 +4,6 @@ py:mod:`sfa_api.util.storage_interface`. On import, it
 initializes the databases with existing site, observation, and
 forecast data.
 """
-import pdb
 import uuid
 
 

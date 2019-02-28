@@ -1,4 +1,3 @@
-import pdb
 from flask import Blueprint, jsonify, request, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
@@ -8,6 +7,7 @@ from sfa_api import spec
 from sfa_api.schema import (SiteSchema, SiteResponseSchema,
                             ForecastSchema, ObservationSchema)
 from sfa_api.utils.storage import get_storage
+
 
 class AllSitesView(MethodView):
     def get(self, *args):
@@ -114,7 +114,7 @@ class SiteView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        deleted = storage.delete_site(site_id)
+        storage.delete_site(site_id)
         return 200
 
 

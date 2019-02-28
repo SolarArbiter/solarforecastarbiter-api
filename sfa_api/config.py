@@ -9,7 +9,6 @@ class Config(object):
     AUTH0_AUDIENCE = 'https://api.solarforecastarbiter.org'
     JWT_KEY = requests.get(
         AUTH0_BASE_URL + '/.well-known/jwks.json').json()
-    STATIC_DATA = True
 
 
 class ProductionConfig(Config):
@@ -18,8 +17,7 @@ class ProductionConfig(Config):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    API_VERSION = __version__
-    REDOC_VERSION = 'next'
+
 
 class TestingConfig(Config):
     TESTING = True

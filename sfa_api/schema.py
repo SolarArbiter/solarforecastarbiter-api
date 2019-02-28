@@ -1,6 +1,6 @@
 import time
 
-from marshmallow import validate, validates, validates_schema
+from marshmallow import validate, validates
 from marshmallow.exceptions import ValidationError
 import pandas as pd
 
@@ -99,9 +99,6 @@ class SiteSchema(ma.Schema):
     modeling_parameters = ma.Nested(ModelingParameters)
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
-    @validates_schema()
-    def plant_validation(self, data):
-        pass
 
 @spec.define_schema('SiteMetadata')
 class SiteResponseSchema(SiteSchema):
