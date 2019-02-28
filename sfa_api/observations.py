@@ -65,9 +65,11 @@ class AllObservationsView(MethodView):
         try:
             observation = ObservationPostSchema().load(data)
         except ValidationError as err:
-            return jsonify(err.messages), 400
+            return jsonify({'errors': err.messages}), 400
         storage = get_storage()
         obs_id = storage.store_observation(observation)
+        if obs_id is None:
+            return jsonify({'errors': 'Site does not exist'}), 400
         response = make_response(obs_id, 201)
         response.headers['Location'] = url_for('observations.single',
                                                obs_id=obs_id)

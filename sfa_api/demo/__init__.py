@@ -80,6 +80,8 @@ def store_observation(observation):
     observation: dictionary
         A dictionary of observation fields to insert.
     """
+    if read_site(str(observation['site_id'])) is None:
+        return None
     obs_id = str(uuid.uuid4())
     observation['obs_id'] = obs_id
     observations[obs_id] = observation
@@ -191,6 +193,8 @@ def store_forecast(forecast):
     forecast: dictionary
         A dictionary of forecast fields to insert.
     """
+    if read_site(str(forecast['site_id'])) is None:
+        return None
     forecast_id = str(uuid.uuid4())
     forecast['forecast_id'] = forecast_id
     forecasts[forecast_id] = forecast
