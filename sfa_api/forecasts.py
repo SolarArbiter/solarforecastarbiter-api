@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from io import StringIO
 from marshmallow import ValidationError
@@ -10,7 +10,8 @@ from sfa_api.schema import (ForecastValueSchema,
                             ForecastSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema)
-from sfa_api.utils import storage
+
+from sfa_api.utils.storage import get_storage
 
 
 class AllForecastsView(MethodView):
@@ -32,8 +33,9 @@ class AllForecastsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
+        storage = get_storage()
         forecasts = storage.list_forecasts()
-        return jsonify(ForecastSchema(many=True).dump(forecasts).data)
+        return jsonify(ForecastSchema(many=True).dump(forecasts))
 
     def post(self, *args):
         """
@@ -63,10 +65,11 @@ class AllForecastsView(MethodView):
         """
         data = request.get_json()
         try:
-            forecast = ForecastPostSchema().loads(data)
+            forecast = ForecastPostSchema().load(data)
         except ValidationError as err:
             return jsonify(err.messages), 400
         else:
+            storage = get_storage()
             forecast_id = storage.store_forecast(forecast)
             response = make_response('Forecast created.', 201)
             response.headers['Location'] = url_for('forecasts.single',
@@ -96,10 +99,11 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
         if forecast is None:
-            return 404
-        return jsonify(ForecastLinksSchema().dump(forecast).data)
+            abort(404)
+        return jsonify(ForecastLinksSchema().dump(forecast))
 
     def delete(self, forecast_id, *args):
         """
@@ -118,6 +122,7 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         deletion_result = storage.delete_forecast(forecast_id)
         return deletion_result
 
@@ -170,8 +175,9 @@ class ForecastValuesView(MethodView):
                 errors.append('Invalid end date format')
         if errors:
             return jsonify({'errors': errors}), 400
+        storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
-        data = ForecastValueSchema(many=True).dump(values).data
+        data = ForecastValueSchema(many=True).dump(values)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -261,7 +267,8 @@ class ForecastValuesView(MethodView):
 
         if errors:
             return jsonify({'errors': errors}), 400
-
+        forecast_df = forecast_df.set_index(forecast_df['timestamp'].copy())
+        storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         return stored, 201
 
@@ -289,8 +296,11 @@ class ForecastMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
-        return jsonify(ForecastSchema().dump(forecast).data)
+        if forecast is None:
+            abort(404)
+        return jsonify(ForecastSchema().dump(forecast))
 
 
 spec.components.parameter(

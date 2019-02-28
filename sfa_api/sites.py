@@ -1,12 +1,13 @@
-from flask import Blueprint, jsonify
+import pdb
+from flask import Blueprint, jsonify, request, abort
 from flask.views import MethodView
+from marshmallow import ValidationError
 
 
 from sfa_api import spec
-from sfa_api.schema import (SiteResponseSchema,
+from sfa_api.schema import (SiteSchema, SiteResponseSchema,
                             ForecastSchema, ObservationSchema)
-from sfa_api.demo.demo import Site, Observation, Forecast
-
+from sfa_api.utils.storage import get_storage
 
 class AllSitesView(MethodView):
     def get(self, *args):
@@ -26,10 +27,11 @@ class AllSitesView(MethodView):
                   items:
                     $ref: '#/components/schemas/SiteMetadata'
           401:
-            $ref: '#/components/responses/401-Unauthorized'
+            dref: '#/components/responses/401-Unauthorized'
         """
-        sites = [Site() for i in range(3)]
-        return jsonify(SiteResponseSchema(many=True).dump(sites).data)
+        storage = get_storage()
+        sites = storage.list_sites()
+        return jsonify(SiteResponseSchema(many=True).dump(sites))
 
     def post(self, *args):
         """
@@ -57,7 +59,14 @@ class AllSitesView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        return jsonify(SiteResponseSchema().dump(Site()).data)
+        data = request.get_json()
+        try:
+            site = SiteSchema().load(data)
+        except ValidationError as err:
+            return jsonify(err.messages), 400
+        storage = get_storage()
+        site_id = storage.store_site(site)
+        return site_id
 
 
 class SiteView(MethodView):
@@ -81,9 +90,11 @@ class SiteView(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        # TODO: replace demo data
-        demo_obs = Site()
-        return jsonify(SiteResponseSchema().dump(demo_obs).data)
+        storage = get_storage()
+        site = storage.read_site(site_id)
+        if site is None:
+            abort(404)
+        return jsonify(SiteResponseSchema().dump(site))
 
     def delete(self, site_id, *args):
         """
@@ -102,8 +113,9 @@ class SiteView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # TODO: replace demo response
-        return f'{site_id} deleted.'
+        storage = get_storage()
+        deleted = storage.delete_site(site_id)
+        return 200
 
 
 class SiteObservations(MethodView):
@@ -132,8 +144,9 @@ class SiteObservations(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        observations = [Observation() for i in range(3)]
-        return jsonify(ObservationSchema(many=True).dump(observations).data)
+        storage = get_storage()
+        observations = storage.list_observations(site_id)
+        return jsonify(ObservationSchema(many=True).dump(observations))
 
 
 class SiteForecasts(MethodView):
@@ -162,8 +175,9 @@ class SiteForecasts(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
-        forecasts = [Forecast() for i in range(3)]
-        return ForecastSchema(many=True).dump(forecasts)
+        storage = get_storage()
+        forecasts = storage.list_forecasts(site_id)
+        return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 
 spec.components.parameter(

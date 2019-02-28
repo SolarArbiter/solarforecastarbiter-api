@@ -1,6 +1,6 @@
 import time
 
-from marshmallow import validate, validates
+from marshmallow import validate, validates, validates_schema
 from marshmallow.exceptions import ValidationError
 import pandas as pd
 
@@ -8,7 +8,8 @@ from sfa_api import spec, ma
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
-             'poa', 'ac_power', 'dc_power']
+             'poa', 'ac_power', 'dc_power', 'pdf_probability',
+             'cdf_value']
 VALUE_TYPES = ['interval_mean', 'instantaneous']
 VARIABLE_FIELD = ma.String(
     title='Variable',
@@ -24,13 +25,13 @@ EXTRA_PARAMETERS_FIELD = ma.String(
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
-    ac_power = ma.Float(
-        title="AC Power",
+    ac_capacity = ma.Float(
+        title="AC Capacity",
         description="Nameplate AC power rating.")
-    dc_power = ma.Float(
-        title="DC Power",
+    dc_capacity = ma.Float(
+        title="DC Capacity",
         description="Nameplate DC power rating.")
-    temperature_coefficient = ma.String(
+    temperature_coefficient = ma.Float(
         title="Temperature Coefficient",
         description=("The temperature coefficient of DC power in units of "
                      "1/C. Typically -0.002 to -0.005 per degree C."))
@@ -98,6 +99,9 @@ class SiteSchema(ma.Schema):
     modeling_parameters = ma.Nested(ModelingParameters)
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
+    @validates_schema()
+    def plant_validation(self, data):
+        pass
 
 @spec.define_schema('SiteMetadata')
 class SiteResponseSchema(SiteSchema):
@@ -118,7 +122,7 @@ class ObservationValueSchema(ma.Schema):
         description="Value of the measurement")
     quality_flag = ma.Integer(
         description="A flag indicating data quality.",
-        default=0, missing=False)
+        missing=False)
 
 
 @spec.define_schema('ObservationDefinition')
@@ -142,6 +146,11 @@ class ObservationPostSchema(ma.Schema):
                      'instant for instantaneous data'),
         validate=validate.OneOf(['beginning', 'ending', 'instant']),
         required=True)
+    value_type = ma.String(
+        title='Value Type',
+        description="Value type (e.g. mean, max, 95th percentile, instantaneous)",  # NOQA
+        validate=validate.OneOf(VALUE_TYPES)
+    )
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')

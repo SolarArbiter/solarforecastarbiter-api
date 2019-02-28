@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+import pdb
+from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from io import StringIO
 from marshmallow import ValidationError
@@ -6,7 +7,7 @@ import pandas as pd
 
 
 from sfa_api import spec
-from sfa_api.utils import storage
+from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
                             ObservationValueSchema, ObservationPostSchema)
 
@@ -31,8 +32,9 @@ class AllObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
+        storage = get_storage()
         observations = storage.list_observations()
-        return jsonify(ObservationSchema(many=True).dump(observations).data)
+        return jsonify(ObservationSchema(many=True).dump(observations))
 
     def post(self, *args):
         """
@@ -62,15 +64,15 @@ class AllObservationsView(MethodView):
         """
         data = request.get_json()
         try:
-            observation = ObservationPostSchema().loads(data)
+            observation = ObservationPostSchema().load(data)
         except ValidationError as err:
             return jsonify(err.messages), 400
-        else:
-            obs_id = storage.store_observation(observation)
-            response = make_response('Observation created.', 201)
-            response.headers['Location'] = url_for('observations.single',
-                                                   obs_id=obs_id)
-            return response
+        storage = get_storage()
+        obs_id = storage.store_observation(observation)
+        response = make_response(obs_id, 201)
+        response.headers['Location'] = url_for('observations.single',
+                                               obs_id=obs_id)
+        return response
 
 
 class ObservationView(MethodView):
@@ -95,11 +97,11 @@ class ObservationView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         observation = storage.read_observation(obs_id)
         if observation is None:
-            return 404
-
-        return jsonify(ObservationLinksSchema().dump(observation).data)
+            abort(404)
+        return jsonify(ObservationLinksSchema().dump(observation))
 
     def delete(self, obs_id, *args):
         """
@@ -118,6 +120,7 @@ class ObservationView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         deletion_result = storage.delete_observation(obs_id)
         return deletion_result
 
@@ -171,8 +174,9 @@ class ObservationValuesView(MethodView):
                 errors.append('Invalid end date format')
         if errors:
             return jsonify({'errors': errors}), 400
+        storage = get_storage()
         values = storage.read_observation_values(obs_id, start, end)
-        data = ObservationValueSchema(many=True).dump(values).data
+        data = ObservationValueSchema(many=True).dump(values)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -273,7 +277,9 @@ class ObservationValuesView(MethodView):
 
         if errors:
             return jsonify({'errors': errors}), 400
-
+        index = observation_df['timestamp'].copy()
+        observation_df = observation_df.set_index(index)
+        storage = get_storage()
         stored = storage.store_observation_values(obs_id, observation_df)
         return stored, 201
 
@@ -299,8 +305,11 @@ class ObservationMetadataView(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         observation = storage.read_observation(obs_id)
-        return jsonify(ObservationSchema().dump(observation).data)
+        if observation is None:
+            abort(404)
+        return jsonify(ObservationSchema().dump(observation))
 
 
 # Add path parameters used by these endpoints to the spec.
