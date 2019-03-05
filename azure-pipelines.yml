@@ -26,6 +26,9 @@ jobs:
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
     displayName: 'Install dependencies'
 
+  - script: python -m pip install -e .
+    displayName: 'Install SolarForecastArbiter API'
+
   - script: |
       pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
     displayName: 'pytest'
