@@ -1,0 +1,65 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- master
+
+jobs:
+
+- job: 'Test'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  strategy:
+    matrix:
+      Python37:
+        python.version: '3.7'
+    maxParallel: 4
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(python.version)'
+      architecture: 'x64'
+
+  - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
+    displayName: 'Install dependencies'
+
+  - script: |
+      pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
+    displayName: 'pytest'
+
+  - script: |
+      flake8 sfa_api
+    displayName: 'flake8'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/test-results.xml'
+      testRunTitle: 'Python $(python.version)'
+    condition: succeededOrFailed()
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+      codeCoverageTool: Cobertura
+      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+      reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+
+  - script: |
+      bash <(curl https://codecov.io/bash) -t 09612e67-185b-4d89-9527-5e9322b8838b -f coverage.xml -F adder -F subtractor
+    displayName: 'codecov'
+
+- job: 'Publish'
+  dependsOn: 'Test'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
+
+  - script: python setup.py sdist
+    displayName: 'Build sdist'
