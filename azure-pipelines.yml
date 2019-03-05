@@ -47,7 +47,7 @@ jobs:
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
   - script: |
-      bash <(curl https://codecov.io/bash) -t 09612e67-185b-4d89-9527-5e9322b8838b -f coverage.xml -F adder -F subtractor
+      bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
     displayName: 'codecov'
 
 - job: 'Publish'
