@@ -190,10 +190,6 @@ class ForecastValueSchema(ma.Schema):
     value = ma.Float(
         title="Value",
         description="Value of the forecast variable.")
-    quality_flag = ma.Integer(
-        title="Questionable",
-        description="A flag indicating data quality.",
-        default=0, missing=False)
 
 
 @spec.define_schema('ForecastDefinition')
