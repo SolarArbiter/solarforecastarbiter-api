@@ -11,3 +11,4 @@ requests
 cryptography
 python-jose
 pandas
+pyyaml

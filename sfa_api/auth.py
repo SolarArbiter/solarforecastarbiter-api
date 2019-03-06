@@ -19,27 +19,27 @@ current_jwt = LocalProxy(lambda: _request_ctx_stack.top.jwt)
 
 
 def verify_access_token():
-        auth = request.headers.get('Authorization', '').split(' ')
-        try:
-            assert auth[0] == 'Bearer'
-            token = jwt.decode(
-                auth[1],
-                key=current_app.config['JWT_KEY'],
-                audience=current_app.config['AUTH0_AUDIENCE'],
-                issuer=current_app.config['AUTH0_BASE_URL'] + '/')
-        except (jwt.JWTError,
-                jwt.ExpiredSignatureError,
-                jwt.JWTClaimsError,
-                AttributeError,
-                AssertionError) as e:
-            return False
-        else:
-            # add the token and sub to the request context stack
-            # so they can be accessed elsewhere in the code for
-            # proper authorization
-            _request_ctx_stack.top.jwt = token
-            _request_ctx_stack.top.user = token['sub']
-            return True
+    auth = request.headers.get('Authorization', '').split(' ')
+    try:
+        assert auth[0] == 'Bearer'
+        token = jwt.decode(
+            auth[1],
+            key=current_app.config['JWT_KEY'],
+            audience=current_app.config['AUTH0_AUDIENCE'],
+            issuer=current_app.config['AUTH0_BASE_URL'] + '/')
+    except (jwt.JWTError,
+            jwt.ExpiredSignatureError,
+            jwt.JWTClaimsError,
+            AttributeError,
+            AssertionError):
+        return False
+    else:
+        # add the token and sub to the request context stack
+        # so they can be accessed elsewhere in the code for
+        # proper authorization
+        _request_ctx_stack.top.jwt = token
+        _request_ctx_stack.top.user = token['sub']
+        return True
 
 
 def requires_auth(f):

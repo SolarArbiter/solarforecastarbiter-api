@@ -1,3 +1,6 @@
+[![Build Status](https://dev.azure.com/solararbiter/solarforecastarbiter/_apis/build/status/SolarArbiter.solarforecastarbiter-api?branchName=master)](https://dev.azure.com/solararbiter/solarforecastarbiter/_build/latest?definitionId=2&branchName=master)
+[![codecov](https://codecov.io/gh/SolarArbiter/solarforecastarbiter-api/branch/master/graph/badge.svg)](https://codecov.io/gh/SolarArbiter/solarforecastarbiter-api)
+
 # Solar Forecast Arbiter API
 
 This repository contains the code and development of the Solar Forecast Arbiter
