@@ -177,6 +177,8 @@ class ObservationValuesView(MethodView):
             return jsonify({'errors': errors}), 400
         storage = get_storage()
         values = storage.read_observation_values(obs_id, start, end)
+        if values is None:
+            abort(404)
         data = ObservationValueSchema(many=True).dump(values)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])

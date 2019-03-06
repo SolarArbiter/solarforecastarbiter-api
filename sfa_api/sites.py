@@ -114,8 +114,8 @@ class SiteView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        storage.delete_site(site_id)
-        return 200
+        site = storage.delete_site(site_id)
+        return jsonify(SiteResponseSchema().dump(site))
 
 
 class SiteObservations(MethodView):

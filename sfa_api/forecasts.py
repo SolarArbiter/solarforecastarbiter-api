@@ -73,7 +73,7 @@ class AllForecastsView(MethodView):
             forecast_id = storage.store_forecast(forecast)
             if forecast_id is None:
                 return jsonify({'errors': 'Site does not exist'}), 400
-            response = make_response('Forecast created.', 201)
+            response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for('forecasts.single',
                                                    forecast_id=forecast_id)
             return response
@@ -179,6 +179,8 @@ class ForecastValuesView(MethodView):
             return jsonify({'errors': errors}), 400
         storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
+        if values is None:
+            abort(404)
         data = ForecastValueSchema(many=True).dump(values)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])

@@ -2,7 +2,7 @@ static_sites = {
     '123e4567-e89b-12d3-a456-426655440001': {
         "elevation": 595.0,
         "extra_parameters": {
-            '{"net_work_api_abbreviation": "AS","network": "University of Oregon SRML","network_api_id": "94040"}', # NOQA
+            '{"network_api_abbreviation": "AS","network": "University of Oregon SRML","network_api_id": "94040"}', # NOQA
         },
         "latitude": 42.19,
         "longitude": -122.7,
@@ -23,7 +23,7 @@ static_sites = {
         "modeling_parameters": {},
         "name": "Weather Station 1",
         "provider": "Reference",
-        "timezone": "America/Pheonix",
+        "timezone": "America/Phoenix",
         "site_id": 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a'
     },
     '123e4567-e89b-12d3-a456-426655440002': {

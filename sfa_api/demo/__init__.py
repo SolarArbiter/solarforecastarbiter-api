@@ -161,8 +161,8 @@ def store_forecast_values(forecast_id, forecast_df):
     if forecast_id not in forecasts:
         return None
     else:
-        forecast_data = forecast_df
-        forecast_values[forecast_id].update(forecast_data)
+        current_data = forecast_values[forecast_id]
+        forecast_values[forecast_id] = forecast_df.combine_first(current_data)
     return forecast_id
 
 
@@ -298,6 +298,15 @@ def delete_site(site_id):
         site = sites.pop('site_id')
     except KeyError:
         return None
+
+    forecasts = list_forecasts(site_id)
+    for forecast in forecasts:
+        delete_forecast(forecast[forecast_id])
+
+    observations = list_observations(site_id)
+    for observation in observations:
+        delete_observation(observation[obs_id])
+
     return site
 
 
