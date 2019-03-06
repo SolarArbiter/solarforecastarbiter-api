@@ -120,7 +120,7 @@ def test_post_observation_values_valid_json(api, uuid):
 
 
 def test_post_json_storage_call(api, uuid, mocker):
-    storage = mocker.patch('sfa_api.utils.storage.store_observation_values')
+    storage = mocker.patch('sfa_api.demo.store_observation_values')
     storage.return_value = uuid
     api.post(f'/observations/{uuid}/values',
              base_url='https://localhost',

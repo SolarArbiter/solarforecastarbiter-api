@@ -5,8 +5,8 @@ import json
 
 
 VALID_FORECAST_JSON = {
-    "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
-    "name": "DA Power",
+    "extra_parameters": '{"instrument": "pyranometer"}',
+    "name": "test forecast",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ac_power",
     "interval_label": "beginning",
