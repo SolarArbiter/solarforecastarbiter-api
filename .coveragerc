@@ -1,0 +1,3 @@
+[run]
+source=sfa_api
+omit=sfa_api/_version.py
