@@ -3,6 +3,7 @@ import time
 from marshmallow import validate, validates
 from marshmallow.exceptions import ValidationError
 import pandas as pd
+import pytz
 
 from sfa_api import spec, ma
 
@@ -10,16 +11,20 @@ from sfa_api import spec, ma
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power', 'pdf_probability',
              'cdf_value']
+
 VALUE_TYPES = ['interval_mean', 'instantaneous']
+
+ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(filter(lambda x: 'GMT' in x, pytz.all_timezones))
+
+EXTRA_PARAMETERS_FIELD = ma.String(
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
+
 VARIABLE_FIELD = ma.String(
     title='Variable',
     description="The variable being forecast",
     required=True,
     validate=validate.OneOf(VARIABLES))
-
-EXTRA_PARAMETERS_FIELD = ma.String(
-    title='Extra Parameters',
-    description='Additional user specified parameters.')
 
 
 # Sites
@@ -83,10 +88,12 @@ class SiteSchema(ma.Schema):
     latitude = ma.Float(
         title='Latitude',
         description="Latitude in degrees North",
+        validate=validate.Range(-90,90),
         required=True)
     longitude = ma.Float(
         title='Longitude',
         description="Longitude in degrees East of the Prime Meridian",
+        validate=validate.Range(-180,180),
         required=True)
     elevation = ma.Float(
         title='Elevation',
@@ -98,7 +105,11 @@ class SiteSchema(ma.Schema):
         required=True)
     modeling_parameters = ma.Nested(ModelingParameters)
     extra_parameters = EXTRA_PARAMETERS_FIELD
-
+    
+    @validates('timezone')
+    def validate_tz(self, tz):
+        if tz not in ALLOWED_TIMEZONES:
+            raise ValidationError('Invalid timezone.')
 
 @spec.define_schema('SiteMetadata')
 class SiteResponseSchema(SiteSchema):

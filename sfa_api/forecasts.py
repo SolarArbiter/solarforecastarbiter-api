@@ -67,7 +67,7 @@ class AllForecastsView(MethodView):
         try:
             forecast = ForecastPostSchema().load(data)
         except ValidationError as err:
-            return jsonify(err.messages), 400
+            return jsonify({"errors": err.messages}), 400
         else:
             storage = get_storage()
             forecast_id = storage.store_forecast(forecast)

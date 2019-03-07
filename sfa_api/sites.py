@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 
@@ -66,7 +66,10 @@ class AllSitesView(MethodView):
             return jsonify(err.messages), 400
         storage = get_storage()
         site_id = storage.store_site(site)
-        return site_id
+        response = make_response(site_id, 201)
+        response.headers['Location'] = url_for('sites.single',
+                                               site_id=site_id)
+        return response
 
 
 class SiteView(MethodView):
@@ -115,6 +118,8 @@ class SiteView(MethodView):
         """
         storage = get_storage()
         site = storage.delete_site(site_id)
+        if site is None:
+            abort(404)
         return jsonify(SiteResponseSchema().dump(site))
 
 

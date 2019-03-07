@@ -1,9 +1,6 @@
 import pytest
 
 
-import json
-
-
 VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
     "name": "Ashland OR, ghi",
@@ -25,43 +22,40 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
                                      'interval_label', 'invalid')
 
 
-empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}\n' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
-@pytest.fixture()
-def uuid():
-    return '123e4567-e89b-12d3-a456-426655440000'
-
-
-@pytest.mark.parametrize('payload,message,status_code', [
-    (VALID_OBS_JSON, 'Observation created.', 201),
-    (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}\n', 400),
-    (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}\n',
-     400),
-    ({}, empty_json_response, 400)
-])
-def test_observation_post(api, payload, message, status_code):
+def test_observation_post_success(api):
     r = api.post('/observations/',
                  base_url='https://localhost',
-                 json=json.dumps(payload))
-    assert r.status_code == status_code
-    assert r.get_data(as_text=True) == message
-    if status_code == 201:
-        assert 'Location' in r.headers
-    else:
-        assert 'Location' not in r.headers
+                 json=VALID_OBS_JSON)
+    assert r.status_code == 201
+    assert 'Location' in r.headers
 
 
-def test_get_observation_links(api, uuid):
-    r = api.get(f'/observations/{uuid}',
+@pytest.mark.parametrize('payload,message', [
+    (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
+    (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
+    ({}, empty_json_response)
+])
+def test_observation_post_bad_request(api, payload, message):
+    r = api.post('/observations/',
+                 base_url='https://localhost',
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_get_observation_links(api, obs_id):
+    r = api.get(f'/observations/{obs_id}',
                 base_url='https://localhost')
     response = r.get_json()
     assert 'obs_id' in response
     assert '_links' in response
 
 
-def test_get_observation_metadata(api, uuid):
-    r = api.get(f'/observations/{uuid}/metadata',
+def test_get_observation_metadata(api, obs_id):
+    r = api.get(f'/observations/{obs_id}/metadata',
                 base_url='https://localhost')
     response = r.get_json()
     assert 'obs_id' in response
@@ -111,18 +105,17 @@ NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fg
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
 
 
-# TODO: mock retrieval request to return a static observation for testing
-def test_post_observation_values_valid_json(api, uuid):
-    r = api.post(f'/observations/{uuid}/values',
+def test_post_observation_values_valid_json(api, obs_id):
+    r = api.post(f'/observations/{obs_id}/values',
                  base_url='https://localhost',
                  json=VALID_JSON)
     assert r.status_code == 201
 
 
-def test_post_json_storage_call(api, uuid, mocker):
+def test_post_json_storage_call(api, obs_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_observation_values')
-    storage.return_value = uuid
-    api.post(f'/observations/{uuid}/values',
+    storage.return_value = obs_id
+    api.post(f'/observations/{obs_id}/values',
              base_url='https://localhost',
              json=VALID_JSON)
     storage.assert_called()
@@ -135,8 +128,8 @@ def test_post_json_storage_call(api, uuid, mocker):
     NON_NUMERICAL_VALUE_JSON,
     NON_BINARY_FLAG_JSON
 ])
-def test_post_observation_values_invalid_json(api, payload, uuid):
-    r = api.post(f'/observations/{uuid}/values',
+def test_post_observation_values_invalid_json(api, payload, obs_id):
+    r = api.post(f'/observations/{obs_id}/values',
                  base_url='https://localhost',
                  json=payload)
     assert r.status_code == 400
@@ -149,16 +142,16 @@ def test_post_observation_values_invalid_json(api, payload, uuid):
     NON_NUMERICAL_VALUE_CSV,
     NON_BINARY_FLAG_CSV
 ])
-def test_post_observation_values_invalid_csv(api, payload, uuid):
-    r = api.post(f'/observations/{uuid}/values',
+def test_post_observation_values_invalid_csv(api, payload, obs_id):
+    r = api.post(f'/observations/{obs_id}/values',
                  base_url='https://localhost',
                  headers={'Content-Type': 'text/csv'},
                  data=payload)
     assert r.status_code == 400
 
 
-def test_post_observation_values_valid_csv(api, uuid):
-    r = api.post(f'/observations/{uuid}/values',
+def test_post_observation_values_valid_csv(api, obs_id):
+    r = api.post(f'/observations/{obs_id}/values',
                  base_url='https://localhost',
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CSV)
@@ -171,8 +164,8 @@ def test_post_observation_values_valid_csv(api, uuid):
     ('bad-date', 'also_bad', 400, 'text/csv'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'text/csv'),
 ])
-def test_get_observation_values_json(api, start, end, code, mimetype, uuid):
-    r = api.get(f'/observations/{uuid}/values',
+def test_get_observation_values_json(api, start, end, code, mimetype, obs_id):
+    r = api.get(f'/observations/{obs_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
