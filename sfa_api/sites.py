@@ -63,7 +63,7 @@ class AllSitesView(MethodView):
         try:
             site = SiteSchema().load(data)
         except ValidationError as err:
-            return jsonify(err.messages), 400
+            return jsonify({'errors': err.messages}), 400
         storage = get_storage()
         site_id = storage.store_site(site)
         response = make_response(site_id, 201)
@@ -151,6 +151,8 @@ class SiteObservations(MethodView):
         """
         storage = get_storage()
         observations = storage.list_observations(site_id)
+        if observations is None:
+            abort(404)
         return jsonify(ObservationSchema(many=True).dump(observations))
 
 
@@ -182,6 +184,8 @@ class SiteForecasts(MethodView):
         """
         storage = get_storage()
         forecasts = storage.list_forecasts(site_id)
+        if forecasts is None:
+            abort(404)
         return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 

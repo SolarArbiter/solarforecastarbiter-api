@@ -82,7 +82,7 @@ def store_observation(observation):
     """
     if read_site(str(observation['site_id'])) is None:
         return None
-    obs_id = str(uuid.uuid4())
+    obs_id = str(uuid.uuid1())
     observation['obs_id'] = obs_id
     observations[obs_id] = observation
     observation_values[obs_id] = pd.DataFrame()
@@ -125,13 +125,16 @@ def delete_observation(obs_id):
     return obs
 
 
-def list_observations(site=None):
+def list_observations(site_id=None):
     """Lists all observations a user has access to.
     """
     obs_list = []
-    if site is not None:
+    if site_id is not None:
+        site = read_site(site_id)
+        if site is None:
+            return None
         filtered_obs = {obs_id: obs for obs_id, obs in observations.items()
-                        if str(obs['site_id']) == site}
+                        if str(obs['site_id']) == site_id}
     else:
         filtered_obs = observations
     for obs_id, obs in filtered_obs.items():
@@ -195,7 +198,7 @@ def store_forecast(forecast):
     """
     if read_site(str(forecast['site_id'])) is None:
         return None
-    forecast_id = str(uuid.uuid4())
+    forecast_id = str(uuid.uuid1())
     forecast['forecast_id'] = forecast_id
     forecasts[forecast_id] = forecast
     forecast_values[forecast_id] = pd.DataFrame()
@@ -237,13 +240,16 @@ def delete_forecast(forecast_id):
     return forecast
 
 
-def list_forecasts(site=None):
+def list_forecasts(site_id=None):
     """Lists all forecasts a user has access to.
     """
     forecasts_list = []
-    if site is not None:
+    if site_id is not None:
+        site = read_site(site_id)
+        if site is None:
+            return None
         filtered_forecasts = {fx_id: fx for fx_id, fx in forecasts.items()
-                              if fx['site_id'] == site}
+                              if fx['site_id'] == site_id}
     else:
         filtered_forecasts = forecasts
     for forecast_id, forecast in filtered_forecasts.items():
@@ -284,7 +290,7 @@ def store_site(site):
     string
         UUID of the newly created site.
     """
-    site_id = str(uuid.uuid4())
+    site_id = str(uuid.uuid1())
     site['site_id'] = site_id
     site['provider'] = 'test post'
     sites[site_id] = site
@@ -295,18 +301,16 @@ def delete_site(site_id):
     """Deletes a Site.
     """
     try:
-        site = sites.pop('site_id')
+        site = sites[site_id]
     except KeyError:
         return None
-
     forecasts = list_forecasts(site_id)
     for forecast in forecasts:
-        delete_forecast(forecast[forecast_id])
-
+        delete_forecast(forecast['forecast_id'])
     observations = list_observations(site_id)
     for observation in observations:
-        delete_observation(observation[obs_id])
-
+        delete_observation(observation['obs_id'])
+    sites.pop(site_id)
     return site
 
 
