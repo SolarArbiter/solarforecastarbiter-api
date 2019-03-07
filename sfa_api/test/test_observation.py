@@ -54,6 +54,12 @@ def test_get_observation_links(api, obs_id):
     assert '_links' in response
 
 
+def test_get_observation_links_404(api, missing_obs_id):
+    r = api.get(f'/observations/{missing_obs_id}',
+                base_url='https://localhost')
+    assert r.status_code == 404
+
+
 def test_get_observation_metadata(api, obs_id):
     r = api.get(f'/observations/{obs_id}/metadata',
                 base_url='https://localhost')
@@ -62,6 +68,12 @@ def test_get_observation_metadata(api, obs_id):
     assert 'variable' in response
     assert 'name' in response
     assert 'site_id' in response
+
+
+def test_get_observation_metadata_404(api, missing_obs_id):
+    r = api.get(f'/observations/{missing_obs_id}/metadata',
+                base_url='https://localhost')
+    assert r.status_code == 404
 
 
 VALID_JSON = {
@@ -158,19 +170,33 @@ def test_post_observation_values_valid_csv(api, obs_id):
     assert r.status_code == 201
 
 
-@pytest.mark.parametrize('start,end,code,mimetype', [
-    ('bad-date', 'also_bad', 400, 'application/json'),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'application/json'),
-    ('bad-date', 'also_bad', 400, 'text/csv'),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'text/csv'),
+def test_get_observation_values_404(api, missing_obs_id):
+    r = api.get(f'/observations/{missing_obs_id}/values',
+                base_url='https://localhost')
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('start,end,mimetype', [
+    ('bad-date', 'also_bad', 'application/json'),
+    ('bad-date', 'also_bad', 'text/csv'),
 ])
-def test_get_observation_values_json(api, start, end, code, mimetype, obs_id):
+def test_get_observation_values_400(api, start, end, mimetype, obs_id):
     r = api.get(f'/observations/{obs_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
-    assert r.status_code == code
-    if code == 400:
-        assert r.mimetype == 'application/json'
-    else:
-        assert r.mimetype == mimetype
+    assert r.status_code == 400
+    assert r.mimetype == 'application/json'
+
+
+@pytest.mark.parametrize('start,end,mimetype', [
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
+])
+def test_get_observation_values_200(api, start, end, mimetype, obs_id):
+    r = api.get(f'/observations/{obs_id}/values',
+                base_url='https://localhost',
+                headers={'Accept': mimetype},
+                query_string={'start': start, 'end': end})
+    assert r.status_code == 200
+    assert r.mimetype == mimetype

@@ -284,6 +284,8 @@ class ObservationValuesView(MethodView):
         observation_df = observation_df.set_index(index)
         storage = get_storage()
         stored = storage.store_observation_values(obs_id, observation_df)
+        if stored is None:
+            abort(404)
         return stored, 201
 
 

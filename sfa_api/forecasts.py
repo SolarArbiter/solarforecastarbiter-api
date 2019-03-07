@@ -274,6 +274,8 @@ class ForecastValuesView(MethodView):
         forecast_df = forecast_df.set_index(forecast_df['timestamp'].copy())
         storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
+        if stored is None:
+            abort(404)
         return stored, 201
 
 

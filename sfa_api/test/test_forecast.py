@@ -50,6 +50,7 @@ def test_forecast_post_success(api, payload, status_code):
     assert r.status_code == status_code
     assert 'Location' in r.headers
 
+
 @pytest.mark.parametrize('payload,message', [
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
@@ -76,6 +77,12 @@ def test_get_forecast_links(api, forecast_id):
     assert '_links' in response
 
 
+def test_get_forecast_404(api, missing_forecast_id):
+    r = api.get(f'/forecasts/{missing_forecast_id}',
+                base_url='https://localhost')
+    assert r.status_code == 404
+
+
 def test_get_forecast_metadata(api, forecast_id):
     r = api.get(f'/forecasts/{forecast_id}/metadata',
                 base_url='https://localhost')
@@ -84,6 +91,12 @@ def test_get_forecast_metadata(api, forecast_id):
     assert 'variable' in response
     assert 'name' in response
     assert 'site_id' in response
+
+
+def test_get_forecast_metadata_404(api, missing_forecast_id):
+    r = api.get(f'/forecasts/{missing_forecast_id}/metadata',
+                base_url='https://localhost')
+    assert r.status_code == 404
 
 
 VALID_VALUE_JSON = {
@@ -114,7 +127,6 @@ WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:23Z,fgh" # NOQA
 
 
-# TODO: mock retrieval request to return a static forecast for testing
 def test_post_forecast_values_valid_json(api, forecast_id):
     r = api.post(f'/forecasts/{forecast_id}/values',
                  base_url='https://localhost',
@@ -129,6 +141,15 @@ def test_post_json_storage_call(api, forecast_id, mocker):
              base_url='https://localhost',
              json=VALID_VALUE_JSON)
     storage.assert_called()
+
+
+def test_post_values_404(api, missing_forecast_id, mocker):
+    storage = mocker.patch('sfa_api.demo.store_forecast_values')
+    storage.return_value = None
+    r = api.post(f'/forecasts/{missing_forecast_id}/values',
+                 base_url='https://localhost',
+                 json=VALID_VALUE_JSON)
+    assert r.status_code == 404
 
 
 @pytest.mark.parametrize('payload', [
@@ -166,19 +187,33 @@ def test_post_forecast_values_valid_csv(api, forecast_id):
     assert r.status_code == 201
 
 
-@pytest.mark.parametrize('start,end,code,mimetype', [
-    ('bad-date', 'also_bad', 400, 'application/json'),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'application/json'),
-    ('bad-date', 'also_bad', 400, 'text/csv'),
-    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 200, 'text/csv'),
+def test_get_forecast_values_404(api, missing_forecast_id):
+    r = api.get(f'/forecasts/{missing_forecast_id}/values',
+                base_url='https://localhost')
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('start,end,mimetype', [
+    ('bad-date', 'also_bad', 'application/json'),
+    ('bad-date', 'also_bad', 'text/csv'),
 ])
-def test_get_forecast_values_json(api, start, end, code, mimetype, forecast_id):
+def test_get_forecast_values_400(api, start, end, mimetype, forecast_id):
     r = api.get(f'/forecasts/{forecast_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
-    assert r.status_code == code
-    if code == 400:
-        assert r.mimetype == 'application/json'
-    else:
-        assert r.mimetype == mimetype
+    assert r.status_code == 400
+    assert r.mimetype == 'application/json'
+
+
+@pytest.mark.parametrize('start,end,mimetype', [
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
+])
+def test_get_forecast_values_200(api, start, end, mimetype, forecast_id):
+    r = api.get(f'/forecasts/{forecast_id}/values',
+                base_url='https://localhost',
+                headers={'Accept': mimetype},
+                query_string={'start': start, 'end': end})
+    assert r.status_code == 200
+    assert r.mimetype == mimetype
