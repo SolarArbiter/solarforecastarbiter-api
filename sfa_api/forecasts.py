@@ -40,10 +40,13 @@ class AllForecastsView(MethodView):
     def post(self, *args):
         """
         ---
-        summary: Create forecast
+        summary: Create Forecast
         tags:
         - Forecasts
-        description: Create a new Forecast by posting metadata
+        description: >-
+          Create a new Forecast by posting metadata. Note that POST
+          requests to this endpoint without a trailing slash will
+          result in a redirect response.
         requestBody:
           desctiption: JSON representation of an observation.
           required: True

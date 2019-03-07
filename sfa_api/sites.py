@@ -39,7 +39,10 @@ class AllSitesView(MethodView):
         summary: Create site
         tags:
           - Sites
-        description: Create a new Site by posting metadata.
+        description: >-
+          Create a new Site by posting metadata. Note that POST
+          requests to this endpoint without a trailing slash will
+          result in a redirect response.
         requestBody:
           description: JSON respresentation of an site.
           required: True

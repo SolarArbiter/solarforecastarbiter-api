@@ -41,7 +41,10 @@ class AllObservationsView(MethodView):
         summary: Create observation.
         tags:
           - Observations
-        description: Create a new Observation by posting metadata.
+        description: >-
+          Create a new Observation by posting metadata. Note that POST
+          requests to this endpoint without a trailing slash will result
+          in a redirect response.
         requestBody:
           description: JSON respresentation of an observation.
           required: True
