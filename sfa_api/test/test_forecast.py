@@ -54,10 +54,10 @@ def test_forecast_post_success(api, payload, status_code):
 @pytest.mark.parametrize('payload,message', [
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
-    (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in HH:MM format."]}'), # NOQA
-    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Time not in HH:MM format."]}'), # NOQA
-    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Time not in HH:MM format."]}'), # NOQA
-    (INVALID_RUN_LENGTH, '{"run_length":["Time not in HH:MM format."]}'),
+    (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in %H:%M format."]}'), # NOQA
+    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Time not in %H:%M format."]}'), # NOQA
+    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Time not in %H:%M format."]}'), # NOQA
+    (INVALID_RUN_LENGTH, '{"run_length":["Time not in %H:%M format."]}'),
     (INVALID_VALUE_TYPE, '{"value_type":["Not a valid choice."]}'),
     ({}, empty_json_response)
 ])
