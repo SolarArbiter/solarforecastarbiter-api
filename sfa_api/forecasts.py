@@ -6,7 +6,7 @@ import pandas as pd
 
 
 from sfa_api import spec
-from sfa_api.schema import (ForecastValueSchema,
+from sfa_api.schema import (ForecastValuesSchema,
                             ForecastSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema)
@@ -184,7 +184,8 @@ class ForecastValuesView(MethodView):
         values = storage.read_forecast_values(forecast_id, start, end)
         if values is None:
             abort(404)
-        data = ForecastValueSchema(many=True).dump(values)
+        data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
+                                            "values":values})
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -209,9 +210,7 @@ class ForecastValuesView(MethodView):
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ForecastValue'
+                $ref: '#/components/schemas/ForecastValues'
             text/csv:
               schema:
                 type: string

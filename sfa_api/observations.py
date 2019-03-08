@@ -7,9 +7,11 @@ import pandas as pd
 
 from sfa_api import spec
 from sfa_api.utils.storage import get_storage
-from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
-                            ObservationValueSchema, ObservationPostSchema)
 
+from sfa_api.schema import (ObservationValuesSchema,
+                            ObservationSchema,
+                            ObservationPostSchema,
+                            ObservationLinksSchema)
 
 class AllObservationsView(MethodView):
     def get(self, *args):
@@ -149,7 +151,7 @@ class ObservationValuesView(MethodView):
                 schema:
                   type: array
                   items:
-                    $ref: '#/components/schemas/ObservationValue'
+                    $ref: '#/components/schemas/ObservationValues'
               text/csv:
                 schema:
                   type: string
@@ -182,7 +184,8 @@ class ObservationValuesView(MethodView):
         values = storage.read_observation_values(obs_id, start, end)
         if values is None:
             abort(404)
-        data = ObservationValueSchema(many=True).dump(values)
+        data = ObservationValuesSchema().dump({"obs_id": obs_id,
+                                               "values":values})
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -207,9 +210,7 @@ class ObservationValuesView(MethodView):
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ObservationValue'
+                $ref: '#/components/schemas/ObservationValues'
             text/csv:
               schema:
                 type: string

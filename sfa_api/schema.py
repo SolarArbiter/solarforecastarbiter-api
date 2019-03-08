@@ -135,6 +135,14 @@ class ObservationValueSchema(ma.Schema):
         missing=False)
 
 
+@spec.define_schema('ObservationValues')
+class ObservationValuesSchema(ma.Schema):
+    obs_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Observation associated with this data.")
+    values = ma.Nested(ObservationValueSchema, many=True)
+
+
 @spec.define_schema('ObservationDefinition')
 class ObservationPostSchema(ma.Schema):
     class Meta:
@@ -204,6 +212,12 @@ class ForecastValueSchema(ma.Schema):
         title="Value",
         description="Value of the forecast variable.")
 
+@spec.define_schema('ForecastValues')
+class ForecastValuesSchema(ma.Schema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+    values = ma.Nested(ForecastValueSchema, many=True)
 
 @spec.define_schema('ForecastDefinition')
 class ForecastPostSchema(ma.Schema):
