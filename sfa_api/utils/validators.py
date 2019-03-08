@@ -14,5 +14,5 @@ class TimeFormat(Validator):
         try:
             time.strptime(value, self.time_format)
         except ValueError:
-            raise ValidationError('Time not in HH:MM format.')
+            raise ValidationError(f'Time not in {self.format} format.')
         return value
