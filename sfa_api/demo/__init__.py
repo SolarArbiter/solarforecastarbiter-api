@@ -48,6 +48,7 @@ def store_observation_values(obs_id, observation_df):
     if obs_id not in observations:
         return None
     else:
+        observation_df['timestamp'] = observation_df.index
         current_data = observation_values[obs_id]
         observation_values[obs_id] = observation_df.combine_first(current_data)
     return obs_id
@@ -160,10 +161,10 @@ def store_forecast_values(forecast_id, forecast_df):
     string
         The UUID of the associated forecast
     """
-    # Method stub for storing forecast time-series in the database.
     if forecast_id not in forecasts:
         return None
     else:
+        forecast_df['timestamp'] = forecast_df.index
         current_data = forecast_values[forecast_id]
         forecast_values[forecast_id] = forecast_df.combine_first(current_data)
     return forecast_id

@@ -8,9 +8,9 @@ VALID_FORECAST_JSON = {
     "variable": "ac_power",
     "interval_label": "beginning",
     "issue_time_of_day": "12:00",
-    "lead_time_to_start": "1 hour",
-    "interval_length": "1 minute",
-    "run_length": "1 hour",
+    "lead_time_to_start": "01:00",
+    "interval_length": "00:01",
+    "run_length": "01:00",
     "value_type": "interval_mean",
 }
 
@@ -55,9 +55,9 @@ def test_forecast_post_success(api, payload, status_code):
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
     (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in HH:MM format."]}'), # NOQA
-    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Invalid time format."]}'), # NOQA
-    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Invalid time format."]}'), # NOQA
-    (INVALID_RUN_LENGTH, '{"run_length":["Invalid time format."]}'),
+    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Time not in HH:MM format."]}'), # NOQA
+    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Time not in HH:MM format."]}'), # NOQA
+    (INVALID_RUN_LENGTH, '{"run_length":["Time not in HH:MM format."]}'),
     (INVALID_VALUE_TYPE, '{"value_type":["Not a valid choice."]}'),
     ({}, empty_json_response)
 ])

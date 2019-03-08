@@ -185,7 +185,7 @@ class ForecastValuesView(MethodView):
         if values is None:
             abort(404)
         data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
-                                            "values":values})
+                                            "values": values})
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -273,7 +273,7 @@ class ForecastValuesView(MethodView):
 
         if errors:
             return jsonify({'errors': errors}), 400
-        forecast_df = forecast_df.set_index(forecast_df['timestamp'].copy())
+        forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         if stored is None:

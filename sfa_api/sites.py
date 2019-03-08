@@ -27,7 +27,7 @@ class AllSitesView(MethodView):
                   items:
                     $ref: '#/components/schemas/SiteMetadata'
           401:
-            dref: '#/components/responses/401-Unauthorized'
+            $ref: '#/components/responses/401-Unauthorized'
         """
         storage = get_storage()
         sites = storage.list_sites()

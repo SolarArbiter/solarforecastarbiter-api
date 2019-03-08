@@ -13,6 +13,7 @@ from sfa_api.schema import (ObservationValuesSchema,
                             ObservationPostSchema,
                             ObservationLinksSchema)
 
+
 class AllObservationsView(MethodView):
     def get(self, *args):
         """
@@ -185,7 +186,7 @@ class ObservationValuesView(MethodView):
         if values is None:
             abort(404)
         data = ObservationValuesSchema().dump({"obs_id": obs_id,
-                                               "values":values})
+                                               "values": values})
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -284,8 +285,7 @@ class ObservationValuesView(MethodView):
 
         if errors:
             return jsonify({'errors': errors}), 400
-        index = observation_df['timestamp'].copy()
-        observation_df = observation_df.set_index(index)
+        observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_observation_values(obs_id, observation_df)
         if stored is None:
