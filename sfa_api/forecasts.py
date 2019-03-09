@@ -184,14 +184,16 @@ class ForecastValuesView(MethodView):
         values = storage.read_forecast_values(forecast_id, start, end)
         if values is None:
             abort(404)
-        data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
-                                            "values": values})
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
+            values['timestamp'] = values.index
+            dict_values = values.to_dict(orient='records')
+            data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
+                                                "values": dict_values})
             return jsonify(data)
         else:
-            csv_data = pd.DataFrame(data).to_csv(index=False)
+            csv_data = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
@@ -247,10 +249,14 @@ class ForecastValuesView(MethodView):
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
-                forecast_df = pd.read_csv(raw_data, comment='#')
+                forecast_df = pd.read_csv(raw_data,
+                                          na_values=[-999, -9999],
+                                          keep_default_na=True,
+                                          comment='#')
             except pd.errors.EmptyDataError:
                 return 'Malformed CSV', 400
-            raw_data.close()
+            finally:
+                raw_data.close()
         else:
             return 'Invalid Content-type.', 400
         errors = []
@@ -258,7 +264,8 @@ class ForecastValuesView(MethodView):
             forecast_df['value'] = pd.to_numeric(forecast_df['value'],
                                                  downcast='float')
         except ValueError:
-            errors.append('Invalid item in "value" field.')
+            errors.append('Invalid item in "value" field. Ensure that all '
+                          'values are integers, floats, empty, NaN, or NULL')
         except KeyError:
             errors.append('Missing "value" field.')
 
@@ -267,7 +274,8 @@ class ForecastValuesView(MethodView):
                 forecast_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.append('Invalid item in "timestamp" field.')
+            errors.append('Invalid item in "timestamp" field. Ensure that '
+                          'timestamps are ISO8601 compliant')
         except KeyError:
             errors.append('Missing "timestamp" field.')
 

@@ -48,9 +48,10 @@ def store_observation_values(obs_id, observation_df):
     if obs_id not in observations:
         return None
     else:
-        observation_df['timestamp'] = observation_df.index
         current_data = observation_values[obs_id]
-        observation_values[obs_id] = observation_df.combine_first(current_data)
+        index_complement = current_data.index.difference(observation_df.index)
+        complement = current_data.loc[index_complement]
+        observation_values[obs_id] = observation_df.combine_first(complement)
     return obs_id
 
 
@@ -71,7 +72,7 @@ def read_observation_values(obs_id, start=None, end=None):
         return None
     else:
         obs_data = observation_values[obs_id].loc[start:end]
-        return obs_data.to_dict(orient='records')
+        return obs_data
 
 
 def store_observation(observation):
@@ -164,9 +165,10 @@ def store_forecast_values(forecast_id, forecast_df):
     if forecast_id not in forecasts:
         return None
     else:
-        forecast_df['timestamp'] = forecast_df.index
         current_data = forecast_values[forecast_id]
-        forecast_values[forecast_id] = forecast_df.combine_first(current_data)
+        index_complement = current_data.index.difference(forecast_df.index)
+        complement = current_data.loc[index_complement]
+        forecast_values[forecast_id] = forecast_df.combine_first(complement)
     return forecast_id
 
 
@@ -187,7 +189,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
         return None
     else:
         forecast_data = forecast_values[forecast_id].loc[start:end]
-        return forecast_data.to_dict(orient='records')
+        return forecast_data
 
 
 def store_forecast(forecast):

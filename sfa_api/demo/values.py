@@ -13,15 +13,17 @@ def generate_randoms():
 def static_observation_values():
     index, values, quality = generate_randoms()
     data = {
-        'timestamp': index,
         'value': values,
         'quality_flag': quality}
-    return pd.DataFrame(index=index, data=data)
+    obs_df = pd.DataFrame(index=index, data=data)
+    obs_df.index.name = 'timestamp'
+    return obs_df
 
 
 def static_forecast_values():
     index, values, quality = generate_randoms()
     data = {
-        'timestamp': index,
         'value': values}
-    return pd.DataFrame(index=index, data=data)
+    fx_df = pd.DataFrame(index=index, data=data)
+    fx_df.index.name = 'timestamp'
+    return fx_df

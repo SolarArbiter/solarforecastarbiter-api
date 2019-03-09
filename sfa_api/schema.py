@@ -147,8 +147,11 @@ class ObservationValueSchema(ma.Schema):
         description="ISO 8601 Datetime",
         format='iso')
     value = ma.Float(
-        description="Value of the measurement")
+        title='Value',
+        description="Value of the measurement",
+        allow_nan=True)
     quality_flag = ma.Integer(
+        title='Quality flag',
         description="A flag indicating data quality.",
         missing=False)
 
@@ -228,7 +231,8 @@ class ForecastValueSchema(ma.Schema):
         format='iso')
     value = ma.Float(
         title="Value",
-        description="Value of the forecast variable.")
+        description="Value of the forecast variable.",
+        allow_nan=True)
 
 
 @spec.define_schema('ForecastValues')
