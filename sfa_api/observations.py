@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from io import StringIO
 from marshmallow import ValidationError
@@ -6,9 +6,12 @@ import pandas as pd
 
 
 from sfa_api import spec
-from sfa_api.utils import storage
-from sfa_api.schema import (ObservationSchema, ObservationLinksSchema,
-                            ObservationValueSchema, ObservationPostSchema)
+from sfa_api.utils.storage import get_storage
+
+from sfa_api.schema import (ObservationValuesSchema,
+                            ObservationSchema,
+                            ObservationPostSchema,
+                            ObservationLinksSchema)
 
 
 class AllObservationsView(MethodView):
@@ -31,8 +34,9 @@ class AllObservationsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
+        storage = get_storage()
         observations = storage.list_observations()
-        return jsonify(ObservationSchema(many=True).dump(observations).data)
+        return jsonify(ObservationSchema(many=True).dump(observations))
 
     def post(self, *args):
         """
@@ -40,7 +44,10 @@ class AllObservationsView(MethodView):
         summary: Create observation.
         tags:
           - Observations
-        description: Create a new Observation by posting metadata.
+        description: >-
+          Create a new Observation by posting metadata. Note that POST
+          requests to this endpoint without a trailing slash will result
+          in a redirect response.
         requestBody:
           description: JSON respresentation of an observation.
           required: True
@@ -62,15 +69,17 @@ class AllObservationsView(MethodView):
         """
         data = request.get_json()
         try:
-            observation = ObservationPostSchema().loads(data)
+            observation = ObservationPostSchema().load(data)
         except ValidationError as err:
-            return jsonify(err.messages), 400
-        else:
-            obs_id = storage.store_observation(observation)
-            response = make_response('Observation created.', 201)
-            response.headers['Location'] = url_for('observations.single',
-                                                   obs_id=obs_id)
-            return response
+            return jsonify({'errors': err.messages}), 400
+        storage = get_storage()
+        obs_id = storage.store_observation(observation)
+        if obs_id is None:
+            return jsonify({'errors': 'Site does not exist'}), 400
+        response = make_response(obs_id, 201)
+        response.headers['Location'] = url_for('observations.single',
+                                               obs_id=obs_id)
+        return response
 
 
 class ObservationView(MethodView):
@@ -95,11 +104,11 @@ class ObservationView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         observation = storage.read_observation(obs_id)
         if observation is None:
-            return 404
-
-        return jsonify(ObservationLinksSchema().dump(observation).data)
+            abort(404)
+        return jsonify(ObservationLinksSchema().dump(observation))
 
     def delete(self, obs_id, *args):
         """
@@ -118,6 +127,7 @@ class ObservationView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         deletion_result = storage.delete_observation(obs_id)
         return deletion_result
 
@@ -142,7 +152,7 @@ class ObservationValuesView(MethodView):
                 schema:
                   type: array
                   items:
-                    $ref: '#/components/schemas/ObservationValue'
+                    $ref: '#/components/schemas/ObservationValues'
               text/csv:
                 schema:
                   type: string
@@ -171,14 +181,21 @@ class ObservationValuesView(MethodView):
                 errors.append('Invalid end date format')
         if errors:
             return jsonify({'errors': errors}), 400
+        storage = get_storage()
         values = storage.read_observation_values(obs_id, start, end)
-        data = ObservationValueSchema(many=True).dump(values).data
+        if values is None:
+            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
+            values['timestamp'] = values.index
+            dict_values = values.to_dict(orient='records')
+            data = ObservationValuesSchema().dump({"obs_id": obs_id,
+                                                   "values": dict_values})
+
             return jsonify(data)
         else:
-            csv_data = pd.DataFrame(data).to_csv(index=False)
+            csv_data = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
@@ -197,9 +214,7 @@ class ObservationValuesView(MethodView):
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ObservationValue'
+                $ref: '#/components/schemas/ObservationValues'
             text/csv:
               schema:
                 type: string
@@ -239,10 +254,14 @@ class ObservationValuesView(MethodView):
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
-                observation_df = pd.read_csv(raw_data, comment='#')
+                observation_df = pd.read_csv(raw_data,
+                                             na_values=[-999.0, -9999.0],
+                                             keep_default_na=True,
+                                             comment='#')
             except pd.errors.EmptyDataError:
                 return 'Malformed CSV', 400
-            raw_data.close()
+            finally:
+                raw_data.close()
         else:
             return 'Invalid Content-type.', 400
 
@@ -253,7 +272,8 @@ class ObservationValuesView(MethodView):
             observation_df['value'] = pd.to_numeric(observation_df['value'],
                                                     downcast='float')
         except ValueError:
-            errors.append('Invalid item in "value" field.')
+            errors.append('Invalid item in "value" field. Ensure that all '
+                          'values are integers, floats, empty, NaN, or NULL')
         except KeyError:
             errors.append('Missing "value" field.')
 
@@ -262,7 +282,8 @@ class ObservationValuesView(MethodView):
                 observation_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.append('Invalid item in "timestamp" field.')
+            errors.append('Invalid item in "timestamp" field. Ensure '
+                          'that timestamps are ISO8601 compliant')
         except KeyError:
             errors.append('Missing "timestamp" field.')
 
@@ -273,8 +294,11 @@ class ObservationValuesView(MethodView):
 
         if errors:
             return jsonify({'errors': errors}), 400
-
+        observation_df = observation_df.set_index('timestamp')
+        storage = get_storage()
         stored = storage.store_observation_values(obs_id, observation_df)
+        if stored is None:
+            abort(404)
         return stored, 201
 
 
@@ -299,8 +323,11 @@ class ObservationMetadataView(MethodView):
           404:
              $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         observation = storage.read_observation(obs_id)
-        return jsonify(ObservationSchema().dump(observation).data)
+        if observation is None:
+            abort(404)
+        return jsonify(ObservationSchema().dump(observation))
 
 
 # Add path parameters used by these endpoints to the spec.

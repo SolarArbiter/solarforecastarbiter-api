@@ -1,36 +1,43 @@
-import time
-
 from marshmallow import validate, validates
 from marshmallow.exceptions import ValidationError
-import pandas as pd
+import pytz
 
 from sfa_api import spec, ma
+from sfa_api.utils.validators import TimeFormat
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
-             'poa', 'ac_power', 'dc_power']
+             'poa', 'ac_power', 'dc_power', 'pdf_probability',
+             'cdf_value']
+
 VALUE_TYPES = ['interval_mean', 'instantaneous']
+
+ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
+    filter(lambda x: 'GMT' in x, pytz.all_timezones))
+
+EXTRA_PARAMETERS_FIELD = ma.String(
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
+
 VARIABLE_FIELD = ma.String(
     title='Variable',
     description="The variable being forecast",
     required=True,
     validate=validate.OneOf(VARIABLES))
 
-EXTRA_PARAMETERS_FIELD = ma.String(
-    title='Extra Parameters',
-    description='Additional user specified parameters.')
-
 
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
-    ac_power = ma.Float(
-        title="AC Power",
+    class Meta:
+        ordered = True
+    ac_capacity = ma.Float(
+        title="AC Capacity",
         description="Nameplate AC power rating.")
-    dc_power = ma.Float(
-        title="DC Power",
+    dc_capacity = ma.Float(
+        title="DC Capacity",
         description="Nameplate DC power rating.")
-    temperature_coefficient = ma.String(
+    temperature_coefficient = ma.Float(
         title="Temperature Coefficient",
         description=("The temperature coefficient of DC power in units of "
                      "1/C. Typically -0.002 to -0.005 per degree C."))
@@ -68,6 +75,23 @@ class ModelingParameters(ma.Schema):
         title="Maximum Rotation Angle",
         description=("Maximum rotation from horizontal of a single axis "
                      "tracker, degrees."))
+    irradiance_loss_factor = ma.Float(
+        title="Irradiance loss factor",
+        description=("Loss factor in %, applied to POA irradiance after "
+                     "reflection losses but before spectral mismatch losses."),
+        validate=validate.Range(0, 100),
+    )
+    dc_loss_factor = ma.Float(
+        title="DC loss factor",
+        description=("Loss factor in %, applied to DC current."),
+        validate=validate.Range(0, 100),
+    )
+    ac_loss_factor = ma.Float(
+        title="AC loss factor",
+        description=("Loss factor in %, applied to inverter power "
+                     "output."),
+        validate=validate.Range(0, 100),
+    )
 
 
 @spec.define_schema('SiteDefinition')
@@ -82,10 +106,12 @@ class SiteSchema(ma.Schema):
     latitude = ma.Float(
         title='Latitude',
         description="Latitude in degrees North",
+        validate=validate.Range(-90, 90),
         required=True)
     longitude = ma.Float(
         title='Longitude',
         description="Longitude in degrees East of the Prime Meridian",
+        validate=validate.Range(-180, 180),
         required=True)
     elevation = ma.Float(
         title='Elevation',
@@ -97,6 +123,11 @@ class SiteSchema(ma.Schema):
         required=True)
     modeling_parameters = ma.Nested(ModelingParameters)
     extra_parameters = EXTRA_PARAMETERS_FIELD
+
+    @validates('timezone')
+    def validate_tz(self, tz):
+        if tz not in ALLOWED_TIMEZONES:
+            raise ValidationError('Invalid timezone.')
 
 
 @spec.define_schema('SiteMetadata')
@@ -113,12 +144,24 @@ class ObservationValueSchema(ma.Schema):
         ordered = True
     timestamp = ma.DateTime(
         title="Timestamp",
-        description="ISO 8601 Datetime")
+        description="ISO 8601 Datetime",
+        format='iso')
     value = ma.Float(
-        description="Value of the measurement")
+        title='Value',
+        description="Value of the measurement",
+        allow_nan=True)
     quality_flag = ma.Integer(
+        title='Quality flag',
         description="A flag indicating data quality.",
-        default=0, missing=False)
+        missing=False)
+
+
+@spec.define_schema('ObservationValues')
+class ObservationValuesSchema(ma.Schema):
+    obs_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Observation associated with this data.")
+    values = ma.Nested(ObservationValueSchema, many=True)
 
 
 @spec.define_schema('ObservationDefinition')
@@ -142,6 +185,10 @@ class ObservationPostSchema(ma.Schema):
                      'instant for instantaneous data'),
         validate=validate.OneOf(['beginning', 'ending', 'instant']),
         required=True)
+    value_type = ma.String(
+        title='Value Type',
+        validate=validate.OneOf(VALUE_TYPES)
+    )
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
@@ -180,14 +227,20 @@ class ForecastValueSchema(ma.Schema):
         ordered = True
     timestamp = ma.DateTime(
         title="Timestamp",
-        description="ISO 8601 Datetime")
+        description="ISO 8601 Datetime",
+        format='iso')
     value = ma.Float(
         title="Value",
-        description="Value of the forecast variable.")
-    quality_flag = ma.Integer(
-        title="Questionable",
-        description="A flag indicating data quality.",
-        default=0, missing=False)
+        description="Value of the forecast variable.",
+        allow_nan=True)
+
+
+@spec.define_schema('ForecastValues')
+class ForecastValuesSchema(ma.Schema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+    values = ma.Nested(ForecastValueSchema, many=True)
 
 
 @spec.define_schema('ForecastDefinition')
@@ -207,16 +260,20 @@ class ForecastPostSchema(ma.Schema):
     issue_time_of_day = ma.String(
         title='Issue Time of Day',
         required=True,
-        description=('The time of day that a forecast run is issued, '
-                     'e.g. 00:30. For forecast runs issued multiple '
-                     'times within one day (e.g. hourly), this specifies '
-                     'the first issue time of day. Additional issue times '
-                     'are uniquely determined by the first issue time and '
-                     'the run length & issue frequency attribute.'))
+        validate=TimeFormat('%H:%M'),
+        description=('The time of day that a forecast run is issued specified '
+                     'in the timezone of the site in HH:MM format, e.g. 00:30.'
+                     'For forecast runs issued multiple times within one day '
+                     '(e.g. hourly), this specifies the first issue time of '
+                     'day. Additional issue times are uniquely determined by '
+                     'the first issue time and the run length & issue '
+                     'frequency attribute.'))
     lead_time_to_start = ma.String(
         title='Lead time to start',
         description=("The difference between the issue time and the start of "
-                     "the first forecast interval, e.g. 1 hour."),
+                     "the first forecast interval in HH:MM format, e.g. 01:00 "
+                     "for 1 hour."),
+        validate=TimeFormat('%H:%M'),
         required=True)
     interval_label = ma.String(
         title='Interval Label',
@@ -226,52 +283,25 @@ class ForecastPostSchema(ma.Schema):
         validate=validate.OneOf(['beginning', 'ending', 'instant']))
     interval_length = ma.String(
         title='Interval length',
-        description=('The length of time that each data point represents '
-                     'e.g. 5 minutes, 1 hour.'),
+        description=('The length of time that each data point represents  in'
+                     'HH:MM format, e.g. 00:05 for 5 minutes.'),
+        validate=TimeFormat('%H:%M'),
         required=True
     )
     run_length = ma.String(
         title='Run Length / Issue Frequency',
-        description=('The total length of a single issued forecast run '
-                     'e.g. 1 hour. To enforce a continuous, non-overlapping '
-                     'sequence, this is equal to the forecast run issue '
-                     'frequency.'),
-        required=True,
+        description=('The total length of a single issued forecast run in '
+                     'HH:MM format,  e.g. 01:00 for 1 hour. To enforce a '
+                     'continuous, non-overlapping sequence, this is equal '
+                     'to the forecast run issue frequency.'),
+        validate=TimeFormat('%H:%M'),
+        required=True
     )
     value_type = ma.String(
         title='Value Type',
-        description="Value type (e.g. mean, max, 95th percentile, instantaneous)",  # NOQA
         validate=validate.OneOf(VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
-
-    @validates('lead_time_to_start')
-    def validate_lead_time(self, data):
-        try:
-            pd.Timedelta(data)
-        except ValueError:
-            raise ValidationError('Invalid time format.')
-
-    @validates('interval_length')
-    def validate_interval_length(self, data):
-        try:
-            pd.Timedelta(data)
-        except ValueError:
-            raise ValidationError('Invalid time format.')
-
-    @validates('run_length')
-    def validate_run_length(self, data):
-        try:
-            pd.Timedelta(data)
-        except ValueError:
-            raise ValidationError('Invalid time format.')
-
-    @validates('issue_time_of_day')
-    def validate_issue_time(self, data):
-        try:
-            time.strptime(data, '%H:%M')
-        except ValueError:
-            raise ValidationError('Time not in HH:MM format.')
 
 
 @spec.define_schema('ForecastMetadata')

@@ -21,5 +21,5 @@ The API is built with Python and depends on the following libraries:
 To run the API in development mode, first ``pip install -e`` the package. Then, run:
 
 ``` sh
-FLASK_APP=sfa_api FLASK_ENV=development flask run -p <port>
+FLASK_APP=sfa_api FLASK_ENV=development SFA_API_STATIC_DATA=true flask run -p <port>
 ```

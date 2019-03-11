@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from io import StringIO
 from marshmallow import ValidationError
@@ -6,11 +6,12 @@ import pandas as pd
 
 
 from sfa_api import spec
-from sfa_api.schema import (ForecastValueSchema,
+from sfa_api.schema import (ForecastValuesSchema,
                             ForecastSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema)
-from sfa_api.utils import storage
+
+from sfa_api.utils.storage import get_storage
 
 
 class AllForecastsView(MethodView):
@@ -32,16 +33,20 @@ class AllForecastsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
+        storage = get_storage()
         forecasts = storage.list_forecasts()
-        return jsonify(ForecastSchema(many=True).dump(forecasts).data)
+        return jsonify(ForecastSchema(many=True).dump(forecasts))
 
     def post(self, *args):
         """
         ---
-        summary: Create forecast
+        summary: Create Forecast
         tags:
         - Forecasts
-        description: Create a new Forecast by posting metadata
+        description: >-
+          Create a new Forecast by posting metadata. Note that POST
+          requests to this endpoint without a trailing slash will
+          result in a redirect response.
         requestBody:
           desctiption: JSON representation of an observation.
           required: True
@@ -63,12 +68,15 @@ class AllForecastsView(MethodView):
         """
         data = request.get_json()
         try:
-            forecast = ForecastPostSchema().loads(data)
+            forecast = ForecastPostSchema().load(data)
         except ValidationError as err:
-            return jsonify(err.messages), 400
+            return jsonify({"errors": err.messages}), 400
         else:
+            storage = get_storage()
             forecast_id = storage.store_forecast(forecast)
-            response = make_response('Forecast created.', 201)
+            if forecast_id is None:
+                return jsonify({'errors': 'Site does not exist'}), 400
+            response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for('forecasts.single',
                                                    forecast_id=forecast_id)
             return response
@@ -96,10 +104,11 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
         if forecast is None:
-            return 404
-        return jsonify(ForecastLinksSchema().dump(forecast).data)
+            abort(404)
+        return jsonify(ForecastLinksSchema().dump(forecast))
 
     def delete(self, forecast_id, *args):
         """
@@ -118,6 +127,7 @@ class ForecastView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         deletion_result = storage.delete_forecast(forecast_id)
         return deletion_result
 
@@ -170,14 +180,20 @@ class ForecastValuesView(MethodView):
                 errors.append('Invalid end date format')
         if errors:
             return jsonify({'errors': errors}), 400
+        storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
-        data = ForecastValueSchema(many=True).dump(values).data
+        if values is None:
+            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
+            values['timestamp'] = values.index
+            dict_values = values.to_dict(orient='records')
+            data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
+                                                "values": dict_values})
             return jsonify(data)
         else:
-            csv_data = pd.DataFrame(data).to_csv(index=False)
+            csv_data = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
@@ -196,9 +212,7 @@ class ForecastValuesView(MethodView):
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ForecastValue'
+                $ref: '#/components/schemas/ForecastValues'
             text/csv:
               schema:
                 type: string
@@ -235,10 +249,14 @@ class ForecastValuesView(MethodView):
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
-                forecast_df = pd.read_csv(raw_data, comment='#')
+                forecast_df = pd.read_csv(raw_data,
+                                          na_values=[-999, -9999],
+                                          keep_default_na=True,
+                                          comment='#')
             except pd.errors.EmptyDataError:
                 return 'Malformed CSV', 400
-            raw_data.close()
+            finally:
+                raw_data.close()
         else:
             return 'Invalid Content-type.', 400
         errors = []
@@ -246,7 +264,8 @@ class ForecastValuesView(MethodView):
             forecast_df['value'] = pd.to_numeric(forecast_df['value'],
                                                  downcast='float')
         except ValueError:
-            errors.append('Invalid item in "value" field.')
+            errors.append('Invalid item in "value" field. Ensure that all '
+                          'values are integers, floats, empty, NaN, or NULL')
         except KeyError:
             errors.append('Missing "value" field.')
 
@@ -255,14 +274,18 @@ class ForecastValuesView(MethodView):
                 forecast_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.append('Invalid item in "timestamp" field.')
+            errors.append('Invalid item in "timestamp" field. Ensure that '
+                          'timestamps are ISO8601 compliant')
         except KeyError:
             errors.append('Missing "timestamp" field.')
 
         if errors:
             return jsonify({'errors': errors}), 400
-
+        forecast_df = forecast_df.set_index('timestamp')
+        storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
+        if stored is None:
+            abort(404)
         return stored, 201
 
 
@@ -289,8 +312,11 @@ class ForecastMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
+        storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
-        return jsonify(ForecastSchema().dump(forecast).data)
+        if forecast is None:
+            abort(404)
+        return jsonify(ForecastSchema().dump(forecast))
 
 
 spec.components.parameter(
