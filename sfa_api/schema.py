@@ -185,10 +185,15 @@ class ObservationPostSchema(ma.Schema):
                      'instant for instantaneous data'),
         validate=validate.OneOf(['beginning', 'ending', 'instant']),
         required=True)
+    interval_length = ma.String(
+        title='Interval length',
+        description=('The length of time that each data point represents  in'
+                     'HH:MM format, e.g. 00:05 for 5 minutes.'),
+        validate=TimeFormat('%H:%M'),
+        required=True)
     value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(VALUE_TYPES)
-    )
+        validate=validate.OneOf(VALUE_TYPES))
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
