@@ -83,3 +83,76 @@ FOR EACH ROW INSERT INTO arbiter_data.permission_object_mapping (permission_id, 
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER add_object_perm_on_roles_insert AFTER INSERT ON arbiter_data.roles
 FOR EACH ROW INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
     SELECT id, NEW.id FROM arbiter_data.permissions WHERE action != 'create' AND applies_to_all AND organization_id = NEW.organization_id AND object_type = 'roles';
+
+
+-- add trigger for deletion from observations table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_observations_delete AFTER DELETE ON arbiter_data.observations
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- add trigger for deletion from aggregates table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_aggregates_delete AFTER DELETE ON arbiter_data.aggregates
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- add trigger for deletion from users table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_users_delete AFTER DELETE ON arbiter_data.users
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- add trigger for deletion from roles table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_roles_delete AFTER DELETE ON arbiter_data.roles
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- add trigger for deletion from sites table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_sites_delete AFTER DELETE ON arbiter_data.sites
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- add trigger for before deletion from sites table blocking on existing forecast
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER fail_on_site_delete_if_forecast BEFORE DELETE ON arbiter_data.sites
+FOR EACH ROW
+BEGIN
+    DECLARE fxexists BOOLEAN;
+    SET fxexists = (
+        SELECT 1 FROM forecasts WHERE site_id = OLD.id
+    );
+    IF fxexists IS NOT NULL AND fxexists THEN
+        SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Site cannot be deleted, a forecast still references it.', MYSQL_ERRNO = 1451;
+    END IF;
+END;
+
+
+-- restrict fields that can be updated in forecasts
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_sites_update BEFORE UPDATE ON arbiter_data.sites
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+       SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify orgnization_id of site object';
+    END IF;
+END;
+
+
+-- restrict fields that can be updated in forecasts
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_forecasts_update BEFORE UPDATE ON arbiter_data.forecasts
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify orgnization_id of forecast object';
+    ELSEIF NEW.site_id != OLD.site_id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify site_id of forecast object';
+    END IF;
+END;
+
+
+-- restrict fields that can be updated in observations
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_observations_update BEFORE UPDATE ON arbiter_data.observations
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify orgnization_id of observation object';
+    ELSEIF NEW.site_id != OLD.site_id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify site_id of observation object';
+    END IF;
+END;
