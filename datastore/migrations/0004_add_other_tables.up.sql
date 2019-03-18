@@ -1,6 +1,6 @@
 -- Create the sites table
 CREATE TABLE arbiter_data.sites (
-    id BINARY(16) NOT NULL,
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
     organization_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
     -- add everything else later...
@@ -14,7 +14,7 @@ CREATE TABLE arbiter_data.sites (
 
 -- Create the observations table
 CREATE TABLE arbiter_data.observations (
-    id BINARY(16) NOT NULL,
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
     organization_id BINARY(16) NOT NULL,
     site_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE arbiter_data.observations (
 -- Create the forecasts table
 -- need to trigger site failure on deletion if forecast exists
 CREATE TABLE arbiter_data.forecasts(
-    id BINARY(16) NOT NULL,
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
     organization_id BINARY(16) NOT NULL,
     site_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE arbiter_data.forecasts(
 
 -- create the aggregates table
 CREATE TABLE arbiter_data.aggregates(
-    id BINARY(16) NOT NULL,
+    id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
     organization_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
 
