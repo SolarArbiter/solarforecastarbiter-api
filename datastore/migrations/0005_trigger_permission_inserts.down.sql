@@ -1,3 +1,9 @@
 DROP TRIGGER add_object_perm_on_permissions_insert;
 DROP TRIGGER no_permissions_update;
-DROP USER 'permission_trigger'@'localhost';
+DROP TRIGGER add_object_perm_on_sites_insert;
+DROP TRIGGER add_object_perm_on_aggregates_insert;
+DROP TRIGGER add_object_perm_on_forecasts_insert;
+DROP TRIGGER add_object_perm_on_observations_insert;
+DROP TRIGGER add_object_perm_on_users_insert;
+DROP TRIGGER add_object_perm_on_roles_insert;
+DROP USER 'permission_trig'@'localhost';

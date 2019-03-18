@@ -50,6 +50,9 @@ ROLES += [(newuuid(), 'role2', 'limited read from org0',
 USER_ROLE_MAP = [(USERS[0][0], ROLES[0][0]), (USERS[1][0], ROLES[1][0]),
                  (USERS[1][0], ROLES[2][0])]
 
+SITES = [(newuuid(), org[0], f'site{i}')
+         for i, org in enumerate(ORGANIZATIONS)]
+
 READ_PERMISSIONS = [(newuuid(), 'Read org0 fx group 1', ORGANIZATIONS[0][0],
                      'read', 'forecasts', False),
                     (newuuid(), 'Read org0 fx group 2', ORGANIZATIONS[0][0],
@@ -68,16 +71,17 @@ ROLE_PERM_MAP = [(ROLES[0][0], READ_PERMISSIONS[0][0]),
                  (ROLES[2][0], READ_PERMISSIONS[3][0]),
                  (ROLES[0][0], CREATE_PERMISSIONS[0][0]),
                  (ROLES[1][0], CREATE_PERMISSIONS[0][0])]  # not permitted
-FX_OBJS = [newuuid() for i in range(8)]
-PERM_OBJ_MAP = [(READ_PERMISSIONS[0][0], FX_OBJS[0]),
-                (READ_PERMISSIONS[0][0], FX_OBJS[1]),
-                (READ_PERMISSIONS[1][0], FX_OBJS[2]),
-                (READ_PERMISSIONS[1][0], FX_OBJS[3]),
-                (READ_PERMISSIONS[2][0], FX_OBJS[4]),
-                (READ_PERMISSIONS[2][0], FX_OBJS[5]),
-                (READ_PERMISSIONS[2][0], FX_OBJS[6]),
-                (READ_PERMISSIONS[2][0], FX_OBJS[7]),
-                (READ_PERMISSIONS[3][0], FX_OBJS[0])]
+FX_OBJS = ([(newuuid(), ORGANIZATIONS[0][0], SITES[0][0], f'o0 fx{i}')
+            for i in range(4)] +
+           [(newuuid(), ORGANIZATIONS[1][0], SITES[1][0], f'o1 fx{i}')
+            for i in range(4)])
+
+# read_permissions[2] should automatically be added by trigger
+PERM_OBJ_MAP = [(READ_PERMISSIONS[0][0], FX_OBJS[0][0]),
+                (READ_PERMISSIONS[0][0], FX_OBJS[1][0]),
+                (READ_PERMISSIONS[1][0], FX_OBJS[2][0]),
+                (READ_PERMISSIONS[1][0], FX_OBJS[3][0]),
+                (READ_PERMISSIONS[3][0], FX_OBJS[0][0])]
 
 
 @pytest.fixture(scope='function')
@@ -102,6 +106,12 @@ def insertvals(cursor):
         "INSERT INTO role_permission_mapping (role_id, permission_id) "
         "VALUES (%s, %s)",
         ROLE_PERM_MAP)
+    cursor.executemany(
+        "INSERT INTO sites (id, organization_id, name) VALUES (%s, %s, %s)",
+        SITES)
+    cursor.executemany(
+        "INSERT INTO forecasts (id, organization_id, site_id, name) VALUES "
+        "(%s, %s, %s, %s)", FX_OBJS)
     cursor.executemany(
         "INSERT INTO permission_object_mapping (permission_id, object_id) "
         "VALUES (%s, %s)", PERM_OBJ_MAP)
@@ -185,8 +195,8 @@ def test_drop_permissions(insertvals, cursor):
 
 
 @pytest.mark.parametrize('user,objs', [
-    [USERS[0][1], FX_OBJS[:4]],
-    [USERS[1][1], FX_OBJS[4:8] + FX_OBJS[0:1]],
+    [USERS[0][1], [o[0] for o in FX_OBJS[:4]]],
+    [USERS[1][1], [o[0] for o in FX_OBJS[4:8] + FX_OBJS[0:1]]],
 ])
 def test_list_objects_user_can_read(cursor, insertvals, user, objs):
     cursor.callproc('list_objects_user_can_read', (user, 'forecasts'))
@@ -195,12 +205,12 @@ def test_list_objects_user_can_read(cursor, insertvals, user, objs):
 
 
 @pytest.mark.parametrize('user,obj,action', [
-    [USERS[0][1], FX_OBJS[0], 'read'],
-    [USERS[0][1], FX_OBJS[1], 'read'],
-    [USERS[0][1], FX_OBJS[2], 'read'],
-    [USERS[1][1], FX_OBJS[6], 'read'],
-    [USERS[1][1], FX_OBJS[7], 'read'],
-    [USERS[1][1], FX_OBJS[0], 'read'],
+    [USERS[0][1], FX_OBJS[0][0], 'read'],
+    [USERS[0][1], FX_OBJS[1][0], 'read'],
+    [USERS[0][1], FX_OBJS[2][0], 'read'],
+    [USERS[1][1], FX_OBJS[6][0], 'read'],
+    [USERS[1][1], FX_OBJS[7][0], 'read'],
+    [USERS[1][1], FX_OBJS[0][0], 'read'],
 ])
 def test_can_user_perform_action(insertvals, cursor, user, obj, action):
     cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
@@ -212,13 +222,13 @@ def test_can_user_perform_action(insertvals, cursor, user, obj, action):
 
 
 @pytest.mark.parametrize('user,obj,action', [
-    [USERS[0][1], FX_OBJS[0], 'create'],
-    [USERS[0][1], FX_OBJS[0], 'update'],
-    [USERS[0][1], FX_OBJS[0], 'delete'],
-    [USERS[0][1], FX_OBJS[5], 'read'],
+    [USERS[0][1], FX_OBJS[0][0], 'create'],
+    [USERS[0][1], FX_OBJS[0][0], 'update'],
+    [USERS[0][1], FX_OBJS[0][0], 'delete'],
+    [USERS[0][1], FX_OBJS[5][0], 'read'],
     [USERS[0][1], USERS[0][0], 'read'],
-    [USERS[1][1], FX_OBJS[1], 'read'],
-    [USERS[1][1], FX_OBJS[7], 'delete']
+    [USERS[1][1], FX_OBJS[1][0], 'read'],
+    [USERS[1][1], FX_OBJS[7][0], 'delete']
 ])
 def test_can_user_perform_action_denied(insertvals, cursor, user, obj, action):
     cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
@@ -258,3 +268,13 @@ def test_user_can_create_other_objs(insertvals, cursor, user, type_):
     assert len(out) == 1
     assert len(out[0]) == 1
     assert not out[0][0]
+
+
+def test_permission_insert_trigger():
+    pass
+
+def test_permission_update_failure():
+    pass
+
+def test_insert_triggers():
+    pass
