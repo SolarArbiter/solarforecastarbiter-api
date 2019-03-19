@@ -82,17 +82,10 @@ PERM_OBJ_MAP = [(READ_PERMISSIONS[0][0], FX_OBJS[0][0]),
                 (READ_PERMISSIONS[3][0], FX_OBJS[0][0])]
 
 
-@pytest.fixture(scope='session')
-def anint():
-    i = 0
-    yield i
-    i += 1
-
-
 @pytest.fixture(scope='function')
-def new_organization(cursor, anint):
-    def fnc(i=anint):
-        out = OrderedDict(id=newuuid(), name=f'org{i}')
+def new_organization(cursor):
+    def fnc():
+        out = OrderedDict(id=newuuid(), name=f'org{str(uuid1())[:10]}')
         cursor.execute('INSERT INTO organizations (id, name) VALUES (%s, %s)',
                        list(out.values()))
         return out
@@ -100,11 +93,11 @@ def new_organization(cursor, anint):
 
 
 @pytest.fixture()
-def new_user(cursor, new_organization, anint):
-    def fcn(org=None, i=anint):
+def new_user(cursor, new_organization):
+    def fcn(org=None):
         if org is None:
-            org = new_organization(i=i)
-        out = OrderedDict(id=newuuid(), auth0_id=f'authid{i}',
+            org = new_organization()
+        out = OrderedDict(id=newuuid(), auth0_id=f'authid{str(uuid1())[:10]}',
                           organization_id=org['id'])
         cursor.execute(
             'INSERT INTO users (id, auth0_id, organization_id) VALUES '
@@ -114,11 +107,11 @@ def new_user(cursor, new_organization, anint):
 
 
 @pytest.fixture()
-def new_role(cursor, new_organization, anint):
-    def fcn(org=None, i=anint):
+def new_role(cursor, new_organization):
+    def fcn(org=None):
         if org is None:
-            org = new_organization(i=i)
-        out = OrderedDict(id=newuuid(), name=f'role{i}',
+            org = new_organization()
+        out = OrderedDict(id=newuuid(), name=f'role{str(uuid1())[:10]}',
                           description='therole',
                           organization_id=org['id'])
         cursor.execute(
@@ -129,10 +122,10 @@ def new_role(cursor, new_organization, anint):
 
 
 @pytest.fixture()
-def new_permission(cursor, new_organization, anint):
-    def fcn(action, object_type, applies_to_all, org=None, i=anint):
+def new_permission(cursor, new_organization):
+    def fcn(action, object_type, applies_to_all, org=None):
         if org is None:
-            org = new_organization(i=i)
+            org = new_organization()
         out = OrderedDict(id=newuuid(), description='perm',
                           organization_id=org['id'],
                           action=action, object_type=object_type,
@@ -146,12 +139,12 @@ def new_permission(cursor, new_organization, anint):
 
 
 @pytest.fixture()
-def new_site(cursor, new_organization, anint):
-    def fcn(org=None, i=anint):
+def new_site(cursor, new_organization):
+    def fcn(org=None):
         if org is None:
-            org = new_organization(i=i)
+            org = new_organization()
         out = OrderedDict(id=newuuid(), organization_id=org['id'],
-                          name=f'site{i}')
+                          name=f'site{str(uuid1())[:10]}')
         cursor.execute(
             'INSERT INTO sites (id, organization_id, name) VALUES '
             '(%s, %s, %s)', list(out.values()))
@@ -160,13 +153,13 @@ def new_site(cursor, new_organization, anint):
 
 
 @pytest.fixture()
-def new_forecast(cursor, new_site, anint):
-    def fcn(site=None, org=None, i=anint):
+def new_forecast(cursor, new_site):
+    def fcn(site=None, org=None):
         if site is None:
             site = new_site(org)
         out = OrderedDict(
             id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'forecast{i}')
+            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}')
         cursor.execute(
             'INSERT INTO forecasts (id, organization_id, site_id, name) VALUES '
             '(%s, %s, %s, %s)', list(out.values()))
@@ -175,13 +168,13 @@ def new_forecast(cursor, new_site, anint):
 
 
 @pytest.fixture()
-def new_observation(cursor, new_site, anint):
-    def fcn(site=None, org=None, i=anint):
+def new_observation(cursor, new_site):
+    def fcn(site=None, org=None):
         if site is None:
             site = new_site(org)
         out = OrderedDict(
             id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'observation{i}')
+            site_id=site['id'], name=f'observation{str(uuid1())[:10]}')
         cursor.execute(
             'INSERT INTO observations (id, organization_id, site_id, name) '
             'VALUES (%s, %s, %s, %s)', list(out.values()))
