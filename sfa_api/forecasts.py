@@ -165,19 +165,19 @@ class ForecastValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        errors = []
+        errors = {}
         start = request.args.get('start', None)
         end = request.args.get('end', None)
         if start is not None:
             try:
                 start = pd.Timestamp(start)
             except ValueError:
-                errors.append('Invalid start date format')
+                errors.update({'start': ['Invalid start date format']})
         if end is not None:
             try:
                 end = pd.Timestamp(end)
             except ValueError:
-                errors.append('Invalid end date format')
+                errors.update({'end': ['Invalid end date format']})
         if errors:
             return jsonify({'errors': errors}), 400
         storage = get_storage()
@@ -241,11 +241,11 @@ class ForecastValuesView(MethodView):
             try:
                 raw_values = raw_data['values']
             except (TypeError, KeyError):
-                return 'Supplied JSON does not contain "values" field.', 400
+                return jsonify({'errors':{'error': ['Supplied JSON does not contain "values" field.']}}), 400
             try:
                 forecast_df = pd.DataFrame(raw_values)
             except ValueError:
-                return 'Malformed JSON', 400
+                return jsonify({'errors':{'error': ['Malformed JSON']}}), 400
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
@@ -254,30 +254,30 @@ class ForecastValuesView(MethodView):
                                           keep_default_na=True,
                                           comment='#')
             except pd.errors.EmptyDataError:
-                return 'Malformed CSV', 400
+                return jsonify({'errors':{'error': ['Malformed CSV']}}), 400
             finally:
                 raw_data.close()
         else:
-            return 'Invalid Content-type.', 400
-        errors = []
+            return jsonify({'errors':{'error': ['Invalid Content-type.']}}), 400
+        errors = {}
         try:
             forecast_df['value'] = pd.to_numeric(forecast_df['value'],
                                                  downcast='float')
         except ValueError:
-            errors.append('Invalid item in "value" field. Ensure that all '
-                          'values are integers, floats, empty, NaN, or NULL')
+            errors.update({'value': ['Invalid item in "value" field. Ensure that all '
+                                     'values are integers, floats, empty, NaN, or NULL']})
         except KeyError:
-            errors.append('Missing "value" field.')
+            errors.update({'value': ['Missing "value" field.']})
 
         try:
             forecast_df['timestamp'] = pd.to_datetime(
                 forecast_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.append('Invalid item in "timestamp" field. Ensure that '
-                          'timestamps are ISO8601 compliant')
+           errors.update({'timestamp': ['Invalid item in "timestamp" field. Ensure that '
+                                        'timestamps are ISO8601 compliant']})
         except KeyError:
-            errors.append('Missing "timestamp" field.')
+           errors.update({'timestamp': ['Missing "timestamp" field.']})
 
         if errors:
             return jsonify({'errors': errors}), 400
