@@ -246,11 +246,12 @@ class ObservationValuesView(MethodView):
             try:
                 raw_values = raw_data['values']
             except (TypeError, KeyError):
-                return jsonify({'errors': {'error': ['Supplied JSON does not contain "values" field.']}}), 400
+                error = 'Supplied JSON does not contain "values" field.'
+                return jsonify({'errors': {'error': [error]}}), 400
             try:
                 observation_df = pd.DataFrame(raw_values)
             except ValueError:
-                return jsonify({'errors':{'error': ['Malformed JSON']}}), 400
+                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
@@ -259,11 +260,12 @@ class ObservationValuesView(MethodView):
                                              keep_default_na=True,
                                              comment='#')
             except pd.errors.EmptyDataError:
-                return jsonify({'errors':{'error': ['Malformed CSV']}}), 400
+                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
             finally:
                 raw_data.close()
         else:
-            return jsonify({'errors':{'error':['Invalid Content-type.']}}), 415
+            error = 'Invalid Content-type.'
+            return jsonify({'errors': {'error': [error]}}), 415
 
         # Verify data format and types are parseable.
         # create list of errors to return meaningful messages to the user.
@@ -272,8 +274,9 @@ class ObservationValuesView(MethodView):
             observation_df['value'] = pd.to_numeric(observation_df['value'],
                                                     downcast='float')
         except ValueError:
-            errors.update({'values':['Invalid item in "value" field. Ensure that all '
-                                        'values are integers, floats, empty, NaN, or NULL']})
+            error = ('Invalid item in "value" field. Ensure that all '
+                     'values are integers, floats, empty, NaN, or NULL.')
+            errors.update({'values': [error]})
         except KeyError:
             errors.update({'values': ['Missing "value" field.']})
 
@@ -282,15 +285,17 @@ class ObservationValuesView(MethodView):
                 observation_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.update({'timestamp':['Invalid item in "timestamp" field. Ensure '
-                                        'that timestamps are ISO8601 compliant']})
+            error = ('Invalid item in "timestamp" field. Ensure '
+                     'that timestamps are ISO8601 compliant')
+            errors.update({'timestamp': [error]})
         except KeyError:
-            errors.update({'values':['Missing "timestamp" field.']})
+            errors.update({'values': ['Missing "timestamp" field.']})
 
         if 'quality_flag' not in observation_df.columns:
-            errors.update({'quality_flag':['Missing "quality_flag" field.']})
+            errors.update({'quality_flag': ['Missing "quality_flag" field.']})
         elif not observation_df['quality_flag'].isin([0, 1]).all():
-            errors.update({'quality_flag':['Invalid item in "quality_flag" field.']})
+            error = 'Invalid item in "quality_flag" field.'
+            errors.update({'quality_flag': [error]})
 
         if errors:
             return jsonify({'errors': errors}), 400

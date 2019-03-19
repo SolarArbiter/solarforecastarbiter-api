@@ -283,7 +283,7 @@ class ForecastPostSchema(ma.Schema):
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
-            'labels the beginning or ending of the interval.'),
+                     'labels the beginning or ending of the interval.'),
         validate=validate.OneOf(['beginning', 'ending', 'instant']),
         required=True)
     interval_length = ma.Integer(

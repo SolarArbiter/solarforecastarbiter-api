@@ -241,11 +241,12 @@ class ForecastValuesView(MethodView):
             try:
                 raw_values = raw_data['values']
             except (TypeError, KeyError):
-                return jsonify({'errors':{'error': ['Supplied JSON does not contain "values" field.']}}), 400
+                error = 'Supplied JSON does not contain "values" field.'
+                return jsonify({'errors': {'error': [error]}}), 400
             try:
                 forecast_df = pd.DataFrame(raw_values)
             except ValueError:
-                return jsonify({'errors':{'error': ['Malformed JSON']}}), 400
+                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
@@ -254,30 +255,32 @@ class ForecastValuesView(MethodView):
                                           keep_default_na=True,
                                           comment='#')
             except pd.errors.EmptyDataError:
-                return jsonify({'errors':{'error': ['Malformed CSV']}}), 400
+                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
             finally:
                 raw_data.close()
         else:
-            return jsonify({'errors':{'error': ['Invalid Content-type.']}}), 400
+            error = 'Invalid Content-type.'
+            return jsonify({'errors': {'error': [error]}}), 400
         errors = {}
         try:
             forecast_df['value'] = pd.to_numeric(forecast_df['value'],
                                                  downcast='float')
         except ValueError:
-            errors.update({'value': ['Invalid item in "value" field. Ensure that all '
-                                     'values are integers, floats, empty, NaN, or NULL']})
+            error = ('Invalid item in "value" field. Ensure that all values '
+                     'are integers, floats, empty, NaN, or NULL.')
+            errors.update({'value': [error]})
         except KeyError:
             errors.update({'value': ['Missing "value" field.']})
-
         try:
             forecast_df['timestamp'] = pd.to_datetime(
                 forecast_df['timestamp'],
                 utc=True)
         except ValueError:
-           errors.update({'timestamp': ['Invalid item in "timestamp" field. Ensure that '
-                                        'timestamps are ISO8601 compliant']})
+            error = ('Invalid item in "timestamp" field. Ensure that '
+                     'timestamps are ISO8601 compliant')
+            errors.update({'timestamp': []})
         except KeyError:
-           errors.update({'timestamp': ['Missing "timestamp" field.']})
+            errors.update({'timestamp': ['Missing "timestamp" field.']})
 
         if errors:
             return jsonify({'errors': errors}), 400
