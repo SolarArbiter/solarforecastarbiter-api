@@ -20,51 +20,98 @@ def make_user_roles(cursor, new_organization, new_permission, new_user,
     return fcn
 
 
-@pytest.mark.parametrize('user,objs', [
-    [USERS[0][1], [o[0] for o in FX_OBJS[:4]]],
-    [USERS[1][1], [o[0] for o in FX_OBJS[4:8] + FX_OBJS[0:1]]],
-])
-def test_list_objects_user_can_read(cursor, insertvals, user, objs):
-    cursor.callproc('list_objects_user_can_read', (user, 'forecasts'))
-    out = {o[0] for o in cursor.fetchall()}
-    assert out == set(objs)
+@pytest.fixture(params=[0, 1])
+def make_test_permissions(cursor, new_organization, new_permission,
+                          new_user, new_role, new_forecast,
+                          new_observation, request):
+    def make(org):
+        user = new_user(org=org)
+        role0 = new_role(org=org)
+        perm0 = new_permission('read', 'observations', False, org=org)
+        obj0 = new_observation(org=org)
+        obj1 = new_observation(org=org)
+        role1 = new_role(org=org)
+        perm1 = new_permission('create', 'forecasts', True, org=org)
+        perm2 = new_permission('read', 'forecasts', True, org=org)
+        cursor.executemany(
+            'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
+            [(user['id'], role0['id']), (user['id'], role1['id'])])
+        cursor.executemany(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', [(role0['id'], perm0['id']),
+                                (role1['id'], perm1['id']),
+                                (role1['id'], perm2['id'])])
+        cursor.executemany(
+            'INSERT INTO permission_object_mapping (permission_id, object_id)'
+            ' VALUES (%s, %s)',
+            [(perm0['id'], obj0['id']), (perm0['id'], obj1['id'])])
+        fx = new_forecast(org=org)
+        return {'user': user, 'roles': [role0, role1],
+                'observations': [obj0, obj1],
+                'forecasts': [fx],
+                'permissions': [perm0, perm1, perm2]}
+    return make
 
 
-@pytest.mark.parametrize('user,obj,action', [
-    [USERS[0][1], FX_OBJS[0][0], 'read'],
-    [USERS[0][1], FX_OBJS[1][0], 'read'],
-    [USERS[0][1], FX_OBJS[2][0], 'read'],
-    [USERS[1][1], FX_OBJS[6][0], 'read'],
-    [USERS[1][1], FX_OBJS[7][0], 'read'],
-    [USERS[1][1], FX_OBJS[0][0], 'read'],
-])
-def test_can_user_perform_action(insertvals, cursor, user, obj, action):
+def test_list_objects_user_can_read_diff_org(cursor, make_test_permissions,
+                                             new_organization):
+    """Test list_objects_user_can_read for two users in different orgs"""
+    org0 = new_organization()
+    user0 = make_test_permissions(org0)
+    org1 = new_organization()
+    user1 = make_test_permissions(org1)
+    for otype in ['observations', 'forecasts']:
+        for udict in [user0, user1]:
+            objs = {obj['id'] for obj in udict[otype]}
+            authid = udict['user']['auth0_id']
+            cursor.callproc('list_objects_user_can_read', (authid, otype))
+            out = {o[0] for o in cursor.fetchall()}
+            assert out == objs
+
+
+def test_list_objects_user_can_read_same_org(cursor, make_test_permissions,
+                                             new_organization):
+    """
+    Test list_objects_user_can_read for two users in same orgs
+    with read all forecasts permissions
+    """
+    org0 = new_organization()
+    user0 = make_test_permissions(org0)
+    user1 = make_test_permissions(org0)
+    fxobjs = {fx['id'] for user in [user0, user1] for fx in user['forecasts']}
+    for udict in [user0, user1]:
+        objs = {obj['id'] for obj in udict['observations']}
+        authid = udict['user']['auth0_id']
+        cursor.callproc('list_objects_user_can_read', (authid, 'observations'))
+        out = {o[0] for o in cursor.fetchall()}
+        assert out == objs
+
+        cursor.callproc('list_objects_user_can_read', (authid, 'forecasts'))
+        out = {o[0] for o in cursor.fetchall()}
+        assert out == fxobjs
+
+
+@pytest.mark.parametrize('action', ['read', 'update', 'delete'])
+@pytest.mark.parametrize('other', ['read', 'update', 'delete'])
+def test_can_user_perform_action(cursor, make_user_roles, action, getfcn,
+                                 other):
+    """That that a user can (and can not) perform the specified action"""
+    newfcn, obj_type = getfcn
+    info = make_user_roles(action, obj_type, True)
+    authid = info['user']['auth0_id']
+    obj = newfcn(org=info['org'])
     cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
-                   (user, obj, action))
-    out = cursor.fetchall()
-    assert out[0][0]
-
-
-@pytest.mark.parametrize('user,obj,action', [
-    [USERS[0][1], FX_OBJS[0][0], 'create'],
-    [USERS[0][1], FX_OBJS[0][0], 'update'],
-    [USERS[0][1], FX_OBJS[0][0], 'delete'],
-    [USERS[0][1], FX_OBJS[5][0], 'read'],
-    [USERS[0][1], USERS[0][0], 'read'],
-    [USERS[1][1], FX_OBJS[1][0], 'read'],
-    [USERS[1][1], FX_OBJS[7][0], 'delete']
-])
-def test_can_user_perform_action_denied(insertvals, cursor, user, obj, action):
-    cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
-                   (user, obj, action))
-    out = cursor.fetchall()
-    assert not out[0][0]
+                   (authid, obj['id'], other))
+    if action == other:
+        assert cursor.fetchone()[0] == 1
+    else:
+        assert cursor.fetchone()[0] == 0
 
 
 def test_can_user_perform_action_multiple_permissions(
         cursor, make_user_roles, new_permission, new_forecast):
     """
-    Test that can_user_perform_action works when one objet is assigned
+    Test that can_user_perform_action works when one object is assigned
     to duplicate permissions
     """
     info = make_user_roles('read', 'forecasts', False)
@@ -80,32 +127,62 @@ def test_can_user_perform_action_multiple_permissions(
                              (info['permission']['id'], fx['id'])])
     cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
                    (info['user']['auth0_id'], fx['id'], 'read'))
-    assert cursor.fetchone()[0]
+    assert cursor.fetchone()[0] == 1
 
 
-def test_user_can_create(insertvals, cursor):
+def test_can_user_perform_not_create(cursor, make_user_roles, getfcn):
+    """Make sure can_user_perform fails on create"""
+    newfcn, obj_type = getfcn
+    info = make_user_roles('create', obj_type, True)
+    authid = info['user']['auth0_id']
+    obj = newfcn(org=info['org'])
+    cursor.execute('SELECT can_user_perform_action(%s, %s, %s)',
+                   (authid, obj['id'], 'create'))
+    assert cursor.fetchone()[0] == 0
+
+
+def test_user_can_create(cursor, make_user_roles, getfcn):
+    """Make sure can_user_perform fails on create"""
+    newfcn, obj_type = getfcn
+    info = make_user_roles('create', obj_type, True)
+    authid = info['user']['auth0_id']
+    newfcn(org=info['org'])
     cursor.execute('SELECT user_can_create(%s, %s)',
-                   (USERS[0][1], 'forecasts'))
-    out = cursor.fetchall()
-    assert out[0][0]
+                   (authid, obj_type))
+    assert cursor.fetchone()[0] == 1
 
 
-def test_user_can_create_diff_org(insertvals, cursor):
-    cursor.execute('SELECT user_can_create(%s, %s)',
-                   (USERS[1][1], 'forecasts'))
-    out = cursor.fetchall()
-    assert not out[0][0]
+def test_user_can_create_diff_org(cursor, make_test_permissions,
+                                  new_organization, new_permission):
+    """Make sure user can't create objects in another org even with
+    permissions"""
+    org0 = new_organization()
+    user0 = make_test_permissions(org0)
+    authid = user0['user']['auth0_id']
+    org1 = new_organization()
+    perm = new_permission('create', 'roles', True, org=org1)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES'
+        ' (%s, %s)', (user0['roles'][0]['id'], perm['id']))
+    cursor.execute(
+        'SELECT user_can_create(%s, %s)', (authid, 'roles'))
+    assert cursor.fetchone()[0] == 0
+    cursor.execute(
+        'SELECT user_can_create(%s, %s)', (authid, 'forecasts'))
+    assert cursor.fetchone()[0] == 1
 
 
-@pytest.mark.parametrize('user', [USERS[0][1], USERS[1][1]])
 @pytest.mark.parametrize('type_', [
     'roles', 'users', 'permissions', 'observations', 'mappings',
     'sites', 'aggregates'])
-def test_user_can_create_other_objs_denied(insertvals, cursor, user, type_):
+def test_user_can_create_other_objs_denied(
+        cursor, type_, make_test_permissions, new_organization):
+    org = new_organization()
+    user0 = make_test_permissions(org)
+    authid = user0['user']['auth0_id']
     cursor.execute('SELECT user_can_create(%s, %s)',
-                   (user, type_))
-    out = cursor.fetchall()
-    assert not out[0][0]
+                   (authid, type_))
+    assert cursor.fetchone()[0] == 0
 
 
 def test_user_can_create_multiple_permissions(cursor, make_user_roles,
@@ -117,8 +194,8 @@ def test_user_can_create_multiple_permissions(cursor, make_user_roles,
     cursor.execute(
         'SELECT user_can_create(%s, %s)',
         (user['auth0_id'], 'forecasts'))
-    assert cursor.fetchone()[0]
-    role = new_role(org=org, i=99)
+    assert cursor.fetchone()[0] == 1
+    role = new_role(org=org)
     perm = new_permission('create', 'forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
@@ -129,4 +206,4 @@ def test_user_can_create_multiple_permissions(cursor, make_user_roles,
     cursor.execute(
         'SELECT user_can_create(%s, %s)',
         (user['auth0_id'], 'forecasts'))
-    assert cursor.fetchone()[0]
+    assert cursor.fetchone()[0] == 1
