@@ -42,7 +42,7 @@ def test_object_mapping_when_new_permission_applies_to_all(
     """
     newfcn, obj_type = getfcn
     org = new_organization()
-    [newfcn(org=org, i=i) for i in range(count)]
+    [newfcn(org=org) for i in range(count)]
     perm = new_permission(action, obj_type, True, org=org)
     cursor.execute(
         'SELECT COUNT(*) from permission_object_mapping WHERE '
