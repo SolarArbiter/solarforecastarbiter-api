@@ -6,7 +6,8 @@ VALID_OBS_JSON = {
     "name": "Ashland OR, ghi",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
-    "interval_label": "beginning"
+    "interval_label": "beginning",
+    "interval_length": 1,
 }
 
 
@@ -22,7 +23,7 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
                                      'interval_label', 'invalid')
 
 
-empty_json_response = '{"interval_label":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 def test_observation_post_success(api):

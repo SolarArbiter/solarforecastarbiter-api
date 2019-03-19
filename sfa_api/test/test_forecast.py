@@ -8,9 +8,9 @@ VALID_FORECAST_JSON = {
     "variable": "ac_power",
     "interval_label": "beginning",
     "issue_time_of_day": "12:00",
-    "lead_time_to_start": "01:00",
-    "interval_length": "00:01",
-    "run_length": "01:00",
+    "lead_time_to_start": 60,
+    "interval_length": 1,
+    "run_length": 86400,
     "value_type": "interval_mean",
 }
 
@@ -37,7 +37,7 @@ INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON,
                                  'value_type', 'invalid')
 
 
-empty_json_response = '{"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 @pytest.mark.parametrize('payload,status_code', [
@@ -55,9 +55,9 @@ def test_forecast_post_success(api, payload, status_code):
     (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
     (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
     (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in %H:%M format."]}'), # NOQA
-    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Time not in %H:%M format."]}'), # NOQA
-    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Time not in %H:%M format."]}'), # NOQA
-    (INVALID_RUN_LENGTH, '{"run_length":["Time not in %H:%M format."]}'),
+    (INVALID_LEAD_TIME, '{"lead_time_to_start":["Not a valid integer."]}'), # NOQA
+    (INVALID_INTERVAL_LENGTH, '{"interval_length":["Not a valid integer."]}'), # NOQA
+    (INVALID_RUN_LENGTH, '{"run_length":["Not a valid integer."]}'),
     (INVALID_VALUE_TYPE, '{"value_type":["Not a valid choice."]}'),
     ({}, empty_json_response)
 ])

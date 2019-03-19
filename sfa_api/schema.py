@@ -278,7 +278,6 @@ class ForecastPostSchema(ma.Schema):
         description=("The difference between the issue time and the start of "
                      "the first forecast interval in minutes, e.g. 60 for one"
                      "hour."),
-        validate=TimeFormat('%H:%M'),
         required=True)
     interval_label = ma.String(
         title='Interval Label',
@@ -290,10 +289,9 @@ class ForecastPostSchema(ma.Schema):
         title='Interval length',
         description=('The length of time that each data point represents in'
                      'minutes, e.g. 5 for 5 minutes.'),
-        validate=TimeFormat('%H:%M'),
         required=True
     )
-    run_length = ma.String(
+    run_length = ma.Integer(
         title='Run Length / Issue Frequency',
         description=('The total length of a single issued forecast run in '
                      'minutes, e.g. 60 for 1 hour. To enforce a continuous,'
