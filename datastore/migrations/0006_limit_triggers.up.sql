@@ -1,18 +1,4 @@
--- add trigger for before deletion from sites table blocking on existing forecast
-CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER fail_on_site_delete_if_forecast BEFORE DELETE ON arbiter_data.sites
-FOR EACH ROW
-BEGIN
-    DECLARE fxexists BOOLEAN;
-    SET fxexists = (
-        SELECT 1 FROM forecasts WHERE site_id = OLD.id
-    );
-    IF fxexists IS NOT NULL AND fxexists THEN
-        SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Site cannot be deleted, a forecast still references it.', MYSQL_ERRNO = 1451;
-    END IF;
-END;
-
-
--- restrict fields that can be updated in forecasts
+-- restrict fields that can be updated in sites
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_sites_update BEFORE UPDATE ON arbiter_data.sites
 FOR EACH ROW
 BEGIN
@@ -47,5 +33,14 @@ END;
 
 
 -- add trigger to fail on aggregate delete if forecast references it
-/*CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER fail_on_aggregate_delete_if_forecast BEFORE DELETE ON arbiter_data.aggregates
-FOR EACH ROW*/
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER fail_on_aggregate_delete_if_forecast BEFORE DELETE ON arbiter_data.aggregates
+FOR EACH ROW
+BEGIN
+    DECLARE fxexists BOOLEAN;
+    SET fxexists = (
+        SELECT 1 FROM forecasts WHERE site_id = OLD.id LIMIT 1
+    );
+    IF fxexists IS NOT NULL AND fxexists THEN
+        SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Aggregate cannot be deleted, a forecast still references it.', MYSQL_ERRNO = 1451;
+    END IF;
+END;

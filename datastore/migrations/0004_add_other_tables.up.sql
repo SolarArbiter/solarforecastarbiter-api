@@ -46,7 +46,10 @@ CREATE TABLE arbiter_data.forecasts(
     KEY (site_id),
     FOREIGN KEY (organization_id)
         REFERENCES organizations(id)
-        ON DELETE CASCADE ON UPDATE RESTRICT
+        ON DELETE CASCADE ON UPDATE RESTRICT,
+    FOREIGN KEY (site_id)
+        REFERENCES sites(id)
+        ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
 
 

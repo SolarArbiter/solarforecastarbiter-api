@@ -68,6 +68,11 @@ FX_OBJS = ([(newuuid(), ORGANIZATIONS[0][0], SITES[0][0], f'o0 fx{i}')
            [(newuuid(), ORGANIZATIONS[1][0], SITES[1][0], f'o1 fx{i}')
             for i in range(4)])
 
+OBS_OBJS = ([(newuuid(), ORGANIZATIONS[0][0], SITES[0][0], f'o0 obs{i}')
+             for i in range(3)] +
+            [(newuuid(), ORGANIZATIONS[1][0], SITES[1][0], f'o1 obs{i}')
+             for i in range(2)])
+
 # read_permissions[2] should automatically be added by trigger
 PERM_OBJ_MAP = [(READ_PERMISSIONS[0][0], FX_OBJS[0][0]),
                 (READ_PERMISSIONS[0][0], FX_OBJS[1][0]),
@@ -104,6 +109,9 @@ def insertvals(cursor):
     cursor.executemany(
         "INSERT INTO forecasts (id, organization_id, site_id, name) VALUES "
         "(%s, %s, %s, %s)", FX_OBJS)
+    cursor.executemany(
+        "INSERT INTO observations (id, organization_id, site_id, name) VALUES "
+        "(%s, %s, %s, %s)", OBS_OBJS)
     cursor.executemany(
         "INSERT INTO permission_object_mapping (permission_id, object_id) "
         "VALUES (%s, %s)", PERM_OBJ_MAP)
