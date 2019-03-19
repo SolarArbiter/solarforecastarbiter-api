@@ -6,9 +6,10 @@ static_forecasts = {
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "ac_power",
         "issue_time_of_day": "06:00",
-        "issue_frequency": "1 day",
+        "interval_length": 5,
+        "run_length": 86400,
         "interval_label": "beginning",
-        "lead_time_to_start": "1 hour",
+        "lead_time_to_start": "60",
         "value_type": "mean",
     },
     'f8dd49fa-23e2-48a0-862b-ba0af6dec276': {
@@ -18,9 +19,10 @@ static_forecasts = {
         "site_id": "123e4567-e89b-12d3-a456-426655440002",
         "variable": "ac_power",
         "issue_time_of_day": "12:00",
-        "issue_frequency": "1 hour",
+        "run_length": 60,
+        "interval_length": 1,
         "interval_label": "beginning",
-        "lead_time_to_start": "1 hour",
+        "lead_time_to_start": 60,
         "value_type": "mean",
     }
 }

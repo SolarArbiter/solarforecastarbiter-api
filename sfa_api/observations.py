@@ -173,7 +173,7 @@ class ObservationValuesView(MethodView):
             try:
                 start = pd.Timestamp(start)
             except ValueError:
-                errors.append({'start': ['Invalid start date format']})
+                errors.update({'start': ['Invalid start date format']})
         if end is not None:
             try:
                 end = pd.Timestamp(end)
