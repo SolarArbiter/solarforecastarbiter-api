@@ -35,7 +35,7 @@ BEGIN
             )
         ) AND permission_id IN (
             SELECT id FROM permissions WHERE action = theaction
-        ) AND object_id = objectid
+        ) AND object_id = objectid LIMIT 1
     );
     IF isin IS NOT NULL AND isin THEN
        RETURN TRUE;
@@ -61,7 +61,7 @@ BEGIN
                 SELECT role_id FROM user_role_mapping WHERE user_id = uid
             )
         ) AND action = 'create' AND object_type = objecttype
-          AND organization_id = oid
+          AND organization_id = oid LIMIT 1
     );
     IF isin IS NOT NULL AND isin THEN
         RETURN TRUE;
