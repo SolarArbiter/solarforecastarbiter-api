@@ -90,6 +90,11 @@ CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_obs
 FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
 
 
+-- add trigger for deletion from forecasts table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_forecasts_delete AFTER DELETE ON arbiter_data.forecasts
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
 -- add trigger for deletion from aggregates table
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_aggregates_delete AFTER DELETE ON arbiter_data.aggregates
 FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
