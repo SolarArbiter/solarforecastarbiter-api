@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from uuid import uuid1
 
 
@@ -79,6 +80,129 @@ PERM_OBJ_MAP = [(READ_PERMISSIONS[0][0], FX_OBJS[0][0]),
                 (READ_PERMISSIONS[1][0], FX_OBJS[2][0]),
                 (READ_PERMISSIONS[1][0], FX_OBJS[3][0]),
                 (READ_PERMISSIONS[3][0], FX_OBJS[0][0])]
+
+
+@pytest.fixture(scope='session')
+def anint():
+    i = 0
+    yield i
+    i += 1
+
+
+@pytest.fixture(scope='function')
+def new_organization(cursor, anint):
+    def fnc(i=anint):
+        out = OrderedDict(id=newuuid(), name=f'org{i}')
+        cursor.execute('INSERT INTO organizations (id, name) VALUES (%s, %s)',
+                       list(out.values()))
+        return out
+    return fnc
+
+
+@pytest.fixture()
+def new_user(cursor, new_organization, anint):
+    def fcn(org=None, i=anint):
+        if org is None:
+            org = new_organization(i=i)
+        out = OrderedDict(id=newuuid(), auth0_id=f'authid{i}',
+                          organization_id=org['id'])
+        cursor.execute(
+            'INSERT INTO users (id, auth0_id, organization_id) VALUES '
+            '(%s, %s, %s)', list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture()
+def new_role(cursor, new_organization, anint):
+    def fcn(org=None, i=anint):
+        if org is None:
+            org = new_organization(i=i)
+        out = OrderedDict(id=newuuid(), name=f'role{i}',
+                          description='therole',
+                          organization_id=org['id'])
+        cursor.execute(
+            'INSERT INTO roles (id, name, description, organization_id) '
+            'VALUES (%s, %s, %s, %s)', list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture()
+def new_permission(cursor, new_organization, anint):
+    def fcn(action, object_type, applies_to_all, org=None, i=anint):
+        if org is None:
+            org = new_organization(i=i)
+        out = OrderedDict(id=newuuid(), description='perm',
+                          organization_id=org['id'],
+                          action=action, object_type=object_type,
+                          applies_to_all=applies_to_all)
+        cursor.execute(
+            'INSERT INTO permissions (id, description, organization_id, action'
+            ', object_type, applies_to_all) VALUES (%s, %s, %s, %s, %s, %s)',
+            list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture()
+def new_site(cursor, new_organization, anint):
+    def fcn(org=None, i=anint):
+        if org is None:
+            org = new_organization(i=i)
+        out = OrderedDict(id=newuuid(), organization_id=org['id'],
+                          name=f'site{i}')
+        cursor.execute(
+            'INSERT INTO sites (id, organization_id, name) VALUES '
+            '(%s, %s, %s)', list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture()
+def new_forecast(cursor, new_site, anint):
+    def fcn(site=None, org=None, i=anint):
+        if site is None:
+            site = new_site(org)
+        out = OrderedDict(
+            id=newuuid(), organization_id=site['organization_id'],
+            site_id=site['id'], name=f'forecast{i}')
+        cursor.execute(
+            'INSERT INTO forecasts (id, organization_id, site_id, name) VALUES '
+            '(%s, %s, %s, %s)', list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture()
+def new_observation(cursor, new_site, anint):
+    def fcn(site=None, org=None, i=anint):
+        if site is None:
+            site = new_site(org)
+        out = OrderedDict(
+            id=newuuid(), organization_id=site['organization_id'],
+            site_id=site['id'], name=f'observation{i}')
+        cursor.execute(
+            'INSERT INTO observations (id, organization_id, site_id, name) '
+            'VALUES (%s, %s, %s, %s)', list(out.values()))
+        return out
+    return fcn
+
+
+@pytest.fixture(params=['sites', 'users', 'roles', 'forecasts',
+                        'observations'])
+def getfcn(request, new_site, new_user, new_role, new_forecast,
+           new_observation):
+    if request.param == 'sites':
+        return new_site, 'sites'
+    elif request.param == 'users':
+        return new_user, 'users'
+    elif request.param == 'roles':
+        return new_role, 'roles'
+    elif request.param == 'forecasts':
+        return new_forecast, 'forecasts'
+    elif request.param == 'observations':
+        return new_observation, 'observations'
 
 
 @pytest.fixture(scope='function')
