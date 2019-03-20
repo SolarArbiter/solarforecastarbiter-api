@@ -10,7 +10,7 @@ VALID_FORECAST_JSON = {
     "issue_time_of_day": "12:00",
     "lead_time_to_start": 60,
     "interval_length": 1,
-    "run_length": 86400,
+    "run_length": 1440,
     "value_type": "interval_mean",
 }
 

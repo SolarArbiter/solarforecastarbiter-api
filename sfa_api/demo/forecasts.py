@@ -7,7 +7,7 @@ static_forecasts = {
         "variable": "ac_power",
         "issue_time_of_day": "06:00",
         "interval_length": 5,
-        "run_length": 86400,
+        "run_length": 1440,
         "interval_label": "beginning",
         "lead_time_to_start": "60",
         "value_type": "mean",
