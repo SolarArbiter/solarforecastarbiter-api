@@ -1,5 +1,4 @@
 import pytest
-from conftest import USERS, FX_OBJS
 
 
 @pytest.fixture()
