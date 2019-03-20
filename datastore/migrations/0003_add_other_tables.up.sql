@@ -22,6 +22,8 @@ CREATE TABLE arbiter_data.sites (
     irradiance_loss_factor DECIMAL(5, 2) NOT NULL,
     dc_loss_factor DECIMAL(5, 2) NOT NULL,
     ac_loss_factor DECIMAL(5, 2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     FOREIGN KEY (organization_id)
@@ -42,6 +44,8 @@ CREATE TABLE arbiter_data.observations (
     value_type VARCHAR(32) NOT NULL,
     uncertainty FLOAT NOT NULL,
     extra_parameters VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     KEY (site_id),
@@ -68,6 +72,8 @@ CREATE TABLE arbiter_data.forecasts(
     run_length SMALLINT UNSIGNED NOT NULL,
     value_type VARCHAR(32) NOT NULL,
     extra_parameters VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     KEY (site_id),
