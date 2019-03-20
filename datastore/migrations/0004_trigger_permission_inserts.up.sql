@@ -37,6 +37,10 @@ BEGIN
                 SELECT NEW.id, id FROM arbiter_data.permissions WHERE organization_id = NEW.organization_id;
         END IF;
     END IF;
+    -- make sure any new permission gets added to an existing applies_to_all which references permissions
+    INSERT IGNORE INTO arbiter_data.permission_object_mapping (permission_id, object_id)
+        SELECT id, NEW.id from arbiter_data.permissions WHERE action !='create'
+            AND applies_to_all AND organization_id = NEW.organization_id and object_type = 'permissions';
 END;
 
 
