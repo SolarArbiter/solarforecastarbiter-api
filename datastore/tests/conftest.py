@@ -24,6 +24,12 @@ def cursor(connection):
     return connection.cursor()
 
 
+@pytest.fixture()
+def dictcursor(connection):
+    connection.rollback()
+    return connection.cursor(cursor=pymysql.cursors.DictCursor)
+
+
 def uuid_to_bin(uuid):
     """Copy mysql UUID_TO_BIN with time swap of hi and low"""
     return uuid.bytes[6:8] + uuid.bytes[4:6] + uuid.bytes[:4] + uuid.bytes[8:]
