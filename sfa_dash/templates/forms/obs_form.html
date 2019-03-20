@@ -1,0 +1,58 @@
+{% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% set page_title = 'Create New Observation' %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+{% if form_data is not defined %}
+{% set form_data = {} %}
+{% endif %}
+<form action="{{ url_for('forms.create_site_observation', site_id=site_metadata['site_id']) }}" method="post" id="observation-form", enctype='application/json'>
+  <div class="form-group">
+    <input type="hidden" name="site_id" value="{{ site_metadata['site_id'] }}">
+	<div class="form-element">
+      {{ form.input('Name', 'text', 'name', 'Name of the Observation.', form_data=form_data) }}
+	</div>
+	<div class="form-element">
+      {{ form.select('Variable', 'variable',
+                     {"ghi":"Global Horizontal Irradiance (W/m^2)",
+                      "dni":"Direct Normal Irradiance (W/m^2)",
+                      "dhi":"Diffuse Horizontal Irradiance (W/m^2)",
+                      "poa":"Plane of Array Irradiance (W/m^2)",
+                      "rh":"Relative Humidity (%)",
+                      "ac-power":"AC Power (MW)",
+                      "dc-power":"DC Power(MW)",
+                      "surface-temperature":"Surface Temperature (C)",
+                      "surface-wind-speed":"Surface Wind Speed (m/s)"},
+                      form_data=form_data) }}
+	</div>
+	<div class="form-element">
+      {{ form.select('Value Type', 'value_type',
+                      {"interval_mean": "Interval Mean",
+                       "instantaneous": "Instantaneous"},
+                       form_data=form_data) }}
+	</div>
+    <div class="form-element">
+      {{ form.input('Uncertainty', 'number', 'uncertainty',
+                    'A measure of uncertainty of Observation values.',
+                    form_data=form_data) }}
+	</div>
+    <div class="form-element">
+      {{ form.timedelta('Interval length', 'interval_length',
+                        'The length of time that each data point represents inHH:MM format, e.g. 00:05 for 5 minutes.') }}
+    </div>
+    <div class="form-element">
+      {{ form.select('Interval Label', 'interval_label',
+					 {'beginning': 'Beginning',
+					  'ending': 'Ending',
+					  'instant': 'Instant'},
+					  'Indicates if a time labels the start or the end of an interval.') }}
+    </div>
+    <div class="form-element full-width">
+	  <label>Extra Parameters (Optional)</label>
+      <textarea cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON"></textarea>
+	</div>
+  </div>
+</form>
+<button type="submit" form="observation-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}

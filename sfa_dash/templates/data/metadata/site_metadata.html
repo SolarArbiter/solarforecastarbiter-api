@@ -1,0 +1,36 @@
+{% extends "data/metadata/meta_container.html" %}
+{% import "data/metadata/meta_macro.jinja" as macro %}
+{% set data_type = 'Site' %}
+{% block metadata %}
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+  {{ macro.li('Name', name) }}
+  {{ macro.li('Latitude', latitude | string,  '&deg;N') }}
+  {{ macro.li('Longitude', longitude | string,  '&deg;E') }}
+  {{ macro.li('Timezone', timezone) }}
+  {{ macro.li('Elevation', elevation | string, 'm') }}
+</ul>
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+  {% if modeling_parameters %}
+    <li><b>Modeling Parameters:</b>
+      <div class="data-metadata-field-modeling-parameters pl-2">
+        <ul class="data-metadata-fields">
+        {{ macro.li('AC Capacity', modeling_parameters['ac_capacity'] | string, 'MW') }}
+        {{ macro.li('DC Capacity', modeling_parameters['dc_capacity'] | string, 'MW') }}
+        {{ macro.li('AC Loss Factor', modeling_parameters['ac_loss_factor'] | string, '&percnt;') }}
+        {{ macro.li('DC Loss Factor', modeling_parameters['dc_loss_factor'] | string, '&percnt;') }}
+        {{ macro.li('Temperatue Coefficient', modeling_parameters['temperature_coefficient'] | string, '1/C')}}
+        {{ macro.li('Tracking Type', modeling_parameters['tracking_type']) }}
+        {{ macro.li('Surface Tilt', modeling_parameters['surface_tilt'] | string, '&deg;') }}
+        {{ macro.li('Surface Azimuth', modeling_parameters['surface_azimuth'] | string, '&deg;') }}
+        {{ macro.li('Axis Tilt', modeling_parameters['axis_tilt'] | string, '&deg;') }}
+        {{ macro.li('Axis Azimuth', modeling_parameters['axis_azimuth'] | string, '&deg;') }}
+        {{ macro.li('Ground Coverage Ratio', modeling_parameters['ground_coverage_ratio'] | string) }}
+        {{ macro.li('Backtrack', modeling_parameters['backtrack'] | string) }}
+        {{ macro.li('Max Rotation Angle', modeling_parameters['max_rotation_angle'] | string, '&deg;') }}
+        
+        </ul>
+      </div>
+    </li>
+  {% endif %}
+</ul>
+{% endblock %}

@@ -1,0 +1,10 @@
+<div class="data-metadata border mb-3">
+  <h3 class="section-title">{{ data_type }} Metadata</h3>
+  <div class="row">
+	{% block metadata %}
+    <ul class="data-metadata-fields col-md-6 col-xs-12">
+	  {{ macro.li('Name', name) }}
+    </ul>
+    {% endblock %}
+  </div>
+</div>

@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block dash %}
 <!-- org name -->
-<h2 class="page-title">{{ breadcrumb|safe }}</h2>
+<h2 class="page-title">
+{% if page_title is defined %}
+{{ page_title }}
+{%  else %}
+{{ breadcrumb|safe }}
+{% endif %}
+</h2>
 {% include "dash/subnav.html" %}
 {% block content %}{% endblock %}
 {% endblock %}

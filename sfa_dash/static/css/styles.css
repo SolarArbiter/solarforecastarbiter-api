@@ -79,7 +79,6 @@ header nav{
 
 /* Secondary Nav */
 .sub-nav{
-	border-bottom: 1px solid #dee2e6;
 }
 .sub-nav-list{
 	list-style: none;
@@ -123,9 +122,6 @@ ul.data-metadata-fields{
 .data-metadata-label{
 	font-weight: 700;
 }
-.metadata-field{
-	width: 50%;
-}
 
 /* Table Search CSS */
 .results tr[visible='false'],
@@ -140,4 +136,87 @@ ul.data-metadata-fields{
 .counter{
   padding:8px; 
   color:#ccc;
+}
+
+/* Forms */
+.form-group{
+  float: left;
+}
+.form-element label{
+  font-weight: 600;
+}
+.form-element{
+  width: 50%;
+  float: left;
+  padding: .5em 1em;
+  position: relative;
+}
+.form-element.full-width{
+  width: 100%;
+}
+.time-field{
+  width: unset;
+  display: inline-block;
+}
+.form-element .well-known-text-field{
+  width: 100%;
+}
+fieldset{
+  float: left;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 3px #DDD;
+  margin: 1em 0;
+  padding: 1em 0; 
+}
+pre.example-text{
+  background-color: #f8f9fa;
+  border: 1px solid #f0f0f0;
+  border-radius: 5px;
+  padding: 1em;
+}
+span.help-text{
+  display: none;
+  width: 100%;
+  padding: .5em;
+  border: 2px solid #6c757d;
+  border-radius: 8px;
+  position: absolute;
+  background-color: white;
+  box-shadow: 1px 1px 1px;
+  z-index: 1;
+}
+/* Tooltip arrow */
+span.help-text::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #6c757d transparent;
+}
+span.help-text.time-field-help::before {
+  left: 20%;
+}
+span.help-text.help-text-top{
+  bottom: 3.5em;
+}
+span.help-text.help-text-top::before{
+  border-color: #6c757d transparent transparent transparent;
+  top: unset;
+  bottom: -13px;
+}
+
+input[class$="-field"]:focus ~ span.help-text,select[class$="-field"]:focus ~ span.help-text{
+  display: block;
+}
+ul.error-list{
+  list-style: none;
+}
+li.alert{
+  margin-bottom: .5rem;
+}
+li.alert p{
+  margin-bottom: 0;
 }

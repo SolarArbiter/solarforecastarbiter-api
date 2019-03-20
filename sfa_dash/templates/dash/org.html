@@ -2,12 +2,13 @@
 {% block dash %}
 <!-- org name -->
 <h2 class="page-title">{{ breadcrumb | safe }}</h2>
-<nav class="sub-nav">
+{#<nav class="sub-nav">
   <ul class="sub-nav-list">
-    <li class="sub-nav-item"><a class="sub-nav-link" href="#">Observation Data</a></li>
-    <li class="sub-nav-item"><a class="sub-nav-link" href="#">Forecast Data</a></li>
+	<li class="sub-nav-item"><a class="sub-nav-link" href="/sites">Sites</a></li>
+    <li class="sub-nav-item"><a class="sub-nav-link" href="/observations">Observations</a></li>
+    <li class="sub-nav-item"><a class="sub-nav-link" href="/forecasts">Forecasts</a></li>
     <li class="sub-nav-item"><a class="sub-nav-link" href="#">Trials</a></li>
   </ul>
-</nav>
+</nav> #}
 {% block content %}{% endblock %}
 {% endblock %}

@@ -1,0 +1,50 @@
+{% extends "dash/data.html" %}
+{% set page_title = 'Upload Observation data' %}
+{% block content %}
+{% include "sections/notifications.html" %}
+{{ metadata | safe }}
+<h3>Upload data for Observation 'GHI Instrument 1'</h3>
+<form action="{{url_for('forms.upload_observation_data', uuid=uuid) }}" method="post" id="obs-upload-form" enctype="multipart/form-data">
+  <div class="form-group">
+	<div class="form-element">
+	  <label>My data is formatted in:</label><br>
+	  <input type="radio" data-toggle="collapse" data-target=".upload-example" name="file-format" value="csv" checked/>CSV
+      <input type="radio" data-toggle="collapse" data-target=".upload-example" name="file-format" value="json"/>JSON
+	</div>
+	<div class="form-element full-width">
+      <div class="upload-example csv show">
+		<p>Observation data in CSV format should follow the formatting of the example below.</p>
+	    <pre class="example-text">
+# optional header, ignored by Solar Forecast Arbiter 
+timestamp,value,quality_flag
+2018-11-22T12:01:48Z,10.23,0 
+2018-11-22T12:07:38Z,10.67,0</pre>
+	  </div>
+	  <div class="upload-example json collapse">
+		<p>Observation data in JSON format should follow the formatting of the example below.</p>
+	    <pre class="example-text">{ 
+    “id”: “testid”, # optional, for uploader’s record 
+    “values”: [ 
+        { 
+           “timestamp”: “2018-11-22T12:01:48Z”, 
+            “value”: 10.23, 
+            “quality_flag”: 0 
+         }, 
+        { 
+           “timestamp”: “2018-11-22T12:07:38Z”, 
+            “value”: 10.67, 
+            “quality_flag”: 0 
+         }            
+    ] 
+}</pre>
+	  </div>
+	</div>	
+  	<div class="form-element full-width">
+	  <input type="file" name="observation-data" accept=".csv, .json">
+	</div>
+  </div>
+</form>
+<div class="form-element">
+  <button type="submit" form="obs-upload-form" value="Submit" class="btn btn-primary">Submit</button>
+</div>
+{% endblock %}
