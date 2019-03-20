@@ -58,6 +58,20 @@ CREATE TABLE arbiter_data.observations (
 ) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
 
 
+-- create the table to hold values for observations
+CREATE TABLE arbiter_data.observations_values (
+    id BINARY(16) NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    value FLOAT NOT NULL,
+    quality_flag TINYINT UNSIGNED NOT NULL,
+
+    PRIMARY KEY (id, timestamp),
+    FOREIGN KEY (id)
+        REFERENCES observations(id)
+        ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
+
+
 -- Create the forecasts table
 CREATE TABLE arbiter_data.forecasts(
     id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
@@ -83,6 +97,19 @@ CREATE TABLE arbiter_data.forecasts(
     FOREIGN KEY (site_id)
         REFERENCES sites(id)
         ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
+
+
+-- create the table to hold values for forecasts
+CREATE TABLE arbiter_data.forecasts_values (
+    id BINARY(16) NOT NULL,
+    timestamp TIMESTAMP NOT NULL,
+    value FLOAT NOT NULL,
+
+    PRIMARY KEY (id, timestamp),
+    FOREIGN KEY (id)
+        REFERENCES forecasts(id)
+        ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
 
 

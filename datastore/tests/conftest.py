@@ -140,6 +140,10 @@ def new_forecast(cursor, new_site):
             interval_length=60, run_length=1440,
             value_type='interval_mean', extra_parameters='')
         insert_dict(cursor, 'forecasts', out)
+        # add some  test data too
+        cursor.execute(
+            'INSERT INTO forecasts_values (id, timestamp, value) VALUES '
+            '(%s, CURRENT_TIMESTAMP(), RAND())', (out['id'], ))
         return out
     return fcn
 
@@ -156,6 +160,10 @@ def new_observation(cursor, new_site):
             interval_length=5, value_type='instantaneous',
             uncertainty=0.05, extra_parameters='')
         insert_dict(cursor, 'observations', out)
+        cursor.execute(
+            'INSERT INTO observations_values (id, timestamp, value, '
+            'quality_flag) VALUES (%s, CURRENT_TIMESTAMP(), RAND(), 0)',
+            (out['id'], ))
         return out
     return fcn
 
