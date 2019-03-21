@@ -8,64 +8,64 @@ trigger:
 
 jobs:
 
-- job: 'Test'
-  pool:
-    vmImage: 'Ubuntu-16.04'
-  strategy:
-    matrix:
-      Python37:
-        python.version: '3.7'
-    maxParallel: 4
+# - job: 'Test'
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+#   strategy:
+#     matrix:
+#       Python37:
+#         python.version: '3.7'
+#     maxParallel: 4
 
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-      architecture: 'x64'
+#   steps:
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '$(python.version)'
+#       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
-    displayName: 'Install dependencies'
+#   - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
+#     displayName: 'Install dependencies'
 
-  - script: python -m pip install -e .
-    displayName: 'Install SolarForecastArbiter API'
+#   - script: python -m pip install -e .
+#     displayName: 'Install SolarForecastArbiter API'
 
-  - script: |
-      pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
-    displayName: 'pytest'
+#   - script: |
+#       pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
+#     displayName: 'pytest'
 
-  - script: |
-      flake8 sfa_api
-    displayName: 'flake8'
+#   - script: |
+#       flake8 sfa_api
+#     displayName: 'flake8'
 
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFiles: '**/test-results.xml'
-      testRunTitle: 'Python $(python.version)'
-    condition: succeededOrFailed()
+#   - task: PublishTestResults@2
+#     inputs:
+#       testResultsFiles: '**/test-results.xml'
+#       testRunTitle: 'Python $(python.version)'
+#     condition: succeededOrFailed()
 
-  - task: PublishCodeCoverageResults@1
-    inputs:
-      codeCoverageTool: Cobertura
-      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-      reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+#   - task: PublishCodeCoverageResults@1
+#     inputs:
+#       codeCoverageTool: Cobertura
+#       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+#       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
-  - script: |
-      bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
-    displayName: 'codecov'
+#   - script: |
+#       bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
+#     displayName: 'codecov'
 
-- job: 'Publish'
-  dependsOn: 'Test'
-  pool:
-    vmImage: 'Ubuntu-16.04'
+# - job: 'Publish'
+#   dependsOn: 'Test'
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
 
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '3.x'
-      architecture: 'x64'
+#   steps:
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '3.x'
+#       architecture: 'x64'
 
-  - script: python setup.py sdist
-    displayName: 'Build sdist'
+#   - script: python setup.py sdist
+#     displayName: 'Build sdist'
 
     
 - job: 'TestDatabase'
@@ -78,8 +78,6 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
-  - script: pwd
-    
   - task: Docker@1
     displayName: 'start mysql'
     inputs:
@@ -92,7 +90,7 @@ jobs:
       ports: |
         32768:3306
       envVars: |
-        MYSQL_ROOT_PASS=testpassword
+        MYSQL_ROOT_PASSWORD=testpassword
         MYSQL_DATABASE=arbiter_data
       volumes: |
         /home/vsts/work/1/s/datastore/conf:/etc/my.cnf.d
