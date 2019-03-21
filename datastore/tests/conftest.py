@@ -10,7 +10,7 @@ import pymysql
 @pytest.fixture(scope='session')
 def connection():
     connection = pymysql.connect(
-        host='127.0.0.1',
+        host=os.getenv('MYSQL_HOST', '127.0.0.1'),
         port=int(os.getenv('MYSQL_PORT', '3306')),
         user='root',
         password='testpassword',
