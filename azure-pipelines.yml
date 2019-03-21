@@ -93,7 +93,8 @@ jobs:
 
   - script: |
       docker ps
-      set MYSQL_PORT=$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1| rev)
+      docker port solararbitersolarforecastarbiter-api_mysql_1 3306 
+      export MYSQL_PORT=$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1| rev)
       echo 'MYSQL_PORT='$MYSQL_PORT
       datastore/migrations/wait-for -t 60 127.0.0.1:$MYSQL_PORT
  
