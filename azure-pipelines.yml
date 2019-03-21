@@ -71,8 +71,6 @@ jobs:
 - job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
-  container:
-    image:  python:3.7
 
   services:
     mysql:
@@ -84,20 +82,22 @@ jobs:
         - ./datastore/conf:/etc/my.cnf.d
       ports:
         - "3306"
-    migrate_schemas:
-      build:
-        context: ./datastore/migrations
-      volumes:
-        - ./datastore/migrations:/migrations
-      entrypoint: sh ./wait-for -t 60 mysql:3306 -- /migrate -path=/migrations/ -database mysql://root:testpassword@tcp(mysql:3306)/arbiter_data up
-      
+    
   steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
+
   - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
     displayName: 'Install pytest & dependencies'
 
   - script: |
-      export MYSQL_HOST=mysql
-      export MYSQL_PORT=3306
+      export MYSQL_HOST=127.0.0.1
+      export MYSQL_PORT=$(agent.services.mysql.ports.3306)
+      echo "MYSQL="$MYSQL_HOST:$MYSQL_PORT
+      datastore/migrations/wait-for -t 60 $MYSQL_HOST:$MYSQL_PORT
+      docker run -v $(pwd)/datastore/migrations:/migrations migrate/migrate:v4.2.5 -path /migrations -database mysql://root:testpassword@tcp($MYSQL_HOST:$MYSQL_PORT)/arbiter_data up
       pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
 
