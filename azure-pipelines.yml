@@ -81,18 +81,18 @@ jobs:
   - script: python -m pip install pytest
     displayName: 'Install pytest'
 
-  # - task: DockerCompose@0
-  #   displayName: Start test database
-  #   inputs:
-  #     action: Run a Docker Compose command
-  #     dockerComposeFile: datastore/docker-compose.yml
-  #     dockerComposeCommand: up
+  - task: DockerCompose@0
+    displayName: Start test database
+    inputs:
+      action: Run a Docker Compose command
+      dockerComposeFile: datastore/docker-compose.yml
+      dockerComposeCommand: up
 
-  # - script: pytest datastore --junitxml=junit/db-test-results.xml
-  #   displayName: 'Test database'
+  - script: pytest datastore --junitxml=junit/db-test-results.xml
+    displayName: 'Test database'
 
-  # - task: PublishTestResults@4
-  #   inputs:
-  #     testResultsFiles: '**/db-test-results.xml'
-  #     testRunTitle: 'Database'
-  #   condition: suceededOrFailed()
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/db-test-results.xml'
+      testRunTitle: 'Database'
+    condition: suceededOrFailed()
