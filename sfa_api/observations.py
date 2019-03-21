@@ -166,19 +166,19 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        errors = []
+        errors = {}
         start = request.args.get('start', None)
         end = request.args.get('end', None)
         if start is not None:
             try:
                 start = pd.Timestamp(start)
             except ValueError:
-                errors.append('Invalid start date format')
+                errors.update({'start': ['Invalid start date format']})
         if end is not None:
             try:
                 end = pd.Timestamp(end)
             except ValueError:
-                errors.append('Invalid end date format')
+                errors.update({'end': ['Invalid end date format']})
         if errors:
             return jsonify({'errors': errors}), 400
         storage = get_storage()
@@ -246,11 +246,12 @@ class ObservationValuesView(MethodView):
             try:
                 raw_values = raw_data['values']
             except (TypeError, KeyError):
-                return 'Supplied JSON does not contain "values" field.', 400
+                error = 'Supplied JSON does not contain "values" field.'
+                return jsonify({'errors': {'error': [error]}}), 400
             try:
                 observation_df = pd.DataFrame(raw_values)
             except ValueError:
-                return 'Malformed JSON', 400
+                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
         elif request.content_type == 'text/csv':
             raw_data = StringIO(request.get_data(as_text=True))
             try:
@@ -259,38 +260,42 @@ class ObservationValuesView(MethodView):
                                              keep_default_na=True,
                                              comment='#')
             except pd.errors.EmptyDataError:
-                return 'Malformed CSV', 400
+                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
             finally:
                 raw_data.close()
         else:
-            return 'Invalid Content-type.', 400
+            error = 'Invalid Content-type.'
+            return jsonify({'errors': {'error': [error]}}), 415
 
         # Verify data format and types are parseable.
         # create list of errors to return meaningful messages to the user.
-        errors = []
+        errors = {}
         try:
             observation_df['value'] = pd.to_numeric(observation_df['value'],
                                                     downcast='float')
         except ValueError:
-            errors.append('Invalid item in "value" field. Ensure that all '
-                          'values are integers, floats, empty, NaN, or NULL')
+            error = ('Invalid item in "value" field. Ensure that all '
+                     'values are integers, floats, empty, NaN, or NULL.')
+            errors.update({'values': [error]})
         except KeyError:
-            errors.append('Missing "value" field.')
+            errors.update({'values': ['Missing "value" field.']})
 
         try:
             observation_df['timestamp'] = pd.to_datetime(
                 observation_df['timestamp'],
                 utc=True)
         except ValueError:
-            errors.append('Invalid item in "timestamp" field. Ensure '
-                          'that timestamps are ISO8601 compliant')
+            error = ('Invalid item in "timestamp" field. Ensure '
+                     'that timestamps are ISO8601 compliant')
+            errors.update({'timestamp': [error]})
         except KeyError:
-            errors.append('Missing "timestamp" field.')
+            errors.update({'values': ['Missing "timestamp" field.']})
 
         if 'quality_flag' not in observation_df.columns:
-            errors.append('Missing "quality_flag" field.')
+            errors.update({'quality_flag': ['Missing "quality_flag" field.']})
         elif not observation_df['quality_flag'].isin([0, 1]).all():
-            errors.append('Invalid item in "quality_flag" field.')
+            error = 'Invalid item in "quality_flag" field.'
+            errors.update({'quality_flag': [error]})
 
         if errors:
             return jsonify({'errors': errors}), 400

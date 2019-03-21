@@ -10,7 +10,10 @@ VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power', 'pdf_probability',
              'cdf_value']
 
-VALUE_TYPES = ['interval_mean', 'instantaneous']
+OBSERVATION_VALUE_TYPES = ['interval_mean', 'instantaneous']
+
+FORECAST_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
+                        'interval_median', 'percentile', 'instantaneous']
 
 ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -185,10 +188,14 @@ class ObservationPostSchema(ma.Schema):
                      'instant for instantaneous data'),
         validate=validate.OneOf(['beginning', 'ending', 'instant']),
         required=True)
+    interval_length = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each data point represents  in'
+                     'minutes, e.g. 5 for 5 minutes.'),
+        required=True)
     value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(VALUE_TYPES)
-    )
+        validate=validate.OneOf(OBSERVATION_VALUE_TYPES))
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
@@ -268,38 +275,35 @@ class ForecastPostSchema(ma.Schema):
                      'day. Additional issue times are uniquely determined by '
                      'the first issue time and the run length & issue '
                      'frequency attribute.'))
-    lead_time_to_start = ma.String(
+    lead_time_to_start = ma.Integer(
         title='Lead time to start',
         description=("The difference between the issue time and the start of "
-                     "the first forecast interval in HH:MM format, e.g. 01:00 "
-                     "for 1 hour."),
-        validate=TimeFormat('%H:%M'),
+                     "the first forecast interval in minutes, e.g. 60 for one"
+                     "hour."),
         required=True)
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval. N/A for '
-                     'instantaneous data'),
-        validate=validate.OneOf(['beginning', 'ending', 'instant']))
-    interval_length = ma.String(
+                     'labels the beginning or ending of the interval.'),
+        validate=validate.OneOf(['beginning', 'ending', 'instant']),
+        required=True)
+    interval_length = ma.Integer(
         title='Interval length',
-        description=('The length of time that each data point represents  in'
-                     'HH:MM format, e.g. 00:05 for 5 minutes.'),
-        validate=TimeFormat('%H:%M'),
+        description=('The length of time that each data point represents in'
+                     'minutes, e.g. 5 for 5 minutes.'),
         required=True
     )
-    run_length = ma.String(
+    run_length = ma.Integer(
         title='Run Length / Issue Frequency',
         description=('The total length of a single issued forecast run in '
-                     'HH:MM format,  e.g. 01:00 for 1 hour. To enforce a '
-                     'continuous, non-overlapping sequence, this is equal '
-                     'to the forecast run issue frequency.'),
-        validate=TimeFormat('%H:%M'),
+                     'minutes, e.g. 60 for 1 hour. To enforce a continuous,'
+                     'non-overlapping sequence, this is equal to the forecast'
+                     'run issue frequency.'),
         required=True
     )
     value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(VALUE_TYPES)
+        validate=validate.OneOf(FORECAST_VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 

@@ -9,7 +9,8 @@ static_observations = {
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "ghi",
         "value_type": "interval_mean",
-        "interval_label": "beginning"
+        "interval_label": "beginning",
+        "interval_length": 5
     },
     "9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f": {
         "extra_parameters": {
@@ -21,7 +22,8 @@ static_observations = {
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "dhi",
         "value_type": "interval_mean",
-        "interval_label": "beginning"
+        "interval_label": "beginning",
+        "interval_length": 5
     },
     "9ce9715c-bd91-47b7-989f-50bb558f1eb9": {
         "extra_parameters": {
@@ -33,7 +35,8 @@ static_observations = {
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "dni",
         "value_type": "interval_mean",
-        "interval_label": "beginning"
+        "interval_label": "beginning",
+        "interval_length": 5
     },
     "e0da0dea-9482-4073-84de-f1b12c304d23": {
         "extra_parameters": {
@@ -45,7 +48,8 @@ static_observations = {
         "site_id": "d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a",
         "variable": "ghi",
         "value_type": "interval_mean",
-        "interval_label": "beginning"
+        "interval_label": "beginning",
+        "interval_length": 5
     },
     "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2": {
         "extra_parameters": {
@@ -57,6 +61,7 @@ static_observations = {
         "site_id": "d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a",
         "variable": "ghi",
         "value_type": "interval_mean",
-        "interval_label": "beginning"
+        "interval_label": "beginning",
+        "interval_length": 5
     }
 }
