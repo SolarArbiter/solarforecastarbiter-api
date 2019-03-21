@@ -87,10 +87,14 @@ jobs:
       action: Run a Docker Compose command
       dockerComposeFile: datastore/docker-compose.yml
       dockerComposeCommand: up
-      dockerComposeFileArgs: MYSQL_PORT=$(agent.services.mysql.ports.3306)
+
+  - script: set
+    displayName: 'Show env variables'
 
   - script: pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
+    env:
+      MYSQL_PORT: $(agent.services.mysql.ports.3306)
 
   - task: PublishTestResults@2
     inputs:
