@@ -92,7 +92,8 @@ jobs:
       detached: true
 
   - script: |
-      set MYSQL_PORT=$(docker-compose -f datastore/docker-compose.yml port mysql 3306)
+      docker ps
+      set MYSQL_PORT=$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306)
       datastore/migrations/wait-for -t 60 127.0.0.1:$MYSQL_PORT
  
   - script: pytest datastore --junitxml=junit/db-test-results.xml
