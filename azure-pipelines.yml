@@ -78,6 +78,8 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
+  - script: pwd
+    
   - task: Docker@1
     inputs:
       command: run
@@ -90,7 +92,7 @@ jobs:
         MYSQL_ROOT_PASS=testpassword
         MYSQL_DATABASE=arbiter_data
       volumes: |
-        ./datastore/conf:/etc/my.cnf.d
+        $(pwd)/datastore/conf:/etc/my.cnf.d
 
   - script: |
       echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
