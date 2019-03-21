@@ -95,4 +95,5 @@ jobs:
     inputs:
       testResultsFiles: '**/db-test-results.xml'
       testRunTitle: 'Database'
-    condition: suceededOrFailed()
+    condition: succeededOrFailed()
+
