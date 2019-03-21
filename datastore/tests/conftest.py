@@ -11,7 +11,7 @@ import pymysql
 def connection():
     connection = pymysql.connect(
         host='127.0.0.1',
-        port=int(os.getenv('MYSQL_PORT', '3306').split(':')[-1]),
+        port=int(os.getenv('MYSQL_PORT', '3306')),
         user='root',
         password='testpassword',
         database='arbiter_data',
