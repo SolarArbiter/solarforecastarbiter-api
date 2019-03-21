@@ -8,53 +8,67 @@ trigger:
 
 jobs:
 
-- job: 'Test'
-  pool:
-    vmImage: 'Ubuntu-16.04'
-  strategy:
-    matrix:
-      Python37:
-        python.version: '3.7'
-    maxParallel: 4
+# - job: 'Test'
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+#   strategy:
+#     matrix:
+#       Python37:
+#         python.version: '3.7'
+#     maxParallel: 4
 
-  steps:
-  - task: UsePythonVersion@0
-    inputs:
-      versionSpec: '$(python.version)'
-      architecture: 'x64'
+#   steps:
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '$(python.version)'
+#       architecture: 'x64'
 
-  - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
-    displayName: 'Install dependencies'
+#   - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
+#     displayName: 'Install dependencies'
 
-  - script: python -m pip install -e .
-    displayName: 'Install SolarForecastArbiter API'
+#   - script: python -m pip install -e .
+#     displayName: 'Install SolarForecastArbiter API'
 
-  - script: |
-      pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
-    displayName: 'pytest'
+#   - script: |
+#       pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
+#     displayName: 'pytest'
 
-  - script: |
-      flake8 sfa_api
-    displayName: 'flake8'
+#   - script: |
+#       flake8 sfa_api
+#     displayName: 'flake8'
 
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFiles: '**/test-results.xml'
-      testRunTitle: 'Python $(python.version)'
-    condition: succeededOrFailed()
+#   - task: PublishTestResults@2
+#     inputs:
+#       testResultsFiles: '**/test-results.xml'
+#       testRunTitle: 'Python $(python.version)'
+#     condition: succeededOrFailed()
 
-  - task: PublishCodeCoverageResults@1
-    inputs:
-      codeCoverageTool: Cobertura
-      summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
-      reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+#   - task: PublishCodeCoverageResults@1
+#     inputs:
+#       codeCoverageTool: Cobertura
+#       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+#       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
 
-  - script: |
-      bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
-    displayName: 'codecov'
+#   - script: |
+#       bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
+#     displayName: 'codecov'
 
-- job: 'Publish'
-  dependsOn: 'Test'
+# - job: 'Publish'
+#   dependsOn: 'Test'
+#   pool:
+#     vmImage: 'Ubuntu-16.04'
+
+#   steps:
+#   - task: UsePythonVersion@0
+#     inputs:
+#       versionSpec: '3.x'
+#       architecture: 'x64'
+
+#   - script: python setup.py sdist
+#     displayName: 'Build sdist'
+
+    
+- job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
 
@@ -64,5 +78,35 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
-  - script: python setup.py sdist
-    displayName: 'Build sdist'
+  - task: DockerCompose@0
+    displayName: 'start mysql'
+    inputs:
+      action: Run services
+      dockerComposeFile: datastore/docker-compose.yml
+      buildImages: true
+      abortOnContainerExit: false
+      detached: true
+
+  - script: |
+      docker ps
+      docker port solarforecastarbitersolararbiter-api_mysql_1 3306
+      echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
+      echo "##vso[task.setvariable variable=mysql.port]$(docker port solarforecastarbitersolararbiter-api_mysql_1 3306)"
+
+  - script: env    
+
+  - script: datastore/migrations/wait-for -t 60 $MYSQL_HOST:$MYSQL_PORT
+    displayName: 'Wait for mysql'
+
+  - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
+    displayName: 'Install pytest & dependencies'
+
+  - script: pytest datastore --junitxml=junit/db-test-results.xml
+    displayName: 'Test database'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/db-test-results.xml'
+      testRunTitle: 'Database'
+    condition: succeededOrFailed()
+
