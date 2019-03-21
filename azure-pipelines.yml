@@ -88,21 +88,14 @@ jobs:
       runInBackground: true
       imageName: percona:8.0-centos
       ports: |
-        3306
+        32768:3306
       envVars: |
         MYSQL_ROOT_PASS=testpassword
         MYSQL_DATABASE=arbiter_data
       volumes: |
         /home/vsts/work/1/s/datastore/conf:/etc/my.cnf.d
 
-  - script: |
-      docker ps
-      echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
-      echo "##vso[task.setvariable variable=mysql.port]32768"
-      echo "MYSQL="$MYSQL_HOST:$MYSQL_PORT
-      
-      datastore/migrations/wait-for -t 60 $MYSQL_HOST:$MYSQL_PORT
-      docker port arbitermysql 3306 | rev | cut -d':' -f 1 | rev
+  - script: datastore/migrations/wait-for -t 60 127.0.0.1:32768
     displayName: 'Wait for mysql'
 
   - task: Docker@1
@@ -113,12 +106,12 @@ jobs:
       imageName: migrate/migrate:v4.2.5
       volumes: |
         /home/vsts/work/1/s/datastore/migrations:/migrations
-      entrypointOverride: /migrate -path=/migrations -database mysql://root:testpassword@tcp(arbitermysql:3306)/arbiter_data up
+      containerCommand: -path=/migrations -database mysql://root:testpassword@tcp(arbitermysql:3306)/arbiter_data up
         
   - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
     displayName: 'Install pytest & dependencies'
 
-  - script: pytest datastore --junitxml=junit/db-test-results.xml
+  - script: MYSQL_PORT=32768 pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
 
   - task: PublishTestResults@2
