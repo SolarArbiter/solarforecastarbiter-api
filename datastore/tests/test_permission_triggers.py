@@ -32,6 +32,30 @@ def test_object_mapping_new_permission(cursor, new_permission,
     assert cursor.fetchone()[0] == 2
 
 
+def test_object_mapping_new_permission_other_objs(cursor, new_permission,
+                                                  new_organization,
+                                                  new_forecast):
+    """
+    Test adding permission_object_mapping for permissions
+    when other objects already present and automattically
+    added to permission_object_mapping by trigger
+    """
+    org = new_organization()
+    perm0 = new_permission('read', 'forecasts', True, org=org)
+    new_forecast(org=org)
+    cursor.execute(
+        'SELECT COUNT(*) from permission_object_mapping WHERE '
+        'permission_id = %s', perm0['id'])
+    assert cursor.fetchone()[0] == 1
+    perm1 = new_permission('read', 'permissions', True, org=org)
+    new_permission('read', 'observations', True, org=org)
+    cursor.execute(
+        'SELECT COUNT(*) from permission_object_mapping WHERE '
+        'permission_id = %s', perm1['id'])
+    # 3 permission objects that should be reference by perm1
+    assert cursor.fetchone()[0] == 3
+
+
 @pytest.mark.parametrize('action', ['read', 'update', 'delete'])
 @pytest.mark.parametrize('count', [1, 3])
 def test_object_mapping_when_new_permission_applies_to_all(

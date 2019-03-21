@@ -74,6 +74,7 @@ END;
 -- Grant only required permissions to limited user account to execute rbac functions
 GRANT SELECT ON `arbiter_data`.`permission_object_mapping` TO `select_rbac`@`localhost`;
 GRANT SELECT ON `arbiter_data`.`permissions` TO `select_rbac`@`localhost`;
+GRANT SELECT ON `arbiter_data`.`roles` TO `select_rbac`@`localhost`;
 GRANT SELECT ON `arbiter_data`.`role_permission_mapping` TO `select_rbac`@`localhost`;
 GRANT SELECT ON `arbiter_data`.`user_role_mapping` TO `select_rbac`@`localhost`;
 GRANT SELECT ON `arbiter_data`.`users` TO `select_rbac`@`localhost`;
