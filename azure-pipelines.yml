@@ -68,6 +68,14 @@ jobs:
     displayName: 'Build sdist'
 
 
+- job: 'TestPWD'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+  container: ubuntu
+
+  steps:
+  - script: pwd
+    
 - job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
