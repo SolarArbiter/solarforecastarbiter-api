@@ -106,7 +106,7 @@ jobs:
       imageName: migrate/migrate:v4.2.5
       volumes: |
         /home/vsts/work/1/s/datastore/migrations:/migrations
-      containerCommand: -path=/migrations -database mysql://root:testpassword@tcp(arbitermysql:3306)/arbiter_data up
+      containerCommand: -path=/migrations -database mysql://root:testpassword@tcp(127.0.0.1:32768)/arbiter_data up
         
   - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
     displayName: 'Install pytest & dependencies'
