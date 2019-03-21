@@ -67,46 +67,43 @@ jobs:
   - script: python setup.py sdist
     displayName: 'Build sdist'
 
-
-- job: 'TestPWD'
-  pool:
-    vmImage: 'Ubuntu-16.04'
-  container: ubuntu
-
-  steps:
-  - script: pwd
     
 - job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
 
-  services:
-    mysql:
-      image: percona:8.0-centos
-      env:
-        MYSQL_ROOT_PASSWORD: 'testpassword'
-        MYSQL_DATABASE: arbiter_data
-      volumes:
-        - ./datastore/conf:/etc/my.cnf.d
-      ports:
-        - "3306"
-    
   steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
 
+  - displayName: Start mysql
+    task: Docker@1
+    inputs:
+      command: run
+      containerName: arbitermysql
+      runInBackground: true
+      imageName: percona:8.0-centos
+      ports: |
+        3306
+      envVars: |
+        MYSQL_ROOT_PASS=testpassword
+        MYSQL_DATABASE=arbiter_data
+      volumes: |
+        ./datastore/conf:/etc/my.cnf.d
+
+  - script: |
+      echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
+      echo "##vso[task.setvariable variable=mysql.port]$(docker port arbitermysql 3306 | rev | cut -d':' -f 1 | rev)"
+      echo "MYSQL="$MYSQL_HOST:$MYSQL_PORT
+      datastore/migrations/wait-for -t 60 $MYSQL_HOST:$MYSQL_PORT
+    displayName: 'Wait for mysql'
+
   - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
     displayName: 'Install pytest & dependencies'
 
-  - script: |
-      export MYSQL_HOST=127.0.0.1
-      export MYSQL_PORT=$(agent.services.mysql.ports.3306)
-      echo "MYSQL="$MYSQL_HOST:$MYSQL_PORT
-      datastore/migrations/wait-for -t 60 $MYSQL_HOST:$MYSQL_PORT
-      docker run -v $(pwd)/datastore/migrations:/migrations migrate/migrate:v4.2.5 -path /migrations -database mysql://root:testpassword@tcp($MYSQL_HOST:$MYSQL_PORT)/arbiter_data up
-      pytest datastore --junitxml=junit/db-test-results.xml
+  - script: pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
 
   - task: PublishTestResults@2
