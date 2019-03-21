@@ -7,9 +7,9 @@ CREATE TABLE arbiter_data.sites (
     longitude DECIMAL(9, 6) NOT NULL,
     elevation DECIMAL(7, 2) NOT NULL,
     timezone VARCHAR(32) NOT NULL,
-    extra_parameters VARCHAR(255) NOT NULL,
-    ac_capacity DECIMAL(10, 5) NOT NULL,
-    dc_capacity DECIMAL(10, 5) NOT NULL,
+    extra_parameters TEXT NOT NULL,  -- unclear if this will have a positive or negative effect on performance
+    ac_capacity DECIMAL(10, 6) NOT NULL,
+    dc_capacity DECIMAL(10, 6) NOT NULL,
     temperature_coefficient DECIMAL(7, 5) NOT NULL,
     tracking_type ENUM('fixed', 'single_axis') NOT NULL,
     surface_tilt DECIMAL(4, 2),
@@ -19,7 +19,6 @@ CREATE TABLE arbiter_data.sites (
     ground_coverage_ratio DECIMAL(8, 4),
     backtrack BOOLEAN,
     max_rotation_angle DECIMAL(5, 2),
-    irradiance_loss_factor DECIMAL(5, 2) NOT NULL,
     dc_loss_factor DECIMAL(5, 2) NOT NULL,
     ac_loss_factor DECIMAL(5, 2) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +42,7 @@ CREATE TABLE arbiter_data.observations (
     interval_length SMALLINT UNSIGNED NOT NULL,
     value_type VARCHAR(32) NOT NULL,
     uncertainty FLOAT NOT NULL,
-    extra_parameters VARCHAR(255) NOT NULL,
+    extra_parameters TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -85,7 +84,7 @@ CREATE TABLE arbiter_data.forecasts(
     interval_length SMALLINT UNSIGNED NOT NULL,
     run_length SMALLINT UNSIGNED NOT NULL,
     value_type VARCHAR(32) NOT NULL,
-    extra_parameters VARCHAR(255) NOT NULL,
+    extra_parameters TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

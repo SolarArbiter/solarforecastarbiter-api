@@ -116,11 +116,11 @@ def new_site(cursor, new_organization):
                           temperature_coefficient=0,
                           tracking_type='fixed',
                           surface_tilt=0, surface_azimuth=0,
-                          axis_tilt=0, axis_azimuth=0,
-                          ground_coverage_ratio=0,
-                          backtrack=True,
-                          max_rotation_angle=90,
-                          irradiance_loss_factor=0, dc_loss_factor=0,
+                          axis_tilt=None, axis_azimuth=None,
+                          ground_coverage_ratio=None,
+                          backtrack=None,
+                          max_rotation_angle=None,
+                          dc_loss_factor=0,
                           ac_loss_factor=0)
         insert_dict(cursor, 'sites', out)
         return out
