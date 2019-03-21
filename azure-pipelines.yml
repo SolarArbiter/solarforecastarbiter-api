@@ -85,7 +85,9 @@ jobs:
     inputs:
       command: run
       containerName: arbitermysql
-      runInBackground: true
+      runInBackground: false
+      restartPolicy: onFailure
+      maxRestartRetries: 5
       imageName: percona:8.0-centos
       ports: |
         32768:3306
