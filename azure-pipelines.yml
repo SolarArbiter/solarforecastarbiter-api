@@ -82,19 +82,27 @@ jobs:
     displayName: 'Install pytest & dependencies'
 
   - task: DockerCompose@0
+    displayName: Remove any old docker-compose containers
+    inputs:
+      action: Run a Docker Compose command
+      dockerComposeFile: datastore/docker-compose.yml
+      dockerComposeCommand: rm
+      
+  - task: DockerCompose@0
     displayName: Start test database
     inputs:
       action: Run a Docker Compose command
       dockerComposeFile: datastore/docker-compose.yml
       dockerComposeCommand: up
+      abortOnContainerExit: False
 
-  - script: set
-    displayName: 'Show env variables'
-
+  - script: |
+      ps -f
+      set MYSQL_PORT=$(docker-compose -f datastore/docker-compose.yml port mysql 3306)
+      datastore/migrations/wait-for -t 60 127.0.0.1:$MYSQL_PORT
+ 
   - script: pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
-    env:
-      MYSQL_PORT: $(agent.services.mysql.ports.3306)
 
   - task: PublishTestResults@2
     inputs:
