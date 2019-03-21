@@ -73,7 +73,7 @@ jobs:
     vmImage: 'Ubuntu-16.04'
 
   steps:
-  - task: UsePythonVersion@1
+  - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
