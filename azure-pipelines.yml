@@ -68,7 +68,7 @@ jobs:
     displayName: 'Build sdist'
 
 
-- job: 'Test Database'
+- job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
 
