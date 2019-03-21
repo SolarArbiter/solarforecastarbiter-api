@@ -97,8 +97,7 @@ jobs:
       export MYSQL_PORT=$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1| rev)
       echo 'MYSQL_PORT='$MYSQL_PORT
       datastore/migrations/wait-for -t 60 127.0.0.1:$MYSQL_PORT
- 
-  - script: pytest datastore --junitxml=junit/db-test-results.xml
+      pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
 
   - task: PublishTestResults@2
