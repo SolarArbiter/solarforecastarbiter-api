@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 from uuid import uuid1
 
 
@@ -8,12 +9,13 @@ import pymysql
 
 @pytest.fixture(scope='session')
 def connection():
-    connection = pymysql.connect(host='127.0.0.1',
-                                 port=3306,
-                                 user='root',
-                                 password='testpassword',
-                                 database='arbiter_data',
-                                 binary_prefix=True)
+    connection = pymysql.connect(
+        host='127.0.0.1',
+        port=int(os.getenv('MYSQL_PORT', 3306)),
+        user='root',
+        password='testpassword',
+        database='arbiter_data',
+        binary_prefix=True)
     # with no connection.commit(), no data should stay in db
     return connection
 

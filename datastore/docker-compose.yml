@@ -9,7 +9,7 @@ services:
     volumes:
       - ./conf:/etc/my.cnf.d
     ports:
-      - "127.0.0.1:3306:3306"
+      - "3306"
   migrate_schemas:
     build:
       context: ./migrations

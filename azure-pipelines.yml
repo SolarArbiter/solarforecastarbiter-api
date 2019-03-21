@@ -78,8 +78,8 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
-  - script: python -m pip install pytest
-    displayName: 'Install pytest'
+  - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
+    displayName: 'Install pytest & dependencies'
 
   - task: DockerCompose@0
     displayName: Start test database
@@ -87,6 +87,7 @@ jobs:
       action: Run a Docker Compose command
       dockerComposeFile: datastore/docker-compose.yml
       dockerComposeCommand: up
+      dockerComposeFileArgs: MYSQL_PORT=$(agent.services.mysql.ports.3306)
 
   - script: pytest datastore --junitxml=junit/db-test-results.xml
     displayName: 'Test database'
