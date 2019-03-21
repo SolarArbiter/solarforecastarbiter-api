@@ -78,8 +78,7 @@ jobs:
       versionSpec: '3.x'
       architecture: 'x64'
 
-  - displayName: Start mysql
-    task: Docker@1
+  - task: Docker@1
     inputs:
       command: run
       containerName: arbitermysql
