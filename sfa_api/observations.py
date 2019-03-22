@@ -195,7 +195,12 @@ class ObservationValuesView(MethodView):
 
             return jsonify(data)
         else:
-            csv_data = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            meta_url = url_for('observations.metadata',
+                               obs_id=obs_id,
+                               _external=True)
+            csv_header = f'# obs_id: {obs_id}\n# metadata: {meta_url}\n'
+            csv_values = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            csv_data = csv_header + csv_values
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
