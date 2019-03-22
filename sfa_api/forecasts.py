@@ -193,7 +193,10 @@ class ForecastValuesView(MethodView):
                                                 "values": dict_values})
             return jsonify(data)
         else:
-            csv_data = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            meta_url = url_for('forecasts.metadata', forecast_id=forecast_id, _external=True)
+            csv_header = f'# forecast_id: {forecast_id}\n# metadata: {meta_url}\n'
+            csv_values = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            csv_data = csv_header + csv_values
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
