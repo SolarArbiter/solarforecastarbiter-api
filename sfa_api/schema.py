@@ -165,6 +165,10 @@ class ObservationValuesSchema(ma.Schema):
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
     values = ma.Nested(ObservationValueSchema, many=True)
+    _links = ma.Hyperlinks({
+        'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                      obs_id='<obs_id>'),
+    })
 
 
 @spec.define_schema('ObservationDefinition')
@@ -207,7 +211,10 @@ class ObservationSchema(ObservationPostSchema):
     class Meta:
         strict = True
         ordered = True
-    site = ma.Nested(SiteSchema)
+    _links = ma.Hyperlinks({
+        'site': ma.AbsoluteURLFor('sites.single',
+                                  site_id='<site_id>')
+    })
     obs_id = ma.UUID()
     provider = ma.String()
 
@@ -247,6 +254,10 @@ class ForecastValuesSchema(ma.Schema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
+    _links = ma.Hyperlinks({
+        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                      forecast_id='<forecast_id>'),
+    })
     values = ma.Nested(ForecastValueSchema, many=True)
 
 
@@ -310,7 +321,10 @@ class ForecastPostSchema(ma.Schema):
 
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
-    site = ma.Nested(SiteSchema)
+    _links = ma.Hyperlinks({
+        'site':  ma.AbsoluteURLFor('sites.single',
+                                   site_id='<site_id>'),
+    })
     forecast_id = ma.UUID()
     provider = ma.String()
 

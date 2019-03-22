@@ -106,9 +106,7 @@ def read_observation(obs_id):
     if obs_id not in observations:
         return None
     else:
-        observation = observations[obs_id].copy()
-        observation['site'] = read_site(str(observation['site_id']))
-        return observation
+        return observations[obs_id]
 
 
 def delete_observation(obs_id):
@@ -223,9 +221,7 @@ def read_forecast(forecast_id):
     """
     if forecast_id not in forecasts:
         return None
-    forecast = forecasts[forecast_id].copy()
-    forecast['site'] = read_site(forecast['site_id'])
-    return forecast
+    return forecasts[forecast_id]
 
 
 def delete_forecast(forecast_id):
