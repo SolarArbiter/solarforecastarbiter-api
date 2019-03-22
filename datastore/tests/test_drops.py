@@ -173,6 +173,17 @@ def test_drop_forecast(cursor, test, valueset_forecast):
     assert before == after
 
 
+def test_drop_forecast_values(cursor, valueset_forecast):
+    forecast = valueset_forecast['id']
+    cursor.execute('SELECT COUNT(*) from forecasts_values WHERE id = %s',
+                   forecast)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute('DELETE FROM forecasts WHERE id = %s', forecast)
+    cursor.execute('SELECT COUNT(*) from forecasts_values WHERE id = %s',
+                   forecast)
+    assert cursor.fetchone()[0] == 0
+
+
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'sites', 'forecasts',
     'permissions', 'aggregates', 'organizations',
@@ -184,3 +195,14 @@ def test_drop_observation(cursor, test, valueset_observation):
     cursor.execute('DELETE FROM observations WHERE id = %s', observation)
     after = check_table_for_org(cursor, None, test)
     assert before == after
+
+
+def test_drop_observation_values(cursor, valueset_observation):
+    observation = valueset_observation['id']
+    cursor.execute('SELECT COUNT(*) from observations_values WHERE id = %s',
+                   observation)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute('DELETE FROM observations WHERE id = %s', observation)
+    cursor.execute('SELECT COUNT(*) from observations_values WHERE id = %s',
+                   observation)
+    assert cursor.fetchone()[0] == 0

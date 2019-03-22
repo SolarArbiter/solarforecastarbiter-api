@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import datetime as dt
 from uuid import uuid1
 
 
@@ -95,16 +96,33 @@ def new_permission(cursor, new_organization):
     return fcn
 
 
+def insert_dict(cursor, table, thedict):
+    cursor.execute(
+            f'INSERT INTO {table} ({",".join(thedict.keys())}) VALUES'
+            f' ({",".join(["%s" for _ in range(len(thedict.keys()))])})',
+            list(thedict.values()))
+
+
 @pytest.fixture()
 def new_site(cursor, new_organization):
     def fcn(org=None):
         if org is None:
             org = new_organization()
         out = OrderedDict(id=newuuid(), organization_id=org['id'],
-                          name=f'site{str(uuid1())[:10]}')
-        cursor.execute(
-            'INSERT INTO sites (id, organization_id, name) VALUES '
-            '(%s, %s, %s)', list(out.values()))
+                          name=f'site{str(uuid1())[:10]}',
+                          latitude=0, longitude=0, elevation=0,
+                          timezone='America/Denver', extra_parameters='',
+                          ac_capacity=0, dc_capacity=0,
+                          temperature_coefficient=0,
+                          tracking_type='fixed',
+                          surface_tilt=0, surface_azimuth=0,
+                          axis_tilt=None, axis_azimuth=None,
+                          ground_coverage_ratio=None,
+                          backtrack=None,
+                          max_rotation_angle=None,
+                          dc_loss_factor=0,
+                          ac_loss_factor=0)
+        insert_dict(cursor, 'sites', out)
         return out
     return fcn
 
@@ -116,10 +134,16 @@ def new_forecast(cursor, new_site):
             site = new_site(org)
         out = OrderedDict(
             id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}')
+            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}',
+            variable='power', issue_time_of_day=dt.time(12, 0),
+            lead_time_to_start=60, interval_label='beginning',
+            interval_length=60, run_length=1440,
+            value_type='interval_mean', extra_parameters='')
+        insert_dict(cursor, 'forecasts', out)
+        # add some  test data too
         cursor.execute(
-            'INSERT INTO forecasts (id, organization_id, site_id, name) VALUES '
-            '(%s, %s, %s, %s)', list(out.values()))
+            'INSERT INTO forecasts_values (id, timestamp, value) VALUES '
+            '(%s, CURRENT_TIMESTAMP(), RAND())', (out['id'], ))
         return out
     return fcn
 
@@ -131,10 +155,15 @@ def new_observation(cursor, new_site):
             site = new_site(org)
         out = OrderedDict(
             id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'observation{str(uuid1())[:10]}')
+            site_id=site['id'], name=f'observation{str(uuid1())[:10]}',
+            variable='power', interval_label='instant',
+            interval_length=5, value_type='instantaneous',
+            uncertainty=0.05, extra_parameters='')
+        insert_dict(cursor, 'observations', out)
         cursor.execute(
-            'INSERT INTO observations (id, organization_id, site_id, name) '
-            'VALUES (%s, %s, %s, %s)', list(out.values()))
+            'INSERT INTO observations_values (id, timestamp, value, '
+            'quality_flag) VALUES (%s, CURRENT_TIMESTAMP(), RAND(), 0)',
+            (out['id'], ))
         return out
     return fcn
 
