@@ -4,12 +4,12 @@ This folder contains files to setup and test a MySQL database for storing
 arbiter data. The migrations folder contains SQL code to create the tables,
 triggers, functions, and procedures required. We currently use
 [migrate](https://github.com/golang-migrate/migrate) to manage the application
-of the SQL files. We've tried to follow best practices to avoid SQL injection
-attacks following the [OWASP guide](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md).
+of the SQL files. We follow the [OWASP](https://github.com/OWASP/CheatSheetSeries/blob/master/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md)
+best practices to prevent SQL injection attacks.
 
 
 ## Database achitecture
-The database will have a number of tables to store sites, forecasts,
+The database has a number of tables to store sites, forecasts,
 observations, and access controls for those objects. On-disk encryption
 is enabled for all tables, and backups are also encrypted. Indexes on each
 table are chosen based on the anticipated workflow. Foreign keys are also
@@ -21,11 +21,11 @@ queries and enforce RBAC on each call.
 
 ## Testing
 A ``docker-compose.yml`` file is provided to start a database and apply the
-migrations for testing. Test are written in python with pytest.
+migrations for testing. Tests are written in python with pytest.
 - test_authorization.py contains tests for the role based access control
   procedures and functions including tests that ensure the user cannot access
   items for which they do not have permissions.
-- test_drops.py contains tests that ensure data is properly remove from mulitple
+- test_drops.py contains tests that ensure data is properly removed from mulitple
   tables when appropriate. One example is a test to ensure any forecast values
   are deleted when the corresponding forecast metadata row is deleted.
 - test_lists.py contains tests for various procedures that list the objects
