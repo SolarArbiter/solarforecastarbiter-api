@@ -1,22 +1,26 @@
 from collections import OrderedDict
 import datetime as dt
 import os
-from uuid import uuid1
+from uuid import uuid1, UUID
 
 
 import pytest
 import pymysql
+from pymysql import converters
 
 
 @pytest.fixture(scope='session')
 def connection():
+    conv = converters.conversions.copy()
+    conv[converters.FIELD_TYPE.TIME] = converters.convert_time
     connection = pymysql.connect(
         host=os.getenv('MYSQL_HOST', '127.0.0.1'),
         port=int(os.getenv('MYSQL_PORT', '3306')),
         user='root',
         password='testpassword',
         database='arbiter_data',
-        binary_prefix=True)
+        binary_prefix=True,
+        conv=conv)
     # with no connection.commit(), no data should stay in db
     return connection
 
@@ -36,6 +40,11 @@ def dictcursor(connection):
 def uuid_to_bin(uuid):
     """Copy mysql UUID_TO_BIN with time swap of hi and low"""
     return uuid.bytes[6:8] + uuid.bytes[4:6] + uuid.bytes[:4] + uuid.bytes[8:]
+
+
+def bin_to_uuid(binid):
+    """Copy mysql BIN_TO_UUID"""
+    return UUID(bytes=binid[4:8] + binid[2:4] + binid[:2] + binid[8:])
 
 
 def newuuid():
