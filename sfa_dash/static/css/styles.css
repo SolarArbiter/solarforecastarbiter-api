@@ -220,3 +220,7 @@ li.alert{
 li.alert p{
   margin-bottom: 0;
 }
+pre.example-text{
+    overflow: scroll;
+    max-width: 761px;
+}

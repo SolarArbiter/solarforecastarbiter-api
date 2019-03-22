@@ -1,6 +1,8 @@
 import json
 
-from flask import Blueprint, render_template, request, abort, redirect, url_for
+from flask import (Blueprint, render_template, request,
+                   abort, redirect, url_for, make_response)
+import pandas as pd
 from sfa_dash.api_interface import sites, observations, forecasts
 from sfa_dash.blueprints.base import BaseView
 
@@ -16,17 +18,19 @@ class MetadataForm(BaseView):
             self.api_handle = forecasts
             self.formatter = self.forecast_formatter
             self.metadata_template = 'data/metadata/site_metadata.html'
-        if data_type == 'observation':
-            self.template = 'forms/obs_form.html'
+        elif data_type == 'observation':
+            self.template = 'forms/observation_form.html'
             self.id_key = 'obs_id'
             self.api_handle = observations
             self.formatter = self.observation_formatter
             self.metadata_template = 'data/metadata/site_metadata.html'
-        if data_type == 'site':
+        elif data_type == 'site':
             self.template = 'forms/site_form.html'
             self.id_key = 'site_id'
             self.api_handle = sites
             self.formatter = self.site_formatter
+        else:
+            raise ValueError(f'No metadata form defined for {data_type}')
 
     def flatten_dict(self, to_flatten):
         """Flattens nested dictionaries, removing keys of the nested elements.
@@ -83,9 +87,7 @@ class MetadataForm(BaseView):
         Returns
         -------
         int
-            The number of minutes in the Timedelta or 'NaT' if invalid units
-            are provided.
-
+            The number of minutes in the Timedelta.
         """
         value = int(data_dict[f'{key_root}_number'])
         units = data_dict[f'{key_root}_units']
@@ -96,7 +98,7 @@ class MetadataForm(BaseView):
         elif units == 'days':
             return value * 1440
         else:
-            return 'NaT'
+            raise ValueError('Invalid selection in time units field.')
 
     def site_formatter(self, site_dict):
         """Formats the result of a site webform into an API payload.
@@ -235,13 +237,15 @@ class UploadForm(BaseView):
     def __init__(self, data_type):
         self.data_type = data_type
         if data_type == 'observation':
-            self.template = 'forms/obs_data_form.html'
+            self.template = 'forms/observation_upload_form.html'
             self.metadata_template = 'data/metadata/observation_metadata.html'
             self.api_handle = observations
-        if data_type == 'forecast':
-            self.template = 'forms/forecast_data_form.html'
+        elif data_type == 'forecast':
+            self.template = 'forms/forecast_upload_form.html'
             self.metadata_template = 'data/metadata/forecast_metadata.html'
             self.api_handle = forecasts
+        else:
+            raise ValueError(f'No upload form defined for {data_type}')
 
     def render_metadata_section(self, metadata):
         return render_template(self.metadata_template, **metadata)
@@ -280,6 +284,82 @@ class UploadForm(BaseView):
                                     uuid=uuid))
 
 
+class DownloadForm(BaseView):
+    def __init__(self, data_type):
+        self.data_type = data_type
+        if data_type == 'observation':
+            self.template = 'forms/observation_download_form.html'
+            self.metadata_template = 'data/metadata/observation_metadata.html'
+            self.api_handle = observations
+        elif data_type == 'forecast':
+            self.template = 'forms/forecast_download_form.html'
+            self.metadata_template = 'data/metadata/forecast_metadata.html'
+            self.api_handle = forecasts
+        else:
+            raise ValueError(f'No Download form configured for {data_type}.')
+
+    def format_params(self, form_data):
+        """Parses start and end time and the format from the posted form.
+        Returns headers and query parameters for requesting the data.
+
+        Parameters
+        ----------
+        form_data: dict
+            Dictionary of posted form values.
+
+        Returns
+        -------
+        headers: dict
+            The accept headers set to 'text/csv' or 'application/json'
+            based on the selected format.
+        params: dict
+            Query parameters start and end, both formatted in iso8601 and
+            localized to the provided timezone.
+        """
+        timezone = form_data['timezone']
+        start_time = pd.Timestamp(form_data['period-start'], tz=timezone)
+        end_time = pd.Timestamp(form_data['period-end'], tz=timezone)
+        params = {
+            'start': start_time.isoformat(),
+            'end': end_time.isoformat(),
+        }
+        headers = {'Accept': form_data['format']}
+        return headers, params
+
+    def get(self, uuid):
+        metadata_request = self.api_handle.get_metadata(uuid)
+        if metadata_request.status_code != 200:
+            abort(404)
+        metadata_dict = metadata_request.json()
+        metadata_dict['site_link'] = self.generate_site_link(metadata_dict)
+        metadata = render_template(self.metadata_template, **metadata_dict)
+        return render_template(self.template, metadata=metadata, uuid=uuid)
+
+    def post(self, uuid):
+        form_data = request.form
+        headers, params = self.format_params(form_data)
+        data_request = self.api_handle.get_values(uuid,
+                                                  headers=headers,
+                                                  params=params)
+        if data_request.status_code != 200:
+            abort(404)
+        elif form_data['format'] == 'application/json':
+            data = data_request.json()
+            response = make_response(json.dumps(data))
+            response.headers.set('Content-Type', 'application/json')
+            response.headers.set(
+                'Content-Disposition', 'attachment', filename='data.json')
+        elif form_data['format'] == 'text/csv':
+            csv_data = data_request.text
+            response = make_response(csv_data)
+            response.headers.set('Content-Type', 'text/csv')
+            response.headers.set(
+                'Content-Disposition', 'attachment', filename='data.csv')
+        else:
+            raise ValueError('Invalid Format.')
+        return response
+
+
 forms_blp = Blueprint('forms', 'forms')
 forms_blp.add_url_rule('/sites/create',
                        view_func=CreateForm.as_view('create_site',
@@ -296,3 +376,10 @@ forms_blp.add_url_rule('/observations/<uuid>/upload',
 forms_blp.add_url_rule('/forecasts/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_forecast_data',
                                                     data_type='forecast'))
+forms_blp.add_url_rule('/observations/<uuid>/download',
+                       view_func=DownloadForm.as_view(
+                           'download_observation_data',
+                           data_type='observation'))
+forms_blp.add_url_rule('/forecasts/<uuid>/download',
+                       view_func=DownloadForm.as_view('download_forecast_data',
+                                                      data_type='forecast'))

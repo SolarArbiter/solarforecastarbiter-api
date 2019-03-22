@@ -29,7 +29,7 @@
 	</div>
     <div class="form-element">
       {{ form.time_of_day('Issue time of day', 'issue_time',
-                        'The time of day that a forecast run is issued specified in the timezone of the site in HH:MM format, e.g. 00:30.For forecast runs issued multiple times within one day (e.g. hourly), this specifies the first issue time of day. Additional issue times are uniquely determined by the first issue time and the run length & issue frequency attribute.') }}{{ site_metadata['timezone'] }}
+                          'The time of day that a forecast run is issued specified in UTC and in HH:MM format, e.g. 00:30. For forecast runs issued multiple times within one day (e.g. hourly), this specifies the first issue time of day. Additional issue times are uniquely determined by the first issue time and the run length & issue frequency attribute.') }} UTC
     </div>
     <div class="form-element">
         {{ form.timedelta('Lead time to start', 'lead_time',

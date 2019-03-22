@@ -7,11 +7,10 @@ def create_app():
     app.config.from_object('sfa_dash.config.LocalConfig')
     from blueprints.main import data_dash_blp
     from blueprints.form import forms_blp
-    from blueprints.demo import demo_blp
     app.register_blueprint(data_dash_blp)
     app.register_blueprint(forms_blp)
-    app.register_blueprint(demo_blp)
     return app
+
 
 if __name__ == '__main__':
     app = create_app()

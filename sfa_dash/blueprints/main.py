@@ -43,6 +43,9 @@ class SingleObservationView(DataDashView):
         temp_args['upload_link'] = url_for(
             'forms.upload_observation_data',
             uuid=uuid)
+        temp_args['download_link'] = url_for(
+            'forms.download_observation_data',
+            uuid=uuid)
         return render_template(self.template, **temp_args)
 
 
@@ -81,6 +84,9 @@ class SingleForecastView(DataDashView):
             **self.metadata)
         temp_args['upload_link'] = url_for(
             'forms.upload_forecast_data',
+            uuid=uuid)
+        temp_args['download_link'] = url_for(
+            'forms.download_forecast_data',
             uuid=uuid)
         return render_template(self.template, **temp_args)
 
