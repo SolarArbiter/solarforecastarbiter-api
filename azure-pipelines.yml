@@ -89,9 +89,9 @@ jobs:
 
   - script: |
       docker ps
-      docker port solarforecastarbitersolararbiter-api_mysql_1 3306
+      docker port solararbitersolarforecastarbiter-api_mysql_1 3306
       echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
-      echo "##vso[task.setvariable variable=mysql.port]$(docker port solarforecastarbitersolararbiter-api_mysql_1 3306)"
+      echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306)"
 
   - script: env    
 
