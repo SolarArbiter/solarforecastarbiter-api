@@ -322,8 +322,8 @@ class ForecastPostSchema(ma.Schema):
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
     _links = ma.Hyperlinks({
-        'site':  ma.AbsoluteURLFor('sites.single',
-                                   site_id='<site_id>'),
+        'site': ma.AbsoluteURLFor('sites.single',
+                                  site_id='<site_id>'),
     })
     forecast_id = ma.UUID()
     provider = ma.String()
