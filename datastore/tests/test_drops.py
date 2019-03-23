@@ -27,6 +27,15 @@ def test_drop_org(cursor, valueset_org, test):
     assert check_table_for_org(cursor, oid, test) == 0
 
 
+@pytest.mark.parametrize('test', [
+    'users', 'roles', 'permissions', 'sites',
+    'forecasts', 'permission_object_mapping',
+    'user_role_mapping', 'role_permission_mapping'])
+def test_drop_all_orgs_all_tables(cursor, valueset_org, test):
+    cursor.execute('DELETE FROM organizations')
+    check_table_for_org(cursor, None, test)
+
+
 def test_drop_user(cursor, valueset_user):
     """Check that the user is remove from the user_role_mapping table"""
     user = valueset_user['id']
