@@ -145,7 +145,13 @@ def test_store_site(dictcursor, site_callargs, allow_create):
     dictcursor.execute(
         'SELECT * FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',
         (site_callargs['strid'],))
+    keys = list(site_callargs.keys())[2:]
     res = dictcursor.fetchall()[0]
-    del res['created_at']
-    del res['modified_at']
-    assert res == site_callargs
+    for key in keys:
+        assert res[key] == site_callargs[key]
+
+
+def test_store_site_denied_cant_create(dictcursor, site_callargs):
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('store_site', list(site_callargs.values()))
+        assert e.errcode == 1142
