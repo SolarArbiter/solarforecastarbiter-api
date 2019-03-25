@@ -78,12 +78,6 @@ class ModelingParameters(ma.Schema):
         title="Maximum Rotation Angle",
         description=("Maximum rotation from horizontal of a single axis "
                      "tracker, degrees."))
-    irradiance_loss_factor = ma.Float(
-        title="Irradiance loss factor",
-        description=("Loss factor in %, applied to POA irradiance after "
-                     "reflection losses but before spectral mismatch losses."),
-        validate=validate.Range(0, 100),
-    )
     dc_loss_factor = ma.Float(
         title="DC loss factor",
         description=("Loss factor in %, applied to DC current."),
