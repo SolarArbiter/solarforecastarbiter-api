@@ -71,6 +71,14 @@ BEGIN
 END;
 
 
+-- Function to get organization_id of user
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_user_organization (auth0id VARCHAR(32))
+RETURNS BINARY(16)
+COMMENT 'Returns the organizaton ID of the user'
+READS SQL DATA SQL SECURITY DEFINER
+RETURN (SELECT organization_id FROM arbiter_data.users WHERE auth0_id = auth0id);
+
+
 -- Grant only required permissions to limited user account to execute rbac functions
 GRANT SELECT ON `arbiter_data`.`permission_object_mapping` TO `select_rbac`@`localhost`;
 GRANT SELECT ON `arbiter_data`.`permissions` TO `select_rbac`@`localhost`;
@@ -81,3 +89,4 @@ GRANT SELECT ON `arbiter_data`.`users` TO `select_rbac`@`localhost`;
 GRANT EXECUTE ON PROCEDURE `arbiter_data`.`list_objects_user_can_read` TO `select_rbac`@`localhost`;
 GRANT EXECUTE ON FUNCTION `arbiter_data`.`can_user_perform_action` TO `select_rbac`@`localhost`;
 GRANT EXECUTE ON FUNCTION `arbiter_data`.`user_can_create` TO `select_rbac`@`localhost`;
+GRANT EXECUTE ON FUNCTION `arbiter_data`.`get_user_organization` TO `select_rbac`@`localhost`;

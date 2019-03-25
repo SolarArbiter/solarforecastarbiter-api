@@ -19,7 +19,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET allowed = (SELECT user_can_create(auth0id, 'sites'));
     IF allowed THEN
-        SELECT organization_id INTO orgid FROM arbiter_data.users WHERE auth0_id = auth0id;
+        SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.sites (
             id, organization_id, name, latitude, longitude, elevation, timezone, extra_parameters,
             ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt,
@@ -54,13 +54,13 @@ BEGIN
     IF allowed THEN
        SET canreadsite = (SELECT can_user_perform_action(auth0id, binsiteid, 'read'));
        IF canreadsite THEN
-            SELECT organization_id INTO orgid FROM arbiter_data.users WHERE auth0_id = auth0id;
-            INSERT INTO arbiter_data.observations (
-                id, organization_id, site_id, name, variable, interval_label, interval_length,
-                value_type, uncertainty, extra_parameters
-            ) VALUES (
-                UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, interval_label,
-                interval_length, value_type, uncertainty, extra_parameters);
+           SELECT get_user_organization(auth0id) INTO orgid;
+           INSERT INTO arbiter_data.observations (
+               id, organization_id, site_id, name, variable, interval_label, interval_length,
+               value_type, uncertainty, extra_parameters
+           ) VALUES (
+               UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, interval_label,
+               interval_length, value_type, uncertainty, extra_parameters);
        ELSE
            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read site', MYSQL_ERRNO = 1143;
        END IF;
@@ -88,14 +88,14 @@ BEGIN
     IF allowed THEN
        SET canreadsite = (SELECT can_user_perform_action(auth0id, binsiteid, 'read'));
        IF canreadsite THEN
-            SELECT organization_id INTO orgid FROM arbiter_data.users WHERE auth0_id = auth0id;
-            INSERT INTO arbiter_data.forecasts (
-                id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
-                interval_label, interval_length, run_length, value_type, extra_parameters
-            ) VALUES (
-                UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, issue_time_of_day,
-                lead_time_to_start, interval_label, interval_length, run_length, value_type,
-                extra_parameters);
+           SELECT get_user_organization(auth0id) INTO orgid;
+           INSERT INTO arbiter_data.forecasts (
+               id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
+               interval_label, interval_length, run_length, value_type, extra_parameters
+           ) VALUES (
+               UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, issue_time_of_day,
+               lead_time_to_start, interval_label, interval_length, run_length, value_type,
+               extra_parameters);
        ELSE
            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read site', MYSQL_ERRNO = 1143;
        END IF;
@@ -106,6 +106,7 @@ BEGIN
 END;
 
 
+
 GRANT INSERT ON arbiter_data.sites TO 'insert_objects'@'localhost';
 GRANT INSERT ON arbiter_data.observations TO 'insert_objects'@'localhost';
 GRANT INSERT ON arbiter_data.forecasts TO 'insert_objects'@'localhost';
@@ -114,4 +115,4 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation to 'insert_objects'@'l
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast to 'insert_objects'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'insert_objects'@'localhost';
-GRANT SELECT ON arbiter_data.users TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'insert_objects'@'localhost';
