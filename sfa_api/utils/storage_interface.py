@@ -45,6 +45,7 @@ def read_observation_values(obs_id, start=None, end=None):
         Data points contain a timestamp, value andquality_flag.
         Returns None if the Observation does not exist.
     """
+    # PROC: read_observation_values
     raise NotImplementedError
 
 
@@ -80,6 +81,7 @@ def read_observation(obs_id):
         The Observation's metadata or None if the Observation
         does not exist.
     """
+    # PROC: read_observation
     raise NotImplementedError
 
 
@@ -158,6 +160,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
         Data points contain a timestamp and value. Returns
         None if the Observation does not exist.
     """
+    # PROC: read_forecast_values
     raise NotImplementedError
 
 
@@ -194,6 +197,7 @@ def read_forecast(forecast_id):
         The Forecast's metadata or None if the Forecast
         does not exist.
     """
+    # PROC: read_site
     raise NotImplementedError
 
 
@@ -245,6 +249,7 @@ def read_site(site_id):
     dict
         The Site's metadata or None if the Site does not exist.
     """
+    # PROC: read_site
     raise NotImplementedError
 
 
