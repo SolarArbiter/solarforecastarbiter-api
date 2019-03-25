@@ -194,3 +194,64 @@ def test_read_observation_values_denied_can_read_meta(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_observation_values', (auth0id, obsid, start, end))
         assert e.errcode == 1142
+
+
+@pytest.fixture()
+def fx_values(cursor, insertuser):
+    auth0id = insertuser[0]['auth0_id']
+    fxid = insertuser[2]['strid']
+    start = dt.datetime(2019, 1, 30, 12, 28, 20)
+    vals = tuple([
+        (fxid, start + dt.timedelta(minutes=i),
+         float(random.randint(0, 100))) for i in range(10)])
+    cursor.executemany(
+        'INSERT INTO forecasts_values (id, timestamp, value) '
+        'VALUES (UUID_TO_BIN(%s, 1), %s, %s)', vals)
+    start = dt.datetime(2019, 1, 30, 12, 20)
+    end = dt.datetime(2019, 1, 30, 12, 40)
+    return auth0id, fxid, vals, start, end
+
+
+def test_read_forecast_values(cursor, fx_values,
+                              allow_read_forecast_values):
+    auth0id, fxid, vals, start, end = fx_values
+    cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
+    res = cursor.fetchall()
+    assert res == vals
+
+
+@pytest.mark.parametrize('start,end,theslice', [
+    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+     slice(10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+     slice(2, 10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+     slice(2, 7)),
+])
+def test_read_forecast_values_time_limits(
+        cursor, fx_values, allow_read_forecast_values, start, end,
+        theslice):
+    auth0id, fxid, vals, _, _ = fx_values
+    cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
+    res = cursor.fetchall()
+    assert res == vals[theslice]
+
+
+def test_read_forecast_values_denied(cursor, fx_values):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_values',
+                        (auth0id, fxid, start, end))
+        assert e.errcode == 1142
+
+
+def test_read_forecast_values_denied_can_read_meta(
+        cursor, fx_values, allow_read_forecasts):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
+        assert e.errcode == 1142

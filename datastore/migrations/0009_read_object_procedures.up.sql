@@ -94,7 +94,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
         SELECT BIN_TO_UUID(id, 1) as id, timestamp, value
-        FROM arbiter_data.forecast_values WHERE id = binid AND timestamp BETWEEN start AND end;
+        FROM arbiter_data.forecasts_values WHERE id = binid AND timestamp BETWEEN start AND end;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read forecast values"',
         MYSQL_ERRNO = 1142;
