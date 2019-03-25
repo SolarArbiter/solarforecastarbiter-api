@@ -10,10 +10,9 @@ VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power', 'pdf_probability',
              'cdf_value']
 
-OBSERVATION_VALUE_TYPES = ['interval_mean', 'instantaneous']
 
-FORECAST_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
-                        'interval_median', 'percentile', 'instantaneous']
+VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
+               'interval_median' 'instantaneous']
 
 ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -193,7 +192,7 @@ class ObservationPostSchema(ma.Schema):
         required=True)
     value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(OBSERVATION_VALUE_TYPES))
+        validate=validate.OneOf(VALUE_TYPES))
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
@@ -308,13 +307,63 @@ class ForecastPostSchema(ma.Schema):
     )
     value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(FORECAST_VALUE_TYPES)
+        validate=validate.OneOf(VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
+    _links = ma.Hyperlinks({
+        'site': ma.AbsoluteURLFor('sites.single',
+                                  site_id='<site_id>'),
+    })
+    forecast_id = ma.UUID()
+    provider = ma.String()
+
+
+@spec.define_schema('CDFForecastGroupDefinition')
+class CDFForecastGroupPostSchema(ForecastPostSchema):
+    axis = ma.String(
+        title='Axis',
+        description=('Axis - The axis on which the constant values of the CDF '
+                     'is specified. The axis can be either x (constant '
+                     'variable values) or y (constant percentiles). The axis '
+                     'is fixed and the same for all forecasts in the '
+                     'probabilistic forecast.'),
+        validate=validate.OneOf(['x', 'y'])
+    )
+    constant_values = ma.List(
+        ma.Float,
+        title='Constant Values',
+        description=('The variable values or percentiles for the set of '
+                     'forecasts in the probabilistic forecast.'),
+    )
+
+
+@spec.define_schema('CDFForecastMetadata')
+class CDFForecastSchema(ForecastSchema):
+    _links = ma.Hyperlinks({
+        'parent': '',  # TODO: url_for(?)
+    })
+    axis = ma.String(
+        title='Axis',
+        description=('Axis - The axis on which the constant values of the CDF '
+                     'is specified. The axis can be either x (constant'
+                     'variable values) or y (constant percentiles). The axis '
+                     'is fixed and the same for all forecasts in the '
+                     'probabilistic forecast.'),
+        validate=validate.OneOf(['x', 'y'])
+    )
+    constant_value = ma.Float(
+        title='Constant Value',
+        description=('The variable value or percentile for the probabilistic'
+                     'forecast'),
+    )
+
+
+@spec.define_schema('CDFForecastGroupMetadata')
+class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     _links = ma.Hyperlinks({
         'site': ma.AbsoluteURLFor('sites.single',
                                   site_id='<site_id>'),
