@@ -22,6 +22,7 @@ def store_observation_values(obs_id, observation_df):
         The UUID of the associated Observation or None if the it does
         not exist.
     """
+    # PROC: store_observation_values
     raise NotImplementedError
 
 
@@ -61,6 +62,7 @@ def store_observation(observation):
     string
         The UUID of the newly created Observation.
     """
+    # PROC: store_observation
     raise NotImplementedError
 
 
@@ -112,6 +114,7 @@ def list_observations(site=None):
     list
         List of dictionaries of Observation metadata.
     """
+    # PROC: list_observations
     raise NotImplementedError
 
 
@@ -132,6 +135,7 @@ def store_forecast_values(forecast_id, forecast_df):
         The UUID of the associated forecast. Returns
         None if the Forecast does not exist.
     """
+    # PROC: store_forecast_values
     raise NotImplementedError
 
 
@@ -172,6 +176,7 @@ def store_forecast(forecast):
         The UUID of the newly created Forecast.
 
     """
+    # PROC: store_forecast
     raise NotImplementedError
 
 
@@ -223,6 +228,7 @@ def list_forecasts(site=None):
     list
         List of dictionaries of Forecast metadata.
     """
+    # PROC: list_forecasts
     raise NotImplementedError
 
 
@@ -256,6 +262,7 @@ def store_site(site):
     string
         UUID of the newly created site.
     """
+    # PROC: store_site
     raise NotImplementedError
 
 
@@ -284,4 +291,5 @@ def list_sites():
     list
         List of Site metadata as dictionaries.
     """
+    # PROC: list_sites
     raise NotImplementedError
