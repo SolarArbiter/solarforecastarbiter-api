@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import datetime as dt
+import random
 import uuid
 
 
@@ -40,6 +41,28 @@ def allow_create(insertuser, new_permission, cursor):
     user, site, fx, obs, org, role = insertuser
     perms = [new_permission('create', obj, True, org=org)
              for obj in ('sites', 'forecasts', 'observations')]
+    cursor.executemany(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)',
+        [(role['id'], perm['id']) for perm in perms])
+
+
+@pytest.fixture()
+def allow_write_values(insertuser, new_permission, cursor):
+    user, site, fx, obs, org, role = insertuser
+    perms = [new_permission('write_values', obj, True, org=org)
+             for obj in ('forecasts', 'observations')]
+    cursor.executemany(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)',
+        [(role['id'], perm['id']) for perm in perms])
+
+
+@pytest.fixture()
+def allow_delete_values(insertuser, new_permission, cursor):
+    user, site, fx, obs, org, role = insertuser
+    perms = [new_permission('delete_values', obj, True, org=org)
+             for obj in ('forecasts', 'observations')]
     cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
@@ -154,4 +177,49 @@ def test_store_site(dictcursor, site_callargs, allow_create):
 def test_store_site_denied_cant_create(dictcursor, site_callargs):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_site', list(site_callargs.values()))
+        assert e.errcode == 1142
+
+
+@pytest.fixture()
+def observation_values(insertuser):
+    def make(auth0id, obsid):
+        now = dt.datetime.utcnow().replace(microsecond=0)
+        for i in range(100):
+            now += dt.timedelta(minutes=5)
+            yield auth0id, obsid, now, float(random.randint(0, 100)), 0
+
+    auth0id = insertuser[0]['auth0_id']
+    obsid = insertuser[3]['strid']
+    obsbinid = insertuser[3]['id']
+    testobs = make(auth0id, obsid)
+    return obsbinid, testobs
+
+
+def test_store_observation_values(cursor, allow_write_values,
+                                  observation_values):
+    obsbinid, testobs = observation_values
+    expected = []
+    for to in testobs:
+        expected.append((obsbinid, *to[-3:]))
+        cursor.callproc('store_observation_values', to)
+    cursor.execute(
+        'SELECT * FROM arbiter_data.observations_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        obsbinid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
+def test_store_observation_values_cant_write(cursor, observation_values):
+    obsbinid, testobs = observation_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('store_observation_values', list(testobs)[0])
+        assert e.errcode == 1142
+
+
+def test_store_observation_values_cant_write_cant_delete(
+        cursor, observation_values, allow_delete_values):
+    obsbinid, testobs = observation_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('store_observation_values', list(testobs)[0])
         assert e.errcode == 1142
