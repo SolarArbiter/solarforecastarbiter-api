@@ -223,3 +223,48 @@ def test_store_observation_values_cant_write_cant_delete(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_observation_values', list(testobs)[0])
         assert e.errcode == 1142
+
+
+@pytest.fixture()
+def forecast_values(insertuser):
+    def make(auth0id, fxid):
+        now = dt.datetime.utcnow().replace(microsecond=0)
+        for i in range(100):
+            now += dt.timedelta(minutes=5)
+            yield auth0id, fxid, now, float(random.randint(0, 100))
+
+    auth0id = insertuser[0]['auth0_id']
+    fxid = insertuser[2]['strid']
+    fxbinid = insertuser[2]['id']
+    testfx = make(auth0id, fxid)
+    return fxbinid, testfx
+
+
+def test_store_forecast_values(cursor, allow_write_values,
+                               forecast_values):
+    fxbinid, testfx = forecast_values
+    expected = []
+    for tf in testfx:
+        expected.append((fxbinid, *tf[2:]))
+        cursor.callproc('store_forecast_values', tf)
+    cursor.execute(
+        'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        fxbinid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
+def test_store_forecast_values_cant_write(cursor, forecast_values):
+    fxbinid, testfx = forecast_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('store_forecast_values', list(testfx)[0])
+        assert e.errcode == 1142
+
+
+def test_store_forecast_values_cant_write_cant_delete(
+        cursor, forecast_values, allow_delete_values):
+    fxbinid, testfx = forecast_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('store_forecast_values', list(testfx)[0])
+        assert e.errcode == 1142
