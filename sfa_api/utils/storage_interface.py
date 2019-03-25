@@ -99,6 +99,7 @@ def delete_observation(obs_id):
         The Observation's metadata if successful or None
         if the Observation does not exist.
     """
+    # PROC: delete_observation
     raise NotImplementedError
 
 
@@ -215,6 +216,7 @@ def delete_forecast(forecast_id):
         The Forecast's metadata if successful or None
         if the Forecast does not exist.
     """
+    # PROC: delete_forecast
     raise NotImplementedError
 
 
@@ -285,6 +287,7 @@ def delete_site(site_id):
         The Site's metadata if successful or None
         if the Site does not exist.
     """
+    # PROC: delete_site
     raise NotImplementedError
 
 

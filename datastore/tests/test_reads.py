@@ -41,6 +41,7 @@ def allow_read_observations(cursor, new_permission, insertuser):
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
 
+
 @pytest.fixture()
 def allow_read_observation_values(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role = insertuser
