@@ -40,7 +40,7 @@ END;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_observation (
   IN auth0id VARCHAR(32), IN strid CHAR(36), IN variable VARCHAR(32), IN site_id CHAR(36), IN name VARCHAR(64),
-  IN interval_label VARCHAR(32), IN interval_length SMALLINT UNSIGNED, IN value_type VARCHAR(32),
+  IN interval_label VARCHAR(32), IN interval_length SMALLINT UNSIGNED, IN interval_value_type VARCHAR(32),
   IN uncertainty FLOAT, IN extra_parameters TEXT)
 COMMENT 'Store an observation object. User must be able to read site information.'
 MODIFIES SQL DATA SQL SECURITY DEFINER
@@ -57,10 +57,10 @@ BEGIN
            SELECT get_user_organization(auth0id) INTO orgid;
            INSERT INTO arbiter_data.observations (
                id, organization_id, site_id, name, variable, interval_label, interval_length,
-               value_type, uncertainty, extra_parameters
+               interval_value_type, uncertainty, extra_parameters
            ) VALUES (
                UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, interval_label,
-               interval_length, value_type, uncertainty, extra_parameters);
+               interval_length, interval_value_type, uncertainty, extra_parameters);
        ELSE
            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read site', MYSQL_ERRNO = 1143;
        END IF;
@@ -74,7 +74,7 @@ END;
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_forecast (
   IN auth0id VARCHAR(32), IN strid CHAR(36), IN site_id CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
   IN issue_time_of_day TIME, IN lead_time_to_start SMALLINT UNSIGNED, IN interval_label VARCHAR(32),
-  IN interval_length SMALLINT UNSIGNED, IN run_length SMALLINT UNSIGNED, IN value_type VARCHAR(32),
+  IN interval_length SMALLINT UNSIGNED, IN run_length SMALLINT UNSIGNED, IN interval_value_type VARCHAR(32),
   IN extra_parameters TEXT)
 COMMENT 'Store an forecast object. User must be able to read site information.'
 MODIFIES SQL DATA SQL SECURITY DEFINER
@@ -91,10 +91,10 @@ BEGIN
            SELECT get_user_organization(auth0id) INTO orgid;
            INSERT INTO arbiter_data.forecasts (
                id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
-               interval_label, interval_length, run_length, value_type, extra_parameters
+               interval_label, interval_length, run_length, interval_value_type, extra_parameters
            ) VALUES (
                UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, issue_time_of_day,
-               lead_time_to_start, interval_label, interval_length, run_length, value_type,
+               lead_time_to_start, interval_label, interval_length, run_length, interval_value_type,
                extra_parameters);
        ELSE
            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read site', MYSQL_ERRNO = 1143;

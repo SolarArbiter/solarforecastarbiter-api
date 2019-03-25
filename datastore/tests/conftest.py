@@ -149,7 +149,7 @@ def new_forecast(cursor, new_site):
             variable='power', issue_time_of_day=dt.time(12, 0),
             lead_time_to_start=60, interval_label='beginning',
             interval_length=60, run_length=1440,
-            value_type='interval_mean', extra_parameters='')
+            interval_value_type='interval_mean', extra_parameters='')
         insert_dict(cursor, 'forecasts', out)
         # add some  test data too
         cursor.execute(
@@ -168,7 +168,7 @@ def new_observation(cursor, new_site):
             id=newuuid(), organization_id=site['organization_id'],
             site_id=site['id'], name=f'observation{str(uuid1())[:10]}',
             variable='power', interval_label='instant',
-            interval_length=5, value_type='instantaneous',
+            interval_length=5, interval_value_type='instantaneous',
             uncertainty=0.05, extra_parameters='')
         insert_dict(cursor, 'observations', out)
         cursor.execute(

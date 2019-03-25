@@ -76,7 +76,8 @@ def obs_callargs(insertuser):
     callargs = OrderedDict(
         auth0id=auth0id, strid=str(uuid.uuid1()), variable='power',
         site_id=site_id, name='The site', interval_label='beginning',
-        interval_length=5, value_type='interval_mean', uncertainty=0.1,
+        interval_length=5, interval_value_type='interval_mean',
+        uncertainty=0.1,
         extra_parameters='')
     return callargs
 
@@ -91,7 +92,7 @@ def fx_callargs(insertuser):
         issue_time_of_day=dt.time(hour=12),
         lead_time_to_start=60, interval_label='beginning',
         interval_length=5, run_length=60,
-        value_type='interval_mean', extra_parameters='')
+        interval_value_type='interval_mean', extra_parameters='')
     return callargs
 
 
@@ -114,7 +115,7 @@ def test_store_observation(dictcursor, obs_callargs, allow_read_sites,
         (obs_callargs['strid'],))
     res = dictcursor.fetchall()[0]
     for key in ('variable', 'name', 'interval_label', 'interval_length',
-                'value_type', 'uncertainty', 'extra_parameters'):
+                'interval_value_type', 'uncertainty', 'extra_parameters'):
         assert res[key] == obs_callargs[key]
 
 
@@ -142,7 +143,7 @@ def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
         (fx_callargs['strid'],))
     res = dictcursor.fetchall()[0]
     for key in ('variable', 'name', 'interval_label', 'interval_length',
-                'value_type', 'issue_time_of_day', 'run_length',
+                'interval_value_type', 'issue_time_of_day', 'run_length',
                 'lead_time_to_start', 'extra_parameters'):
         assert res[key] == fx_callargs[key]
 
