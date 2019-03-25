@@ -72,7 +72,7 @@ BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
         SELECT BIN_TO_UUID(id, 1) as id, timestamp, value, quality_flag
         FROM arbiter_data.observations_values WHERE id = binid AND timestamp BETWEEN start AND end;
@@ -91,7 +91,7 @@ BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
         SELECT BIN_TO_UUID(id, 1) as id, timestamp, value
         FROM arbiter_data.forecast_values WHERE id = binid AND timestamp BETWEEN start AND end;

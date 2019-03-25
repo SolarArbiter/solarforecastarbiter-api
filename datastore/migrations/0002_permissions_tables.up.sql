@@ -62,7 +62,7 @@ CREATE TABLE arbiter_data.permissions (
   id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
   description VARCHAR(64) NOT NULL,
   organization_id BINARY(16) NOT NULL,
-  action ENUM('create', 'read', 'update',  'delete', 'write_values', 'delete_values') NOT NULL,
+  action ENUM('create', 'read', 'update',  'delete', 'read_values', 'write_values', 'delete_values') NOT NULL,
   object_type ENUM('sites', 'aggregates', 'forecasts', 'observations', 'users', 'roles', 'permissions') NOT NULL,
   applies_to_all BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

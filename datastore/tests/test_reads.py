@@ -1,3 +1,7 @@
+import datetime as dt
+import random
+
+
 import pytest
 import pymysql
 
@@ -37,11 +41,28 @@ def allow_read_observations(cursor, new_permission, insertuser):
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
 
+@pytest.fixture()
+def allow_read_observation_values(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role = insertuser
+    perm = new_permission('read_values', 'observations', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
 
 @pytest.fixture()
 def allow_read_forecasts(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role = insertuser
     perm = new_permission('read', 'forecasts', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_read_forecast_values(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role = insertuser
+    perm = new_permission('read_values', 'forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
@@ -111,4 +132,65 @@ def test_read_forecast_denied(cursor, insertuser):
     forecast = insertuser[3]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast', (auth0id, forecast['strid']))
+        assert e.errcode == 1142
+
+
+@pytest.fixture()
+def obs_values(cursor, insertuser):
+    auth0id = insertuser[0]['auth0_id']
+    obsid = insertuser[3]['strid']
+    start = dt.datetime(2019, 1, 30, 12, 28, 20)
+    vals = tuple([
+        (obsid, start + dt.timedelta(minutes=i),
+         float(random.randint(0, 100)), 0) for i in range(10)])
+    cursor.executemany(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag) '
+        'VALUES (UUID_TO_BIN(%s, 1), %s, %s, %s)', vals)
+    start = dt.datetime(2019, 1, 30, 12, 20)
+    end = dt.datetime(2019, 1, 30, 12, 40)
+    return auth0id, obsid, vals, start, end
+
+
+def test_read_observation_values(cursor, obs_values,
+                                 allow_read_observation_values):
+    auth0id, obsid, vals, start, end = obs_values
+    cursor.callproc('read_observation_values', (auth0id, obsid, start, end))
+    res = cursor.fetchall()
+    assert res == vals
+
+
+@pytest.mark.parametrize('start,end,theslice', [
+    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+     slice(10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+     slice(2, 10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+     slice(2, 7)),
+])
+def test_read_observation_values_time_limits(
+        cursor, obs_values, allow_read_observation_values, start, end,
+        theslice):
+    auth0id, obsid, vals, _, _ = obs_values
+    cursor.callproc('read_observation_values', (auth0id, obsid, start, end))
+    res = cursor.fetchall()
+    assert res == vals[theslice]
+
+
+def test_read_observation_values_denied(cursor, obs_values):
+    auth0id, obsid, vals, start, end = obs_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_values',
+                        (auth0id, obsid, start, end))
+        assert e.errcode == 1142
+
+
+def test_read_observation_values_denied_can_read_meta(
+        cursor, obs_values, allow_read_observations):
+    auth0id, obsid, vals, start, end = obs_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_values', (auth0id, obsid, start, end))
         assert e.errcode == 1142
