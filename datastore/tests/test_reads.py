@@ -192,7 +192,8 @@ def test_read_observation_values_denied_can_read_meta(
         cursor, obs_values, allow_read_observations):
     auth0id, obsid, vals, start, end = obs_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('read_observation_values', (auth0id, obsid, start, end))
+        cursor.callproc('read_observation_values',
+                        (auth0id, obsid, start, end))
         assert e.errcode == 1142
 
 
