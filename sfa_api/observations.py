@@ -219,7 +219,7 @@ class ObservationValuesView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ObservationValues'
+                $ref: '#/components/schemas/ObservationValuesPost'
             text/csv:
               schema:
                 type: string

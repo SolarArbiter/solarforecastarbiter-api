@@ -48,7 +48,7 @@ class AllForecastsView(MethodView):
           requests to this endpoint without a trailing slash will
           result in a redirect response.
         requestBody:
-          desctiption: JSON representation of an observation.
+          desctiption: JSON representation of a forecast.
           required: True
           content:
             application/json:
@@ -150,9 +150,7 @@ class ForecastValuesView(MethodView):
             content:
               applciation/json:
                 schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/ForecastValue'
+                  $ref: '#/components/schemas/ForecastValues'
               text/csv:
                 schema:
                   type: string
@@ -218,7 +216,7 @@ class ForecastValuesView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ForecastValues'
+                $ref: '#/components/schemas/ForecastValuesPost'
             text/csv:
               schema:
                 type: string
@@ -231,9 +229,9 @@ class ForecastValuesView(MethodView):
                   quality_flag may be 0 or 1 (indicating the value is not
                   to be trusted).
               example: |-
-                timestamp,value,quality_flag
-                2018-10-29T12:00:00Z,32.93,0
-                2018-10-29T13:00:00Z,25.17,0
+                timestamp,value
+                2018-10-29T12:00:00Z,32.93
+                2018-10-29T13:00:00Z,25.17
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -328,6 +326,183 @@ class ForecastMetadataView(MethodView):
         return jsonify(ForecastSchema().dump(forecast))
 
 
+class AllCDFForecastGroupsView(MethodView):
+    def get(self, args):
+        """
+        ---
+        summary: List Probabilistic Forecasts groups.
+        description: List all probabilistic forecasts a user has access to.
+        tags:
+          - Probabilistic Forecasts
+        responses:
+          200:
+            description: A list of probabilistic forecasts
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CDFForecastGroupMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+    def post(self, *args):
+        """
+        ---
+        summary: Create Probabilistic Forecast group.
+        tags:
+          - Probabilistic Forecasts
+        description: >-
+          Create a new Probabilistic Forecast by posting metadata.
+          Note that POST requests to this endpoint without a trailing
+          slash will result in a redirect response.
+        requestBody:
+          desctiption: JSON representation of a probabilistic forecast.
+          required: True
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CDFForecastGroupDefinition'
+        responses:
+          201:
+            description: Probabilistic forecast created successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CDFForecastGroupMetadata'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+
+class CDFForecastGroupMetadataView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get Probabilistic Forecast group Metadata.
+        tags:
+          - Probabilistic Forecasts
+        parameters:
+        - $ref: '#/components/parameters/forecast_id'
+        responses:
+          200:
+            description: Successfully retrieved Forecasts.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CDFForecastGroupMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+
+class CDFForecastMetadata(MethodView):
+    def get(self, forecast_id):
+        """
+        ---
+        summary: Get Metadata for one Probabilistic Forecast constant value.
+        tags:
+          - Probabilistic Forecasts
+        parameters:
+        - $ref: '#/components/parameters/forecast_id'
+        responses:
+          200:
+            description: Successfully retrieved Forecast CDF metadata.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CDFForecastMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+
+class CDFForecastValues(MethodView):
+    def get(self, forecast_id):
+        """
+        ---
+        summary: Get Probabilistic Forecast data for one constant value.
+        tags:
+          - Probabilistic Forecasts
+        responses:
+          200:
+            content:
+              applciation/json:
+                schema:
+                  items:
+                    $ref: '#/components/schemas/ForecastValues'
+              text/csv:
+                schema:
+                  type: string
+                example: |-
+                  timestamp,value
+                  2018-10-29T12:00:00Z,32.93
+                  2018-10-29T13:00:00Z,25.17
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+    def post(self, forecast_id):
+        """
+        ---
+        summary: Add Probabilistic Forecast data for one constant value.
+        description: >-
+          Add timeseries values to a Probabilistic Forecast constant value.
+        tags:
+        - Probabilistic Forecasts
+        parameters:
+        - $ref: '#/components/parameters/forecast_id'
+        requestBody:
+          required: True
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForecastValuesPost'
+            text/csv:
+              schema:
+                type: string
+                description: |
+                  Text file with fields separated by ',' and
+                  lines separated by '\\n'. The first line must
+                  be a header with the following fields: timestamp,
+                  value. Timestamp must be an ISO 8601 datetime and
+                  value may be an integer or floatquality_flag.
+              example: |-
+                timestamp,value
+                2018-10-29T12:00:00Z,32.93
+                2018-10-29T13:00:00Z,25.17
+        responses:
+          201:
+            $ref: '#/components/responses/201-Created'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        return jsonify({'errors': {'error': ['Not Implemented']}})
+
+
 spec.components.parameter(
     'forecast_id', 'path',
     {
@@ -342,10 +517,28 @@ spec.components.parameter(
 forecast_blp = Blueprint(
     'forecasts', 'forecasts', url_prefix="/forecasts",
 )
-forecast_blp.add_url_rule('/', view_func=AllForecastsView.as_view('all'))
-forecast_blp.add_url_rule('/<forecast_id>',
-                          view_func=ForecastView.as_view('single'))
-forecast_blp.add_url_rule('/<forecast_id>/values',
-                          view_func=ForecastValuesView.as_view('values'))
-forecast_blp.add_url_rule('/<forecast_id>/metadata',
-                          view_func=ForecastMetadataView.as_view('metadata'))
+forecast_blp.add_url_rule(
+    '/single/',
+    view_func=AllForecastsView.as_view('all'))
+forecast_blp.add_url_rule(
+    '/single/<forecast_id>',
+    view_func=ForecastView.as_view('single'))
+forecast_blp.add_url_rule(
+    '/single/<forecast_id>/values',
+    view_func=ForecastValuesView.as_view('values'))
+forecast_blp.add_url_rule(
+    '/single/<forecast_id>/metadata',
+    view_func=ForecastMetadataView.as_view('metadata'))
+
+forecast_blp.add_url_rule(
+    '/cdf/',
+    view_func=AllCDFForecastGroupsView.as_view('all_cdf_groups'))
+forecast_blp.add_url_rule(
+    '/cdf/<forecast_id>',
+    view_func=CDFForecastGroupMetadataView.as_view('single_cdf_group'))
+forecast_blp.add_url_rule(
+    '/cdf/single/<forecast_id>',
+    view_func=CDFForecastMetadata.as_view('single_cdf_metadata'))
+forecast_blp.add_url_rule(
+    '/cdf/single/<forecast_id>/values',
+    view_func=CDFForecastValues.as_view('single_cdf_value'))

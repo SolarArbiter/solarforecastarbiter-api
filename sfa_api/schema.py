@@ -7,13 +7,11 @@ from sfa_api.utils.validators import TimeFormat
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
-             'poa', 'ac_power', 'dc_power', 'pdf_probability',
-             'cdf_value']
+             'poa', 'ac_power', 'dc_power', 'cdf_value']
 
-OBSERVATION_VALUE_TYPES = ['interval_mean', 'instantaneous']
 
-FORECAST_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
-                        'interval_median', 'percentile', 'instantaneous']
+INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
+                        'interval_median', 'instantaneous']
 
 ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -153,16 +151,23 @@ class ObservationValueSchema(ma.Schema):
         missing=False)
 
 
+@spec.define_schema('ObservationValuesPost')
+class ObservationValuesPostSchema(ma.Schema):
+    values = ma.Nested(ObservationValueSchema, many=True)
+
+
 @spec.define_schema('ObservationValues')
-class ObservationValuesSchema(ma.Schema):
+class ObservationValuesSchema(ObservationValuesPostSchema):
     obs_id = ma.UUID(
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
-    values = ma.Nested(ObservationValueSchema, many=True)
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                      obs_id='<obs_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                          obs_id='<obs_id>'),
+        },
+        description="Contains a link to the values endpoint."
+    )
 
 
 @spec.define_schema('ObservationDefinition')
@@ -191,9 +196,9 @@ class ObservationPostSchema(ma.Schema):
         description=('The length of time that each data point represents  in'
                      'minutes, e.g. 5 for 5 minutes.'),
         required=True)
-    value_type = ma.String(
+    interval_value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(OBSERVATION_VALUE_TYPES))
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES))
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
@@ -205,10 +210,13 @@ class ObservationSchema(ObservationPostSchema):
     class Meta:
         strict = True
         ordered = True
-    _links = ma.Hyperlinks({
-        'site': ma.AbsoluteURLFor('sites.single',
-                                  site_id='<site_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>')
+        },
+        description="Contains a link to the associated site."
+    )
     obs_id = ma.UUID()
     provider = ma.String()
 
@@ -219,12 +227,15 @@ class ObservationLinksSchema(ma.Schema):
         strict = True
         ordered = True
     obs_id = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                      obs_id='<obs_id>'),
-        'values': ma.AbsoluteURLFor('observations.values',
-                                    obs_id='<obs_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                          obs_id='<obs_id>'),
+            'values': ma.AbsoluteURLFor('observations.values',
+                                        obs_id='<obs_id>')
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
 
 
 # Forecasts
@@ -243,16 +254,23 @@ class ForecastValueSchema(ma.Schema):
         allow_nan=True)
 
 
+@spec.define_schema('ForecastValuesPost')
+class ForecastValuesPostSchema(ma.Schema):
+    values = ma.Nested(ForecastValueSchema, many=True)
+
+
 @spec.define_schema('ForecastValues')
-class ForecastValuesSchema(ma.Schema):
+class ForecastValuesSchema(ForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                      forecast_id='<forecast_id>'),
-    })
-    values = ma.Nested(ForecastValueSchema, many=True)
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                          forecast_id='<forecast_id>'),
+        },
+        description="Contains a link to the metadata endpoint."
+    )
 
 
 @spec.define_schema('ForecastDefinition')
@@ -306,19 +324,22 @@ class ForecastPostSchema(ma.Schema):
                      'run issue frequency.'),
         required=True
     )
-    value_type = ma.String(
+    interval_value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(FORECAST_VALUE_TYPES)
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
-    _links = ma.Hyperlinks({
-        'site': ma.AbsoluteURLFor('sites.single',
-                                  site_id='<site_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>'),
+        },
+        description="Contains a link to the associated site."
+    )
     forecast_id = ma.UUID()
     provider = ma.String()
 
@@ -329,9 +350,83 @@ class ForecastLinksSchema(ma.Schema):
         string = True
         ordered = True
     forecast_id = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                      forecast_id='<forecast_id>'),
-        'values': ma.AbsoluteURLFor('forecasts.values',
-                                    forecast_id='<forecast_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                          forecast_id='<forecast_id>'),
+            'values': ma.AbsoluteURLFor('forecasts.values',
+                                        forecast_id='<forecast_id>')
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
+
+
+# Probabilistic Forecasts
+AXIS_FIELD = ma.String(
+    title='Axis',
+    description=('Axis - The axis on which the constant values of the CDF '
+                 'is specified. The axis can be either x (constant '
+                 'variable values) or y (constant percentiles). The axis '
+                 'is fixed and the same for all forecasts in the '
+                 'probabilistic forecast.'),
+    validate=validate.OneOf(['x', 'y'])
+)
+
+
+@spec.define_schema('CDFForecastGroupDefinition')
+class CDFForecastGroupPostSchema(ForecastPostSchema):
+    axis = AXIS_FIELD
+    constant_values = ma.List(
+        ma.Float,
+        title='Constant Values',
+        description=('The variable values or percentiles for the set of '
+                     'forecasts in the probabilistic forecast.'),
+    )
+
+
+@spec.define_schema('CDFForecastMetadata')
+class CDFForecastSchema(ForecastSchema):
+    _links = ma.Hyperlinks(
+        {
+            'probability_forecast_group': ma.AbsoluteURLFor(
+                'forecasts.single_cdf_group',
+                forecast_id='<parent>')
+        },
+        description=("Contains a link to the associated Probabilistic "
+                     "Forecast Group."),
+    )
+    forecast_id = ma.UUID()
+    axis = AXIS_FIELD
+    parent = ma.UUID()
+    constant_value = ma.Float(
+        title='Constant Value',
+        description=('The variable value or percentile for the probabilistic'
+                     'forecast'),
+    )
+
+
+@spec.define_schema('CDFForecastSingle')
+class CDFForecastSingleSchema(ma.Schema):
+    forecast_id = ma.UUID()
+    constant_value = ma.Float()
+    _links = ma.Hyperlinks(
+        {
+            'values': ma.AbsoluteURLFor('forecasts.single_cdf_value',
+                                        forecast_id='<forecast_id>')
+        },
+        description="Contains a link to the values endpoint."
+    )
+
+
+@spec.define_schema('CDFForecastGroupMetadata')
+class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>'),
+        },
+        description="Contains a link to the associated site."
+    )
+    forecast_id = ma.UUID()
+    provider = ma.String()
+    constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
