@@ -1,4 +1,3 @@
-import flask
 import pytest
 import pymysql
 
@@ -16,9 +15,16 @@ def app():
         except pymysql.err.OperationalError:
             pytest.skip('No connection to test database')
         else:
-            with app.test_request_context() as ctx:
-                ctx.user = 'auth0|5be343df7025406237820b85'
-                yield app
+            yield app
+
+
+@pytest.fixture(scope='module')
+def user(app):
+    ctx = app.test_request_context()
+    ctx.user = 'auth0|testtesttest'
+    ctx.push()
+    yield
+    ctx.pop()
 
 
 def test_get_cursor(app):
@@ -28,6 +34,7 @@ def test_get_cursor(app):
     assert res
 
 
-def test_list_sites(app):
+def test_list_sites(app, user):
     sites = storage_interface.list_sites()
-    assert False
+    assert len(sites) > 0
+    # should compare against demo?

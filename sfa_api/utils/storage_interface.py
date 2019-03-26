@@ -8,7 +8,6 @@ from contextlib import contextmanager
 
 
 from flask import g, current_app
-import pandas as pd
 import pymysql
 from pymysql import converters
 

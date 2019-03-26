@@ -5,7 +5,7 @@ INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
 
 SET @userid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
-    @userid, 'auth0|5be343df7025406237820b85', @orgid);
+    @userid, 'auth0|testtesttest', @orgid);
 
 SET @roleid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
