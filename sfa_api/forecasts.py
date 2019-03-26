@@ -413,7 +413,7 @@ class CDFForecastMetadata(MethodView):
     def get(self, forecast_id):
         """
         ---
-        summary: Get Probabilistic Forecast value.
+        summary: Get Metadata for one Probabilistic Forecast constant value.
         tags:
           - Probabilistic Forecasts
         parameters:
@@ -439,9 +439,7 @@ class CDFForecastValues(MethodView):
     def get(self, forecast_id):
         """
         ---
-        summary: Get Probabilistic Forecast data.
-        description: >-
-            Get the timeseries values from the Probabilistic Forecast entry.
+        summary: Get Probabilistic Forecast data for one constant value.
         tags:
           - Probabilistic Forecasts
         responses:
@@ -468,8 +466,9 @@ class CDFForecastValues(MethodView):
     def post(self, forecast_id):
         """
         ---
-        summary: Add Probabilistic Forecast data
-        description: Add new timeseries values to Forecast entry.
+        summary: Add Probabilistic Forecast data for one constant value.
+        description: >-
+          Add timeseries values to a Probabilistic Forecast constant value.
         tags:
         - Probabilistic Forecasts
         parameters:
@@ -486,11 +485,9 @@ class CDFForecastValues(MethodView):
                 description: |
                   Text file with fields separated by ',' and
                   lines separated by '\\n'. The first line must
-                  be a header with the following fields:
-                  timestamp, value, quality_flag. Timestamp must be
-                  an ISO 8601 datetime, value may be an integer or float,
-                  quality_flag may be 0 or 1 (indicating the value is not
-                  to be trusted).
+                  be a header with the following fields: timestamp,
+                  value. Timestamp must be an ISO 8601 datetime and
+                  value may be an integer or floatquality_flag.
               example: |-
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93

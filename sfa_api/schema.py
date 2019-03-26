@@ -7,8 +7,7 @@ from sfa_api.utils.validators import TimeFormat
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
-             'poa', 'ac_power', 'dc_power', 'pdf_probability',
-             'cdf_value']
+             'poa', 'ac_power', 'dc_power', 'cdf_value']
 
 
 VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
@@ -362,17 +361,21 @@ class ForecastLinksSchema(ma.Schema):
     )
 
 
+# Probabilistic Forecasts
+AXIS_FIELD = ma.String(
+    title='Axis',
+    description=('Axis - The axis on which the constant values of the CDF '
+                 'is specified. The axis can be either x (constant '
+                 'variable values) or y (constant percentiles). The axis '
+                 'is fixed and the same for all forecasts in the '
+                 'probabilistic forecast.'),
+    validate=validate.OneOf(['x', 'y'])
+)
+
+
 @spec.define_schema('CDFForecastGroupDefinition')
 class CDFForecastGroupPostSchema(ForecastPostSchema):
-    axis = ma.String(
-        title='Axis',
-        description=('Axis - The axis on which the constant values of the CDF '
-                     'is specified. The axis can be either x (constant '
-                     'variable values) or y (constant percentiles). The axis '
-                     'is fixed and the same for all forecasts in the '
-                     'probabilistic forecast.'),
-        validate=validate.OneOf(['x', 'y'])
-    )
+    axis = AXIS_FIELD
     constant_values = ma.List(
         ma.Float,
         title='Constant Values',
@@ -385,22 +388,15 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
 class CDFForecastSchema(ForecastSchema):
     _links = ma.Hyperlinks(
         {
-            'parent': ma.AbsoluteURLFor('forecasts.single_cdf_group',
-                                        forecast_id='<parent>')
+            'probability_forecast_group': ma.AbsoluteURLFor(
+                'forecasts.single_cdf_group',
+                forecast_id='<parent>')
         },
-        description=("Contains a link to the parent Probabilistic Forecast "
-                     "Group."),
+        description=("Contains a link to the associated Probabilistic "
+                     "Forecast Group."),
     )
     forecast_id = ma.UUID()
-    axis = ma.String(
-        title='Axis',
-        description=('Axis - The axis on which the constant values of the CDF '
-                     'is specified. The axis can be either x (constant'
-                     'variable values) or y (constant percentiles). The axis '
-                     'is fixed and the same for all forecasts in the '
-                     'probabilistic forecast.'),
-        validate=validate.OneOf(['x', 'y'])
-    )
+    axis = AXIS_FIELD
     parent = ma.UUID()
     constant_value = ma.Float(
         title='Constant Value',
