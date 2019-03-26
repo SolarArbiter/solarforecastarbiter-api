@@ -35,9 +35,7 @@ static_sites = {
         "modeling_parameters": {
             "ac_capacity": 0.015,
             "dc_capacity": 0.015,
-            "backtrack": True,
             "temperature_coefficient": -.002,
-            "ground_coverage_ratio": 0.5,
             "surface_azimuth": 180,
             "surface_tilt": 45.0,
             "tracking_type": "Fixed"

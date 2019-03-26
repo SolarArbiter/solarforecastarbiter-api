@@ -10,7 +10,8 @@ static_observations = {
         "variable": "ghi",
         "interval_value_type": "interval_mean",
         "interval_label": "beginning",
-        "interval_length": 5
+        "interval_length": 5,
+        "uncertainty": 0.10
     },
     "9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f": {
         "extra_parameters": {
