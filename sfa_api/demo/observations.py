@@ -24,7 +24,8 @@ static_observations = {
         "variable": "dhi",
         "interval_value_type": "interval_mean",
         "interval_label": "beginning",
-        "interval_length": 5
+        "interval_length": 5,
+        "uncertainty": 0.10
     },
     "9ce9715c-bd91-47b7-989f-50bb558f1eb9": {
         "extra_parameters": {
@@ -37,7 +38,8 @@ static_observations = {
         "variable": "dni",
         "interval_value_type": "interval_mean",
         "interval_label": "beginning",
-        "interval_length": 5
+        "interval_length": 5,
+        "uncertainty": 0.10
     },
     "e0da0dea-9482-4073-84de-f1b12c304d23": {
         "extra_parameters": {
@@ -50,7 +52,8 @@ static_observations = {
         "variable": "ghi",
         "interval_value_type": "interval_mean",
         "interval_label": "beginning",
-        "interval_length": 5
+        "interval_length": 5,
+        "uncertainty": 0.10
     },
     "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2": {
         "extra_parameters": {
@@ -63,6 +66,7 @@ static_observations = {
         "variable": "ghi",
         "interval_value_type": "interval_mean",
         "interval_label": "beginning",
-        "interval_length": 5
+        "interval_length": 5,
+        "uncertainty": 0.10
     }
 }
