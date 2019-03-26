@@ -162,10 +162,13 @@ class ObservationValuesSchema(ObservationValuesPostSchema):
     obs_id = ma.UUID(
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                      obs_id='<obs_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                          obs_id='<obs_id>'),
+        },
+        description="Contains a link to the values endpoint."
+    )
 
 
 @spec.define_schema('ObservationDefinition')
@@ -208,10 +211,13 @@ class ObservationSchema(ObservationPostSchema):
     class Meta:
         strict = True
         ordered = True
-    _links = ma.Hyperlinks({
-        'site': ma.AbsoluteURLFor('sites.single',
-                                  site_id='<site_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>')
+        },
+        description="Contains a link to the associated site."
+    )
     obs_id = ma.UUID()
     provider = ma.String()
 
@@ -222,12 +228,15 @@ class ObservationLinksSchema(ma.Schema):
         strict = True
         ordered = True
     obs_id = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                      obs_id='<obs_id>'),
-        'values': ma.AbsoluteURLFor('observations.values',
-                                    obs_id='<obs_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('observations.metadata',
+                                          obs_id='<obs_id>'),
+            'values': ma.AbsoluteURLFor('observations.values',
+                                        obs_id='<obs_id>')
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
 
 
 # Forecasts
@@ -256,10 +265,13 @@ class ForecastValuesSchema(ForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                      forecast_id='<forecast_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                          forecast_id='<forecast_id>'),
+        },
+        description="Contains a link to the metadata endpoint."
+    )
 
 
 @spec.define_schema('ForecastDefinition')
@@ -322,10 +334,13 @@ class ForecastPostSchema(ma.Schema):
 
 @spec.define_schema('ForecastMetadata')
 class ForecastSchema(ForecastPostSchema):
-    _links = ma.Hyperlinks({
-        'site': ma.AbsoluteURLFor('sites.single',
-                                  site_id='<site_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>'),
+        },
+        description="Contains a link to the associated site."
+    )
     forecast_id = ma.UUID()
     provider = ma.String()
 
@@ -336,12 +351,15 @@ class ForecastLinksSchema(ma.Schema):
         string = True
         ordered = True
     forecast_id = ma.UUID()
-    _links = ma.Hyperlinks({
-        'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                      forecast_id='<forecast_id>'),
-        'values': ma.AbsoluteURLFor('forecasts.values',
-                                    forecast_id='<forecast_id>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                          forecast_id='<forecast_id>'),
+            'values': ma.AbsoluteURLFor('forecasts.values',
+                                        forecast_id='<forecast_id>')
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
 
 
 @spec.define_schema('CDFForecastGroupDefinition')
@@ -365,10 +383,14 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
 
 @spec.define_schema('CDFForecastMetadata')
 class CDFForecastSchema(ForecastSchema):
-    _links = ma.Hyperlinks({
-        'parent': ma.AbsoluteURLFor('forecasts.single_cdf_group',
-                                    forecast_id='<parent>')
-    })
+    _links = ma.Hyperlinks(
+        {
+            'parent': ma.AbsoluteURLFor('forecasts.single_cdf_group',
+                                        forecast_id='<parent>')
+        },
+        description=("Contains a link to the parent Probabilistic Forecast "
+                     "Group."),
+    )
     forecast_id = ma.UUID()
     axis = ma.String(
         title='Axis',
@@ -391,16 +413,24 @@ class CDFForecastSchema(ForecastSchema):
 class CDFForecastSingleSchema(ma.Schema):
     forecast_id = ma.UUID()
     constant_value = ma.Float()
-    _links = ma.AbsoluteURLFor('forecasts.single_cdf_value',
-                               forecast_id='<forecast_id>')
+    _links = ma.Hyperlinks(
+        {
+            'values': ma.AbsoluteURLFor('forecasts.single_cdf_value',
+                                        forecast_id='<forecast_id>')
+        },
+        description="Contains a link to the values endpoint."
+    )
 
 
 @spec.define_schema('CDFForecastGroupMetadata')
 class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
-    _links = ma.Hyperlinks({
-        'site': ma.AbsoluteURLFor('sites.single',
-                                  site_id='<site_id>'),
-    })
+    _links = ma.Hyperlinks(
+        {
+            'site': ma.AbsoluteURLFor('sites.single',
+                                      site_id='<site_id>'),
+        },
+        description="Contains a link to the associated site."
+    )
     forecast_id = ma.UUID()
     provider = ma.String()
     constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
