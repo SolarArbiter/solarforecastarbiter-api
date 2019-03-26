@@ -141,3 +141,22 @@ CALL insertobs('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f');
 CALL insertobs('9ce9715c-bd91-47b7-989f-50bb558f1eb9');
 CALL insertobs('e0da0dea-9482-4073-84de-f1b12c304d23');
 CALL insertobs('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2');
+
+
+CREATE USER 'apiuser'@'*' IDENTIFIED BY 'thisisaterribleandpublicpassword';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation_values TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast_values TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_site TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation_values TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast_values TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_site TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_site TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_observation TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_forecast TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_observations TO 'apiuser'@'*';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_forecasts TO 'apiuser'@'*';
