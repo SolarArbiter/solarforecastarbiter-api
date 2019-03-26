@@ -8,7 +8,7 @@ static_observations = {
         "provider": "UO SRML",
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "ghi",
-        "value_type": "interval_mean",
+        "interval_value_type": "interval_mean",
         "interval_label": "beginning",
         "interval_length": 5
     },
@@ -21,7 +21,7 @@ static_observations = {
         "provider": "UO SRML",
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "dhi",
-        "value_type": "interval_mean",
+        "interval_value_type": "interval_mean",
         "interval_label": "beginning",
         "interval_length": 5
     },
@@ -34,7 +34,7 @@ static_observations = {
         "provider": "UO SRML",
         "site_id": "123e4567-e89b-12d3-a456-426655440001",
         "variable": "dni",
-        "value_type": "interval_mean",
+        "interval_value_type": "interval_mean",
         "interval_label": "beginning",
         "interval_length": 5
     },
@@ -47,7 +47,7 @@ static_observations = {
         "provider": "UO SRML",
         "site_id": "d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a",
         "variable": "ghi",
-        "value_type": "interval_mean",
+        "interval_value_type": "interval_mean",
         "interval_label": "beginning",
         "interval_length": 5
     },
@@ -60,7 +60,7 @@ static_observations = {
         "provider": "NOAA",
         "site_id": "d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a",
         "variable": "ghi",
-        "value_type": "interval_mean",
+        "interval_value_type": "interval_mean",
         "interval_label": "beginning",
         "interval_length": 5
     }

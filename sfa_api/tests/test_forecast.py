@@ -11,7 +11,7 @@ VALID_FORECAST_JSON = {
     "lead_time_to_start": 60,
     "interval_length": 1,
     "run_length": 1440,
-    "value_type": "interval_mean",
+    "interval_value_type": "interval_mean",
 }
 
 
@@ -34,7 +34,7 @@ INVALID_INTERVAL_LENGTH = copy_update(VALID_FORECAST_JSON,
 INVALID_RUN_LENGTH = copy_update(VALID_FORECAST_JSON,
                                  'run_length', 'invalid')
 INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON,
-                                 'value_type', 'invalid')
+                                 'interval_value_type', 'invalid')
 
 
 empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
@@ -58,7 +58,7 @@ def test_forecast_post_success(api, payload, status_code):
     (INVALID_LEAD_TIME, '{"lead_time_to_start":["Not a valid integer."]}'), # NOQA
     (INVALID_INTERVAL_LENGTH, '{"interval_length":["Not a valid integer."]}'), # NOQA
     (INVALID_RUN_LENGTH, '{"run_length":["Not a valid integer."]}'),
-    (INVALID_VALUE_TYPE, '{"value_type":["Not a valid choice."]}'),
+    (INVALID_VALUE_TYPE, '{"interval_value_type":["Not a valid choice."]}'),
     ({}, empty_json_response)
 ])
 def test_forecast_post_bad_request(api, payload, message):

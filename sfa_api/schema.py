@@ -10,8 +10,8 @@ VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power', 'cdf_value']
 
 
-VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
-               'interval_median', 'instantaneous']
+INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
+                        'interval_median', 'instantaneous']
 
 ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -196,9 +196,9 @@ class ObservationPostSchema(ma.Schema):
         description=('The length of time that each data point represents  in'
                      'minutes, e.g. 5 for 5 minutes.'),
         required=True)
-    value_type = ma.String(
+    interval_value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(VALUE_TYPES))
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES))
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.')
@@ -324,9 +324,9 @@ class ForecastPostSchema(ma.Schema):
                      'run issue frequency.'),
         required=True
     )
-    value_type = ma.String(
+    interval_value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(VALUE_TYPES)
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 

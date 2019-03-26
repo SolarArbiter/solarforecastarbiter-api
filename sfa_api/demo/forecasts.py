@@ -10,7 +10,7 @@ static_forecasts = {
         "run_length": 1440,
         "interval_label": "beginning",
         "lead_time_to_start": "60",
-        "value_type": "mean",
+        "interval_value_type": "mean",
     },
     'f8dd49fa-23e2-48a0-862b-ba0af6dec276': {
         "forecast_id": "f8dd49fa-23e2-48a0-862b-ba0af6dec276",
@@ -23,6 +23,6 @@ static_forecasts = {
         "interval_length": 1,
         "interval_label": "beginning",
         "lead_time_to_start": 60,
-        "value_type": "mean",
+        "interval_value_type": "mean",
     }
 }
