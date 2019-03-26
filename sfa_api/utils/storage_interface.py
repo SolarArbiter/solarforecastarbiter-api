@@ -4,6 +4,53 @@ module is a static implementation intended for developing against when
 it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
+from contextlib import contextmanager
+
+
+from flask import g, current_app
+import pandas as pd
+import pymysql
+from pymysql import converters
+
+
+from sfa_api.auth import current_user
+
+
+def mysql_connection():
+    if 'mysql_connection' not in g:
+        config = current_app.config
+        conv = converters.conversions.copy()
+        conv[converters.FIELD_TYPE.TIME] = converters.convert_time
+        connect_kwargs = {
+            'host': config['MYSQL_HOST'],
+            'port': int(config['MYSQL_PORT']),
+            'user': config['MYSQL_USER'],
+            'password': config['MYSQL_PASSWORD'],
+            'database': config['MYSQL_DATABASE'],
+            'binary_prefix': True,
+            'conv': conv,
+            'use_unicode': True,
+            'charset': 'utf8mb4',
+            'init_command': "SET time_zone = '+00:00'"
+        }
+        connection = pymysql.connect(**connect_kwargs)
+        g.mysql_connection = connection
+    return g.mysql_connection
+
+
+@contextmanager
+def get_cursor(cursor_type='standard'):
+    if cursor_type == 'standard':
+        cursorclass = pymysql.cursors.Cursor
+    elif cursor_type == 'dict':
+        cursorclass = pymysql.cursors.DictCursor
+    else:
+        raise AttributeError('cursor_type must be standard or dict')
+    connection = mysql_connection()
+    cursor = connection.cursor(cursor=cursorclass)
+    yield cursor
+    connection.commit()
+    cursor.close()
 
 
 def store_observation_values(obs_id, observation_df):
@@ -300,4 +347,7 @@ def list_sites():
         List of Site metadata as dictionaries.
     """
     # PROC: list_sites
-    raise NotImplementedError
+    with get_cursor('dict') as cursor:
+        cursor.callproc('list_sites', (current_user,))
+        sites = cursor.fetchall()
+    return sites
