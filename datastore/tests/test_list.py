@@ -7,6 +7,9 @@ import pytest
 @pytest.fixture()
 def readall(cursor, new_organization, new_user, new_role, new_permission,
             new_site, new_forecast, new_observation):
+    # remove test data
+    cursor.execute('DELETE FROM organizations')
+
     def make():
         org = new_organization()
         user = new_user(org=org)
