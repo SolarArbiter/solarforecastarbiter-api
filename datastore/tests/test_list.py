@@ -86,10 +86,11 @@ def test_list_sites(dictcursor, twosets):
     dictcursor.callproc('list_sites', (authid,))
     res = dictcursor.fetchall()
     assert [str(bin_to_uuid(site['id'])) for site in sites] == [
-        r['id'] for r in res]
+        r['site_id'] for r in res]
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(sites[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'site_id')) ==
+        set(sites[0].keys()) - set(('organization_id', 'id')))
 
 
 def test_list_forecasts(dictcursor, twosets):
@@ -97,10 +98,12 @@ def test_list_forecasts(dictcursor, twosets):
     fxs = twosets[4]
     dictcursor.callproc('list_forecasts', (authid,))
     res = dictcursor.fetchall()
-    assert [str(bin_to_uuid(fx['id'])) for fx in fxs] == [r['id'] for r in res]
+    assert ([str(bin_to_uuid(fx['id'])) for fx in fxs] ==
+            [r['forecast_id'] for r in res])
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(fxs[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'forecast_id'))
+        == set(fxs[0].keys()) - set(('organization_id', 'id')))
 
 
 def test_list_observations(dictcursor, twosets):
@@ -108,7 +111,9 @@ def test_list_observations(dictcursor, twosets):
     obs = twosets[5]
     dictcursor.callproc('list_observations', (authid,))
     res = dictcursor.fetchall()
-    assert [str(bin_to_uuid(ob['id'])) for ob in obs] == [r['id'] for r in res]
+    assert ([str(bin_to_uuid(ob['id'])) for ob in obs] ==
+            [r['observation_id'] for r in res])
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(obs[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'observation_id')) ==
+        set(obs[0].keys()) - set(('organization_id', 'id')))
