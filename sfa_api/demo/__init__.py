@@ -327,3 +327,177 @@ def list_sites():
         List of Site dictionaries.
     """
     return list(sites.values())
+
+
+# CDF Forecasts
+def store_cdf_forecast_values(forecast_id, forecast_df):
+    """Store CDF Forecast data
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of the associated forecast.
+    forecast_df: DataFrame
+        Dataframe with DatetimeIndex and value column.
+
+    Returns
+    -------
+    string
+        The UUID of the associated forecast. Returns
+        None if the CDFForecast does not exist.
+    """
+    raise NotImplementedError
+
+
+def read_cdf_forecast_values(forecast_id, start=None, end=None):
+    """Read CDF forecast values between start and end.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the peried for which to request data.
+
+    Returns
+    -------
+    list
+        A list of dictionaries representing data points.
+        Data points contain a timestamp and value. Returns
+        None if the CDF Forecast does not exist.
+    """
+    raise NotImplementedError
+
+
+def store_cdf_forecast(cdf_forecast):
+    """Store Forecast metadata. Should generate and store a uuid
+    as the 'forecast_id' field.
+
+    Parameters
+    ----------
+    cdf_forecast: dictionary
+        A dictionary of forecast fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created CDF Forecast.
+
+    """
+    raise NotImplementedError
+
+
+def read_cdf_forecast(forecast_id):
+    """Read CDF Forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to retrieve.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata or None if the Forecast
+        does not exist.
+    """
+    raise NotImplementedError
+
+
+def delete_cdf_forecast(forecast_id):
+    """Remove a CDF Forecast from storage.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the Forecast to delete.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata if successful or None
+        if the CDF Forecast does not exist.
+    """
+    raise NotImplementedError
+
+
+def list_cdf_forecasts(parent_forecast_id=None):
+    """Lists all Forecasts a user has access to.
+
+    Parameters
+    ----------
+    parent_forecast_id: string
+        UUID of the parent CDF Forecast Group.
+
+    Returns
+    -------
+    list
+        List of dictionaries of CDF Forecast metadata.
+    """
+    raise NotImplementedError
+
+
+# CDF Probability Groups
+def store_cdf_forecast_group(cdf_forecast_group):
+    """Store CDF Forecast Group metadata. Should generate
+    and store a uuid as the 'forecast_id' field.
+
+    Parameters
+    ----------
+    cdf_forecast_group: dictionary
+        A dictionary of CDF Forecast Group fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created CDF Forecast.
+
+    """
+    raise NotImplementedError
+
+
+def read_cdf_forecast_group(forecast_id):
+    """Read CDF Forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to retrieve.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata or None if the Forecast
+        does not exist.
+    """
+    raise NotImplementedError
+
+
+def delete_cdf_forecast_group(forecast_id):
+    """Remove a CDF Forecast Grpup from storage.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the CDF Forecast Group to delete.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast Groups's metadata if successful or
+        None if the CDF Forecast does not exist.
+    """
+    raise NotImplementedError
+
+
+def list_cdf_forecast_groups():
+    """Lists all CDF Forecast Groups a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of CDF Forecast Group metadata.
+    """
+    raise NotImplementedError
