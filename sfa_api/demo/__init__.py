@@ -571,7 +571,7 @@ def delete_cdf_forecast_group(forecast_id):
         return cdf_forecast_groups.pop(forecast_id)
 
 
-def list_cdf_forecast_groups():
+def list_cdf_forecast_groups(site_id=None):
     """Lists all CDF Forecast Groups a user has access to.
 
     Returns
@@ -579,5 +579,11 @@ def list_cdf_forecast_groups():
     list
         List of dictionaries of CDF Forecast Group metadata.
     """
-    return [read_cdf_forecast_group(forecast_id)
-            for forecast_id, forecast_group in cdf_forecast_groups.items()]
+    forecast_groups = [read_cdf_forecast_group(forecast_id)
+                       for forecast_id, forecast_group
+                       in cdf_forecast_groups.items()]
+    if site_id is not None:
+        forecast_groups = [forecast_group
+                           for forecast_group in forecast_groups
+                           if forecast_group['site_id'] == site_id]
+    return forecast_groups
