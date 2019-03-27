@@ -12,13 +12,11 @@ static_cdf_forecast_groups = {
         "lead_time_to_start": "60",
         "interval_value_type": "interval_mean",
         "axis": "y",
-        "constant_values": {
-            5: '633f9396-50bb-11e9-8647-d663bd873d93',
-            20: '633f9864-50bb-11e9-8647-d663bd873d93',
-            50: '633f9b2a-50bb-11e9-8647-d663bd873d93',
-            80: '633f9d96-50bb-11e9-8647-d663bd873d93', 
-            95: '633fa548-50bb-11e9-8647-d663bd873d93',
-        },
+        "constant_values": ['633f9396-50bb-11e9-8647-d663bd873d93',
+                            '633f9864-50bb-11e9-8647-d663bd873d93',
+                            '633f9b2a-50bb-11e9-8647-d663bd873d93',
+                            '633f9d96-50bb-11e9-8647-d663bd873d93',
+                            '633fa548-50bb-11e9-8647-d663bd873d93'],
     },
     '058b182a-50ba-11e9-8647-d663bd873d93': {
         "forecast_id": "058b182a-50ba-11e9-8647-d663bd873d93",
@@ -33,7 +31,11 @@ static_cdf_forecast_groups = {
         "lead_time_to_start": 60,
         "interval_value_type": "interval_mean",
         "axis": "x",
-        "constant_values": {},
+        "constant_values": ['633fb3a8-50bb-11e9-8647-d663bd873d93',
+                            '633fb114-50bb-11e9-8647-d663bd873d93',
+                            '633fae62-50bb-11e9-8647-d663bd873d93',
+                            '633fabec-50bb-11e9-8647-d663bd873d93',
+                            '633fa94e-50bb-11e9-8647-d663bd873d93'],
     }
 }
 static_cdf_forecasts = {
@@ -41,40 +43,61 @@ static_cdf_forecasts = {
         "forecast_id": '633f9396-50bb-11e9-8647-d663bd873d93',
         "constant_value": 5.0,
         "axis": "y",
-        "parent":'ef51e87c-50b9-11e9-8647-d663bd873d93',
+        "parent": 'ef51e87c-50b9-11e9-8647-d663bd873d93',
     },
     '633f9864-50bb-11e9-8647-d663bd873d93': {
         "forecast_id": '633f9864-50bb-11e9-8647-d663bd873d93',
         "constant_value": 20.0,
         "axis": "y",
-        "parent":'ef51e87c-50b9-11e9-8647-d663bd873d93',
+        "parent": 'ef51e87c-50b9-11e9-8647-d663bd873d93',
     },
     '633f9b2a-50bb-11e9-8647-d663bd873d93': {
         "forecast_id": '633f9b2a-50bb-11e9-8647-d663bd873d93',
         "constant_value": 50.0,
         "axis": "y",
-        "parent":'ef51e87c-50b9-11e9-8647-d663bd873d93',
+        "parent": 'ef51e87c-50b9-11e9-8647-d663bd873d93',
     },
     '633f9d96-50bb-11e9-8647-d663bd873d93': {
         "forecast_id": '633f9d96-50bb-11e9-8647-d663bd873d93',
         "constant_value": 80.0,
         "axis": "y",
-        "parent":'ef51e87c-50b9-11e9-8647-d663bd873d93',
+        "parent": 'ef51e87c-50b9-11e9-8647-d663bd873d93',
     },
     '633fa548-50bb-11e9-8647-d663bd873d93': {
         "forecast_id": '633fa548-50bb-11e9-8647-d663bd873d93',
         "constant_value": 95.0,
         "axis": "y",
-        "parent":'ef51e87c-50b9-11e9-8647-d663bd873d93',
+        "parent": 'ef51e87c-50b9-11e9-8647-d663bd873d93',
     },
     '633fa94e-50bb-11e9-8647-d663bd873d93': {
+        "forecast_id": '633fa94e-50bb-11e9-8647-d663bd873d93',
+        "constant_value": 5,
+        "axis": "x",
+        "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
     },
     '633fabec-50bb-11e9-8647-d663bd873d93': {
+        "forecast_id": '633fabec-50bb-11e9-8647-d663bd873d93',
+        "constant_value": 5,
+        "axis": "x",
+        "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
+
     },
     '633fae62-50bb-11e9-8647-d663bd873d93': {
+        "forecast_id": '633fae62-50bb-11e9-8647-d663bd873d93',
+        "constant_value": 5,
+        "axis": "x",
+        "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
     },
     '633fb114-50bb-11e9-8647-d663bd873d93': {
+        "forecast_id": '633fb114-50bb-11e9-8647-d663bd873d93',
+        "constant_value": 5,
+        "axis": "x",
+        "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
     },
     '633fb3a8-50bb-11e9-8647-d663bd873d93': {
+        "forecast_id": '633fb3a8-50bb-11e9-8647-d663bd873d93',
+        "constant_value": 5,
+        "axis": "x",
+        "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
     },
 }

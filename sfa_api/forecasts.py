@@ -12,7 +12,8 @@ from sfa_api.schema import (ForecastValuesSchema,
                             ForecastLinksSchema,
                             CDFForecastGroupPostSchema,
                             CDFForecastGroupSchema,
-                            CDFForecastSchema)
+                            CDFForecastSchema,
+                            CDFForecastValuesSchema)
 
 from sfa_api.utils.storage import get_storage
 
@@ -399,7 +400,7 @@ class AllCDFForecastGroupsView(MethodView):
                 return jsonify({'errors': 'Site does not exist'}), 400
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for(
-                'forecasts.single_cdf_metadata',
+                'forecasts.single_cgroup',
                 forecast_id=forecast_id)
             return response
 
@@ -514,8 +515,8 @@ class CDFForecastValues(MethodView):
         if accepts == 'application/json':
             values['timestamp'] = values.index
             dict_values = values.to_dict(orient='records')
-            data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
-                                                "values": dict_values})
+            data = CDFForecastValuesSchema().dump({"forecast_id": forecast_id,
+                                                   "values": dict_values})
             return jsonify(data)
         else:
             meta_url = url_for('forecasts.cdf_single_metadata',

@@ -12,7 +12,8 @@ import pandas as pd
 
 
 from sfa_api.demo.forecasts import static_forecasts
-from sfa_api.demo.cdf_forecasts import static_cdf_forecast_groups, static_cdf_forecasts
+from sfa_api.demo.cdf_forecasts import (static_cdf_forecast_groups,
+                                        static_cdf_forecasts)
 from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
 from sfa_api.demo.values import (static_observation_values,
@@ -359,7 +360,8 @@ def store_cdf_forecast_values(forecast_id, forecast_df):
         current_data = cdf_forecast_values[forecast_id]
         index_complement = current_data.index.difference(forecast_df.index)
         complement = current_data.loc[index_complement]
-        cdf_forecast_values[forecast_id] = forecast_df.combine_first(complement)
+        cdf_forecast_values[forecast_id] = forecast_df.combine_first(
+            complement)
     return forecast_id
 
 
@@ -404,12 +406,10 @@ def store_cdf_forecast(cdf_forecast):
         The UUID of the newly created CDF Forecast.
 
     """
-    cdf_forecast['site_id'] = str(cdf_forecast['site_id'])
-    if read_site(cdf_forecast['site_id']) is None:
-        return None
+    cdf_forecast['parent'] = str(cdf_forecast['parent'])
     forecast_id = str(uuid.uuid1())
     cdf_forecast['forecast_id'] = forecast_id
-    cdf_forecasts[forecast_id] = forecast
+    cdf_forecasts[forecast_id] = cdf_forecast
     cdf_forecast_values[forecast_id] = pd.DataFrame()
     return forecast_id
 
@@ -430,7 +430,10 @@ def read_cdf_forecast(forecast_id):
     """
     if forecast_id not in cdf_forecasts:
         return None
-    return cdf_forecasts[forecast_id]
+    forecast = cdf_forecasts[forecast_id]
+    with_parent = cdf_forecast_groups[forecast['parent']].copy()
+    with_parent.update(forecast)
+    return with_parent
 
 
 def delete_cdf_forecast(forecast_id):
@@ -467,17 +470,17 @@ def list_cdf_forecasts(parent_forecast_id=None):
     list
         List of dictionaries of CDF Forecast metadata.
     """
-    cdf_forecasts_list = []
-    if parent_Forecast_id is not None:
+    forecasts_list = []
+    if parent_forecast_id is not None:
         parent = read_cdf_forecast_group(parent_forecast_id)
         if parent is None:
             return None
         filtered_forecasts = {fx_id: fx for fx_id, fx in cdf_forecasts.items()
                               if fx['parent'] == parent_forecast_id}
     else:
-        filtered_forecasts = forecasts
+        filtered_forecasts = cdf_forecasts
     for forecast_id, forecast in filtered_forecasts.items():
-        with_metadata = read_cdf_forecast_group(with_metadata['parent'])
+        with_metadata = read_cdf_forecast_group(forecast['parent'])
         with_metadata = with_metadata.copy()
         with_metadata.update(forecast)
         forecasts_list.append(with_metadata)
@@ -505,8 +508,18 @@ def store_cdf_forecast_group(cdf_forecast_group):
         return None
     forecast_id = str(uuid.uuid1())
     cdf_forecast_group['forecast_id'] = forecast_id
-    cdf_forecast_groups[forecast_id] = forecast
-    cdf_forecast_values[forecast_id] = pd.DataFrame()
+    axis = cdf_forecast_group['axis']
+    instantiated_constants = []
+    for constant in cdf_forecast_group['constant_values']:
+        cdf_forecast = store_cdf_forecast({
+            "axis": axis,
+            "parent": forecast_id,
+            "constant_value": constant
+        })
+        print(f'{constant}, {axis}, {forecast_id}')
+        instantiated_constants.append(cdf_forecast)
+    cdf_forecast_group['constant_values'] = instantiated_constants
+    cdf_forecast_groups[forecast_id] = cdf_forecast_group
     return forecast_id
 
 
@@ -527,8 +540,12 @@ def read_cdf_forecast_group(forecast_id):
     if forecast_id not in cdf_forecast_groups:
         return None
     else:
-        forecast = cdf_forecast_groups[forecast_id]
-        return forecast
+        forecast_group = cdf_forecast_groups[forecast_id]
+        with_children = forecast_group.copy()
+        children = [cdf_forecasts[fx_id]
+                    for fx_id in forecast_group['constant_values']]
+        with_children['constant_values'] = children
+        return with_children
 
 
 def delete_cdf_forecast_group(forecast_id):
@@ -562,11 +579,5 @@ def list_cdf_forecast_groups():
     list
         List of dictionaries of CDF Forecast Group metadata.
     """
-    groups = []
-    for uuid, forecast_group in cdf_forecast_groups.items():
-        with_children = forecast_group.copy()
-        children = [cdf_forecasts[forecast_id]
-                    for const, forecast_id in forecast_group['constant_values'].items()] 
-        with_children['constant_values'] = children
-        groups.append(with_children)
-    return groups
+    return [read_cdf_forecast_group(forecast_id)
+            for forecast_id, forecast_group in cdf_forecast_groups.items()]

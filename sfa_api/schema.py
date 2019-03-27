@@ -273,6 +273,20 @@ class ForecastValuesPostSchema(ma.Schema):
     values = ma.Nested(ForecastValueSchema, many=True)
 
 
+@spec.define_schema('CDFForecastValues')
+class CDFForecastValuesSchema(ForecastValuesPostSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.single_cdf_metadata',
+                                          forecast_id='<forecast_id>'),
+        },
+        description="Contains a link to the metadata endpoint."
+    )
+
+
 @spec.define_schema('ForecastValues')
 class ForecastValuesSchema(ForecastValuesPostSchema):
     forecast_id = ma.UUID(
@@ -385,6 +399,7 @@ AXIS_FIELD = ma.String(
                  'variable values) or y (constant percentiles). The axis '
                  'is fixed and the same for all forecasts in the '
                  'probabilistic forecast.'),
+    required=True,
     validate=validate.OneOf(['x', 'y'])
 )
 
@@ -397,6 +412,7 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
         title='Constant Values',
         description=('The variable values or percentiles for the set of '
                      'forecasts in the probabilistic forecast.'),
+        required=True
     )
 
 
@@ -406,7 +422,10 @@ class CDFForecastSchema(ForecastSchema):
         {
             'probability_forecast_group': ma.AbsoluteURLFor(
                 'forecasts.single_cdf_group',
-                forecast_id='<parent>')
+                forecast_id='<parent>'),
+            'values': ma.AbsoluteURLFor(
+                'forecasts.single_cdf_value',
+                forecast_id='<forecast_id>')
         },
         description=("Contains a link to the associated Probabilistic "
                      "Forecast Group."),
