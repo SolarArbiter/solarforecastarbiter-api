@@ -8,7 +8,7 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as id, BIN_TO_UUID(organization_id, 1) as organization_id,
+        SELECT BIN_TO_UUID(id, 1) as site_id, get_organization_name(organization_id) as provider,
                name, latitude, longitude, elevation, timezone, extra_parameters, ac_capacity,
                dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth,
                axis_tilt, axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle,
@@ -31,7 +31,7 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as id, BIN_TO_UUID(organization_id, 1) as organization_id,
+        SELECT BIN_TO_UUID(id, 1) as observation_id, get_organization_name(organization_id) as provider,
                BIN_TO_UUID(site_id, 1) as site_id, name, variable, interval_label, interval_length,
                interval_value_type, uncertainty, extra_parameters, created_at, modified_at
         FROM arbiter_data.observations WHERE id = binid;
@@ -52,7 +52,7 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as id, BIN_TO_UUID(organization_id, 1) as organization_id,
+        SELECT BIN_TO_UUID(id, 1) as forecast_id, get_organization_name(organization_id) as provider,
                BIN_TO_UUID(site_id, 1) as site_id, name, variable, issue_time_of_day, lead_time_to_start,
                interval_label, interval_length, run_length, interval_value_type, extra_parameters,
                created_at, modified_at
@@ -74,7 +74,7 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as id, timestamp, value, quality_flag
+        SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag
         FROM arbiter_data.observations_values WHERE id = binid AND timestamp BETWEEN start AND end;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read observation values"',
@@ -93,7 +93,7 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as id, timestamp, value
+        SELECT BIN_TO_UUID(id, 1) as forecast_id, timestamp, value
         FROM arbiter_data.forecasts_values WHERE id = binid AND timestamp BETWEEN start AND end;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read forecast values"',
@@ -110,3 +110,4 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation TO 'select_objects'@'lo
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation_values TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast_values TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_name TO 'select_objects'@'localhost';
