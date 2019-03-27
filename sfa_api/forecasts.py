@@ -330,7 +330,7 @@ class ForecastMetadataView(MethodView):
 
 
 class AllCDFForecastGroupsView(MethodView):
-    def get(self, args):
+    def get(self, *args):
         """
         ---
         summary: List Probabilistic Forecasts groups.
