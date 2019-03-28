@@ -92,6 +92,12 @@ def test_get_cursor_and_timezone(app):
     assert res == '+00:00'
 
 
+def test_get_cursor_invalid_type(app):
+    with pytest.raises(AttributeError):
+        with storage_interface.get_cursor('oither') as cursor:
+            cursor
+
+
 def test_list_observations(app, user):
     observations = storage_interface.list_observations()
     for obs in observations:
