@@ -26,6 +26,16 @@ VARIABLE_FIELD = ma.String(
     required=True,
     validate=validate.OneOf(VARIABLES))
 
+CREATED_AT = ma.DateTime(
+        title="Creation time",
+        description="ISO 8601 Datetime when object was created",
+        format='iso')
+
+MODIFIED_AT = ma.DateTime(
+        title="Last Modification Time",
+        description="ISO 8601 Datetime when object was last modified",
+        format='iso')
+
 
 # Sites
 @spec.define_schema('ModelingParameters')
@@ -129,6 +139,8 @@ class SiteSchema(ma.Schema):
 class SiteResponseSchema(SiteSchema):
     site_id = ma.UUID(required=True)
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 # Observations
@@ -219,6 +231,8 @@ class ObservationSchema(ObservationPostSchema):
     )
     observation_id = ma.UUID()
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 @spec.define_schema('ObservationLinks')
@@ -342,6 +356,8 @@ class ForecastSchema(ForecastPostSchema):
     )
     forecast_id = ma.UUID()
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 @spec.define_schema('ForecastLinks')
@@ -430,3 +446,5 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     forecast_id = ma.UUID()
     provider = ma.String()
     constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
