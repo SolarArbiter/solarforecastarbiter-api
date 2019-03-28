@@ -16,7 +16,6 @@ from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
 from sfa_api.demo.values import (static_observation_values,
                                  static_forecast_values)
-from sfa_api.utils.errors import StorageAuthError
 
 
 # Initialize static data
@@ -137,7 +136,9 @@ def list_observations(site_id=None):
     """Lists all observations a user has access to.
     """
     if site_id is not None:
-        read_site(site_id)
+        site = read_site(site_id)
+        if site is None:
+            return None
         obs_list = [obs for obs in observations.values()
                     if str(obs['site_id']) == site_id]
     else:
@@ -249,7 +250,9 @@ def list_forecasts(site_id=None):
     """
     forecasts_list = []
     if site_id is not None:
-        read_site(site_id)
+        site = read_site(site_id)
+        if site is None:
+            return None
         forecasts_list = [fx for fx in forecasts.values()
                           if fx['site_id'] == site_id]
     else:
@@ -271,7 +274,7 @@ def read_site(site_id):
         Dictionary of the Site data.
     """
     if site_id not in sites:
-        raise StorageAuthError()
+        return None
     return sites[site_id]
 
 
