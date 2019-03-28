@@ -7,6 +7,29 @@ trigger:
 - master
 
 jobs:
+- job: 'StartTestDatabase'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+
+  steps:
+  - task: DockerCompose@0
+    displayName: 'start mysql'
+    inputs:
+      action: Run services
+      dockerComposeFile: datastore/docker-compose.yml
+      buildImages: true
+      abortOnContainerExit: false
+      detached: true
+
+  - script: |
+      echo "##vso[task.setvariable variable=mysqlhost,isOutput=true]127.0.0.1"
+      echo "##vso[task.setvariable variable=mysqlport,isOutput=true]$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1 | rev)"
+    displayName: 'Set env variables'
+    name: setmysqlvars
+
+  - script: docker wait solararbitersolarforecastarbiter-api_migrate_schemas_1
+    displayName: 'Wait for mysql'
+
 
 - job: 'Test'
   pool:
@@ -16,6 +39,10 @@ jobs:
       Python37:
         python.version: '3.7'
     maxParallel: 4
+  dependsOn: StartTestDatabase
+  variables:
+    MYSQL_HOST: $[ dependencies.StartTestDatabase.outputs['setmysqlvars.mysqlhost'] ]
+    MYSQL_PORT: $[ dependencies.StartTestDatabase.outputs['setmysqlvars.mysqlport'] ]
 
   steps:
   - task: UsePythonVersion@0
@@ -71,29 +98,16 @@ jobs:
 - job: 'TestDatabase'
   pool:
     vmImage: 'Ubuntu-16.04'
+  dependsOn: StartTestDatabase
+  variables:
+    MYSQL_HOST: $[ dependencies.StartTestDatabase.outputs['setmysqlvars.mysqlhost'] ]
+    MYSQL_PORT: $[ dependencies.StartTestDatabase.outputs['setmysqlvars.mysqlport'] ]
 
   steps:
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '3.x'
       architecture: 'x64'
-
-  - task: DockerCompose@0
-    displayName: 'start mysql'
-    inputs:
-      action: Run services
-      dockerComposeFile: datastore/docker-compose.yml
-      buildImages: true
-      abortOnContainerExit: false
-      detached: true
-
-  - script: |
-      echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
-      echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1 | rev)"
-    displayName: 'Set env variables'
-
-  - script: docker wait solararbitersolarforecastarbiter-api_migrate_schemas_1
-    displayName: 'Wait for mysql'
 
   - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
     displayName: 'Install pytest & dependencies'
