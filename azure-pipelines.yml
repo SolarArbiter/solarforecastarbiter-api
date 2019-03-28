@@ -45,6 +45,10 @@ jobs:
     MYSQL_PORT: $[ dependencies.StartTestDatabase.outputs['setmysqlvars.mysqlport'] ]
 
   steps:
+  - script: env
+
+  - script: echo $(MYSQL_HOST) $(MYSQL_PORT)
+    
   - task: UsePythonVersion@0
     inputs:
       versionSpec: '$(python.version)'
@@ -57,7 +61,7 @@ jobs:
     displayName: 'Install SolarForecastArbiter API'
 
   - script: |
-      pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
+      MYSQL_HOST=$(MYSQL_HOST) MYSQL_PORT=$(MYSQL_PORT) pytest sfa_api --doctest-modules --junitxml=junit/test-results.xml --cov --cov-report=xml --cov-report=html
     displayName: 'pytest'
 
   - script: |
