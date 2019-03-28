@@ -49,6 +49,7 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
     'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
     'Read forecasts of Provider A', @orgaid, 'read', 'forecasts', TRUE), (
+    'Delete forecasts of Provider A', @orgaid, 'delete', 'forecasts', TRUE), (
     'Read forecasts values of Provider A', @orgaid, 'read_values', 'forecasts', TRUE);
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id in (@orgid, @orgaid);

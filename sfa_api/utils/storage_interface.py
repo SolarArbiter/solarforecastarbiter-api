@@ -18,7 +18,7 @@ from pymysql import converters
 
 from sfa_api.auth import current_user
 from sfa_api import schema
-from sfa_api.utils.errors import StorageAuthError
+from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 
 
 # min and max timestamps storable in mysql
@@ -74,10 +74,12 @@ def get_cursor(cursor_type):
 def try_query(query_cmd):
     try:
         query_cmd()
-    except pymysql.err.OperationalError as e:
+    except (pymysql.err.OperationalError, pymysql.err.IntegrityError) as e:
         ecode = e.args[0]
         if ecode == 1142 or ecode == 1143:
             raise StorageAuthError(e.args[1])
+        elif ecode == 1451:
+            raise DeleteRestrictionError
         else:
             raise
 
@@ -244,14 +246,12 @@ def delete_observation(observation_id):
     observation_id: String
         UUID of observation to delete
 
-    Returns
-    -------
-    dict
-        The Observation's metadata if successful or None
-        if the Observation does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the observation
     """
-    # PROC: delete_observation
-    raise NotImplementedError
+    _call_procedure('delete_observation', observation_id)
 
 
 def list_observations(site_id=None):
@@ -403,14 +403,12 @@ def delete_forecast(forecast_id):
     forecast_id: String
         UUID of the Forecast to delete.
 
-    Returns
-    -------
-    dict
-        The Forecast's metadata if successful or None
-        if the Forecast does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user cannot delete the Forecast
     """
-    # PROC: delete_forecast
-    raise NotImplementedError
+    _call_procedure('delete_forecast', forecast_id)
 
 
 def list_forecasts(site_id=None):
@@ -499,14 +497,14 @@ def delete_site(site_id):
     site_id: String
         UUID of the Forecast to delete.
 
-    Returns
-    -------
-    dict
-        The Site's metadata if successful or None
-        if the Site does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the site
+    DeleteRestrictionError
+        If the site cannote be delete because other objects depend on it
     """
-    # PROC: delete_site
-    raise NotImplementedError
+    _call_procedure('delete_site', site_id)
 
 
 def list_sites():

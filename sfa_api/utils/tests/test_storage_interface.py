@@ -198,6 +198,24 @@ def test_store_observation_values_invalid_user(app, invalid_user,
         storage_interface.store_observation_values(obs_id, obs_vals)
 
 
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_delete_observation(app, user, nocommit_cursor, observation_id):
+    storage_interface.delete_observation(observation_id)
+    observation_list = [
+        k['observation_id'] for k in storage_interface.list_observations()]
+    assert observation_id not in observation_list
+
+
+def test_delete_observation_invalid_user(app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_observation(list(demo_observations.keys())[0])
+
+
+def test_delete_observation_does_not_exist(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_observation(str(uuid.uuid1()))
+
+
 def test_list_forecasts(app, user):
     forecasts = storage_interface.list_forecasts()
     for fx in forecasts:
@@ -297,6 +315,24 @@ def test_store_forecast_values_invalid_user(app, invalid_user,
         storage_interface.store_forecast_values(fx_id, fx_vals)
 
 
+@pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
+def test_delete_forecast(app, user, nocommit_cursor, forecast_id):
+    storage_interface.delete_forecast(forecast_id)
+    forecast_list = [k['forecast_id']
+                     for k in storage_interface.list_forecasts()]
+    assert forecast_id not in forecast_list
+
+
+def test_delete_forecast_invalid_user(app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_forecast(list(demo_forecasts.keys())[0])
+
+
+def test_delete_forecast_does_not_exist(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_forecast(str(uuid.uuid1()))
+
+
 @pytest.mark.parametrize('site_id', demo_sites.keys())
 def test_read_site(app, user, site_id):
     site = storage_interface.read_site(site_id)
@@ -341,3 +377,31 @@ def test_store_site(app, user, site, nocommit_cursor):
 def test_store_site_invalid_user(app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_site(list(demo_sites.values())[0])
+
+
+@pytest.mark.parametrize('site', demo_sites.values())
+def test_delete_site(app, user, nocommit_cursor, site):
+    # create a new site to delete since it can be restrict by obs/fx
+    site = site.copy()
+    site['name'] = 'new_site'
+    new_id = storage_interface.store_site(site)
+    site_list = [k['site_id'] for k in storage_interface.list_sites()]
+    assert new_id in site_list
+    storage_interface.delete_site(new_id)
+    site_list = [k['site_id'] for k in storage_interface.list_sites()]
+    assert new_id not in site_list
+
+
+def test_delete_site_forecast_restricts(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.DeleteRestrictionError):
+        storage_interface.delete_site(list(demo_sites.keys())[0])
+
+
+def test_delete_site_invalid_user(app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_site(list(demo_sites.keys())[0])
+
+
+def test_delete_site_does_not_exist(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_site(str(uuid.uuid1()))
