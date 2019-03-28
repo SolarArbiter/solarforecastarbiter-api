@@ -73,12 +73,12 @@ def _call_procedure(procedure_name, *args):
             return cursor.fetchall()
 
 
-def store_observation_values(obs_id, observation_df):
+def store_observation_values(observation_id, observation_df):
     """Store observation data.
 
     Parameters
     ----------
-    obs_id: string
+    observation_id: string
         UUID of the associated observation.
     observation_df: DataFrame
         Dataframe with DatetimeIndex, value, and quality_flag column.
@@ -93,12 +93,12 @@ def store_observation_values(obs_id, observation_df):
     raise NotImplementedError
 
 
-def read_observation_values(obs_id, start=None, end=None):
+def read_observation_values(observation_id, start=None, end=None):
     """Read observation values between start and end.
 
     Parameters
     ----------
-    obs_id: string
+    observation_id: string
         UUID of associated observation.
     start: datetime
         Beginning of the period for which to request data.
@@ -118,7 +118,7 @@ def read_observation_values(obs_id, start=None, end=None):
 
 def store_observation(observation):
     """Store Observation metadata. Should generate and store a uuid
-    as the 'obs_id' field.
+    as the 'observation_id' field.
 
     Parameters
     ----------
@@ -134,12 +134,12 @@ def store_observation(observation):
     raise NotImplementedError
 
 
-def read_observation(obs_id):
+def read_observation(observation_id):
     """Read Observation metadata.
 
     Parameters
     ----------
-    obs_id: String
+    observation_id: String
         UUID of the observation to retrieve.
 
     Returns
@@ -152,12 +152,12 @@ def read_observation(obs_id):
     raise NotImplementedError
 
 
-def delete_observation(obs_id):
+def delete_observation(observation_id):
     """Remove an Observation from storage.
 
     Parameters
     ----------
-    obs_id: String
+    observation_id: String
         UUID of observation to delete
 
     Returns

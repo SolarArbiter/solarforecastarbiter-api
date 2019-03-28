@@ -15,12 +15,12 @@ def api():
 
 
 @pytest.fixture()
-def obs_id():
+def observation_id():
     return '123e4567-e89b-12d3-a456-426655440000'
 
 
 @pytest.fixture()
-def missing_obs_id():
+def missing_observation_id():
     return '123e4567-e89b-12d3-a456-426655440007'
 
 

@@ -158,13 +158,13 @@ class ObservationValuesPostSchema(ma.Schema):
 
 @spec.define_schema('ObservationValues')
 class ObservationValuesSchema(ObservationValuesPostSchema):
-    obs_id = ma.UUID(
+    observation_id = ma.UUID(
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
     _links = ma.Hyperlinks(
         {
             'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                          obs_id='<obs_id>'),
+                                          observation_id='<observation_id>'),
         },
         description="Contains a link to the values endpoint."
     )
@@ -217,7 +217,7 @@ class ObservationSchema(ObservationPostSchema):
         },
         description="Contains a link to the associated site."
     )
-    obs_id = ma.UUID()
+    observation_id = ma.UUID()
     provider = ma.String()
 
 
@@ -226,13 +226,13 @@ class ObservationLinksSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    obs_id = ma.UUID()
+    observation_id = ma.UUID()
     _links = ma.Hyperlinks(
         {
             'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                          obs_id='<obs_id>'),
+                                          observation_id='<observation_id>'),
             'values': ma.AbsoluteURLFor('observations.values',
-                                        obs_id='<obs_id>')
+                                        observation_id='<observation_id>')
         },
         description="Contains links to the values and metadata endpoints."
     )

@@ -73,17 +73,17 @@ class AllObservationsView(MethodView):
         except ValidationError as err:
             return jsonify({'errors': err.messages}), 400
         storage = get_storage()
-        obs_id = storage.store_observation(observation)
-        if obs_id is None:
+        observation_id = storage.store_observation(observation)
+        if observation_id is None:
             return jsonify({'errors': 'Site does not exist'}), 400
-        response = make_response(obs_id, 201)
+        response = make_response(observation_id, 201)
         response.headers['Location'] = url_for('observations.single',
-                                               obs_id=obs_id)
+                                               observation_id=observation_id)
         return response
 
 
 class ObservationView(MethodView):
-    def get(self, obs_id, **kwargs):
+    def get(self, observation_id, **kwargs):
         """
         ---
         summary: Get Observation options.
@@ -105,12 +105,12 @@ class ObservationView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        observation = storage.read_observation(obs_id)
+        observation = storage.read_observation(observation_id)
         if observation is None:
             abort(404)
         return jsonify(ObservationLinksSchema().dump(observation))
 
-    def delete(self, obs_id, *args):
+    def delete(self, observation_id, *args):
         """
         ---
         summary: Delete observation.
@@ -118,7 +118,7 @@ class ObservationView(MethodView):
         tags:
           - Observations
         parameters:
-        - $ref: '#/components/parameters/obs_id'
+        - $ref: '#/components/parameters/observation_id'
         responses:
           200:
             description: Observation deleted successfully.
@@ -128,12 +128,12 @@ class ObservationView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        deletion_result = storage.delete_observation(obs_id)
+        deletion_result = storage.delete_observation(observation_id)
         return deletion_result
 
 
 class ObservationValuesView(MethodView):
-    def get(self, obs_id, *args):
+    def get(self, observation_id, *args):
         """
         ---
         summary: Get Observation data.
@@ -141,7 +141,7 @@ class ObservationValuesView(MethodView):
         tags:
         - Observations
         parameters:
-          - $ref: '#/components/parameters/obs_id'
+          - $ref: '#/components/parameters/observation_id'
           - $ref: '#/components/parameters/start_time'
           - $ref: '#/components/parameters/end_time'
           - $ref: '#/components/parameters/accepts'
@@ -182,7 +182,7 @@ class ObservationValuesView(MethodView):
         if errors:
             return jsonify({'errors': errors}), 400
         storage = get_storage()
-        values = storage.read_observation_values(obs_id, start, end)
+        values = storage.read_observation_values(observation_id, start, end)
         if values is None:
             abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
@@ -190,22 +190,22 @@ class ObservationValuesView(MethodView):
         if accepts == 'application/json':
             values['timestamp'] = values.index
             dict_values = values.to_dict(orient='records')
-            data = ObservationValuesSchema().dump({"obs_id": obs_id,
-                                                   "values": dict_values})
+            data = ObservationValuesSchema().dump(
+                {"observation_id": observation_id, "values": dict_values})
 
             return jsonify(data)
         else:
             meta_url = url_for('observations.metadata',
-                               obs_id=obs_id,
+                               observation_id=observation_id,
                                _external=True)
-            csv_header = f'# obs_id: {obs_id}\n# metadata: {meta_url}\n'
+            csv_header = f'# observation_id: {observation_id}\n# metadata: {meta_url}\n'  # NOQA
             csv_values = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
             csv_data = csv_header + csv_values
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'
             return response
 
-    def post(self, obs_id, *args):
+    def post(self, observation_id, *args):
         """
         ---
         summary: Add Observation data.
@@ -213,7 +213,7 @@ class ObservationValuesView(MethodView):
         tags:
         - Observations
         parameters:
-        - $ref: '#/components/parameters/obs_id'
+        - $ref: '#/components/parameters/observation_id'
         requestBody:
           required: True
           content:
@@ -306,21 +306,22 @@ class ObservationValuesView(MethodView):
             return jsonify({'errors': errors}), 400
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
-        stored = storage.store_observation_values(obs_id, observation_df)
+        stored = storage.store_observation_values(
+            observation_id, observation_df)
         if stored is None:
             abort(404)
         return stored, 201
 
 
 class ObservationMetadataView(MethodView):
-    def get(self, obs_id, *args):
+    def get(self, observation_id, *args):
         """
         ---
         summary: Get Observation metadata.
         tags:
         - Observations
         parameters:
-        - $ref: '#/components/parameters/obs_id'
+        - $ref: '#/components/parameters/observation_id'
         responses:
           200:
             description: Successfully retrieved observation metadata.
@@ -334,7 +335,7 @@ class ObservationMetadataView(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        observation = storage.read_observation(obs_id)
+        observation = storage.read_observation(observation_id)
         if observation is None:
             abort(404)
         return jsonify(ObservationSchema().dump(observation))
@@ -342,7 +343,7 @@ class ObservationMetadataView(MethodView):
 
 # Add path parameters used by these endpoints to the spec.
 spec.components.parameter(
-    'obs_id', 'path',
+    'observation_id', 'path',
     {
         'schema': {
             'type': 'string',
@@ -358,10 +359,10 @@ obs_blp = Blueprint(
 
 obs_blp.add_url_rule('/', view_func=AllObservationsView.as_view('all'))
 obs_blp.add_url_rule(
-    '/<obs_id>', view_func=ObservationView.as_view('single'))
+    '/<observation_id>', view_func=ObservationView.as_view('single'))
 obs_blp.add_url_rule(
-    '/<obs_id>/values',
+    '/<observation_id>/values',
     view_func=ObservationValuesView.as_view('values'))
 obs_blp.add_url_rule(
-    '/<obs_id>/metadata',
+    '/<observation_id>/metadata',
     view_func=ObservationMetadataView.as_view('metadata'))
