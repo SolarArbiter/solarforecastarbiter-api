@@ -70,14 +70,7 @@ def _call_procedure(procedure_name, *args):
             else:
                 raise
         else:
-            # yield the next item instead of fetchone()
-            # so that other generators can use the result
-            # even when no results to fetch
-            res = iter(cursor)
-            try:
-                yield next(res)
-            except StopIteration:
-                return
+            return cursor.fetchall()
 
 
 def store_observation_values(obs_id, observation_df):
@@ -340,8 +333,8 @@ def read_site(site_id):
     dict
         The Site's metadata or None if the Site does not exist.
     """
-    site = _set_modeling_parameters(next(
-        _call_procedure('read_site', site_id)))
+    site = _set_modeling_parameters(
+        _call_procedure('read_site', site_id)[0])
     return site
 
 
