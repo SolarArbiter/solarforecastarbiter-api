@@ -13,15 +13,20 @@ class DataTables(object):
     def create_table_elements(cls, data_list, id_key, **kwargs):
         """Creates a list of objects to be rendered as table by jinja template
         """
+        sites_list = sites.list_metadata().json()
+        site_dict = {site['site_id']: site for site in sites_list}
         table_rows = []
         for data in data_list:
             table_row = {}
-            site_name = data['site']['name']
+            site_name = site_dict[data['site_id']]['name']
+            site_href = url_for('data_dashboard.site_view',
+                                uuid=data['site_id'])
+            site_link = f'<a href={site_href}>{site_name}</a>'
             table_row['name'] = data['name']
             table_row['variable'] = data['variable']
             table_row['provider'] = data.get('provider', 'Test User')
             table_row['uuid'] = data[id_key]
-            table_row['site'] = site_name
+            table_row['site'] = site_link
             if id_key == 'forecast_id':
                 table_row['link'] = url_for('data_dashboard.forecast_view',
                                             uuid=data[id_key])

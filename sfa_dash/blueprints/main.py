@@ -35,6 +35,8 @@ class SingleObservationView(DataDashView):
         if metadata_request.status_code != 200:
             abort(404)
         self.metadata = metadata_request.json()
+        self.metadata['site'] = self.get_site_metadata(
+            self.metadata['site_id'])
         temp_args = self.template_args(**kwargs)
         self.metadata['site_link'] = self.generate_site_link(self.metadata)
         temp_args['metadata'] = render_template(

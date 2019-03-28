@@ -2,6 +2,7 @@
 on site-section.
 """
 from sfa_dash.blueprints.base import BaseView
+from sfa_dash.api_interface import sites
 from flask import render_template, request, url_for
 
 
@@ -14,6 +15,10 @@ class DataDashView(BaseView):
         temp_args['subnav'] = self.format_subnav(**kwargs)
         temp_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
         return temp_args
+
+    def get_site_metadata(self, site_id):
+        site_request = sites.get_metadata(site_id)
+        return site_request.json()
 
     def get(self, **kwargs):
         return render_template(self.template, **self.template_args(**kwargs))
