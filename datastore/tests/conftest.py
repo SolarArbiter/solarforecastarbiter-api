@@ -6,21 +6,17 @@ from uuid import uuid1, UUID
 
 import pytest
 import pymysql
-from pymysql import converters
 
 
 @pytest.fixture(scope='session')
 def connection():
-    conv = converters.conversions.copy()
-    conv[converters.FIELD_TYPE.TIME] = converters.convert_time
     connection = pymysql.connect(
         host=os.getenv('MYSQL_HOST', '127.0.0.1'),
         port=int(os.getenv('MYSQL_PORT', '3306')),
         user='root',
         password='testpassword',
         database='arbiter_data',
-        binary_prefix=True,
-        conv=conv)
+        binary_prefix=True)
     # with no connection.commit(), no data should stay in db
     return connection
 
@@ -146,7 +142,7 @@ def new_forecast(cursor, new_site):
         out = OrderedDict(
             id=newuuid(), organization_id=site['organization_id'],
             site_id=site['id'], name=f'forecast{str(uuid1())[:10]}',
-            variable='power', issue_time_of_day=dt.time(12, 0),
+            variable='power', issue_time_of_day='12:00',
             lead_time_to_start=60, interval_label='beginning',
             interval_length=60, run_length=1440,
             interval_value_type='interval_mean', extra_parameters='')

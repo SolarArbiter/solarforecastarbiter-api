@@ -21,7 +21,6 @@ def mysql_connection():
     if 'mysql_connection' not in g:
         config = current_app.config
         conv = converters.conversions.copy()
-        conv[converters.FIELD_TYPE.TIME] = converters.convert_time
         # either convert decimals to floats, or add decimals to schema
         conv[converters.FIELD_TYPE.DECIMAL] = float
         conv[converters.FIELD_TYPE.NEWDECIMAL] = float

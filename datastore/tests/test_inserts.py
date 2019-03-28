@@ -89,7 +89,7 @@ def fx_callargs(insertuser):
     callargs = OrderedDict(
         auth0id=auth0id, strid=str(uuid.uuid1()), site_id=site_id,
         name='The site', variable='power',
-        issue_time_of_day=dt.time(hour=12),
+        issue_time_of_day='12:00',
         lead_time_to_start=60, interval_label='beginning',
         interval_length=5, run_length=60,
         interval_value_type='interval_mean', extra_parameters='')

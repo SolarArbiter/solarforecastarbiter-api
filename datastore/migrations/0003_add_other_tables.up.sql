@@ -78,7 +78,7 @@ CREATE TABLE arbiter_data.forecasts(
     site_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
     variable VARCHAR(32) NOT NULL,
-    issue_time_of_day TIME NOT NULL,
+    issue_time_of_day VARCHAR(5) NOT NULL,
     lead_time_to_start SMALLINT UNSIGNED NOT NULL,
     interval_label ENUM('beginning', 'ending', 'instant') NOT NULL,
     interval_length SMALLINT UNSIGNED NOT NULL,

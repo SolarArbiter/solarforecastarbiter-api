@@ -73,7 +73,7 @@ END;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_forecast (
   IN auth0id VARCHAR(32), IN strid CHAR(36), IN site_id CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
-  IN issue_time_of_day TIME, IN lead_time_to_start SMALLINT UNSIGNED, IN interval_label VARCHAR(32),
+  IN issue_time_of_day VARCHAR(5), IN lead_time_to_start SMALLINT UNSIGNED, IN interval_label VARCHAR(32),
   IN interval_length SMALLINT UNSIGNED, IN run_length SMALLINT UNSIGNED, IN interval_value_type VARCHAR(32),
   IN extra_parameters TEXT)
 COMMENT 'Store an forecast object. User must be able to read site information.'
