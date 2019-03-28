@@ -5,6 +5,8 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+import random
+import uuid
 
 
 from flask import g, current_app
@@ -21,6 +23,11 @@ from sfa_api.utils.errors import StorageAuthError
 # min and max timestamps storable in mysql
 MINTIMESTAMP = pd.Timestamp('19700101T000001Z')
 MAXTIMESTAMP = pd.Timestamp('20380119T031407Z')
+
+
+def generate_uuid():
+    """Generate a version 1 UUID and ensure clock_seq is random"""
+    return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
 
 
 def mysql_connection():
@@ -418,9 +425,24 @@ def store_site(site):
     -------
     string
         UUID of the newly created site.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have create permissions
     """
-    # PROC: store_site
-    raise NotImplementedError
+    site_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_site', site_id, site['name'], site['latitude'],
+        site['longitude'], site['elevation'], site['timezone'],
+        site['extra_parameters'],
+        *[site['modeling_parameters'][key] for key in [
+            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
+            'tracking_type', 'surface_tilt', 'surface_azimuth',
+            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
+            'backtrack', 'max_rotation_angle', 'dc_loss_factor',
+            'ac_loss_factor']])
+    return site_id
 
 
 def delete_site(site_id):

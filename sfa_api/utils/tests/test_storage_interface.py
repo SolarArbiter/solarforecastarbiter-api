@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import uuid
 
 
@@ -27,6 +28,25 @@ def app():
             pytest.skip('No connection to test database')
         else:
             yield app
+
+
+@pytest.fixture()
+def nocommit_cursor(app, mocker):
+    conn = storage_interface.mysql_connection()
+    @contextmanager
+    def special(cursor_type):
+        if cursor_type == 'standard':
+            cursorclass = pymysql.cursors.Cursor
+        elif cursor_type == 'dict':
+            cursorclass = pymysql.cursors.DictCursor
+        else:
+            raise AttributeError('cursor_type must be standard or dict')
+        cursor = conn.cursor(cursor=cursorclass)
+        yield cursor
+        cursor.close()
+    mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
+    yield
+    conn.rollback()
 
 
 @pytest.fixture()
@@ -206,3 +226,22 @@ def test_list_sites(app, user):
 def test_list_sites_invalid_user(app, invalid_user):
     sites = storage_interface.list_sites()
     assert len(sites) == 0
+
+
+@pytest.mark.parametrize('site', demo_sites.values())
+def test_store_site(app, user, site, nocommit_cursor):
+    site = site.copy()
+    site['name'] = 'new_site'
+    new_id = storage_interface.store_site(site)
+    new_site = storage_interface.read_site(new_id)
+    site['site_id'] = new_id
+    del site['modified_at']
+    del site['created_at']
+    del new_site['modified_at']
+    del new_site['created_at']
+    assert site == new_site
+
+
+def test_store_site_invalid_user(app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_site(list(demo_sites.values())[0])
