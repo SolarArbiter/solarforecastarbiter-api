@@ -84,31 +84,31 @@ INSERT INTO arbiter_data.observations (
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
     'GHI Instrument 1', 'ghi', 'beginning', 5, 'interval_mean', 0.10,
-    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}'
+    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer", "network": "UO SRML"}'
 ), (
     UUID_TO_BIN('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f', 1),
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
     'DHI Instrument 1', 'dhi', 'beginning', 5, 'interval_mean', 0.10,
-    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}'
+    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer", "network": "UO SRML"}'
 ), (
     UUID_TO_BIN('9ce9715c-bd91-47b7-989f-50bb558f1eb9', 1),
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
     'DNI Instrument 1', 'dni', 'beginning', 5, 'interval_mean', 0.10,
-    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}'
+    '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer", "network": "UO SRML"}'
 ), (
     UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1),
     @orgid,
     UUID_TO_BIN('d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a', 1),
     'GHI Instrument 2', 'ghi', 'beginning', 5, 'interval_mean', 0.10,
-    '{"instrument": "Kipp & Zonen CMP 22 Pyranometer"}'
+    '{"instrument": "Kipp & Zonen CMP 22 Pyranometer", "network": "UO SRML"}'
 ), (
     UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1),
     @orgid,
     UUID_TO_BIN('d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a', 1),
     'Sioux Falls, ghi', 'ghi', 'beginning', 5, 'interval_mean', 0.10,
-    '{"instrument": "Kipp & Zonen CMP 22 Pyranometer"}'
+    '{"instrument": "Kipp & Zonen CMP 22 Pyranometer", "network": "NOAA"}'
 );
 
 
