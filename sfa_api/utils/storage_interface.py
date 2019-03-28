@@ -5,6 +5,7 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+from functools import partial
 import random
 import uuid
 
@@ -70,6 +71,17 @@ def get_cursor(cursor_type):
     cursor.close()
 
 
+def try_query(query_cmd):
+    try:
+        query_cmd()
+    except pymysql.err.OperationalError as e:
+        ecode = e.args[0]
+        if ecode == 1142 or ecode == 1143:
+            raise StorageAuthError(e.args[1])
+        else:
+            raise
+
+
 def _call_procedure(procedure_name, *args, cursor_type='dict'):
     """
     Can't user callproc since it doesn't properly use converters.
@@ -78,16 +90,9 @@ def _call_procedure(procedure_name, *args, cursor_type='dict'):
     """
     with get_cursor(cursor_type) as cursor:
         query = f'CALL {procedure_name}({",".join(["%s"] * (len(args) + 1))})'
-        try:
-            cursor.execute(query, (current_user, *args))
-        except pymysql.err.OperationalError as e:
-            ecode = e.args[0]
-            if ecode == 1142 or ecode == 1143:
-                raise StorageAuthError(e.args[1])
-            else:
-                raise
-        else:
-            return cursor.fetchall()
+        query_cmd = partial(cursor.execute, query, (current_user, *args))
+        try_query(query_cmd)
+        return cursor.fetchall()
 
 
 def _set_modeling_parameters(site_dict):
@@ -134,11 +139,23 @@ def store_observation_values(observation_id, observation_df):
     Returns
     -------
     string
-        The UUID of the associated Observation or None if the it does
-        not exist.
+        The UUID of the associated Observation.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to store values on the Observation
+        or if the Observation does not exists
     """
-    # PROC: store_observation_values
-    raise NotImplementedError
+    with get_cursor('standard') as cursor:
+        query = 'CALL store_observation_values(%s, %s, %s, %s, %s)'
+        query_cmd = partial(
+            cursor.executemany, query,
+            ((current_user, observation_id, row.Index, row.value,
+              row.quality_flag)
+             for row in observation_df.itertuples()))
+        try_query(query_cmd)
+    return observation_id
 
 
 def read_observation_values(observation_id, start=None, end=None):
@@ -279,11 +296,21 @@ def store_forecast_values(forecast_id, forecast_df):
     Returns
     -------
     string
-        The UUID of the associated forecast. Returns
-        None if the Forecast does not exist.
+        The UUID of the associated forecast.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the Forecast
     """
-    # PROC: store_forecast_values
-    raise NotImplementedError
+    with get_cursor('standard') as cursor:
+        query = 'CALL store_forecast_values(%s, %s, %s, %s)'
+        query_cmd = partial(
+            cursor.executemany, query,
+            ((current_user, forecast_id, row.Index, row.value)
+             for row in forecast_df.itertuples()))
+        try_query(query_cmd)
+    return forecast_id
 
 
 def read_forecast_values(forecast_id, start=None, end=None):

@@ -3,6 +3,7 @@ import uuid
 
 
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 import pymysql
 
@@ -11,11 +12,11 @@ from sfa_api import create_app
 from sfa_api.demo.sites import static_sites as demo_sites
 from sfa_api.demo.observations import static_observations as demo_observations
 from sfa_api.demo.forecasts import static_forecasts as demo_forecasts
-from sfa_api.demo.values import generate_randoms
+from sfa_api.demo import values
 from sfa_api.utils import storage_interface
 
 
-TESTINDEX = generate_randoms()[0].to_series()
+TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
 
 
 @pytest.fixture(scope='module')
@@ -165,6 +166,32 @@ def test_store_observation_invalid_user(app, invalid_user, nocommit_cursor):
             list(demo_observations.values())[0])
 
 
+@pytest.mark.parametrize('observation', demo_observations.values())
+def test_store_observation_values(app, user, nocommit_cursor,
+                                  observation):
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    obs_vals = values.static_observation_values()
+    storage_interface.store_observation_values(new_id, obs_vals)
+    stored = storage_interface.read_observation_values(new_id)
+    pdt.assert_frame_equal(stored, obs_vals)
+
+
+def test_store_observation_values_no_observation(app, user, nocommit_cursor):
+    new_id = str(uuid.uuid1())
+    obs_vals = values.static_observation_values()
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_observation_values(new_id, obs_vals)
+
+
+def test_store_observation_values_invalid_user(app, invalid_user,
+                                               nocommit_cursor):
+    obs_id = list(demo_observations.keys())[0]
+    obs_vals = values.static_observation_values()
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_observation_values(obs_id, obs_vals)
+
+
 def test_list_forecasts(app, user):
     forecasts = storage_interface.list_forecasts()
     for fx in forecasts:
@@ -236,6 +263,32 @@ def test_store_forecast(app, user, forecast, nocommit_cursor):
 def test_store_forecast_invalid_user(app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_forecast(list(demo_forecasts.values())[0])
+
+
+@pytest.mark.parametrize('forecast', demo_forecasts.values())
+def test_store_forecast_values(app, user, nocommit_cursor,
+                               forecast):
+    forecast['name'] = 'new_forecast'
+    new_id = storage_interface.store_forecast(forecast)
+    fx_vals = values.static_forecast_values()
+    storage_interface.store_forecast_values(new_id, fx_vals)
+    stored = storage_interface.read_forecast_values(new_id)
+    pdt.assert_frame_equal(stored, fx_vals)
+
+
+def test_store_forecast_values_no_forecast(app, user, nocommit_cursor):
+    new_id = str(uuid.uuid1())
+    fx_vals = values.static_forecast_values()
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_forecast_values(new_id, fx_vals)
+
+
+def test_store_forecast_values_invalid_user(app, invalid_user,
+                                            nocommit_cursor):
+    fx_id = list(demo_forecasts.keys())[0]
+    fx_vals = values.static_forecast_values()
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_forecast_values(fx_id, fx_vals)
 
 
 @pytest.mark.parametrize('site_id', demo_sites.keys())
