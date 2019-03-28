@@ -47,32 +47,32 @@ def test_observation_post_bad_request(api, payload, message):
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
 
 
-def test_get_observation_links(api, obs_id):
-    r = api.get(f'/observations/{obs_id}',
+def test_get_observation_links(api, observation_id):
+    r = api.get(f'/observations/{observation_id}',
                 base_url='https://localhost')
     response = r.get_json()
-    assert 'obs_id' in response
+    assert 'observation_id' in response
     assert '_links' in response
 
 
-def test_get_observation_links_404(api, missing_obs_id):
-    r = api.get(f'/observations/{missing_obs_id}',
+def test_get_observation_links_404(api, missing_observation_id):
+    r = api.get(f'/observations/{missing_observation_id}',
                 base_url='https://localhost')
     assert r.status_code == 404
 
 
-def test_get_observation_metadata(api, obs_id):
-    r = api.get(f'/observations/{obs_id}/metadata',
+def test_get_observation_metadata(api, observation_id):
+    r = api.get(f'/observations/{observation_id}/metadata',
                 base_url='https://localhost')
     response = r.get_json()
-    assert 'obs_id' in response
+    assert 'observation_id' in response
     assert 'variable' in response
     assert 'name' in response
     assert 'site_id' in response
 
 
-def test_get_observation_metadata_404(api, missing_obs_id):
-    r = api.get(f'/observations/{missing_obs_id}/metadata',
+def test_get_observation_metadata_404(api, missing_observation_id):
+    r = api.get(f'/observations/{missing_observation_id}/metadata',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -118,17 +118,17 @@ NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fg
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
 
 
-def test_post_observation_values_valid_json(api, obs_id):
-    r = api.post(f'/observations/{obs_id}/values',
+def test_post_observation_values_valid_json(api, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
                  base_url='https://localhost',
                  json=VALID_JSON)
     assert r.status_code == 201
 
 
-def test_post_json_storage_call(api, obs_id, mocker):
+def test_post_json_storage_call(api, observation_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_observation_values')
-    storage.return_value = obs_id
-    api.post(f'/observations/{obs_id}/values',
+    storage.return_value = observation_id
+    api.post(f'/observations/{observation_id}/values',
              base_url='https://localhost',
              json=VALID_JSON)
     storage.assert_called()
@@ -141,8 +141,8 @@ def test_post_json_storage_call(api, obs_id, mocker):
     NON_NUMERICAL_VALUE_JSON,
     NON_BINARY_FLAG_JSON
 ])
-def test_post_observation_values_invalid_json(api, payload, obs_id):
-    r = api.post(f'/observations/{obs_id}/values',
+def test_post_observation_values_invalid_json(api, payload, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
                  base_url='https://localhost',
                  json=payload)
     assert r.status_code == 400
@@ -155,24 +155,24 @@ def test_post_observation_values_invalid_json(api, payload, obs_id):
     NON_NUMERICAL_VALUE_CSV,
     NON_BINARY_FLAG_CSV
 ])
-def test_post_observation_values_invalid_csv(api, payload, obs_id):
-    r = api.post(f'/observations/{obs_id}/values',
+def test_post_observation_values_invalid_csv(api, payload, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
                  base_url='https://localhost',
                  headers={'Content-Type': 'text/csv'},
                  data=payload)
     assert r.status_code == 400
 
 
-def test_post_observation_values_valid_csv(api, obs_id):
-    r = api.post(f'/observations/{obs_id}/values',
+def test_post_observation_values_valid_csv(api, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
                  base_url='https://localhost',
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CSV)
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_obs_id):
-    r = api.get(f'/observations/{missing_obs_id}/values',
+def test_get_observation_values_404(api, missing_observation_id):
+    r = api.get(f'/observations/{missing_observation_id}/values',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -181,8 +181,8 @@ def test_get_observation_values_404(api, missing_obs_id):
     ('bad-date', 'also_bad', 'application/json'),
     ('bad-date', 'also_bad', 'text/csv'),
 ])
-def test_get_observation_values_400(api, start, end, mimetype, obs_id):
-    r = api.get(f'/observations/{obs_id}/values',
+def test_get_observation_values_400(api, start, end, mimetype, observation_id):
+    r = api.get(f'/observations/{observation_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
@@ -194,8 +194,8 @@ def test_get_observation_values_400(api, start, end, mimetype, obs_id):
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
 ])
-def test_get_observation_values_200(api, start, end, mimetype, obs_id):
-    r = api.get(f'/observations/{obs_id}/values',
+def test_get_observation_values_200(api, start, end, mimetype, observation_id):
+    r = api.get(f'/observations/{observation_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})

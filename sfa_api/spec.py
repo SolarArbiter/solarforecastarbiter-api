@@ -125,11 +125,11 @@ framework. A typical upload may have the following steps:
 
 3. The provider prepares the data to POST in either JSON or CSV format
    (see options of
-   [POST](#tag/Observations/paths/~1observations~1{obs_id}~1values/post)
+   [POST](#tag/Observations/paths/~1observations~1{observation_id}~1values/post)
    for application/json and text/csv Request Body Schema)
 
 4. The provider sends the POST request to the [add observation
-   endpoint](#tag/Observations/paths/~1observations~1{obs_id}~1values/post)
+   endpoint](#tag/Observations/paths/~1observations~1{observation_id}~1values/post)
    with the ID from step 2 in the URL and the token from step 1 as the
    Authorization Bearer header
 
@@ -187,7 +187,7 @@ may be:
    endpoint
 
 3. The user requests the data from the [get observation data
-   endpoint](/#tag/Observations/paths/~1observations~1{obs_id}~1values/get)
+   endpoint](/#tag/Observations/paths/~1observations~1{observation_id}~1values/get)
    in either JSON or CSV format
 
 This process will need to be repeated for each observation site and

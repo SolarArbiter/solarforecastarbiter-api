@@ -4,6 +4,7 @@ py:mod:`sfa_api.util.storage_interface`. On import, it
 initializes the databases with existing site, observation, and
 forecast data.
 """
+import datetime as dt
 import uuid
 
 
@@ -23,19 +24,19 @@ observations = static_observations.copy()
 observation_values = {}
 forecast_values = {}
 
-for obs_id, obs in observations.items():
-    observation_values[obs_id] = static_observation_values()
+for observation_id, obs in observations.items():
+    observation_values[observation_id] = static_observation_values()
 
 for forecast_id, forecast in forecasts.items():
     forecast_values[forecast_id] = static_forecast_values()
 
 
-def store_observation_values(obs_id, observation_df):
+def store_observation_values(observation_id, observation_df):
     """Insert the observation data into the database.
 
     Parameters
     ----------
-    obs_id: string
+    observation_id: string
         UUID of the associated observation.
     observation_df: DataFrame
         Dataframe with DatetimeIndex, value, and quality_flag column.
@@ -45,22 +46,23 @@ def store_observation_values(obs_id, observation_df):
     string
         The UUID of the associated observation
     """
-    if obs_id not in observations:
+    if observation_id not in observations:
         return None
     else:
-        current_data = observation_values[obs_id]
+        current_data = observation_values[observation_id]
         index_complement = current_data.index.difference(observation_df.index)
         complement = current_data.loc[index_complement]
-        observation_values[obs_id] = observation_df.combine_first(complement)
-    return obs_id
+        observation_values[observation_id] = observation_df.combine_first(
+            complement)
+    return observation_id
 
 
-def read_observation_values(obs_id, start=None, end=None):
+def read_observation_values(observation_id, start=None, end=None):
     """Read observation values between start and end.
 
     Parameters
     ----------
-    obs_id: string
+    observation_id: string
         UUID of associated observation.
     start: datetime
         Beginning of the period for which to request data.
@@ -68,10 +70,10 @@ def read_observation_values(obs_id, start=None, end=None):
         End of the peried for which to request data.
 
     """
-    if obs_id not in observations:
+    if observation_id not in observations:
         return None
     else:
-        obs_data = observation_values[obs_id].loc[start:end]
+        obs_data = observation_values[observation_id].loc[start:end]
         return obs_data
 
 
@@ -83,44 +85,47 @@ def store_observation(observation):
         A dictionary of observation fields to insert.
     """
     observation['site_id'] = str(observation['site_id'])
+    now = dt.datetime.utcnow()
+    observation['created_at'] = now
+    observation['modified_at'] = now
     if read_site(observation['site_id']) is None:
         return None
-    obs_id = str(uuid.uuid1())
-    observation['obs_id'] = obs_id
-    observations[obs_id] = observation
-    observation_values[obs_id] = pd.DataFrame()
-    return obs_id
+    observation_id = str(uuid.uuid1())
+    observation['observation_id'] = observation_id
+    observations[observation_id] = observation
+    observation_values[observation_id] = pd.DataFrame()
+    return observation_id
 
 
-def read_observation(obs_id):
+def read_observation(observation_id):
     """
     Parameters
     ----------
-    obs_id: String
+    observation_id: String
         UUID of the observation to retrieve
 
     Returns
     -------
     Observation or None
     """
-    if obs_id not in observations:
+    if observation_id not in observations:
         return None
     else:
-        return observations[obs_id]
+        return observations[observation_id]
 
 
-def delete_observation(obs_id):
+def delete_observation(observation_id):
     """
     Parameters
     ----------
-    obs_id: String
+    observation_id: String
         UUID of observation to delete
 
     Returns
     -------
     """
     try:
-        obs = observations.pop('obs_id')
+        obs = observations.pop('observation_id')
     except KeyError:
         return None
     return obs
@@ -134,11 +139,12 @@ def list_observations(site_id=None):
         site = read_site(site_id)
         if site is None:
             return None
-        filtered_obs = {obs_id: obs for obs_id, obs in observations.items()
+        filtered_obs = {observation_id: obs
+                        for observation_id, obs in observations.items()
                         if str(obs['site_id']) == site_id}
     else:
         filtered_obs = observations
-    for obs_id, obs in filtered_obs.items():
+    for observation_id, obs in filtered_obs.items():
         with_site = obs.copy()
         with_site['site'] = read_site(str(with_site['site_id']))
         obs_list.append(with_site)
@@ -199,6 +205,9 @@ def store_forecast(forecast):
         A dictionary of forecast fields to insert.
     """
     forecast['site_id'] = str(forecast['site_id'])
+    now = dt.datetime.utcnow()
+    forecast['created_at'] = now
+    forecast['modified_at'] = now
     if read_site(forecast['site_id']) is None:
         return None
     forecast_id = str(uuid.uuid1())
@@ -294,6 +303,9 @@ def store_site(site):
     site_id = str(uuid.uuid1())
     site['site_id'] = site_id
     site['provider'] = 'test post'
+    now = dt.datetime.utcnow()
+    site['created_at'] = now
+    site['modified_at'] = now
     sites[site_id] = site
     return site_id
 
@@ -310,7 +322,7 @@ def delete_site(site_id):
         delete_forecast(forecast['forecast_id'])
     observations = list_observations(site_id)
     for observation in observations:
-        delete_observation(observation['obs_id'])
+        delete_observation(observation['observation_id'])
     sites.pop(site_id)
     return site
 

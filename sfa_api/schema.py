@@ -26,6 +26,16 @@ VARIABLE_FIELD = ma.String(
     required=True,
     validate=validate.OneOf(VARIABLES))
 
+CREATED_AT = ma.DateTime(
+        title="Creation time",
+        description="ISO 8601 Datetime when object was created",
+        format='iso')
+
+MODIFIED_AT = ma.DateTime(
+        title="Last Modification Time",
+        description="ISO 8601 Datetime when object was last modified",
+        format='iso')
+
 
 # Sites
 @spec.define_schema('ModelingParameters')
@@ -129,6 +139,8 @@ class SiteSchema(ma.Schema):
 class SiteResponseSchema(SiteSchema):
     site_id = ma.UUID(required=True)
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 # Observations
@@ -158,13 +170,13 @@ class ObservationValuesPostSchema(ma.Schema):
 
 @spec.define_schema('ObservationValues')
 class ObservationValuesSchema(ObservationValuesPostSchema):
-    obs_id = ma.UUID(
+    observation_id = ma.UUID(
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
     _links = ma.Hyperlinks(
         {
             'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                          obs_id='<obs_id>'),
+                                          observation_id='<observation_id>'),
         },
         description="Contains a link to the values endpoint."
     )
@@ -217,8 +229,10 @@ class ObservationSchema(ObservationPostSchema):
         },
         description="Contains a link to the associated site."
     )
-    obs_id = ma.UUID()
+    observation_id = ma.UUID()
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 @spec.define_schema('ObservationLinks')
@@ -226,13 +240,13 @@ class ObservationLinksSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    obs_id = ma.UUID()
+    observation_id = ma.UUID()
     _links = ma.Hyperlinks(
         {
             'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                          obs_id='<obs_id>'),
+                                          observation_id='<observation_id>'),
             'values': ma.AbsoluteURLFor('observations.values',
-                                        obs_id='<obs_id>')
+                                        observation_id='<observation_id>')
         },
         description="Contains links to the values and metadata endpoints."
     )
@@ -342,6 +356,8 @@ class ForecastSchema(ForecastPostSchema):
     )
     forecast_id = ma.UUID()
     provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
 
 
 @spec.define_schema('ForecastLinks')
@@ -430,3 +446,5 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     forecast_id = ma.UUID()
     provider = ma.String()
     constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
