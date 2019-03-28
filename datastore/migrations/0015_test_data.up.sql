@@ -1,7 +1,8 @@
 SET @orgid = (SELECT UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1));
+SET @orgaid = (SELECT UUID_TO_BIN('876abd2e-9fe1-11e9-9e44-64006a511e6f', 1));
 
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
-    'Reference', @orgid, TRUE);
+    'Reference', @orgid, TRUE), ('Provider A', @orgaid, TRUE);
 
 SET @userid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
@@ -46,9 +47,10 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Delete all forecast values', @orgid, 'delete_values', 'forecasts', TRUE), (
     'Delete all observation values', @orgid, 'delete_values', 'observations', TRUE), (
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
-    'Write observation values', @orgid, 'write_values', 'observations', TRUE);
+    'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
+    'Read forecasts of Provider A', @orgaid, 'read', 'forecasts', TRUE);
 
-INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
+INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id in (@orgid, @orgaid);
 
 
 INSERT INTO arbiter_data.sites (
@@ -70,13 +72,13 @@ INSERT INTO arbiter_data.forecasts (
     created_at, modified_at
 ) VALUES (
     UUID_TO_BIN('11c20780-76ae-4b11-bef1-7a75bdc784e3', 1),
-    @orgid,
+    @orgaid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
-    'DA Power', 'ac_power', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
+    'DA GHI', 'ghi', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
     TIMESTAMP('2019-03-01 11:55:37'), TIMESTAMP('2019-03-01 11:55:37')
 ), (
     UUID_TO_BIN('f8dd49fa-23e2-48a0-862b-ba0af6dec276', 1),
-    @orgid,
+    @orgaid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440002', 1),
     'HA Power', 'ac_power', '12:00', 60, 'beginning', 1, 60, 'interval_mean', '',
     TIMESTAMP('2019-03-01 11:55:38'), TIMESTAMP('2019-03-01 11:55:38')
