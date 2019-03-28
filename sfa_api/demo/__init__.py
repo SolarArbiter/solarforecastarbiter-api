@@ -52,7 +52,8 @@ def store_observation_values(observation_id, observation_df):
         current_data = observation_values[observation_id]
         index_complement = current_data.index.difference(observation_df.index)
         complement = current_data.loc[index_complement]
-        observation_values[observation_id] = observation_df.combine_first(complement)
+        observation_values[observation_id] = observation_df.combine_first(
+            complement)
     return observation_id
 
 
