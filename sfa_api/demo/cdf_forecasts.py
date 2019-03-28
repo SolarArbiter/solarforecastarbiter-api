@@ -75,11 +75,12 @@ static_cdf_forecast_groups = {
         "lead_time_to_start": "60",
         "interval_value_type": "interval_mean",
         "axis": "y",
-        "constant_values": [static_cdf_forecasts['633f9396-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633f9864-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633f9b2a-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633f9d96-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633fa548-50bb-11e9-8647-d663bd873d93']],
+        "constant_values": [
+            static_cdf_forecasts['633f9396-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633f9864-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633f9b2a-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633f9d96-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633fa548-50bb-11e9-8647-d663bd873d93']],
     },
     '058b182a-50ba-11e9-8647-d663bd873d93': {
         "forecast_id": "058b182a-50ba-11e9-8647-d663bd873d93",
@@ -94,10 +95,11 @@ static_cdf_forecast_groups = {
         "lead_time_to_start": 60,
         "interval_value_type": "interval_mean",
         "axis": "x",
-        "constant_values": [static_cdf_forecasts['633fb3a8-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633fb114-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633fae62-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633fabec-50bb-11e9-8647-d663bd873d93'],
-                            static_cdf_forecasts['633fa94e-50bb-11e9-8647-d663bd873d93']],
+        "constant_values": [
+            static_cdf_forecasts['633fb3a8-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633fb114-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633fae62-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633fabec-50bb-11e9-8647-d663bd873d93'],
+            static_cdf_forecasts['633fa94e-50bb-11e9-8647-d663bd873d93']],
     }
 }

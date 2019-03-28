@@ -28,8 +28,8 @@ def validate_forecast_values(forecast_df):
     Returns
     -------
     errors: dictionary
-        A dictionary of errors where keys are the column names where errors were
-        found, and values are a list of errors for that column.
+        A dictionary of errors where keys are the column names where errors
+        were found, and values are a list of errors for that column.
     """
     errors = {}
     try:
