@@ -13,6 +13,11 @@ from pymysql import converters
 
 
 from sfa_api.auth import current_user
+from sfa_api import schema
+
+
+class StorageAuthError(Exception):
+    pass
 
 
 def mysql_connection():
@@ -20,6 +25,9 @@ def mysql_connection():
         config = current_app.config
         conv = converters.conversions.copy()
         conv[converters.FIELD_TYPE.TIME] = converters.convert_time
+        # either convert decimals to floats, or add decimals to schema
+        conv[converters.FIELD_TYPE.DECIMAL] = float
+        conv[converters.FIELD_TYPE.NEWDECIMAL] = float
         connect_kwargs = {
             'host': config['MYSQL_HOST'],
             'port': int(config['MYSQL_PORT']),
@@ -50,6 +58,26 @@ def get_cursor(cursor_type='standard'):
     yield cursor
     connection.commit()
     cursor.close()
+
+
+def _call_procedure(procedure_name, *args):
+    with get_cursor('dict') as cursor:
+        try:
+            cursor.callproc(procedure_name, (current_user, *args))
+        except pymysql.err.OperationalError as e:
+            if e.args[0] == 1142:
+                raise StorageAuthError(e.args[1])
+            else:
+                raise
+        else:
+            # yield the next item instead of fetchone()
+            # so that other generators can use the result
+            # even when no results to fetch
+            res = iter(cursor)
+            try:
+                yield next(res)
+            except StopIteration:
+                return
 
 
 def store_observation_values(obs_id, observation_df):
@@ -284,6 +312,21 @@ def list_forecasts(site=None):
     raise NotImplementedError
 
 
+def _set_modeling_parameters(site_dict):
+    if site_dict is None:
+        return {}
+    out = {}
+    modeling_parameters = {}
+    for key in schema.ModelingParameters().fields.keys():
+        modeling_parameters[key] = site_dict[key]
+    for key in schema.SiteResponseSchema().fields.keys():
+        if key == 'modeling_parameters':
+            out[key] = modeling_parameters
+        else:
+            out[key] = site_dict[key]
+    return out
+
+
 def read_site(site_id):
     """Read Site metadata.
 
@@ -297,8 +340,9 @@ def read_site(site_id):
     dict
         The Site's metadata or None if the Site does not exist.
     """
-    # PROC: read_site
-    raise NotImplementedError
+    site = _set_modeling_parameters(next(
+        _call_procedure('read_site', site_id)))
+    return site
 
 
 def store_site(site):
@@ -345,8 +389,6 @@ def list_sites():
     list
         List of Site metadata as dictionaries.
     """
-    # PROC: list_sites
-    with get_cursor('dict') as cursor:
-        cursor.callproc('list_sites', (current_user,))
-        sites = cursor.fetchall()
+    sites = [_set_modeling_parameters(site)
+             for site in _call_procedure('list_sites')]
     return sites
