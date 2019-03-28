@@ -14,10 +14,7 @@ from pymysql import converters
 
 from sfa_api.auth import current_user
 from sfa_api import schema
-
-
-class StorageAuthError(Exception):
-    pass
+from sfa_api.utils.errors import StorageAuthError
 
 
 def mysql_connection():
@@ -71,6 +68,37 @@ def _call_procedure(procedure_name, *args):
                 raise
         else:
             return cursor.fetchall()
+
+
+def _set_modeling_parameters(site_dict):
+    out = {}
+    modeling_parameters = {}
+    for key in schema.ModelingParameters().fields.keys():
+        modeling_parameters[key] = site_dict[key]
+    for key in schema.SiteResponseSchema().fields.keys():
+        if key == 'modeling_parameters':
+            out[key] = modeling_parameters
+        else:
+            out[key] = site_dict[key]
+    return out
+
+
+def _set_observation_parameters(observation_dict):
+    out = {}
+    for key in schema.ObservationSchema().fields.keys():
+        if key in ('_links',):
+            continue
+        out[key] = observation_dict[key]
+    return out
+
+
+def _set_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.ForecastSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        out[key] = forecast_dict[key]
+    return out
 
 
 def store_observation_values(observation_id, observation_df):
@@ -148,8 +176,9 @@ def read_observation(observation_id):
         The Observation's metadata or None if the Observation
         does not exist.
     """
-    # PROC: read_observation
-    raise NotImplementedError
+    observation = _set_observation_parameters(
+        _call_procedure('read_observation', observation_id)[0])
+    return observation
 
 
 def delete_observation(observation_id):
@@ -183,8 +212,17 @@ def list_observations(site_id=None):
     -------
     list
         List of dictionaries of Observation metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to observations with site_id or
+        no observations exists for that id
     """
-    observations = [obs for obs in _call_procedure('list_observations')
+    if site_id is not None:
+        read_site(site_id)
+    observations = [_set_observation_parameters(obs)
+                    for obs in _call_procedure('list_observations')
                     if site_id is None or obs['site_id'] == site_id]
     return observations
 
@@ -266,8 +304,9 @@ def read_forecast(forecast_id):
         The Forecast's metadata or None if the Forecast
         does not exist.
     """
-    # PROC: read_site
-    raise NotImplementedError
+    forecast = _set_forecast_parameters(
+        _call_procedure('read_forecast', forecast_id)[0])
+    return forecast
 
 
 def delete_forecast(forecast_id):
@@ -302,23 +341,12 @@ def list_forecasts(site_id=None):
     list
         List of dictionaries of Forecast metadata.
     """
-    # PROC: list_forecasts
-    raise NotImplementedError
-
-
-def _set_modeling_parameters(site_dict):
-    if site_dict is None:
-        return {}
-    out = {}
-    modeling_parameters = {}
-    for key in schema.ModelingParameters().fields.keys():
-        modeling_parameters[key] = site_dict[key]
-    for key in schema.SiteResponseSchema().fields.keys():
-        if key == 'modeling_parameters':
-            out[key] = modeling_parameters
-        else:
-            out[key] = site_dict[key]
-    return out
+    if site_id is not None:
+        read_site(site_id)
+    forecasts = [_set_forecast_parameters(fx)
+                 for fx in _call_procedure('list_forecasts')
+                 if site_id is None or fx['site_id'] == site_id]
+    return forecasts
 
 
 def read_site(site_id):
@@ -332,7 +360,12 @@ def read_site(site_id):
     Returns
     -------
     dict
-        The Site's metadata or None if the Site does not exist.
+        The Site's metadata
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to the site_id or it doesn't exist
     """
     site = _set_modeling_parameters(
         _call_procedure('read_site', site_id)[0])
