@@ -7,6 +7,7 @@ import pymysql
 
 from sfa_api import create_app
 from sfa_api.demo.sites import static_sites as demo_sites
+from sfa_api.demo.observations import static_observations as demo_observations
 from sfa_api.utils import storage_interface
 
 
@@ -45,6 +46,12 @@ def test_get_cursor_and_timezone(app):
         cursor.execute('SELECT @@session.time_zone')
         res = cursor.fetchone()[0]
     assert res == '+00:00'
+
+
+def test_list_observations(app, user):
+    observations = storage_interface.list_observations()
+    for obs in observations:
+        assert obs == demo_observations[obs['observation_id']]
 
 
 @pytest.mark.parametrize('site_id', demo_sites.keys())

@@ -170,12 +170,12 @@ def delete_observation(observation_id):
     raise NotImplementedError
 
 
-def list_observations(site=None):
+def list_observations(site_id=None):
     """Lists all observations a user has access to.
 
     Parameters
     ----------
-    site: string
+    site_id: string
         UUID of Site, when supplied returns only Observations
         made for this Site.
 
@@ -184,8 +184,9 @@ def list_observations(site=None):
     list
         List of dictionaries of Observation metadata.
     """
-    # PROC: list_observations
-    raise NotImplementedError
+    observations = [obs for obs in _call_procedure('list_observations')
+                    if site_id is None or obs['site_id'] == site_id]
+    return observations
 
 
 # Forecasts
@@ -287,12 +288,12 @@ def delete_forecast(forecast_id):
     raise NotImplementedError
 
 
-def list_forecasts(site=None):
+def list_forecasts(site_id=None):
     """Lists all Forecasts a user has access to.
 
     Parameters
     ----------
-    site: string
+    site_id: string
         UUID of Site, when supplied returns only Forecasts
         made for this Site.
 
