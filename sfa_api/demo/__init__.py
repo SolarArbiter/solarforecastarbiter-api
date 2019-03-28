@@ -4,6 +4,7 @@ py:mod:`sfa_api.util.storage_interface`. On import, it
 initializes the databases with existing site, observation, and
 forecast data.
 """
+import datetime as dt
 import uuid
 
 
@@ -83,6 +84,9 @@ def store_observation(observation):
         A dictionary of observation fields to insert.
     """
     observation['site_id'] = str(observation['site_id'])
+    now = dt.datetime.utcnow()
+    observation['created_at'] = now
+    observation['modified_at'] = now
     if read_site(observation['site_id']) is None:
         return None
     observation_id = str(uuid.uuid1())
@@ -200,6 +204,9 @@ def store_forecast(forecast):
         A dictionary of forecast fields to insert.
     """
     forecast['site_id'] = str(forecast['site_id'])
+    now = dt.datetime.utcnow()
+    forecast['created_at'] = now
+    forecast['modified_at'] = now
     if read_site(forecast['site_id']) is None:
         return None
     forecast_id = str(uuid.uuid1())
@@ -295,6 +302,9 @@ def store_site(site):
     site_id = str(uuid.uuid1())
     site['site_id'] = site_id
     site['provider'] = 'test post'
+    now = dt.datetime.utcnow()
+    site['created_at'] = now
+    site['modified_at'] = now
     sites[site_id] = site
     return site_id
 
