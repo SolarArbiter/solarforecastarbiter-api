@@ -8,6 +8,7 @@ from contextlib import contextmanager
 
 
 from flask import g, current_app
+import pandas as pd
 import pymysql
 from pymysql import converters
 
@@ -17,6 +18,11 @@ from sfa_api import schema
 from sfa_api.utils.errors import StorageAuthError
 
 
+# min and max timestamps storable in mysql
+MINTIMESTAMP = pd.Timestamp('19700101T000001Z')
+MAXTIMESTAMP = pd.Timestamp('20380119T031407Z')
+
+
 def mysql_connection():
     if 'mysql_connection' not in g:
         config = current_app.config
@@ -24,6 +30,7 @@ def mysql_connection():
         # either convert decimals to floats, or add decimals to schema
         conv[converters.FIELD_TYPE.DECIMAL] = float
         conv[converters.FIELD_TYPE.NEWDECIMAL] = float
+        conv[pd.Timestamp] = converters.escape_datetime
         connect_kwargs = {
             'host': config['MYSQL_HOST'],
             'port': int(config['MYSQL_PORT']),
@@ -42,7 +49,7 @@ def mysql_connection():
 
 
 @contextmanager
-def get_cursor(cursor_type='standard'):
+def get_cursor(cursor_type):
     if cursor_type == 'standard':
         cursorclass = pymysql.cursors.Cursor
     elif cursor_type == 'dict':
@@ -56,10 +63,16 @@ def get_cursor(cursor_type='standard'):
     cursor.close()
 
 
-def _call_procedure(procedure_name, *args):
-    with get_cursor('dict') as cursor:
+def _call_procedure(procedure_name, *args, cursor_type='dict'):
+    """
+    Can't user callproc since it doesn't properly use converters.
+    Will not handle OUT or INOUT parameters without first setting
+    local variables and retrieving from those variables
+    """
+    with get_cursor(cursor_type) as cursor:
+        query = f'CALL {procedure_name}({",".join(["%s"] * (len(args) + 1))})'
         try:
-            cursor.callproc(procedure_name, (current_user, *args))
+            cursor.execute(query, (current_user, *args))
         except pymysql.err.OperationalError as e:
             if e.args[0] == 1142:
                 raise StorageAuthError(e.args[1])
@@ -139,8 +152,19 @@ def read_observation_values(observation_id, start=None, end=None):
         Data points contain a timestamp, value andquality_flag.
         Returns None if the Observation does not exist.
     """
-    # PROC: read_observation_values
-    raise NotImplementedError
+    if start is None:
+        start = MINTIMESTAMP
+    if end is None:
+        end = MAXTIMESTAMP
+
+    obs_vals = _call_procedure('read_observation_values', observation_id,
+                               start, end, cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(obs_vals), columns=['observation_id', 'timestamp',
+                                 'value', 'quality_flag']
+        ).drop(columns='observation_id').set_index(
+            'timestamp').tz_localize('UTC')
+    return df
 
 
 def store_observation(observation):
@@ -266,8 +290,18 @@ def read_forecast_values(forecast_id, start=None, end=None):
         Data points contain a timestamp and value. Returns
         None if the Observation does not exist.
     """
-    # PROC: read_forecast_values
-    raise NotImplementedError
+    if start is None:
+        start = MINTIMESTAMP
+    if end is None:
+        end = MAXTIMESTAMP
+
+    fx_vals = _call_procedure('read_forecast_values', forecast_id,
+                              start, end, cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
+        ).drop(columns='forecast_id').set_index(
+            'timestamp').tz_localize('UTC')
+    return df
 
 
 def store_forecast(forecast):
