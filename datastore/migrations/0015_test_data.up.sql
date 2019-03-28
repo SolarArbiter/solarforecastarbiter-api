@@ -15,16 +15,19 @@ INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
 INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (@userid, @roleid);
 
 INSERT INTO arbiter_data.sites (
-    id, organization_id, name, latitude, longitude, elevation, timezone, extra_parameters
+    id, organization_id, name, latitude, longitude, elevation, timezone, extra_parameters,
+    created_at, modified_at
 ) VALUES (
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
     @orgid,
     'Ashland OR', 42.19, -122.7, 595.0, 'Etc/GMT+8',
-    '{"network_api_abbreviation": "AS","network": "University of Oregon SRML","network_api_id": "94040"}'
+    '{"network_api_abbreviation": "AS","network": "University of Oregon SRML","network_api_id": "94040"}',
+    TIMESTAMP('2019-03-01 11:44:38'), TIMESTAMP('2019-03-01 11:44:38')
 ), (
     UUID_TO_BIN('d2018f1d-82b1-422a-8ec4-4e8b3fe92a4a', 1),
     @orgid,
-    'Weather Station 1', 32.22969, -110.95534, 786.0, 'America/Phoenix', '{"network": "NREL MIDC"}'
+    'Weather Station 1', 32.22969, -110.95534, 786.0, 'America/Phoenix', '{"network": "NREL MIDC"}',
+    TIMESTAMP('2019-03-01 11:44:44'), TIMESTAMP('2019-03-01 11:44:44')
 );
 
 
@@ -51,28 +54,32 @@ INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT
 INSERT INTO arbiter_data.sites (
     id, organization_id, name, latitude, longitude, elevation, timezone, extra_parameters,
     ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth,
-    ac_loss_factor, dc_loss_factor
+    ac_loss_factor, dc_loss_factor, created_at, modified_at
 ) VALUES (
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440002', 1),
     @orgid,
     'Power Plant 1', 43.73403, -96.62328, 786.0, 'Etc/GMT+6', '', 0.015, 0.015,
-    -0.002, 'fixed', 45.0, 180, 0, 0
+    -0.002, 'fixed', 45.0, 180, 0, 0,
+    TIMESTAMP('2019-03-01 11:44:46'), TIMESTAMP('2019-03-01 11:44:46')
 );
 
 
 INSERT INTO arbiter_data.forecasts (
     id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
-    interval_label, interval_length, run_length, interval_value_type, extra_parameters
+    interval_label, interval_length, run_length, interval_value_type, extra_parameters,
+    created_at, modified_at
 ) VALUES (
     UUID_TO_BIN('11c20780-76ae-4b11-bef1-7a75bdc784e3', 1),
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
-    'DA Power', 'ac_power', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', ''
+    'DA Power', 'ac_power', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
+    TIMESTAMP('2019-03-01 11:55:37'), TIMESTAMP('2019-03-01 11:55:37')
 ), (
     UUID_TO_BIN('f8dd49fa-23e2-48a0-862b-ba0af6dec276', 1),
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440002', 1),
-    'HA Power', 'ac_power', '12:00', 60, 'beginning', 1, 60, 'interval_mean', ''
+    'HA Power', 'ac_power', '12:00', 60, 'beginning', 1, 60, 'interval_mean', '',
+    TIMESTAMP('2019-03-01 11:55:38'), TIMESTAMP('2019-03-01 11:55:38')
 );
 
 
