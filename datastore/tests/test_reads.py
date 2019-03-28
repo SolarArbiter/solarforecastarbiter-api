@@ -74,9 +74,11 @@ def test_read_site(dictcursor, insertuser, allow_read_sites):
     site = insertuser[1]
     dictcursor.callproc('read_site', (auth0id, site['strid']))
     res = dictcursor.fetchall()[0]
-    site['id'] = site['strid']
+    site['site_id'] = site['strid']
     del site['strid']
-    site['organization_id'] = str(bin_to_uuid(site['organization_id']))
+    del site['id']
+    site['provider'] = insertuser[4]['name']
+    del site['organization_id']
     del res['created_at']
     del res['modified_at']
     assert res == site
@@ -95,11 +97,12 @@ def test_read_observation(dictcursor, insertuser, allow_read_observations):
     observation = insertuser[3]
     dictcursor.callproc('read_observation', (auth0id, observation['strid']))
     res = dictcursor.fetchall()[0]
-    observation['id'] = observation['strid']
+    observation['observation_id'] = observation['strid']
     del observation['strid']
+    del observation['id']
     observation['site_id'] = str(bin_to_uuid(observation['site_id']))
-    observation['organization_id'] = str(bin_to_uuid(
-        observation['organization_id']))
+    observation['provider'] = insertuser[4]['name']
+    del observation['organization_id']
     del res['created_at']
     del res['modified_at']
     assert res == observation
@@ -118,11 +121,12 @@ def test_read_forecast(dictcursor, insertuser, allow_read_forecasts):
     forecast = insertuser[2]
     dictcursor.callproc('read_forecast', (auth0id, forecast['strid']))
     res = dictcursor.fetchall()[0]
-    forecast['id'] = forecast['strid']
+    forecast['forecast_id'] = forecast['strid']
+    del forecast['id']
     del forecast['strid']
     forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
-    forecast['organization_id'] = str(bin_to_uuid(
-        forecast['organization_id']))
+    forecast['provider'] = insertuser[4]['name']
+    del forecast['organization_id']
     del res['created_at']
     del res['modified_at']
     assert res == forecast

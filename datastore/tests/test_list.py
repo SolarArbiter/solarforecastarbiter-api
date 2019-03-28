@@ -4,9 +4,15 @@ from random import shuffle
 import pytest
 
 
+from conftest import bin_to_uuid
+
+
 @pytest.fixture()
 def readall(cursor, new_organization, new_user, new_role, new_permission,
             new_site, new_forecast, new_observation):
+    # remove test data
+    cursor.execute('DELETE FROM organizations')
+
     def make():
         org = new_organization()
         user = new_user(org=org)
@@ -79,10 +85,12 @@ def test_list_sites(dictcursor, twosets):
     sites = twosets[3]
     dictcursor.callproc('list_sites', (authid,))
     res = dictcursor.fetchall()
-    assert [site['id'] for site in sites] == [r['id'] for r in res]
+    assert [str(bin_to_uuid(site['id'])) for site in sites] == [
+        r['site_id'] for r in res]
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(sites[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'site_id')) ==
+        set(sites[0].keys()) - set(('organization_id', 'id')))
 
 
 def test_list_forecasts(dictcursor, twosets):
@@ -90,10 +98,12 @@ def test_list_forecasts(dictcursor, twosets):
     fxs = twosets[4]
     dictcursor.callproc('list_forecasts', (authid,))
     res = dictcursor.fetchall()
-    assert [fx['id'] for fx in fxs] == [r['id'] for r in res]
+    assert ([str(bin_to_uuid(fx['id'])) for fx in fxs] ==
+            [r['forecast_id'] for r in res])
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(fxs[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'forecast_id'))
+        == set(fxs[0].keys()) - set(('organization_id', 'id')))
 
 
 def test_list_observations(dictcursor, twosets):
@@ -101,7 +111,9 @@ def test_list_observations(dictcursor, twosets):
     obs = twosets[5]
     dictcursor.callproc('list_observations', (authid,))
     res = dictcursor.fetchall()
-    assert [ob['id'] for ob in obs] == [r['id'] for r in res]
+    assert ([str(bin_to_uuid(ob['id'])) for ob in obs] ==
+            [r['observation_id'] for r in res])
     assert (
-        (set(res[0].keys()) - set(('created_at', 'modified_at'))) ==
-        set(obs[0].keys()))
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'observation_id')) ==
+        set(obs[0].keys()) - set(('organization_id', 'id')))

@@ -4,6 +4,73 @@ module is a static implementation intended for developing against when
 it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
+from contextlib import contextmanager
+
+
+from flask import g, current_app
+import pymysql
+from pymysql import converters
+
+
+from sfa_api.auth import current_user
+from sfa_api import schema
+
+
+class StorageAuthError(Exception):
+    pass
+
+
+def mysql_connection():
+    if 'mysql_connection' not in g:
+        config = current_app.config
+        conv = converters.conversions.copy()
+        conv[converters.FIELD_TYPE.TIME] = converters.convert_time
+        # either convert decimals to floats, or add decimals to schema
+        conv[converters.FIELD_TYPE.DECIMAL] = float
+        conv[converters.FIELD_TYPE.NEWDECIMAL] = float
+        connect_kwargs = {
+            'host': config['MYSQL_HOST'],
+            'port': int(config['MYSQL_PORT']),
+            'user': config['MYSQL_USER'],
+            'password': config['MYSQL_PASSWORD'],
+            'database': config['MYSQL_DATABASE'],
+            'binary_prefix': True,
+            'conv': conv,
+            'use_unicode': True,
+            'charset': 'utf8mb4',
+            'init_command': "SET time_zone = '+00:00'"
+        }
+        connection = pymysql.connect(**connect_kwargs)
+        g.mysql_connection = connection
+    return g.mysql_connection
+
+
+@contextmanager
+def get_cursor(cursor_type='standard'):
+    if cursor_type == 'standard':
+        cursorclass = pymysql.cursors.Cursor
+    elif cursor_type == 'dict':
+        cursorclass = pymysql.cursors.DictCursor
+    else:
+        raise AttributeError('cursor_type must be standard or dict')
+    connection = mysql_connection()
+    cursor = connection.cursor(cursor=cursorclass)
+    yield cursor
+    connection.commit()
+    cursor.close()
+
+
+def _call_procedure(procedure_name, *args):
+    with get_cursor('dict') as cursor:
+        try:
+            cursor.callproc(procedure_name, (current_user, *args))
+        except pymysql.err.OperationalError as e:
+            if e.args[0] == 1142:
+                raise StorageAuthError(e.args[1])
+            else:
+                raise
+        else:
+            return cursor.fetchall()
 
 
 def store_observation_values(obs_id, observation_df):
@@ -238,6 +305,21 @@ def list_forecasts(site=None):
     raise NotImplementedError
 
 
+def _set_modeling_parameters(site_dict):
+    if site_dict is None:
+        return {}
+    out = {}
+    modeling_parameters = {}
+    for key in schema.ModelingParameters().fields.keys():
+        modeling_parameters[key] = site_dict[key]
+    for key in schema.SiteResponseSchema().fields.keys():
+        if key == 'modeling_parameters':
+            out[key] = modeling_parameters
+        else:
+            out[key] = site_dict[key]
+    return out
+
+
 def read_site(site_id):
     """Read Site metadata.
 
@@ -251,8 +333,9 @@ def read_site(site_id):
     dict
         The Site's metadata or None if the Site does not exist.
     """
-    # PROC: read_site
-    raise NotImplementedError
+    site = _set_modeling_parameters(
+        _call_procedure('read_site', site_id)[0])
+    return site
 
 
 def store_site(site):
@@ -299,5 +382,6 @@ def list_sites():
     list
         List of Site metadata as dictionaries.
     """
-    # PROC: list_sites
-    raise NotImplementedError
+    sites = [_set_modeling_parameters(site)
+             for site in _call_procedure('list_sites')]
+    return sites
