@@ -18,6 +18,42 @@ from sfa_api.schema import (ForecastValuesSchema,
 from sfa_api.utils.storage import get_storage
 
 
+def validate_forecast_values(forecast_df):
+    """Validates that posted values are parseable and of the expectedtypes.
+
+    Parameters
+    ----------
+    forecast_df: Pandas DataFrame
+
+    Returns
+    -------
+    errors: dictionary
+        A dictionary of errors where keys are the column names where errors were
+        found, and values are a list of errors for that column.
+    """
+    errors = {}
+    try:
+        forecast_df['value'] = pd.to_numeric(forecast_df['value'],
+                                             downcast='float')
+    except ValueError:
+        error = ('Invalid item in "value" field. Ensure that all values '
+                 'are integers, floats, empty, NaN, or NULL.')
+        errors.update({'value': [error]})
+    except KeyError:
+        errors.update({'value': ['Missing "value" field.']})
+    try:
+        forecast_df['timestamp'] = pd.to_datetime(
+            forecast_df['timestamp'],
+            utc=True)
+    except ValueError:
+        error = ('Invalid item in "timestamp" field. Ensure that '
+                 'timestamps are ISO8601 compliant')
+        errors.update({'timestamp': [error]})
+    except KeyError:
+        errors.update({'timestamp': ['Missing "timestamp" field.']})
+    return errors
+
+
 class AllForecastsView(MethodView):
     def get(self, *args):
         """
@@ -269,27 +305,7 @@ class ForecastValuesView(MethodView):
         else:
             error = 'Invalid Content-type.'
             return jsonify({'errors': {'error': [error]}}), 400
-        errors = {}
-        try:
-            forecast_df['value'] = pd.to_numeric(forecast_df['value'],
-                                                 downcast='float')
-        except ValueError:
-            error = ('Invalid item in "value" field. Ensure that all values '
-                     'are integers, floats, empty, NaN, or NULL.')
-            errors.update({'value': [error]})
-        except KeyError:
-            errors.update({'value': ['Missing "value" field.']})
-        try:
-            forecast_df['timestamp'] = pd.to_datetime(
-                forecast_df['timestamp'],
-                utc=True)
-        except ValueError:
-            error = ('Invalid item in "timestamp" field. Ensure that '
-                     'timestamps are ISO8601 compliant')
-            errors.update({'timestamp': []})
-        except KeyError:
-            errors.update({'timestamp': ['Missing "timestamp" field.']})
-
+        errors = validate_forecast_values(forecast_df)
         if errors:
             return jsonify({'errors': errors}), 400
         forecast_df = forecast_df.set_index('timestamp')
@@ -592,27 +608,7 @@ class CDFForecastValues(MethodView):
         else:
             error = 'Invalid Content-type.'
             return jsonify({'errors': {'error': [error]}}), 400
-        errors = {}
-        try:
-            forecast_df['value'] = pd.to_numeric(forecast_df['value'],
-                                                 downcast='float')
-        except ValueError:
-            error = ('Invalid item in "value" field. Ensure that all values '
-                     'are integers, floats, empty, NaN, or NULL.')
-            errors.update({'value': [error]})
-        except KeyError:
-            errors.update({'value': ['Missing "value" field.']})
-        try:
-            forecast_df['timestamp'] = pd.to_datetime(
-                forecast_df['timestamp'],
-                utc=True)
-        except ValueError:
-            error = ('Invalid item in "timestamp" field. Ensure that '
-                     'timestamps are ISO8601 compliant')
-            errors.update({'timestamp': []})
-        except KeyError:
-            errors.update({'timestamp': ['Missing "timestamp" field.']})
-
+        errors = validate_forecast_values(forecast_df)
         if errors:
             return jsonify({'errors': errors}), 400
         forecast_df = forecast_df.set_index('timestamp')
