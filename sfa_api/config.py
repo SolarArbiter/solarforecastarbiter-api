@@ -34,3 +34,6 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    MYSQL_USER = 'apiuser'
+    MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
+    MYSQL_DATABASE = 'arbiter_data'

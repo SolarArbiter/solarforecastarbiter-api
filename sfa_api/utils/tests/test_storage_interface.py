@@ -5,13 +5,14 @@ import pytest
 import pymysql
 
 
-from sfa_api import create_app, demo
+from sfa_api import create_app
+from sfa_api.demo.sites import static_sites as demo_sites
 from sfa_api.utils import storage_interface
 
 
 @pytest.fixture(scope='module')
 def app():
-    app = create_app('DevelopmentConfig')
+    app = create_app('TestingConfig')
     with app.app_context():
         try:
             storage_interface.mysql_connection()
@@ -46,10 +47,10 @@ def test_get_cursor_and_timezone(app):
     assert res == '+00:00'
 
 
-@pytest.mark.parametrize('site_id', demo.sites.keys())
+@pytest.mark.parametrize('site_id', demo_sites.keys())
 def test_read_site(app, user, site_id):
     site = storage_interface.read_site(site_id)
-    assert site == demo.sites[site_id]
+    assert site == demo_sites[site_id]
 
 
 def test_read_invalid_site(app, user):
@@ -59,13 +60,13 @@ def test_read_invalid_site(app, user):
 
 def test_read_invalid_user(app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.read_site(list(demo.sites.keys())[0])
+        storage_interface.read_site(list(demo_sites.keys())[0])
 
 
 def test_list_sites(app, user):
     sites = storage_interface.list_sites()
     for site in sites:
-        assert site == demo.sites[site['site_id']]
+        assert site == demo_sites[site['site_id']]
 
 
 def test_list_invalid_user(app, invalid_user):
