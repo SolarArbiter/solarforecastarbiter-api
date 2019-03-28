@@ -146,6 +146,25 @@ def test_read_observation_values_invalid_user(app, invalid_user, startend):
             list(demo_observations.keys())[0], start, end)
 
 
+@pytest.mark.parametrize('observation', demo_observations.values())
+def test_store_observation(app, user, observation, nocommit_cursor):
+    observation = observation.copy()
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    new_observation = storage_interface.read_observation(new_id)
+    observation['observation_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at'):
+        del observation[key]
+        del new_observation[key]
+    assert observation == new_observation
+
+
+def test_store_observation_invalid_user(app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_observation(
+            list(demo_observations.values())[0])
+
+
 def test_list_forecasts(app, user):
     forecasts = storage_interface.list_forecasts()
     for fx in forecasts:
@@ -201,6 +220,24 @@ def test_read_forecast_values_invalid_user(app, invalid_user, startend):
             list(demo_forecasts.keys())[0], start, end)
 
 
+@pytest.mark.parametrize('forecast', demo_forecasts.values())
+def test_store_forecast(app, user, forecast, nocommit_cursor):
+    forecast = forecast.copy()
+    forecast['name'] = 'new_forecast'
+    new_id = storage_interface.store_forecast(forecast)
+    new_forecast = storage_interface.read_forecast(new_id)
+    forecast['forecast_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at'):
+        del forecast[key]
+        del new_forecast[key]
+    assert forecast == new_forecast
+
+
+def test_store_forecast_invalid_user(app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_forecast(list(demo_forecasts.values())[0])
+
+
 @pytest.mark.parametrize('site_id', demo_sites.keys())
 def test_read_site(app, user, site_id):
     site = storage_interface.read_site(site_id)
@@ -242,6 +279,6 @@ def test_store_site(app, user, site, nocommit_cursor):
     assert site == new_site
 
 
-def test_store_site_invalid_user(app, invalid_user):
+def test_store_site_invalid_user(app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_site(list(demo_sites.values())[0])

@@ -81,7 +81,8 @@ def _call_procedure(procedure_name, *args, cursor_type='dict'):
         try:
             cursor.execute(query, (current_user, *args))
         except pymysql.err.OperationalError as e:
-            if e.args[0] == 1142:
+            ecode = e.args[0]
+            if ecode == 1142 or ecode == 1143:
                 raise StorageAuthError(e.args[1])
             else:
                 raise
@@ -188,8 +189,15 @@ def store_observation(observation):
     string
         The UUID of the newly created Observation.
     """
-    # PROC: store_observation
-    raise NotImplementedError
+    observation_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_observation', observation_id,
+        observation['variable'], observation['site_id'],
+        observation['name'], observation['interval_label'],
+        observation['interval_length'], observation['interval_value_type'],
+        observation['uncertainty'], observation['extra_parameters'])
+    return observation_id
 
 
 def read_observation(observation_id):
@@ -325,9 +333,20 @@ def store_forecast(forecast):
     string
         The UUID of the newly created Forecast.
 
+    Raises
+    ------
+    StorageAuthError
+        If the user can create Forecasts or the user can't read the site
     """
-    # PROC: store_forecast
-    raise NotImplementedError
+    forecast_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_forecast', forecast_id, forecast['site_id'], forecast['name'],
+        forecast['variable'], forecast['issue_time_of_day'],
+        forecast['lead_time_to_start'], forecast['interval_label'],
+        forecast['interval_length'], forecast['run_length'],
+        forecast['interval_value_type'], forecast['extra_parameters'])
+    return forecast_id
 
 
 def read_forecast(forecast_id):
