@@ -199,7 +199,7 @@ class SiteCDFForecastGroups(MethodView):
         ---
         summary: Get site probabilistic forecast groups
         description: >
-          Get metadata for all forecasts associated with site that
+          Get metadata for all CDF forecasts associated with site that
           user has access to.
         tags:
         - Sites
@@ -207,7 +207,7 @@ class SiteCDFForecastGroups(MethodView):
         - $ref: '#/components/parameters/site_id'
         responses:
           200:
-            description: Successfully retrieved site forecasts
+            description: Successfully retrieved site cdf forecasts
             content:
               application/json:
                 schema:

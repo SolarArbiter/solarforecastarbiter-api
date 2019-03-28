@@ -400,7 +400,7 @@ class AllCDFForecastGroupsView(MethodView):
                 return jsonify({'errors': 'Site does not exist'}), 400
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for(
-                'forecasts.single_cgroup',
+                'forecasts.single_cdf_group',
                 forecast_id=forecast_id)
             return response
 

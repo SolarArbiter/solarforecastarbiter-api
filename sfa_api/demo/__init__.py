@@ -511,12 +511,13 @@ def store_cdf_forecast_group(cdf_forecast_group):
     axis = cdf_forecast_group['axis']
     instantiated_constants = []
     for constant in cdf_forecast_group['constant_values']:
-        cdf_forecast = store_cdf_forecast({
+        cdf_forecast = {
             "axis": axis,
             "parent": forecast_id,
             "constant_value": constant
-        })
-        print(f'{constant}, {axis}, {forecast_id}')
+        }
+        new_id = store_cdf_forecast(cdf_forecast)
+        cdf_forecast['forecast_id'] = new_id
         instantiated_constants.append(cdf_forecast)
     cdf_forecast_group['constant_values'] = instantiated_constants
     cdf_forecast_groups[forecast_id] = cdf_forecast_group
@@ -541,11 +542,7 @@ def read_cdf_forecast_group(forecast_id):
         return None
     else:
         forecast_group = cdf_forecast_groups[forecast_id]
-        with_children = forecast_group.copy()
-        children = [cdf_forecasts[fx_id]
-                    for fx_id in forecast_group['constant_values']]
-        with_children['constant_values'] = children
-        return with_children
+        return forecast_group
 
 
 def delete_cdf_forecast_group(forecast_id):
