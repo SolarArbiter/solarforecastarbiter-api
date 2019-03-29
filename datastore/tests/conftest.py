@@ -156,6 +156,36 @@ def new_forecast(cursor, new_site):
 
 
 @pytest.fixture()
+def new_cdf_forecast(cursor, new_site):
+    def fcn(site=None, org=None):
+        if site is None:
+            site = new_site(org)
+        out = OrderedDict(
+            id=newuuid(), organization_id=site['organization_id'],
+            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}',
+            variable='power', issue_time_of_day='12:00',
+            lead_time_to_start=60, interval_label='beginning',
+            interval_length=60, run_length=1440,
+            interval_value_type='interval_mean', extra_parameters='',
+            axis='x')
+        insert_dict(cursor, 'cdf_forecasts_groups', out)
+        out['constant_values'] = {}
+        for i in range(3):
+            id = uuid1()
+            single = OrderedDict(
+                id=uuid_to_bin(id), cdf_forecast_group_id=out['id'],
+                constant_value=i)
+            insert_dict(cursor, 'cdf_forecasts_singles', single)
+            # add some  test data too
+            cursor.execute(
+                'INSERT INTO cdf_forecasts_values (id, timestamp, value) '
+                'VALUES (%s, CURRENT_TIMESTAMP(), RAND())', (single['id'], ))
+            out['constant_values'][str(id)] = float(i)
+        return out
+    return fcn
+
+
+@pytest.fixture()
 def new_observation(cursor, new_site):
     def fcn(site=None, org=None):
         if site is None:

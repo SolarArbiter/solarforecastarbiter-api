@@ -9,7 +9,7 @@ from conftest import bin_to_uuid
 
 @pytest.fixture()
 def readall(cursor, new_organization, new_user, new_role, new_permission,
-            new_site, new_forecast, new_observation):
+            new_site, new_forecast, new_observation, new_cdf_forecast):
     # remove test data
     cursor.execute('DELETE FROM organizations')
 
@@ -21,7 +21,8 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
             (user['id'], role['id']))
         items = ['users', 'roles', 'permissions',
-                 'forecasts', 'observations', 'sites']
+                 'forecasts', 'observations', 'sites',
+                 'cdf_forecasts']
         shuffle(items)
         perms = [new_permission('read', obj, True, org=org)
                  for obj in items]
@@ -32,15 +33,16 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         sites = [new_site(org=org) for _ in range(2)]
         fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
-        return user, role, perms, sites, fx, obs
+        cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
+        return user, role, perms, sites, fx, obs, cdf
     return make
 
 
 @pytest.fixture()
 def twosets(readall):
-    user, role, perms, sites, fx, obs = readall()
+    user, role, perms, sites, fx, obs, cdf = readall()
     dummy = readall()
-    return user, role, perms, sites, fx, obs, dummy
+    return user, role, perms, sites, fx, obs, cdf, dummy
 
 
 @pytest.mark.parametrize('type_', ['permissions', 'sites', 'forecasts',
@@ -117,3 +119,31 @@ def test_list_observations(dictcursor, twosets):
         set(res[0].keys()) - set(
             ('created_at', 'modified_at', 'provider', 'observation_id')) ==
         set(obs[0].keys()) - set(('organization_id', 'id')))
+
+
+def test_list_cdf_forecast_groups(dictcursor, twosets):
+    authid = twosets[0]['auth0_id']
+    cdf = twosets[6]
+    dictcursor.callproc('list_cdf_forecasts_groups', (authid,))
+    res = dictcursor.fetchall()
+    assert ([str(bin_to_uuid(fx['id'])) for fx in cdf] ==
+            [r['forecast_id'] for r in res])
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'forecast_id'))
+        == set(cdf[0].keys()) - set(('organization_id', 'id')))
+
+
+def test_list_cdf_forecast_singles(dictcursor, twosets):
+    authid = twosets[0]['auth0_id']
+    cdf = twosets[6]
+    dictcursor.callproc('list_cdf_forecasts_singles', (authid,))
+    res = dictcursor.fetchall()
+    input_ids = [b for a in cdf for b in list(a['constant_values'].keys())]
+    assert input_ids == [r['forecast_id'] for r in res]
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'forecast_id',
+             'constant_value', 'parent'))
+        == set(cdf[0].keys()) - set(('organization_id', 'id',
+                                     'constant_values')))
