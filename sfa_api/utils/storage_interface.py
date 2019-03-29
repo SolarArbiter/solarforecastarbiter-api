@@ -189,8 +189,7 @@ def read_observation_values(observation_id, start=None, end=None):
     df = pd.DataFrame.from_records(
         list(obs_vals), columns=['observation_id', 'timestamp',
                                  'value', 'quality_flag']
-        ).drop(columns='observation_id').set_index(
-            'timestamp').tz_localize('UTC')
+    ).drop(columns='observation_id').set_index('timestamp').tz_localize('UTC')
     return df
 
 
@@ -341,8 +340,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
                               start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-        ).drop(columns='forecast_id').set_index(
-            'timestamp').tz_localize('UTC')
+    ).drop(columns='forecast_id').set_index('timestamp').tz_localize('UTC')
     return df
 
 

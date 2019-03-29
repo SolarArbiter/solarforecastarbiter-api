@@ -13,7 +13,7 @@ VALID_FORECAST_JSON = {
     "run_length": 1440,
     "interval_value_type": "interval_mean",
     "axis": 'x',
-    "constant_values": [5.0,20.0,50.0,80.0,95.0]
+    "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
 }
 
 
@@ -40,8 +40,8 @@ INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON,
 INVALID_AXIS = copy_update(VALID_FORECAST_JSON,
                            'interval_value_type', 'invalid')
 INVALID_CONSTANT_VALUES = copy_update(VALID_FORECAST_JSON,
-                                     'interval_value_type',
-                                     'invalid')
+                                      'interval_value_type',
+                                      'invalid')
 
 
 empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
@@ -209,7 +209,8 @@ def test_get_forecast_values_400(api, start, end, mimetype, cdf_forecast_id):
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
 ])
-def test_get_cdf_forecast_values_200(api, start, end, mimetype, cdf_forecast_id):
+def test_get_cdf_forecast_values_200(api, start, end, mimetype,
+                                     cdf_forecast_id):
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                 base_url='https://localhost',
                 headers={'Accept': mimetype},

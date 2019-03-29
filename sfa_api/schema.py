@@ -27,14 +27,14 @@ VARIABLE_FIELD = ma.String(
     validate=validate.OneOf(VARIABLES))
 
 CREATED_AT = ma.DateTime(
-        title="Creation time",
-        description="ISO 8601 Datetime when object was created",
-        format='iso')
+    title="Creation time",
+    description="ISO 8601 Datetime when object was created",
+    format='iso')
 
 MODIFIED_AT = ma.DateTime(
-        title="Last Modification Time",
-        description="ISO 8601 Datetime when object was last modified",
-        format='iso')
+    title="Last Modification Time",
+    description="ISO 8601 Datetime when object was last modified",
+    format='iso')
 
 
 # Sites
