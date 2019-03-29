@@ -132,6 +132,7 @@ BEGIN
     END IF;
 END;
 
+
 GRANT SELECT ON arbiter_data.cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'select_objects'@'localhost';
