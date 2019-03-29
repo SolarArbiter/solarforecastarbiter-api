@@ -535,7 +535,7 @@ class CDFForecastValues(MethodView):
                                                    "values": dict_values})
             return jsonify(data)
         else:
-            meta_url = url_for('forecasts.cdf_single_metadata',
+            meta_url = url_for('forecasts.single_cdf_metadata',
                                forecast_id=forecast_id,
                                _external=True)
             csv_header = (f'# forecast_id: {forecast_id}\n'

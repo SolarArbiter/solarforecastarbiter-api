@@ -15,6 +15,11 @@ def api():
 
 
 @pytest.fixture()
+def missing_id():
+    return '7d2c3208-5243-11e9-8647-d663bd873d93'
+
+
+@pytest.fixture()
 def observation_id():
     return '123e4567-e89b-12d3-a456-426655440000'
 
@@ -22,6 +27,16 @@ def observation_id():
 @pytest.fixture()
 def missing_observation_id():
     return '123e4567-e89b-12d3-a456-426655440007'
+
+
+@pytest.fixture()
+def cdf_forecast_group_id():
+    return 'ef51e87c-50b9-11e9-8647-d663bd873d93'
+
+
+@pytest.fixture()
+def cdf_forecast_id():
+    return '633f9396-50bb-11e9-8647-d663bd873d93'
 
 
 @pytest.fixture()
