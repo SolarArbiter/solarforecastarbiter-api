@@ -9,7 +9,7 @@ from flask_talisman import Talisman  # NOQA
 
 
 from sfa_api.spec import spec   # NOQA
-from sfa_api.error_handlers import register_error_handlers
+from sfa_api.error_handlers import register_error_handlers  # NOQA
 
 ma = Marshmallow()
 talisman = Talisman()
