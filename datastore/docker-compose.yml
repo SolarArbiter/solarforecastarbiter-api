@@ -7,7 +7,7 @@ services:
       MYSQL_ROOT_PASSWORD: 'testpassword'
       MYSQL_DATABASE: arbiter_data
     volumes:
-      - ./conf:/etc/my.cnf.d
+      - ./conf:/etc/my.cnf.d:ro
     ports:
       - "3306"
   migrate_schemas:
