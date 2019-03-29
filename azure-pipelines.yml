@@ -30,7 +30,7 @@ jobs:
       dockerComposeFile: datastore/docker-compose.yml
       buildImages: true
       abortOnContainerExit: false
-      detached: true
+      detached: false
 
   - script: |
       echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
