@@ -9,7 +9,7 @@ from flask_talisman import Talisman  # NOQA
 
 
 from sfa_api.spec import spec   # NOQA
-
+from sfa_api.error_handlers import register_error_handlers
 
 ma = Marshmallow()
 talisman = Talisman()
@@ -20,7 +20,7 @@ def create_app(config_name='ProductionConfig'):
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
     ma.init_app(app)
-
+    register_error_handlers(app)
     redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA
     talisman.init_app(app,
                       content_security_policy={

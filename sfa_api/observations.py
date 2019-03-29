@@ -1,13 +1,14 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
-from io import StringIO
 from marshmallow import ValidationError
 import pandas as pd
 
 
 from sfa_api import spec
 from sfa_api.utils.storage import get_storage
-
+from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.request_handling import (validate_parsable_values,
+                                            validate_start_end)
 from sfa_api.schema import (ObservationValuesSchema,
                             ObservationSchema,
                             ObservationPostSchema,
@@ -71,11 +72,11 @@ class AllObservationsView(MethodView):
         try:
             observation = ObservationPostSchema().load(data)
         except ValidationError as err:
-            return jsonify({'errors': err.messages}), 400
+            raise BadAPIRequest(err.messages)
         storage = get_storage()
         observation_id = storage.store_observation(observation)
         if observation_id is None:
-            return jsonify({'errors': 'Site does not exist'}), 400
+            raise NotFoundException(error='Site does not exist')
         response = make_response(observation_id, 201)
         response.headers['Location'] = url_for('observations.single',
                                                observation_id=observation_id)
@@ -166,21 +167,7 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        errors = {}
-        start = request.args.get('start', None)
-        end = request.args.get('end', None)
-        if start is not None:
-            try:
-                start = pd.Timestamp(start)
-            except ValueError:
-                errors.update({'start': ['Invalid start date format']})
-        if end is not None:
-            try:
-                end = pd.Timestamp(end)
-            except ValueError:
-                errors.update({'end': ['Invalid end date format']})
-        if errors:
-            return jsonify({'errors': errors}), 400
+        start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_observation_values(observation_id, start, end)
         if values is None:
@@ -245,35 +232,7 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # Check content-type and parse data conditionally
-        if request.content_type == 'application/json':
-            raw_data = request.get_json()
-            try:
-                raw_values = raw_data['values']
-            except (TypeError, KeyError):
-                error = 'Supplied JSON does not contain "values" field.'
-                return jsonify({'errors': {'error': [error]}}), 400
-            try:
-                observation_df = pd.DataFrame(raw_values)
-            except ValueError:
-                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
-        elif request.content_type == 'text/csv':
-            raw_data = StringIO(request.get_data(as_text=True))
-            try:
-                observation_df = pd.read_csv(raw_data,
-                                             na_values=[-999.0, -9999.0],
-                                             keep_default_na=True,
-                                             comment='#')
-            except pd.errors.EmptyDataError:
-                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
-            finally:
-                raw_data.close()
-        else:
-            error = 'Invalid Content-type.'
-            return jsonify({'errors': {'error': [error]}}), 415
-
-        # Verify data format and types are parseable.
-        # create list of errors to return meaningful messages to the user.
+        observation_df = validate_parsable_values()
         errors = {}
         try:
             observation_df['value'] = pd.to_numeric(observation_df['value'],
@@ -303,7 +262,7 @@ class ObservationValuesView(MethodView):
             errors.update({'quality_flag': [error]})
 
         if errors:
-            return jsonify({'errors': errors}), 400
+           raise BadAPIRequest(errors)
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_observation_values(
