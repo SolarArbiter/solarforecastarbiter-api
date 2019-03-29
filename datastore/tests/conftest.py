@@ -223,7 +223,7 @@ def getfcn(request, new_site, new_user, new_role, new_forecast,
 
 @pytest.fixture()
 def valueset(cursor, new_organization, new_user, new_role, new_permission,
-             new_site, new_forecast, new_observation):
+             new_site, new_forecast, new_observation, new_cdf_forecast):
     org0 = new_organization()
     org1 = new_organization()
     user0 = new_user(org=org0)
@@ -248,6 +248,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     obs0 = new_observation(site=site0)
     obs1 = new_observation(site=site0)
     obs2 = new_observation(site=site1)
+    cdf0 = new_cdf_forecast(site=site0)
+    cdf1 = new_cdf_forecast(site=site1)
     cursor.executemany(
         "INSERT INTO role_permission_mapping (role_id, permission_id) "
         "VALUES (%s, %s)",
@@ -265,7 +267,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
             forecasts0 + forecasts1 + [forecasts2],
-            (obs0, obs1, obs2))
+            (obs0, obs1, obs2), (cdf0, cdf1))
 
 
 @pytest.fixture(params=[0, 1])
