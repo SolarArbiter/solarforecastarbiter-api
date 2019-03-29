@@ -30,7 +30,7 @@ jobs:
       dockerComposeFile: datastore/docker-compose.yml
       buildImages: true
       abortOnContainerExit: false
-      detached: false
+      detached: true
 
   - script: |
       echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
@@ -40,20 +40,8 @@ jobs:
   - script: docker wait solararbitersolarforecastarbiter-api_migrate_schemas_1
     displayName: 'Wait for mysql'
 
-  - script: echo $MYSQL_HOST $MYSQL_PORT
-    displayName: 'check env'
-
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt -r requirements-test.txt
     displayName: 'Install dependencies'
-
-  - script: pytest datastore --junitxml=junit/db-test-results.xml
-    displayName: 'Test database'
-
-  - task: PublishTestResults@2
-    inputs:
-      testResultsFiles: '**/db-test-results.xml'
-      testRunTitle: 'Database'
-    condition: succeededOrFailed()
 
   - script: python -m pip install -e .
     displayName: 'Install SolarForecastArbiter API'
@@ -82,7 +70,6 @@ jobs:
       bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
     displayName: 'codecov'
 
-
 - job: 'Publish'
   dependsOn: 'Test'
   pool:
@@ -96,4 +83,44 @@ jobs:
 
   - script: python setup.py sdist
     displayName: 'Build sdist'
+
     
+- job: 'TestDatabase'
+  pool:
+    vmImage: 'Ubuntu-16.04'
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+      architecture: 'x64'
+
+  - task: DockerCompose@0
+    displayName: 'start mysql'
+    inputs:
+      action: Run services
+      dockerComposeFile: datastore/docker-compose.yml
+      buildImages: true
+      abortOnContainerExit: false
+      detached: true
+
+  - script: |
+      echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
+      echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter-api_mysql_1 3306 | rev | cut -d':' -f 1 | rev)"
+    displayName: 'Set env variables'
+
+  - script: docker wait solararbitersolarforecastarbiter-api_migrate_schemas_1
+    displayName: 'Wait for mysql'
+
+  - script: python -m pip install --upgrade pip && pip install -r datastore/test-requirements.txt
+    displayName: 'Install pytest & dependencies'
+
+  - script: pytest datastore --junitxml=junit/db-test-results.xml
+    displayName: 'Test database'
+
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFiles: '**/db-test-results.xml'
+      testRunTitle: 'Database'
+    condition: succeededOrFailed()
+
