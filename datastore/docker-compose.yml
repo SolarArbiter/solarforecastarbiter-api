@@ -7,9 +7,15 @@ services:
       MYSQL_ROOT_PASSWORD: 'testpassword'
       MYSQL_DATABASE: arbiter_data
     volumes:
-      - ./conf:/etc/my.cnf.d
+      - ./conf:/usr/local/mysqlconf
     ports:
       - "3306"
+    entrypoint:
+      bash -c "
+      cp /usr/local/mysqlconf/*.cnf /etc/my.cnf.d/
+      && chmod 644 /etc/my.cnf.d/*.cnf 
+      && /docker-entrypoint.sh mysqld
+      "
   migrate_schemas:
     build:
       context: ./migrations
