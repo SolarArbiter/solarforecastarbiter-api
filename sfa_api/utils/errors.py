@@ -30,6 +30,7 @@ class NotFoundException(BaseAPIException):
     def __init__(self, **kwargs):
         super().__init__(self, 404, **kwargs)
 
+
 class StorageAuthError(Exception):
     pass
 

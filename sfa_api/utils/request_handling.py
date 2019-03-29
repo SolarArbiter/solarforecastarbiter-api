@@ -6,7 +6,7 @@ from sfa_api.utils.errors import BadAPIRequest
 
 
 def validate_parsable_values():
-    """Can be called from a POST view/endpoint to examine posted 
+    """Can be called from a POST view/endpoint to examine posted
     data for mimetype and attempt to parse to a DataFrame.
 
     Raises
@@ -20,7 +20,7 @@ def validate_parsable_values():
             raw_values = raw_data['values']
         except (TypeError, KeyError):
             error = 'Supplied JSON does not contain "values" field.'
-            raise BadAPIRequest(error=error) 
+            raise BadAPIRequest(error=error)
         try:
             value_df = pd.DataFrame(raw_values)
         except ValueError:

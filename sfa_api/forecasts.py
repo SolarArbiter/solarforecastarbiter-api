@@ -14,7 +14,7 @@ from sfa_api.schema import (ForecastValuesSchema,
                             CDFForecastSchema,
                             CDFForecastValuesSchema)
 
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end)
@@ -26,7 +26,7 @@ def validate_forecast_values(forecast_df):
     Parameters
     ----------
     forecast_df: Pandas DataFrame
-    
+
     Raises
     ------
     BadAPIRequestError
@@ -55,6 +55,7 @@ def validate_forecast_values(forecast_df):
         errors.update({'timestamp': ['Missing "timestamp" field.']})
     if errors:
         raise BadAPIRequest(errors)
+
 
 class AllForecastsView(MethodView):
     def get(self, *args):

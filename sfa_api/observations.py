@@ -6,7 +6,7 @@ import pandas as pd
 
 from sfa_api import spec
 from sfa_api.utils.storage import get_storage
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end)
 from sfa_api.schema import (ObservationValuesSchema,
@@ -262,7 +262,7 @@ class ObservationValuesView(MethodView):
             errors.update({'quality_flag': [error]})
 
         if errors:
-           raise BadAPIRequest(errors)
+            raise BadAPIRequest(errors)
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_observation_values(
