@@ -10,6 +10,9 @@
 -- create cdf_forecast_group table
 CREATE TABLE arbiter_data.cdf_forecasts_groups LIKE arbiter_data.forecasts;
 ALTER TABLE arbiter_data.cdf_forecasts_groups ADD COLUMN (axis ENUM('x', 'y') NOT NULL);
+ALTER TABLE arbiter_data.cdf_forecasts_groups ADD FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE ON UPDATE RESTRICT;
+ALTER TABLE arbiter_data.cdf_forecasts_groups ADD FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
 
 -- create the singles cdf forecast table
 CREATE TABLE arbiter_data.cdf_forecasts_singles (
@@ -62,9 +65,17 @@ BEGIN
     END IF;
 END;
 
+
+-- add trigger for inserts to cdf_forecasts_groups table
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER add_object_perm_on_cdf_forecasts_groups_insert AFTER INSERT ON arbiter_data.cdf_forecasts_groups
 FOR EACH ROW INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
     SELECT id, NEW.id FROM arbiter_data.permissions WHERE action != 'create' AND applies_to_all AND organization_id = NEW.organization_id AND object_type = 'cdf_forecasts';
+
+
+-- add trigger for deletion from cdf_forecasts_groups table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_cdf_forecasts_groups_delete AFTER DELETE ON arbiter_data.cdf_forecasts_groups
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
 
 -- restrict fields that can be updated in cdf forecasts
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_cdf_forecasts_singles_update BEFORE UPDATE ON arbiter_data.cdf_forecasts_singles
