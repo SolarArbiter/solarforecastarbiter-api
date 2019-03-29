@@ -10,6 +10,7 @@ import uuid
 
 import pandas as pd
 
+
 from sfa_api.demo.forecasts import static_forecasts
 from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
@@ -134,20 +135,14 @@ def delete_observation(observation_id):
 def list_observations(site_id=None):
     """Lists all observations a user has access to.
     """
-    obs_list = []
     if site_id is not None:
         site = read_site(site_id)
         if site is None:
             return None
-        filtered_obs = {observation_id: obs
-                        for observation_id, obs in observations.items()
-                        if str(obs['site_id']) == site_id}
+        obs_list = [obs for obs in observations.values()
+                    if str(obs['site_id']) == site_id]
     else:
-        filtered_obs = observations
-    for observation_id, obs in filtered_obs.items():
-        with_site = obs.copy()
-        with_site['site'] = read_site(str(with_site['site_id']))
-        obs_list.append(with_site)
+        obs_list = list(observations.values())
     return obs_list
 
 
@@ -258,14 +253,10 @@ def list_forecasts(site_id=None):
         site = read_site(site_id)
         if site is None:
             return None
-        filtered_forecasts = {fx_id: fx for fx_id, fx in forecasts.items()
-                              if fx['site_id'] == site_id}
+        forecasts_list = [fx for fx in forecasts.values()
+                          if fx['site_id'] == site_id]
     else:
-        filtered_forecasts = forecasts
-    for forecast_id, forecast in filtered_forecasts.items():
-        with_site = forecast.copy()
-        with_site['site'] = read_site(with_site['site_id'])
-        forecasts_list.append(with_site)
+        forecasts_list = list(forecasts.values())
     return forecasts_list
 
 
@@ -335,4 +326,4 @@ def list_sites():
     list
         List of Site dictionaries.
     """
-    return [site for site_id, site in sites.items()]
+    return list(sites.values())

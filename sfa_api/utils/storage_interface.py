@@ -5,29 +5,40 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+from functools import partial
+import random
+import uuid
 
 
 from flask import g, current_app
+import pandas as pd
 import pymysql
 from pymysql import converters
 
 
 from sfa_api.auth import current_user
 from sfa_api import schema
+from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 
 
-class StorageAuthError(Exception):
-    pass
+# min and max timestamps storable in mysql
+MINTIMESTAMP = pd.Timestamp('19700101T000001Z')
+MAXTIMESTAMP = pd.Timestamp('20380119T031407Z')
+
+
+def generate_uuid():
+    """Generate a version 1 UUID and ensure clock_seq is random"""
+    return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
 
 
 def mysql_connection():
     if 'mysql_connection' not in g:
         config = current_app.config
         conv = converters.conversions.copy()
-        conv[converters.FIELD_TYPE.TIME] = converters.convert_time
         # either convert decimals to floats, or add decimals to schema
         conv[converters.FIELD_TYPE.DECIMAL] = float
         conv[converters.FIELD_TYPE.NEWDECIMAL] = float
+        conv[pd.Timestamp] = converters.escape_datetime
         connect_kwargs = {
             'host': config['MYSQL_HOST'],
             'port': int(config['MYSQL_PORT']),
@@ -46,7 +57,7 @@ def mysql_connection():
 
 
 @contextmanager
-def get_cursor(cursor_type='standard'):
+def get_cursor(cursor_type):
     if cursor_type == 'standard':
         cursorclass = pymysql.cursors.Cursor
     elif cursor_type == 'dict':
@@ -60,17 +71,61 @@ def get_cursor(cursor_type='standard'):
     cursor.close()
 
 
-def _call_procedure(procedure_name, *args):
-    with get_cursor('dict') as cursor:
-        try:
-            cursor.callproc(procedure_name, (current_user, *args))
-        except pymysql.err.OperationalError as e:
-            if e.args[0] == 1142:
-                raise StorageAuthError(e.args[1])
-            else:
-                raise
+def try_query(query_cmd):
+    try:
+        query_cmd()
+    except (pymysql.err.OperationalError, pymysql.err.IntegrityError) as e:
+        ecode = e.args[0]
+        if ecode == 1142 or ecode == 1143:
+            raise StorageAuthError(e.args[1])
+        elif ecode == 1451:
+            raise DeleteRestrictionError
         else:
-            return cursor.fetchall()
+            raise
+
+
+def _call_procedure(procedure_name, *args, cursor_type='dict'):
+    """
+    Can't user callproc since it doesn't properly use converters.
+    Will not handle OUT or INOUT parameters without first setting
+    local variables and retrieving from those variables
+    """
+    with get_cursor(cursor_type) as cursor:
+        query = f'CALL {procedure_name}({",".join(["%s"] * (len(args) + 1))})'
+        query_cmd = partial(cursor.execute, query, (current_user, *args))
+        try_query(query_cmd)
+        return cursor.fetchall()
+
+
+def _set_modeling_parameters(site_dict):
+    out = {}
+    modeling_parameters = {}
+    for key in schema.ModelingParameters().fields.keys():
+        modeling_parameters[key] = site_dict[key]
+    for key in schema.SiteResponseSchema().fields.keys():
+        if key == 'modeling_parameters':
+            out[key] = modeling_parameters
+        else:
+            out[key] = site_dict[key]
+    return out
+
+
+def _set_observation_parameters(observation_dict):
+    out = {}
+    for key in schema.ObservationSchema().fields.keys():
+        if key in ('_links',):
+            continue
+        out[key] = observation_dict[key]
+    return out
+
+
+def _set_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.ForecastSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        out[key] = forecast_dict[key]
+    return out
 
 
 def store_observation_values(observation_id, observation_df):
@@ -86,11 +141,23 @@ def store_observation_values(observation_id, observation_df):
     Returns
     -------
     string
-        The UUID of the associated Observation or None if the it does
-        not exist.
+        The UUID of the associated Observation.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to store values on the Observation
+        or if the Observation does not exists
     """
-    # PROC: store_observation_values
-    raise NotImplementedError
+    with get_cursor('standard') as cursor:
+        query = 'CALL store_observation_values(%s, %s, %s, %s, %s)'
+        query_cmd = partial(
+            cursor.executemany, query,
+            ((current_user, observation_id, row.Index, row.value,
+              row.quality_flag)
+             for row in observation_df.itertuples()))
+        try_query(query_cmd)
+    return observation_id
 
 
 def read_observation_values(observation_id, start=None, end=None):
@@ -112,8 +179,19 @@ def read_observation_values(observation_id, start=None, end=None):
         Data points contain a timestamp, value andquality_flag.
         Returns None if the Observation does not exist.
     """
-    # PROC: read_observation_values
-    raise NotImplementedError
+    if start is None:
+        start = MINTIMESTAMP
+    if end is None:
+        end = MAXTIMESTAMP
+
+    obs_vals = _call_procedure('read_observation_values', observation_id,
+                               start, end, cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(obs_vals), columns=['observation_id', 'timestamp',
+                                 'value', 'quality_flag']
+        ).drop(columns='observation_id').set_index(
+            'timestamp').tz_localize('UTC')
+    return df
 
 
 def store_observation(observation):
@@ -130,8 +208,15 @@ def store_observation(observation):
     string
         The UUID of the newly created Observation.
     """
-    # PROC: store_observation
-    raise NotImplementedError
+    observation_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_observation', observation_id,
+        observation['variable'], observation['site_id'],
+        observation['name'], observation['interval_label'],
+        observation['interval_length'], observation['interval_value_type'],
+        observation['uncertainty'], observation['extra_parameters'])
+    return observation_id
 
 
 def read_observation(observation_id):
@@ -148,8 +233,9 @@ def read_observation(observation_id):
         The Observation's metadata or None if the Observation
         does not exist.
     """
-    # PROC: read_observation
-    raise NotImplementedError
+    observation = _set_observation_parameters(
+        _call_procedure('read_observation', observation_id)[0])
+    return observation
 
 
 def delete_observation(observation_id):
@@ -160,22 +246,20 @@ def delete_observation(observation_id):
     observation_id: String
         UUID of observation to delete
 
-    Returns
-    -------
-    dict
-        The Observation's metadata if successful or None
-        if the Observation does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the observation
     """
-    # PROC: delete_observation
-    raise NotImplementedError
+    _call_procedure('delete_observation', observation_id)
 
 
-def list_observations(site=None):
+def list_observations(site_id=None):
     """Lists all observations a user has access to.
 
     Parameters
     ----------
-    site: string
+    site_id: string
         UUID of Site, when supplied returns only Observations
         made for this Site.
 
@@ -183,9 +267,19 @@ def list_observations(site=None):
     -------
     list
         List of dictionaries of Observation metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to observations with site_id or
+        no observations exists for that id
     """
-    # PROC: list_observations
-    raise NotImplementedError
+    if site_id is not None:
+        read_site(site_id)
+    observations = [_set_observation_parameters(obs)
+                    for obs in _call_procedure('list_observations')
+                    if site_id is None or obs['site_id'] == site_id]
+    return observations
 
 
 # Forecasts
@@ -202,11 +296,21 @@ def store_forecast_values(forecast_id, forecast_df):
     Returns
     -------
     string
-        The UUID of the associated forecast. Returns
-        None if the Forecast does not exist.
+        The UUID of the associated forecast.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the Forecast
     """
-    # PROC: store_forecast_values
-    raise NotImplementedError
+    with get_cursor('standard') as cursor:
+        query = 'CALL store_forecast_values(%s, %s, %s, %s)'
+        query_cmd = partial(
+            cursor.executemany, query,
+            ((current_user, forecast_id, row.Index, row.value)
+             for row in forecast_df.itertuples()))
+        try_query(query_cmd)
+    return forecast_id
 
 
 def read_forecast_values(forecast_id, start=None, end=None):
@@ -228,8 +332,18 @@ def read_forecast_values(forecast_id, start=None, end=None):
         Data points contain a timestamp and value. Returns
         None if the Observation does not exist.
     """
-    # PROC: read_forecast_values
-    raise NotImplementedError
+    if start is None:
+        start = MINTIMESTAMP
+    if end is None:
+        end = MAXTIMESTAMP
+
+    fx_vals = _call_procedure('read_forecast_values', forecast_id,
+                              start, end, cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
+        ).drop(columns='forecast_id').set_index(
+            'timestamp').tz_localize('UTC')
+    return df
 
 
 def store_forecast(forecast):
@@ -246,9 +360,20 @@ def store_forecast(forecast):
     string
         The UUID of the newly created Forecast.
 
+    Raises
+    ------
+    StorageAuthError
+        If the user can create Forecasts or the user can't read the site
     """
-    # PROC: store_forecast
-    raise NotImplementedError
+    forecast_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_forecast', forecast_id, forecast['site_id'], forecast['name'],
+        forecast['variable'], forecast['issue_time_of_day'],
+        forecast['lead_time_to_start'], forecast['interval_label'],
+        forecast['interval_length'], forecast['run_length'],
+        forecast['interval_value_type'], forecast['extra_parameters'])
+    return forecast_id
 
 
 def read_forecast(forecast_id):
@@ -265,8 +390,9 @@ def read_forecast(forecast_id):
         The Forecast's metadata or None if the Forecast
         does not exist.
     """
-    # PROC: read_site
-    raise NotImplementedError
+    forecast = _set_forecast_parameters(
+        _call_procedure('read_forecast', forecast_id)[0])
+    return forecast
 
 
 def delete_forecast(forecast_id):
@@ -277,22 +403,20 @@ def delete_forecast(forecast_id):
     forecast_id: String
         UUID of the Forecast to delete.
 
-    Returns
-    -------
-    dict
-        The Forecast's metadata if successful or None
-        if the Forecast does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user cannot delete the Forecast
     """
-    # PROC: delete_forecast
-    raise NotImplementedError
+    _call_procedure('delete_forecast', forecast_id)
 
 
-def list_forecasts(site=None):
+def list_forecasts(site_id=None):
     """Lists all Forecasts a user has access to.
 
     Parameters
     ----------
-    site: string
+    site_id: string
         UUID of Site, when supplied returns only Forecasts
         made for this Site.
 
@@ -301,23 +425,12 @@ def list_forecasts(site=None):
     list
         List of dictionaries of Forecast metadata.
     """
-    # PROC: list_forecasts
-    raise NotImplementedError
-
-
-def _set_modeling_parameters(site_dict):
-    if site_dict is None:
-        return {}
-    out = {}
-    modeling_parameters = {}
-    for key in schema.ModelingParameters().fields.keys():
-        modeling_parameters[key] = site_dict[key]
-    for key in schema.SiteResponseSchema().fields.keys():
-        if key == 'modeling_parameters':
-            out[key] = modeling_parameters
-        else:
-            out[key] = site_dict[key]
-    return out
+    if site_id is not None:
+        read_site(site_id)
+    forecasts = [_set_forecast_parameters(fx)
+                 for fx in _call_procedure('list_forecasts')
+                 if site_id is None or fx['site_id'] == site_id]
+    return forecasts
 
 
 def read_site(site_id):
@@ -331,7 +444,12 @@ def read_site(site_id):
     Returns
     -------
     dict
-        The Site's metadata or None if the Site does not exist.
+        The Site's metadata
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to the site_id or it doesn't exist
     """
     site = _set_modeling_parameters(
         _call_procedure('read_site', site_id)[0])
@@ -351,9 +469,24 @@ def store_site(site):
     -------
     string
         UUID of the newly created site.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have create permissions
     """
-    # PROC: store_site
-    raise NotImplementedError
+    site_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_site', site_id, site['name'], site['latitude'],
+        site['longitude'], site['elevation'], site['timezone'],
+        site['extra_parameters'],
+        *[site['modeling_parameters'][key] for key in [
+            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
+            'tracking_type', 'surface_tilt', 'surface_azimuth',
+            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
+            'backtrack', 'max_rotation_angle', 'dc_loss_factor',
+            'ac_loss_factor']])
+    return site_id
 
 
 def delete_site(site_id):
@@ -364,14 +497,14 @@ def delete_site(site_id):
     site_id: String
         UUID of the Forecast to delete.
 
-    Returns
-    -------
-    dict
-        The Site's metadata if successful or None
-        if the Site does not exist.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the site
+    DeleteRestrictionError
+        If the site cannote be delete because other objects depend on it
     """
-    # PROC: delete_site
-    raise NotImplementedError
+    _call_procedure('delete_site', site_id)
 
 
 def list_sites():

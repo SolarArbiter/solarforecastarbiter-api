@@ -72,7 +72,7 @@ INSERT INTO arbiter_data.forecasts (
     UUID_TO_BIN('11c20780-76ae-4b11-bef1-7a75bdc784e3', 1),
     @orgid,
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
-    'DA Power', 'ac_power', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
+    'DA GHI', 'ghi', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
     TIMESTAMP('2019-03-01 11:55:37'), TIMESTAMP('2019-03-01 11:55:37')
 ), (
     UUID_TO_BIN('f8dd49fa-23e2-48a0-862b-ba0af6dec276', 1),
