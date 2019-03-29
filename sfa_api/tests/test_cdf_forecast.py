@@ -50,7 +50,7 @@ empty_json_response = '{"axis":["Missing data for required field."],"constant_va
 @pytest.mark.parametrize('payload,status_code', [
     (VALID_FORECAST_JSON, 201),
 ])
-def test_forecast_post_success(api, payload, status_code):
+def test_cdf_forecast_group_post_success(api, payload, status_code):
     r = api.post('/forecasts/cdf/',
                  base_url='https://localhost',
                  json=payload)
