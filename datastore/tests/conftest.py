@@ -206,9 +206,9 @@ def new_observation(cursor, new_site):
 
 
 @pytest.fixture(params=['sites', 'users', 'roles', 'forecasts',
-                        'observations'])
+                        'observations', 'cdf_forecasts'])
 def getfcn(request, new_site, new_user, new_role, new_forecast,
-           new_observation):
+           new_observation, new_cdf_forecast):
     if request.param == 'sites':
         return new_site, 'sites'
     elif request.param == 'users':
@@ -219,6 +219,8 @@ def getfcn(request, new_site, new_user, new_role, new_forecast,
         return new_forecast, 'forecasts'
     elif request.param == 'observations':
         return new_observation, 'observations'
+    elif request.param == 'cdf_forecasts':
+        return new_cdf_forecast, 'cdf_forecasts'
 
 
 @pytest.fixture()

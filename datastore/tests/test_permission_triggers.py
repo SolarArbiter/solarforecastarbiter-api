@@ -138,6 +138,8 @@ def test_object_mapping_remove_obj(cursor, action, getfcn, new_permission,
     org = new_organization()
     perm = new_permission(action, obj_type, True, org=org)
     newthing = newfcn(org=org)
+    if obj_type == 'cdf_forecasts':
+        obj_type = 'cdf_forecasts_groups'
     cursor.execute(
         f'DELETE FROM {obj_type} WHERE id = %s', newthing['id'])
     cursor.execute(
