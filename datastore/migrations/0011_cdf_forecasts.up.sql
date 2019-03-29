@@ -17,16 +17,12 @@ ALTER TABLE arbiter_data.cdf_forecasts_groups ADD FOREIGN KEY (site_id) REFERENC
 -- create the singles cdf forecast table
 CREATE TABLE arbiter_data.cdf_forecasts_singles (
     id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
-    organization_id BINARY(16) NOT NULL,
     cdf_forecast_group_id BINARY(16) NOT NULL,
     constant_value FLOAT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     UNIQUE (cdf_forecast_group_id, constant_value),
-    FOREIGN KEY (organization_id)
-        REFERENCES arbiter_data.organizations(id)
-        ON DELETE CASCADE ON UPDATE RESTRICT,
     FOREIGN KEY (cdf_forecast_group_id)
         REFERENCES arbiter_data.cdf_forecasts_groups(id)
         ON DELETE CASCADE ON UPDATE RESTRICT
@@ -81,10 +77,7 @@ FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id 
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_cdf_forecasts_singles_update BEFORE UPDATE ON arbiter_data.cdf_forecasts_singles
 FOR EACH ROW
 BEGIN
-    IF NEW.organization_id != OLD.organization_id OR NEW.cdf_forecast_group_id != OLD.cdf_forecast_group_id
-       OR NEW.constant_value != OLD.constant_value THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify cdf forecast single object';
-    END IF;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify cdf forecast single object';
 END;
 
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_cdf_forecasts_groups_update BEFORE UPDATE ON arbiter_data.cdf_forecasts_groups
@@ -100,8 +93,6 @@ END;
 
 
 -- PROCEDURES
-
--- Create procedure to return list of cdf forecasts a user can read
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_cdf_forecasts_groups (IN auth0id VARCHAR(32))
 COMMENT 'List all cdf forecast groups and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
@@ -114,8 +105,23 @@ SELECT BIN_TO_UUID(cfg.id, 1) as forecast_id, get_organization_name(cfg.organiza
        cfg.modified_at as modified_at, JSON_OBJECTAGG(BIN_TO_UUID(cfs.id, 1), cfs.constant_value) as constant_values
 FROM cdf_forecasts_groups as cfg, cdf_forecasts_singles as cfs WHERE cfg.id in (
      SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'cdf_forecasts')
-     AND cfs.cdf_forecast_group_id = cfg.id
-GROUP BY cfg.id;
+AND cfs.cdf_forecast_group_id = cfg.id GROUP BY cfg.id;
+
+
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_cdf_forecasts_singles (IN auth0id VARCHAR(32))
+COMMENT 'List all cdf forecast singletons and associated metadata that the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT BIN_TO_UUID(cfs.id, 1) as forecast_id, get_organization_name(cfg.organization_id) as provider,
+       BIN_TO_UUID(cfg.site_id, 1) as site_id, BIN_TO_UUID(cfs.cdf_forecast_group_id, 1) as parent,
+       cfg.name as name, cfg.variable as variable,
+       cfg.issue_time_of_day as issue_time_of_day, cfg.lead_time_to_start as lead_time_to_start,
+       cfg.interval_label as interval_label, cfg.interval_length as interval_length,
+       cfg.run_length as run_length, cfg.interval_value_type as interval_value_type,
+       cfg.extra_parameters as extra_parameters, cfg.axis as axis, cfs.created_at as created_at,
+       cfs.constant_value as constant_value
+FROM cdf_forecasts_groups as cfg, cdf_forecasts_singles as cfs WHERE cfg.id in (
+     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'cdf_forecasts')
+AND cfs.cdf_forecast_group_id = cfg.id;
 
 
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_cdf_forecasts_group (
@@ -143,8 +149,150 @@ BEGIN
     END IF;
 END;
 
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_cdf_forecasts_single (
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read cdf forecast singleton metadata'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE groupid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
+    SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'read'));
+    IF allowed THEN
+        SELECT BIN_TO_UUID(cfs.id, 1) as forecast_id, get_organization_name(cfg.organization_id) as provider,
+            BIN_TO_UUID(cfg.site_id, 1) as site_id, BIN_TO_UUID(cfs.cdf_forecast_group_id, 1) as parent,
+            cfg.name as name, cfg.variable as variable,
+            cfg.issue_time_of_day as issue_time_of_day, cfg.lead_time_to_start as lead_time_to_start,
+            cfg.interval_label as interval_label, cfg.interval_length as interval_length,
+            cfg.run_length as run_length, cfg.interval_value_type as interval_value_type,
+            cfg.extra_parameters as extra_parameters, cfg.axis as axis, cfs.created_at as created_at,
+            cfs.constant_value as constant_value
+        FROM cdf_forecasts_groups as cfg, cdf_forecasts_singles as cfs WHERE cfs.id = binid
+        AND cfg.id = cfs.cdf_forecast_group_id;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read cdf forecast single"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
 
 GRANT SELECT ON arbiter_data.cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_group TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_single TO 'select_objects'@'localhost';
+
+
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_cdf_forecasts_group (
+  IN auth0id VARCHAR(32), IN strid CHAR(36), IN site_id CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
+  IN issue_time_of_day VARCHAR(5), IN lead_time_to_start SMALLINT UNSIGNED, IN interval_label VARCHAR(32),
+  IN interval_length SMALLINT UNSIGNED, IN run_length SMALLINT UNSIGNED, IN interval_value_type VARCHAR(32),
+  IN extra_parameters TEXT, IN axis VARCHAR(1))
+COMMENT 'Store an cdf forecast group object. User must be able to read site information.'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE orgid BINARY(16);
+    DECLARE binsiteid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE canreadsite BOOLEAN DEFAULT FALSE;
+    SET allowed = (SELECT user_can_create(auth0id, 'cdf_forecasts'));
+    SET binsiteid = (SELECT UUID_TO_BIN(site_id, 1));
+    IF allowed THEN
+       SET canreadsite = (SELECT can_user_perform_action(auth0id, binsiteid, 'read'));
+       IF canreadsite THEN
+           SELECT get_user_organization(auth0id) INTO orgid;
+           INSERT INTO arbiter_data.cdf_forecasts_groups (
+               id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
+               interval_label, interval_length, run_length, interval_value_type, extra_parameters, axis
+           ) VALUES (
+               UUID_TO_BIN(strid, 1), orgid, binsiteid, name, variable, issue_time_of_day,
+               lead_time_to_start, interval_label, interval_length, run_length, interval_value_type,
+               extra_parameters, axis);
+       ELSE
+           SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read site', MYSQL_ERRNO = 1143;
+       END IF;
+    ELSE
+       SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create cdf forecasts"',
+       MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_cdf_forecasts_single (
+  IN auth0id VARCHAR(32), IN strid CHAR(36), IN parent_id CHAR(36), IN constant_value FLOAT)
+COMMENT 'Store an cdf forecast singleton object. User must be able to update cdf parent group information.'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE groupid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE canupdategroup BOOLEAN DEFAULT FALSE;
+    SET allowed = (SELECT user_can_create(auth0id, 'cdf_forecasts'));
+    SET groupid = UUID_TO_BIN(parent_id, 1);
+    IF allowed THEN
+       SET canupdategroup = (SELECT can_user_perform_action(auth0id, groupid, 'update'));
+       IF canreadsite THEN
+           INSERT INTO arbiter_data.cdf_forecasts_singles (
+               id, cdf_forecast_group_id, constant_value
+           ) VALUES (
+               UUID_TO_BIN(strid, 1), groupid, constant_value);
+       ELSE
+           SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to update cdf group',
+           MYSQL_ERRNO = 1143;
+       END IF;
+    ELSE
+       SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create cdf forecasts"',
+       MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+GRANT INSERT ON arbiter_data.cdf_forecasts_groups TO 'insert_objects'@'localhost';
+GRANT INSERT ON arbiter_data.cdf_forecasts_singles TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_group TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_single TO 'insert_objects'@'localhost';
+
+
+CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_cdf_forecasts_group(
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'delete'));
+    IF allowed THEN
+        DELETE FROM arbiter_data.cdf_forecasts_groups WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete cdf forecast group"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_cdf_forecasts_single(
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Delete cdf forecast singleton if user can update parent cdf group and also delete it'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE groupid BINARY(16);
+    DECLARE update_allowed BOOLEAN DEFAULT FALSE;
+    DECLARE delete_allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
+    SET update_allowed = (SELECT can_user_perform_action(auth0id, groupid, 'update'));
+    SET delete_allowed = (SELECT can_user_perform_action(auth0id, groupid, 'delete'));
+    IF update_allowed AND delete_allowed THEN
+        DELETE FROM arbiter_data.cdf_forecasts_singles WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete cdf forecast single"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+GRANT DELETE, SELECT (id) ON arbiter_data.cdf_forecasts_groups TO 'delete_objects'@'localhost';
+GRANT DELETE, SELECT (id, cdf_forecast_group_id) ON arbiter_data.cdf_forecasts_singles TO 'delete_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_cdf_forecasts_group TO 'delete_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_cdf_forecasts_single TO 'delete_objects'@'localhost';

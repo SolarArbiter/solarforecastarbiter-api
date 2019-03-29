@@ -185,18 +185,18 @@ INSERT INTO arbiter_data.cdf_forecasts_groups (
 
 
 
-INSERT INTO arbiter_data.cdf_forecasts_singles (id, organization_id, cdf_forecast_group_id, constant_value, created_at)
+INSERT INTO arbiter_data.cdf_forecasts_singles (id, cdf_forecast_group_id, constant_value, created_at)
 VALUES (
-     UUID_TO_BIN('633f9396-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg0, 5.0, @cfg0time), (
-     UUID_TO_BIN('633f9864-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg0, 20.0, @cfg0time), (
-     UUID_TO_BIN('633f9b2a-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg0, 50.0, @cfg0time), (
-     UUID_TO_BIN('633f9d96-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg0, 80.0, @cfg0time), (
-     UUID_TO_BIN('633fa548-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg0, 95.0, @cfg0time), (
-     UUID_TO_BIN('633fa94e-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg1, 0.0, @cfg1time), (
-     UUID_TO_BIN('633fabec-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg1, 0.25, @cfg1time), (
-     UUID_TO_BIN('633fae62-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg1, 0.50, @cfg1time), (
-     UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg1, 0.75, @cfg1time), (
-     UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @orgid, @cfg1, 1.0, @cfg1time);
+     UUID_TO_BIN('633f9396-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 5.0, @cfg0time), (
+     UUID_TO_BIN('633f9864-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 20.0, @cfg0time), (
+     UUID_TO_BIN('633f9b2a-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 50.0, @cfg0time), (
+     UUID_TO_BIN('633f9d96-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 80.0, @cfg0time), (
+     UUID_TO_BIN('633fa548-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 95.0, @cfg0time), (
+     UUID_TO_BIN('633fa94e-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.0, @cfg1time), (
+     UUID_TO_BIN('633fabec-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.25, @cfg1time), (
+     UUID_TO_BIN('633fae62-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.50, @cfg1time), (
+     UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.75, @cfg1time), (
+     UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 1.0, @cfg1time);
 
 
 CREATE USER 'apiuser'@'%' IDENTIFIED BY 'thisisaterribleandpublicpassword';
