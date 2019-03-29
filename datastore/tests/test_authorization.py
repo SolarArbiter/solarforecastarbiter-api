@@ -22,7 +22,7 @@ def make_user_roles(cursor, new_organization, new_permission, new_user,
 @pytest.fixture(params=[0, 1])
 def make_test_permissions(cursor, new_organization, new_permission,
                           new_user, new_role, new_forecast,
-                          new_observation, request):
+                          new_observation, new_cdf_forecast, request):
     def make(org):
         user = new_user(org=org)
         role0 = new_role(org=org)
@@ -32,6 +32,7 @@ def make_test_permissions(cursor, new_organization, new_permission,
         role1 = new_role(org=org)
         perm1 = new_permission('create', 'forecasts', True, org=org)
         perm2 = new_permission('read', 'forecasts', True, org=org)
+        perm3 = new_permission('read', 'cdf_forecasts', True, org=org)
         cursor.executemany(
             'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
             [(user['id'], role0['id']), (user['id'], role1['id'])])
@@ -39,16 +40,19 @@ def make_test_permissions(cursor, new_organization, new_permission,
             'INSERT INTO role_permission_mapping (role_id, permission_id) '
             'VALUES (%s, %s)', [(role0['id'], perm0['id']),
                                 (role1['id'], perm1['id']),
-                                (role1['id'], perm2['id'])])
+                                (role1['id'], perm2['id']),
+                                (role1['id'], perm3['id'])])
         cursor.executemany(
             'INSERT INTO permission_object_mapping (permission_id, object_id)'
             ' VALUES (%s, %s)',
             [(perm0['id'], obj0['id']), (perm0['id'], obj1['id'])])
         fx = new_forecast(org=org)
+        cdf = new_cdf_forecast(org=org)
         return {'user': user, 'roles': [role0, role1],
                 'observations': [obj0, obj1],
                 'forecasts': [fx],
-                'permissions': [perm0, perm1, perm2]}
+                'cdf_forecasts': [cdf],
+                'permissions': [perm0, perm1, perm2, perm3]}
     return make
 
 
@@ -59,7 +63,7 @@ def test_list_objects_user_can_read_diff_org(cursor, make_test_permissions,
     user0 = make_test_permissions(org0)
     org1 = new_organization()
     user1 = make_test_permissions(org1)
-    for otype in ['observations', 'forecasts']:
+    for otype in ['observations', 'forecasts', 'cdf_forecasts']:
         for udict in [user0, user1]:
             objs = {obj['id'] for obj in udict[otype]}
             authid = udict['user']['auth0_id']
@@ -173,7 +177,7 @@ def test_user_can_create_diff_org(cursor, make_test_permissions,
 
 @pytest.mark.parametrize('type_', [
     'roles', 'users', 'permissions', 'observations', 'mappings',
-    'sites', 'aggregates'])
+    'sites', 'aggregates', 'cdf_forecasts'])
 def test_user_can_create_other_objs_denied(
         cursor, type_, make_test_permissions, new_organization):
     org = new_organization()
