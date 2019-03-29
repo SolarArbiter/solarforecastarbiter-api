@@ -103,14 +103,14 @@ def test_site_observations_404(api, missing_site_id):
 
 
 def test_site_forecasts_200(api, site_id_plant):
-    r = api.get(f'/sites/{site_id_plant}/forecasts',
+    r = api.get(f'/sites/{site_id_plant}/forecasts/single',
                 base_url='https://localhost')
     assert r.status_code == 200
     assert isinstance(r.get_json(), list)
 
 
 def test_site_forecasts_404(api, missing_site_id):
-    r = api.get(f'/sites/{missing_site_id}/forecasts',
+    r = api.get(f'/sites/{missing_site_id}/forecasts/single',
                 base_url='https://localhost')
     assert r.status_code == 404
 

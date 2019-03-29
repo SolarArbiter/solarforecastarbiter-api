@@ -9,9 +9,49 @@ from sfa_api import spec
 from sfa_api.schema import (ForecastValuesSchema,
                             ForecastSchema,
                             ForecastPostSchema,
-                            ForecastLinksSchema)
+                            ForecastLinksSchema,
+                            CDFForecastGroupPostSchema,
+                            CDFForecastGroupSchema,
+                            CDFForecastSchema,
+                            CDFForecastValuesSchema)
 
 from sfa_api.utils.storage import get_storage
+
+
+def validate_forecast_values(forecast_df):
+    """Validates that posted values are parseable and of the expectedtypes.
+
+    Parameters
+    ----------
+    forecast_df: Pandas DataFrame
+
+    Returns
+    -------
+    errors: dictionary
+        A dictionary of errors where keys are the column names where errors
+        were found, and values are a list of errors for that column.
+    """
+    errors = {}
+    try:
+        forecast_df['value'] = pd.to_numeric(forecast_df['value'],
+                                             downcast='float')
+    except ValueError:
+        error = ('Invalid item in "value" field. Ensure that all values '
+                 'are integers, floats, empty, NaN, or NULL.')
+        errors.update({'value': [error]})
+    except KeyError:
+        errors.update({'value': ['Missing "value" field.']})
+    try:
+        forecast_df['timestamp'] = pd.to_datetime(
+            forecast_df['timestamp'],
+            utc=True)
+    except ValueError:
+        error = ('Invalid item in "timestamp" field. Ensure that '
+                 'timestamps are ISO8601 compliant')
+        errors.update({'timestamp': [error]})
+    except KeyError:
+        errors.update({'timestamp': ['Missing "timestamp" field.']})
+    return errors
 
 
 class AllForecastsView(MethodView):
@@ -265,27 +305,7 @@ class ForecastValuesView(MethodView):
         else:
             error = 'Invalid Content-type.'
             return jsonify({'errors': {'error': [error]}}), 400
-        errors = {}
-        try:
-            forecast_df['value'] = pd.to_numeric(forecast_df['value'],
-                                                 downcast='float')
-        except ValueError:
-            error = ('Invalid item in "value" field. Ensure that all values '
-                     'are integers, floats, empty, NaN, or NULL.')
-            errors.update({'value': [error]})
-        except KeyError:
-            errors.update({'value': ['Missing "value" field.']})
-        try:
-            forecast_df['timestamp'] = pd.to_datetime(
-                forecast_df['timestamp'],
-                utc=True)
-        except ValueError:
-            error = ('Invalid item in "timestamp" field. Ensure that '
-                     'timestamps are ISO8601 compliant')
-            errors.update({'timestamp': []})
-        except KeyError:
-            errors.update({'timestamp': ['Missing "timestamp" field.']})
-
+        errors = validate_forecast_values(forecast_df)
         if errors:
             return jsonify({'errors': errors}), 400
         forecast_df = forecast_df.set_index('timestamp')
@@ -327,7 +347,7 @@ class ForecastMetadataView(MethodView):
 
 
 class AllCDFForecastGroupsView(MethodView):
-    def get(self, args):
+    def get(self, *args):
         """
         ---
         summary: List Probabilistic Forecasts groups.
@@ -348,7 +368,11 @@ class AllCDFForecastGroupsView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        storage = get_storage()
+        cdf_forecast_groups = storage.list_cdf_forecast_groups()
+        return jsonify(
+            CDFForecastGroupSchema(many=True).dump(cdf_forecast_groups)
+        )
 
     def post(self, *args):
         """
@@ -380,7 +404,21 @@ class AllCDFForecastGroupsView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
 
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        data = request.get_json()
+        try:
+            cdf_forecast_group = CDFForecastGroupPostSchema().load(data)
+        except ValidationError as err:
+            return jsonify({"errors": err.messages}), 400
+        else:
+            storage = get_storage()
+            forecast_id = storage.store_cdf_forecast_group(cdf_forecast_group)
+            if forecast_id is None:
+                return jsonify({'errors': 'Site does not exist'}), 400
+            response = make_response(forecast_id, 201)
+            response.headers['Location'] = url_for(
+                'forecasts.single_cdf_group',
+                forecast_id=forecast_id)
+            return response
 
 
 class CDFForecastGroupMetadataView(MethodView):
@@ -406,7 +444,11 @@ class CDFForecastGroupMetadataView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        storage = get_storage()
+        cdf_forecast_group = storage.read_cdf_forecast_group(forecast_id)
+        if cdf_forecast_group is None:
+            abort(404)
+        return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
 
 
 class CDFForecastMetadata(MethodView):
@@ -432,7 +474,11 @@ class CDFForecastMetadata(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        storage = get_storage()
+        cdf_forecast = storage.read_cdf_forecast(forecast_id)
+        if cdf_forecast is None:
+            abort(404)
+        return jsonify(CDFForecastSchema().dump(cdf_forecast))
 
 
 class CDFForecastValues(MethodView):
@@ -461,7 +507,44 @@ class CDFForecastValues(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        errors = {}
+        start = request.args.get('start', None)
+        end = request.args.get('end', None)
+        if start is not None:
+            try:
+                start = pd.Timestamp(start)
+            except ValueError:
+                errors.update({'start': ['Invalid start date format']})
+        if end is not None:
+            try:
+                end = pd.Timestamp(end)
+            except ValueError:
+                errors.update({'end': ['Invalid end date format']})
+        if errors:
+            return jsonify({'errors': errors}), 400
+        storage = get_storage()
+        values = storage.read_cdf_forecast_values(forecast_id, start, end)
+        if values is None:
+            abort(404)
+        accepts = request.accept_mimetypes.best_match(['application/json',
+                                                       'text/csv'])
+        if accepts == 'application/json':
+            values['timestamp'] = values.index
+            dict_values = values.to_dict(orient='records')
+            data = CDFForecastValuesSchema().dump({"forecast_id": forecast_id,
+                                                   "values": dict_values})
+            return jsonify(data)
+        else:
+            meta_url = url_for('forecasts.single_cdf_metadata',
+                               forecast_id=forecast_id,
+                               _external=True)
+            csv_header = (f'# forecast_id: {forecast_id}\n'
+                          f'# metadata: {meta_url}\n')
+            csv_values = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            csv_data = csv_header + csv_values
+            response = make_response(csv_data, 200)
+            response.mimetype = 'text/csv'
+            return response
 
     def post(self, forecast_id):
         """
@@ -500,7 +583,40 @@ class CDFForecastValues(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        return jsonify({'errors': {'error': ['Not Implemented']}})
+        if request.content_type == 'application/json':
+            raw_data = request.get_json()
+            try:
+                raw_values = raw_data['values']
+            except (TypeError, KeyError):
+                error = 'Supplied JSON does not contain "values" field.'
+                return jsonify({'errors': {'error': [error]}}), 400
+            try:
+                forecast_df = pd.DataFrame(raw_values)
+            except ValueError:
+                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
+        elif request.content_type == 'text/csv':
+            raw_data = StringIO(request.get_data(as_text=True))
+            try:
+                forecast_df = pd.read_csv(raw_data,
+                                          na_values=[-999, -9999],
+                                          keep_default_na=True,
+                                          comment='#')
+            except pd.errors.EmptyDataError:
+                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
+            finally:
+                raw_data.close()
+        else:
+            error = 'Invalid Content-type.'
+            return jsonify({'errors': {'error': [error]}}), 400
+        errors = validate_forecast_values(forecast_df)
+        if errors:
+            return jsonify({'errors': errors}), 400
+        forecast_df = forecast_df.set_index('timestamp')
+        storage = get_storage()
+        stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
+        if stored is None:
+            abort(404)
+        return stored, 201
 
 
 spec.components.parameter(

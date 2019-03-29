@@ -5,7 +5,8 @@ from marshmallow import ValidationError
 
 from sfa_api import spec
 from sfa_api.schema import (SiteSchema, SiteResponseSchema,
-                            ForecastSchema, ObservationSchema)
+                            ForecastSchema, ObservationSchema,
+                            CDFForecastGroupSchema)
 from sfa_api.utils.storage import get_storage
 
 
@@ -192,6 +193,39 @@ class SiteForecasts(MethodView):
         return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 
+class SiteCDFForecastGroups(MethodView):
+    def get(self, site_id, *args):
+        """
+        ---
+        summary: Get site probabilistic forecast groups
+        description: >
+          Get metadata for all CDF forecasts associated with site that
+          user has access to.
+        tags:
+        - Sites
+        parameters:
+        - $ref: '#/components/parameters/site_id'
+        responses:
+          200:
+            description: Successfully retrieved site cdf forecasts
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CDFForecastGroupMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        forecasts = storage.list_cdf_forecast_groups(site_id)
+        if forecasts is None:
+            abort(404)
+        return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
+
+
 spec.components.parameter(
     'site_id', 'path',
     {
@@ -211,5 +245,7 @@ site_blp.add_url_rule(
     '/<site_id>', view_func=SiteView.as_view('single'))
 site_blp.add_url_rule('/<site_id>/observations',
                       view_func=SiteObservations.as_view('observations'))
-site_blp.add_url_rule('/<site_id>/forecasts',
+site_blp.add_url_rule('/<site_id>/forecasts/single',
                       view_func=SiteForecasts.as_view('forecasts'))
+site_blp.add_url_rule('/<site_id>/forecasts/cdf',
+                      view_func=SiteCDFForecastGroups.as_view('cdf_forecasts'))

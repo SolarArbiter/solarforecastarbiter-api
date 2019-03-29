@@ -12,6 +12,8 @@ import pandas as pd
 
 
 from sfa_api.demo.forecasts import static_forecasts
+from sfa_api.demo.cdf_forecasts import (static_cdf_forecast_groups,
+                                        static_cdf_forecasts)
 from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
 from sfa_api.demo.values import (static_observation_values,
@@ -22,14 +24,20 @@ from sfa_api.demo.values import (static_observation_values,
 sites = static_sites.copy()
 forecasts = static_forecasts.copy()
 observations = static_observations.copy()
+cdf_forecast_groups = static_cdf_forecast_groups.copy()
+cdf_forecasts = static_cdf_forecasts.copy()
 observation_values = {}
 forecast_values = {}
+cdf_forecast_values = {}
 
 for observation_id, obs in observations.items():
     observation_values[observation_id] = static_observation_values()
 
 for forecast_id, forecast in forecasts.items():
     forecast_values[forecast_id] = static_forecast_values()
+
+for forecast_id, forecast in cdf_forecasts.items():
+    cdf_forecast_values[forecast_id] = static_forecast_values()
 
 
 def store_observation_values(observation_id, observation_df):
@@ -126,7 +134,7 @@ def delete_observation(observation_id):
     -------
     """
     try:
-        obs = observations.pop('observation_id')
+        obs = observations.pop(observation_id)
     except KeyError:
         return None
     return obs
@@ -239,7 +247,7 @@ def delete_forecast(forecast_id):
     -------
     """
     try:
-        forecast = forecasts.pop('forecast_id')
+        forecast = forecasts.pop(forecast_id)
     except KeyError:
         return None
     return forecast
@@ -327,3 +335,252 @@ def list_sites():
         List of Site dictionaries.
     """
     return list(sites.values())
+
+
+# CDF Forecasts
+def store_cdf_forecast_values(forecast_id, forecast_df):
+    """Store CDF Forecast data
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of the associated forecast.
+    forecast_df: DataFrame
+        Dataframe with DatetimeIndex and value column.
+
+    Returns
+    -------
+    string
+        The UUID of the associated forecast. Returns
+        None if the CDFForecast does not exist.
+    """
+    if forecast_id not in cdf_forecasts:
+        return None
+    else:
+        current_data = cdf_forecast_values[forecast_id]
+        index_complement = current_data.index.difference(forecast_df.index)
+        complement = current_data.loc[index_complement]
+        cdf_forecast_values[forecast_id] = forecast_df.combine_first(
+            complement)
+    return forecast_id
+
+
+def read_cdf_forecast_values(forecast_id, start=None, end=None):
+    """Read CDF forecast values between start and end.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the peried for which to request data.
+
+    Returns
+    -------
+    list
+        A list of dictionaries representing data points.
+        Data points contain a timestamp and value. Returns
+        None if the CDF Forecast does not exist.
+    """
+    if forecast_id not in cdf_forecasts:
+        return None
+    else:
+        forecast_data = cdf_forecast_values[forecast_id].loc[start:end]
+        return forecast_data
+
+
+def store_cdf_forecast(cdf_forecast):
+    """Store Forecast metadata. Should generate and store a uuid
+    as the 'forecast_id' field.
+
+    Parameters
+    ----------
+    cdf_forecast: dictionary
+        A dictionary of forecast fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created CDF Forecast.
+
+    """
+    cdf_forecast['parent'] = str(cdf_forecast['parent'])
+    forecast_id = str(uuid.uuid1())
+    cdf_forecast['forecast_id'] = forecast_id
+    cdf_forecasts[forecast_id] = cdf_forecast
+    cdf_forecast_values[forecast_id] = pd.DataFrame()
+    return forecast_id
+
+
+def read_cdf_forecast(forecast_id):
+    """Read CDF Forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to retrieve.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata or None if the Forecast
+        does not exist.
+    """
+    if forecast_id not in cdf_forecasts:
+        return None
+    forecast = cdf_forecasts[forecast_id]
+    with_parent = cdf_forecast_groups[forecast['parent']].copy()
+    with_parent.update(forecast)
+    return with_parent
+
+
+def delete_cdf_forecast(forecast_id):
+    """Remove a CDF Forecast from storage.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the Forecast to delete.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata if successful or None
+        if the CDF Forecast does not exist.
+    """
+    try:
+        cdf_forecast = cdf_forecasts.pop(forecast_id)
+    except KeyError:
+        return None
+    return cdf_forecast
+
+
+def list_cdf_forecasts(parent_forecast_id=None):
+    """Lists all Forecasts a user has access to.
+
+    Parameters
+    ----------
+    parent_forecast_id: string
+        UUID of the parent CDF Forecast Group.
+
+    Returns
+    -------
+    list
+        List of dictionaries of CDF Forecast metadata.
+    """
+    forecasts_list = []
+    if parent_forecast_id is not None:
+        parent = read_cdf_forecast_group(parent_forecast_id)
+        if parent is None:
+            return None
+        filtered_forecasts = {fx_id: fx for fx_id, fx in cdf_forecasts.items()
+                              if fx['parent'] == parent_forecast_id}
+    else:
+        filtered_forecasts = cdf_forecasts
+    for forecast_id, forecast in filtered_forecasts.items():
+        with_metadata = read_cdf_forecast_group(forecast['parent'])
+        with_metadata = with_metadata.copy()
+        with_metadata.update(forecast)
+        forecasts_list.append(with_metadata)
+    return forecasts_list
+
+
+# CDF Probability Groups
+def store_cdf_forecast_group(cdf_forecast_group):
+    """Store CDF Forecast Group metadata. Should generate
+    and store a uuid as the 'forecast_id' field.
+
+    Parameters
+    ----------
+    cdf_forecast_group: dictionary
+        A dictionary of CDF Forecast Group fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created CDF Forecast.
+
+    """
+    cdf_forecast_group['site_id'] = str(cdf_forecast_group['site_id'])
+    if read_site(cdf_forecast_group['site_id']) is None:
+        return None
+    forecast_id = str(uuid.uuid1())
+    cdf_forecast_group['forecast_id'] = forecast_id
+    axis = cdf_forecast_group['axis']
+    instantiated_constants = []
+    for constant in cdf_forecast_group['constant_values']:
+        cdf_forecast = {
+            "axis": axis,
+            "parent": forecast_id,
+            "constant_value": constant
+        }
+        new_id = store_cdf_forecast(cdf_forecast)
+        cdf_forecast['forecast_id'] = new_id
+        instantiated_constants.append(cdf_forecast)
+    cdf_forecast_group['constant_values'] = instantiated_constants
+    cdf_forecast_groups[forecast_id] = cdf_forecast_group
+    return forecast_id
+
+
+def read_cdf_forecast_group(forecast_id):
+    """Read CDF Forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to retrieve.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast's metadata or None if the Forecast
+        does not exist.
+    """
+    if forecast_id not in cdf_forecast_groups:
+        return None
+    else:
+        forecast_group = cdf_forecast_groups[forecast_id]
+        return forecast_group
+
+
+def delete_cdf_forecast_group(forecast_id):
+    """Remove a CDF Forecast Grpup from storage.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the CDF Forecast Group to delete.
+
+    Returns
+    -------
+    dict
+        The CDF Forecast Groups's metadata if successful or
+        None if the CDF Forecast does not exist.
+    """
+    if forecast_id not in cdf_forecast_groups:
+        return None
+    else:
+        child_cdf_forecasts = list_cdf_forecasts(forecast_id)
+        for forecast in child_cdf_forecasts:
+            delete_cdf_forecast(forecast['forecast_id'])
+        return cdf_forecast_groups.pop(forecast_id)
+
+
+def list_cdf_forecast_groups(site_id=None):
+    """Lists all CDF Forecast Groups a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of CDF Forecast Group metadata.
+    """
+    forecast_groups = [read_cdf_forecast_group(forecast_id)
+                       for forecast_id, forecast_group
+                       in cdf_forecast_groups.items()]
+    if site_id is not None:
+        forecast_groups = [forecast_group
+                           for forecast_group in forecast_groups
+                           if forecast_group['site_id'] == site_id]
+    return forecast_groups
