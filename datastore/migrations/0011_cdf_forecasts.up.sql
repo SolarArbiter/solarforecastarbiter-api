@@ -177,13 +177,35 @@ BEGIN
     END IF;
 END;
 
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_cdf_forecast_values (
+IN auth0id VARCHAR(32), IN strid CHAR(36), IN start TIMESTAMP, IN end TIMESTAMP)
+COMMENT 'Read cdf forecast values'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE groupid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
+    SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'read_values'));
+    IF allowed THEN
+        SELECT BIN_TO_UUID(id, 1) as forecast_id, timestamp, value
+        FROM arbiter_data.cdf_forecasts_values WHERE id = binid AND timestamp BETWEEN start AND end;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read cdf forecast values"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
 
 GRANT SELECT ON arbiter_data.cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'select_objects'@'localhost';
+GRANT SELECT ON arbiter_data.cdf_forecasts_values TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_group TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_single TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecast_values TO 'select_objects'@'localhost';
 
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_cdf_forecasts_group (
@@ -247,12 +269,32 @@ BEGIN
     END IF;
 END;
 
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_cdf_forecast_values (
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN timestamp TIMESTAMP, IN value FLOAT)
+COMMENT 'Store a single time, value, quality_flag row into cdf_forecast_values'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE groupid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
+    SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'write_values'));
+    IF allowed THEN
+        INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value) VALUES (
+            binid, timestamp, value);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "write cdf forecast values"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
 
 GRANT INSERT ON arbiter_data.cdf_forecasts_groups TO 'insert_objects'@'localhost';
-GRANT INSERT ON arbiter_data.cdf_forecasts_singles TO 'insert_objects'@'localhost';
+GRANT INSERT, SELECT (id, cdf_forecast_group_id) ON arbiter_data.cdf_forecasts_singles TO 'insert_objects'@'localhost';
+GRANT INSERT ON arbiter_data.cdf_forecasts_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_group TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_single TO 'insert_objects'@'localhost';
-
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecast_values TO 'insert_objects'@'localhost';
 
 CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_cdf_forecasts_group(
     IN auth0id VARCHAR(32), IN strid CHAR(36))

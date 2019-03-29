@@ -1,7 +1,9 @@
 DROP PROCEDURE delete_cdf_forecasts_single;
 DROP PROCEDURE delete_cdf_forecasts_group;
+DROP PROCEDURE store_cdf_forecast_values;
 DROP PROCEDURE store_cdf_forecasts_single;
 DROP PROCEDURE store_cdf_forecasts_group;
+DROP PROCEDURE read_cdf_forecast_values;
 DROP PROCEDURE read_cdf_forecasts_single;
 DROP PROCEDURE read_cdf_forecasts_group;
 DROP PROCEDURE list_cdf_forecasts_singles;
