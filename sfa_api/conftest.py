@@ -5,11 +5,17 @@ import pytest
 from sfa_api import create_app
 
 
+
 @pytest.fixture()
-def api():
+def app():
     if not os.getenv('SFA_API_STATIC_DATA'):
         os.environ['SFA_API_STATIC_DATA'] = 'true'
     app = create_app(config_name='TestingConfig')
+    return app
+
+
+@pytest.fixture()
+def api(app):
     api = app.test_client()
     return api
 
