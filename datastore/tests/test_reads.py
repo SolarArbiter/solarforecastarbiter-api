@@ -17,16 +17,17 @@ def insertuser(cursor, new_permission, valueset, new_user):
     site = valueset[3][0]
     fx = valueset[5][0]
     obs = valueset[6][0]
-    for thing in (user, site, fx, obs):
+    cdf = valueset[7][0]
+    for thing in (user, site, fx, obs, cdf):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         "DELETE FROM permissions WHERE action = 'read'")
-    return user, site, fx, obs, org, role
+    return user, site, fx, obs, org, role, cdf
 
 
 @pytest.fixture()
 def allow_read_sites(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read', 'sites', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -35,7 +36,7 @@ def allow_read_sites(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_observations(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read', 'observations', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -44,7 +45,7 @@ def allow_read_observations(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_observation_values(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read_values', 'observations', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -53,7 +54,7 @@ def allow_read_observation_values(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_forecasts(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read', 'forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -62,8 +63,26 @@ def allow_read_forecasts(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_forecast_values(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read_values', 'forecasts', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_read_cdf_forecasts(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf = insertuser
+    perm = new_permission('read', 'cdf_forecasts', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_read_cdf_forecast_values(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf = insertuser
+    perm = new_permission('read_values', 'cdf_forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
@@ -260,4 +279,126 @@ def test_read_forecast_values_denied_can_read_meta(
     auth0id, fxid, vals, start, end = fx_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
+        assert e.errcode == 1142
+
+
+def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    dictcursor.callproc('read_cdf_forecasts_group',
+                        (auth0id, forecast['strid']))
+    res = dictcursor.fetchall()[0]
+    forecast['forecast_id'] = forecast['strid']
+    del forecast['id']
+    del forecast['strid']
+    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
+    forecast['provider'] = insertuser[4]['name']
+    forecast['constant_values'] = str(forecast['constant_values']).replace(
+        '\'', '"')
+    del forecast['organization_id']
+    del res['created_at']
+    del res['modified_at']
+    assert res == forecast
+
+
+def test_read_cdf_forecast_denied(cursor, insertuser):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecasts_group',
+                        (auth0id, forecast['strid']))
+        assert e.errcode == 1142
+
+
+def test_read_cdf_forecast_single(dictcursor, insertuser,
+                                  allow_read_cdf_forecasts):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    strid = list(forecast['constant_values'].keys())[0]
+    dictcursor.callproc('read_cdf_forecasts_single',
+                        (auth0id, strid))
+    res = dictcursor.fetchall()[0]
+    forecast['forecast_id'] = strid
+    forecast['parent'] = forecast['strid']
+    del forecast['id']
+    del forecast['strid']
+    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
+    forecast['provider'] = insertuser[4]['name']
+    forecast['constant_value'] = forecast['constant_values'][strid]
+    del forecast['constant_values']
+    del forecast['organization_id']
+    del res['created_at']
+    assert res == forecast
+
+
+def test_read_cdf_forecast_single_denied(cursor, insertuser):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    strid = list(forecast['constant_values'].keys())[0]
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecasts_single',
+                        (auth0id, strid))
+        assert e.errcode == 1142
+
+
+@pytest.fixture(params=[0, 1, 2])
+def cdf_fx_values(cursor, insertuser, request):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    strid = list(forecast['constant_values'].keys())[request.param]
+    start = dt.datetime(2019, 1, 30, 12, 28, 20)
+    vals = tuple([
+        (strid, start + dt.timedelta(minutes=i),
+         float(random.randint(0, 100))) for i in range(10)])
+    cursor.executemany(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value) '
+        'VALUES (UUID_TO_BIN(%s, 1), %s, %s)', vals)
+    start = dt.datetime(2019, 1, 30, 12, 20)
+    end = dt.datetime(2019, 1, 30, 12, 40)
+    return auth0id, strid, vals, start, end
+
+
+def test_read_cdf_forecast_values(cursor, cdf_fx_values,
+                                  allow_read_cdf_forecast_values):
+    auth0id, fxid, vals, start, end = cdf_fx_values
+    cursor.callproc('read_cdf_forecast_values', (auth0id, fxid, start, end))
+    res = cursor.fetchall()
+    assert res == vals
+
+
+@pytest.mark.parametrize('start,end,theslice', [
+    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+     slice(10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+     slice(2, 10)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+     slice(0)),
+    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+     slice(2, 7)),
+])
+def test_read_cdf_forecast_values_time_limits(
+        cursor, cdf_fx_values, allow_read_cdf_forecast_values, start, end,
+        theslice):
+    auth0id, fxid, vals, _, _ = cdf_fx_values
+    cursor.callproc('read_cdf_forecast_values', (auth0id, fxid, start, end))
+    res = cursor.fetchall()
+    assert res == vals[theslice]
+
+
+def test_read_cdf_forecast_values_denied(cursor, cdf_fx_values,
+                                         allow_read_forecast_values):
+    auth0id, fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_values',
+                        (auth0id, fxid, start, end))
+        assert e.errcode == 1142
+
+
+def test_read_cdf_forecast_values_denied_can_read_meta(
+        cursor, cdf_fx_values, allow_read_cdf_forecasts):
+    auth0id, fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_values', (auth0id, fxid, start, end))
         assert e.errcode == 1142
