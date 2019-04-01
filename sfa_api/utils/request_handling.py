@@ -44,7 +44,7 @@ def validate_parsable_values():
 
 def validate_start_end():
     """Parses start and end query parameters into pandas
-    Timestamps
+    Timestamps.
 
     Returns
     -------
