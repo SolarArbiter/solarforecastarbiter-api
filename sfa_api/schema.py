@@ -9,6 +9,7 @@ from sfa_api.utils.validators import TimeFormat
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
              'poa', 'ac_power', 'dc_power', 'cdf_value']
 
+INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
@@ -201,7 +202,7 @@ class ObservationPostSchema(ma.Schema):
         description=('For data that represents intervals, indicates if a time '
                      'labels the beginning or ending of the interval. '
                      'instant for instantaneous data'),
-        validate=validate.OneOf(['beginning', 'ending', 'instant']),
+        validate=validate.OneOf(INTERVAL_LABELS),
         required=True)
     interval_length = ma.Integer(
         title='Interval length',
@@ -336,7 +337,7 @@ class ForecastPostSchema(ma.Schema):
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
                      'labels the beginning or ending of the interval.'),
-        validate=validate.OneOf(['beginning', 'ending', 'instant']),
+        validate=validate.OneOf(INTERVAL_LABELS),
         required=True)
     interval_length = ma.Integer(
         title='Interval length',

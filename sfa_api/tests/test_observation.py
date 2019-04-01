@@ -1,6 +1,9 @@
 import pytest
 
 
+from sfa_api.conftest import variables, interval_labels
+
+
 VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
     "name": "Ashland OR, ghi",
@@ -35,8 +38,8 @@ def test_observation_post_success(api):
 
 
 @pytest.mark.parametrize('payload,message', [
-    (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
-    (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
+    (INVALID_VARIABLE, f'{{"variable":["Must be one of: {variables}."]}}'),
+    (INVALID_INTERVAL_LABEL, f'{{"interval_label":["Must be one of: {interval_labels}."]}}'),  # NOQA
     ({}, empty_json_response)
 ])
 def test_observation_post_bad_request(api, payload, message):

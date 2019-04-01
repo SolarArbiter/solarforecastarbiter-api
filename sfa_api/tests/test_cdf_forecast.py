@@ -1,6 +1,9 @@
 import pytest
 
 
+from sfa_api.conftest import variables, interval_value_types, interval_labels
+
+
 VALID_FORECAST_JSON = {
     "extra_parameters": '{"instrument": "pyranometer"}',
     "name": "test forecast",
@@ -59,13 +62,13 @@ def test_cdf_forecast_group_post_success(api, payload, status_code):
 
 
 @pytest.mark.parametrize('payload,message', [
-    (INVALID_VARIABLE, '{"variable":["Not a valid choice."]}'),
-    (INVALID_INTERVAL_LABEL, '{"interval_label":["Not a valid choice."]}'),
+    (INVALID_VARIABLE, f'{{"variable":["Must be one of: {variables}."]}}'),
+    (INVALID_INTERVAL_LABEL, f'{{"interval_label":["Must be one of: {interval_labels}."]}}'), # NOQA
     (INVALID_ISSUE_TIME, '{"issue_time_of_day":["Time not in %H:%M format."]}'), # NOQA
     (INVALID_LEAD_TIME, '{"lead_time_to_start":["Not a valid integer."]}'), # NOQA
     (INVALID_INTERVAL_LENGTH, '{"interval_length":["Not a valid integer."]}'), # NOQA
     (INVALID_RUN_LENGTH, '{"run_length":["Not a valid integer."]}'),
-    (INVALID_VALUE_TYPE, '{"interval_value_type":["Not a valid choice."]}'),
+    (INVALID_VALUE_TYPE, f'{{"interval_value_type":["Must be one of: {interval_value_types}."]}}'), # NOQA
     ({}, empty_json_response)
 ])
 def test_cdf_forecast_group_post_bad_request(api, payload, message):

@@ -3,7 +3,16 @@ import os
 import pytest
 
 from sfa_api import create_app
+from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 
+
+# Strings of formatted field options for error checking
+# e.g. provides "interval_mean, instantaneous, ..." so
+# f'Must be one of: {interval_value_types}.' can be checked
+# against the errors returned from marshmallow
+variables = ', '.join(VARIABLES)
+interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
+interval_labels = ', '.join(INTERVAL_LABELS)
 
 
 @pytest.fixture()
