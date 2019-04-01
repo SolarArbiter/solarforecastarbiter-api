@@ -77,6 +77,13 @@ def startend(request):
     return start, end
 
 
+def test_try_query_raises():
+    with pytest.raises(pymysql.err.IntegrityError):
+        def f():
+            raise pymysql.err.IntegrityError(1001)
+        storage_interface.try_query(f)
+
+
 def test_get_cursor_and_timezone(app):
     with storage_interface.get_cursor('standard') as cursor:
         cursor.execute('SELECT @@session.time_zone')
