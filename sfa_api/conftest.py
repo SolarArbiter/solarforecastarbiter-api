@@ -42,11 +42,6 @@ def observation_id():
 
 
 @pytest.fixture()
-def missing_observation_id():
-    return '123e4567-e89b-12d3-a456-426655440007'
-
-
-@pytest.fixture()
 def cdf_forecast_group_id():
     return 'ef51e87c-50b9-11e9-8647-d663bd873d93'
 
@@ -62,11 +57,6 @@ def forecast_id():
 
 
 @pytest.fixture()
-def missing_forecast_id():
-    return 'f8dd49fa-23e2-48a0-862b-ba0afaaaaaa6'
-
-
-@pytest.fixture()
 def site_id():
     return 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a'
 
@@ -74,8 +64,3 @@ def site_id():
 @pytest.fixture()
 def site_id_plant():
     return '123e4567-e89b-12d3-a456-426655440002'
-
-
-@pytest.fixture()
-def missing_site_id():
-    return '123e4567-e89b-12d3-a456-000055440002'

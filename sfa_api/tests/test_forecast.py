@@ -80,8 +80,8 @@ def test_get_forecast_links(api, forecast_id):
     assert '_links' in response
 
 
-def test_get_forecast_404(api, missing_forecast_id):
-    r = api.get(f'/forecasts/single/{missing_forecast_id}',
+def test_get_forecast_404(api, missing_id):
+    r = api.get(f'/forecasts/single/{missing_id}',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -96,8 +96,8 @@ def test_get_forecast_metadata(api, forecast_id):
     assert 'site_id' in response
 
 
-def test_get_forecast_metadata_404(api, missing_forecast_id):
-    r = api.get(f'/forecasts/single{missing_forecast_id}/metadata',
+def test_get_forecast_metadata_404(api, missing_id):
+    r = api.get(f'/forecasts/single{missing_id}/metadata',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -146,10 +146,10 @@ def test_post_json_storage_call(api, forecast_id, mocker):
     storage.assert_called()
 
 
-def test_post_values_404(api, missing_forecast_id, mocker):
+def test_post_values_404(api, missing_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_forecast_values')
     storage.return_value = None
-    r = api.post(f'/forecasts/single/{missing_forecast_id}/values',
+    r = api.post(f'/forecasts/single/{missing_id}/values',
                  base_url='https://localhost',
                  json=VALID_VALUE_JSON)
     assert r.status_code == 404
@@ -190,8 +190,8 @@ def test_post_forecast_values_valid_csv(api, forecast_id):
     assert r.status_code == 201
 
 
-def test_get_forecast_values_404(api, missing_forecast_id):
-    r = api.get(f'/forecasts/single/{missing_forecast_id}/values',
+def test_get_forecast_values_404(api, missing_id):
+    r = api.get(f'/forecasts/single/{missing_id}/values',
                 base_url='https://localhost')
     assert r.status_code == 404
 

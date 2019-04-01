@@ -58,8 +58,8 @@ def test_get_observation_links(api, observation_id):
     assert '_links' in response
 
 
-def test_get_observation_links_404(api, missing_observation_id):
-    r = api.get(f'/observations/{missing_observation_id}',
+def test_get_observation_links_404(api, missing_id):
+    r = api.get(f'/observations/{missing_id}',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -74,8 +74,8 @@ def test_get_observation_metadata(api, observation_id):
     assert 'site_id' in response
 
 
-def test_get_observation_metadata_404(api, missing_observation_id):
-    r = api.get(f'/observations/{missing_observation_id}/metadata',
+def test_get_observation_metadata_404(api, missing_id):
+    r = api.get(f'/observations/{missing_id}/metadata',
                 base_url='https://localhost')
     assert r.status_code == 404
 
@@ -174,8 +174,8 @@ def test_post_observation_values_valid_csv(api, observation_id):
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_observation_id):
-    r = api.get(f'/observations/{missing_observation_id}/values',
+def test_get_observation_values_404(api, missing_id):
+    r = api.get(f'/observations/{missing_id}/values',
                 base_url='https://localhost')
     assert r.status_code == 404
 

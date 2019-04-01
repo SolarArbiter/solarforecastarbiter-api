@@ -95,8 +95,8 @@ def test_get_cdf_forecast_group_metadata(api, cdf_forecast_group_id):
     assert 'site_id' in response
 
 
-def test_get_forecast_metadata_404(api, missing_forecast_id):
-    r = api.get(f'/forecasts/cdf{missing_forecast_id}/metadata',
+def test_get_forecast_metadata_404(api, missing_id):
+    r = api.get(f'/forecasts/cdf/{missing_id}/metadata',
                 base_url='https://localhost')
     assert r.status_code == 404
 
