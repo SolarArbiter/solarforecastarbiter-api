@@ -31,8 +31,8 @@ def test_badapirequest_dict():
     assert exc.errors['error3'] == [('went', 'wrong')]
 
 
-def test_basapirequest_kwargs():
-    exc = BadAPIRequest(error_dict)
+def test_badapirequest_kwargs():
+    exc = BadAPIRequest(**error_dict)
     assert exc.status_code == 400
     assert exc.errors['error'] == ['message']
     assert exc.errors['error2'] == ['message']
