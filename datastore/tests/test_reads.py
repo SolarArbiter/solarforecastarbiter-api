@@ -301,6 +301,26 @@ def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
     assert res == forecast
 
 
+def test_read_cdf_forecast_no_values(dictcursor, insertuser,
+                                     allow_read_cdf_forecasts):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser[6]
+    dictcursor.execute('DELETE FROM cdf_forecasts_singles')
+    dictcursor.callproc('read_cdf_forecasts_group',
+                        (auth0id, forecast['strid']))
+    res = dictcursor.fetchall()[0]
+    forecast['forecast_id'] = forecast['strid']
+    del forecast['id']
+    del forecast['strid']
+    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
+    forecast['provider'] = insertuser[4]['name']
+    forecast['constant_values'] = None
+    del forecast['organization_id']
+    del res['created_at']
+    del res['modified_at']
+    assert res == forecast
+
+
 def test_read_cdf_forecast_denied(cursor, insertuser):
     auth0id = insertuser[0]['auth0_id']
     forecast = insertuser[6]
