@@ -19,17 +19,18 @@ def insertuser(cursor, new_permission, valueset, new_user):
     site = valueset[3][0]
     fx = valueset[5][0]
     obs = valueset[6][0]
+    cdf = valueset[7][0]
     for thing in (user, site, fx, obs):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         'DELETE FROM permissions WHERE action = "create" and '
         'object_type = "forecasts"')
-    return user, site, fx, obs, org, role
+    return user, site, fx, obs, org, role, cdf
 
 
 @pytest.fixture()
 def allow_read_sites(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('read', 'sites', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -38,7 +39,7 @@ def allow_read_sites(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_create(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perms = [new_permission('create', obj, True, org=org)
              for obj in ('sites', 'forecasts', 'observations',
                          'cdf_forecasts')]
@@ -50,7 +51,7 @@ def allow_create(insertuser, new_permission, cursor):
 
 @pytest.fixture()
 def allow_write_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perms = [new_permission('write_values', obj, True, org=org)
              for obj in ('forecasts', 'observations', 'cdf_forecasts')]
     cursor.executemany(
@@ -61,7 +62,7 @@ def allow_write_values(insertuser, new_permission, cursor):
 
 @pytest.fixture()
 def allow_delete_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perms = [new_permission('delete_values', obj, True, org=org)
              for obj in ('forecasts', 'observations', 'cdf_forecasts')]
     cursor.executemany(
@@ -72,7 +73,7 @@ def allow_delete_values(insertuser, new_permission, cursor):
 
 @pytest.fixture()
 def allow_update_cdf(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role = insertuser
+    user, site, fx, obs, org, role, cdf = insertuser
     perm = new_permission('update', 'cdf_forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -375,5 +376,38 @@ def test_store_cdf_forecast_single_denied_cant_update_group(
         assert e.errcode == 1143
 
 
-def test_store_cdf_forecast_values():
-    assert 0
+@pytest.fixture(params=[0, 1, 2])
+def cdf_forecast_values(insertuser, request):
+    def make(auth0id, fxid):
+        now = dt.datetime.utcnow().replace(microsecond=0)
+        for i in range(100):
+            now += dt.timedelta(minutes=5)
+            yield auth0id, fxid, now, float(random.randint(0, 100))
+
+    auth0id = insertuser[0]['auth0_id']
+    fxid = list(insertuser[6]['constant_values'].keys())[request.param]
+    testfx = make(auth0id, fxid)
+    return fxid, testfx
+
+
+def test_store_cdf_forecast_values(
+        cursor, allow_write_values, cdf_forecast_values):
+    fxid, testfx = cdf_forecast_values
+    expected = []
+    for tf in testfx:
+        expected.append((fxid, *tf[2:]))
+        cursor.callproc('store_cdf_forecast_values', tf)
+    cursor.execute(
+        'SELECT BIN_TO_UUID(id, 1) as id, timestamp, value '
+        'FROM arbiter_data.cdf_forecasts_values WHERE id = UUID_TO_BIN(%s, 1)'
+        ' AND timestamp > CURRENT_TIMESTAMP()',
+        fxid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
+def test_store_cdf_forecast_values_cant_write(cursor, cdf_forecast_values):
+    fxid, testfx = cdf_forecast_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('store_cdf_forecast_values', list(testfx)[0])
+        assert e.errcode == 1142
