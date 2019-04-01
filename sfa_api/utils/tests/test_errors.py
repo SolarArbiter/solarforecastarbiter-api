@@ -1,12 +1,12 @@
-import pytest
-
-
-from sfa_api.utils.errors import BaseAPIException, NotFoundException, BadAPIRequest
+from sfa_api.utils.errors import (BaseAPIException, NotFoundException,
+                                  BadAPIRequest)
 
 
 error_dict = {'error': 'message',
               'error2': ['message'],
               'error3': ('went', 'wrong')}
+
+
 def test_baseapiexception_dict():
     exc = BaseAPIException(400, error_dict)
     assert exc.status_code == 400
@@ -21,6 +21,7 @@ def test_baseapiexception_kwargs():
     assert exc.errors['error'] == ['message']
     assert exc.errors['error2'] == ['message']
     assert exc.errors['error3'] == [('went', 'wrong')]
+
 
 def test_badapirequest_dict():
     exc = BadAPIRequest(error_dict)
