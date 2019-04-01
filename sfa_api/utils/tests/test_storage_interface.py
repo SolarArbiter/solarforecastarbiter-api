@@ -607,7 +607,7 @@ def test_list_cdf_forecasts_invalid_user(app, invalid_user):
     assert len(forecasts) == 0
 
 
-def test_list_cdf_forecasts_invalid_site(app, user):
+def test_list_cdf_forecasts_invalid_parent(app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_cdf_forecasts(str(uuid.uuid1()))
 
@@ -629,3 +629,57 @@ def test_delete_cdf_forecast_single_invalid_user(
 def test_delete_cdf_forecast_single_does_not_exist(app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast(str(uuid.uuid1()))
+
+
+def test_list_cdf_forecast_groups(app, user):
+    forecasts = storage_interface.list_cdf_forecast_groups()
+    for fx in forecasts:
+        group = demo_group_cdf[fx['forecast_id']].copy()
+        group['constant_values'] = {thing['forecast_id']: thing
+                                    for thing in group['constant_values']}
+        fx['constant_values'] = {thing['forecast_id']: thing
+                                 for thing in fx['constant_values']}
+        assert fx == group
+
+
+def test_list_cdf_forecast_groups_site(app, user):
+    site = list(demo_sites.keys())[0]
+    forecasts = storage_interface.list_cdf_forecast_groups(site)
+    for fx in forecasts:
+        group = demo_group_cdf[fx['forecast_id']].copy()
+        group['constant_values'] = {thing['forecast_id']: thing
+                                    for thing in group['constant_values']}
+        fx['constant_values'] = {thing['forecast_id']: thing
+                                 for thing in fx['constant_values']}
+        assert fx == group
+        assert fx['site_id'] == site
+
+
+def test_list_cdf_forecast_groups_invalid_user(app, invalid_user):
+    forecasts = storage_interface.list_cdf_forecast_groups()
+    assert len(forecasts) == 0
+
+
+def test_list_cdf_forecast_groups_invalid_site(app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.list_cdf_forecast_groups(str(uuid.uuid1()))
+
+
+@pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
+def test_delete_cdf_forecast_group(app, user, nocommit_cursor, forecast_id):
+    storage_interface.delete_cdf_forecast_group(forecast_id)
+    forecast_list = [k['forecast_id']
+                     for k in storage_interface.list_cdf_forecast_groups()]
+    assert forecast_id not in forecast_list
+
+
+def test_delete_cdf_forecast_group_invalid_user(
+        app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_cdf_forecast_group(
+            list(demo_group_cdf.keys())[0])
+
+
+def test_delete_cdf_forecast_group_does_not_exist(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_cdf_forecast_group(str(uuid.uuid1()))

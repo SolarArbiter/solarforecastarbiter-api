@@ -758,13 +758,23 @@ def delete_cdf_forecast_group(forecast_id):
     _call_procedure('delete_cdf_forecasts_group', forecast_id)
 
 
-def list_cdf_forecast_groups():
+def list_cdf_forecast_groups(site_id=None):
     """Lists all CDF Forecast Groups a user has access to.
+
+    Parameters
+    ----------
+    site_id: string
+        UUID of Site, when supplied returns only CDF Forcast Groups
+        made for this Site.
 
     Returns
     -------
     list
         List of dictionaries of CDF Forecast Group metadata.
     """
-    # PROC: list_cdf_forecasts_groups
-    raise NotImplementedError
+    if site_id is not None:
+        read_site(site_id)
+    forecasts = [_set_cdf_group_forecast_parameters(fx)
+                 for fx in _call_procedure('list_cdf_forecasts_groups')
+                 if site_id is None or fx['site_id'] == site_id]
+    return forecasts
