@@ -1,15 +1,30 @@
 class BaseAPIException(Exception):
-    """Will accept a dictionary of {error_name: description} or will
-    build a dictionary from kwargs. Both types of arguments can be
-    provided and will be joined. Wraps any non-list descriptions
-    in a list to mimic  the format of marshmallow errors.
+    """Base exception to be thrown from within API code to trigger
+    an immediate HTTP response.
 
     Parameters
     ----------
-    errors: Dict
-        A dictionary of errors to reply with. Optionally, key word
-        arguments can be provided instead of a dictionary.
-    kwargs:
+    status_code: int
+        The HTTP status code to return with the errors.
+
+    errors: dict
+        A dictionary where keys are names for an error and values are
+        a description. 
+        e.g {'Longitude': 'Must be between -180 and 180.'}
+
+    Notes
+    -----
+    Errors can be provided as a dictionary as described above, as
+    keyword arguments or both. Any non-list descriptors will be
+    wrapped in a list such that the dictionary:
+
+        {'error0': 'error message',
+         'fieldname': (error1, error2)}
+
+     will become:
+
+        {'error0': ['error message'],
+         'fieldname': [(error1, error2)]}
     """
     def __init__(self, status_code, errors={}, **kwargs):
         Exception.__init__(self)
