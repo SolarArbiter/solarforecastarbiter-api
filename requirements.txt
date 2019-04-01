@@ -1,5 +1,5 @@
 flask
-marshmallow==3.0.0rc4
+marshmallow==3.0.0rc5
 flask-marshmallow
 flask-talisman
 apispec>=1.0.0
