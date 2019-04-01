@@ -28,7 +28,7 @@ class BadAPIRequest(BaseAPIException):
 
 class NotFoundException(BaseAPIException):
     def __init__(self, **kwargs):
-        super().__init__(self, 404, **kwargs)
+        super().__init__(404, **kwargs)
 
 
 class StorageAuthError(Exception):
