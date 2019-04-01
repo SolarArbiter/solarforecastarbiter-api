@@ -579,3 +579,53 @@ def test_store_cdf_forecast_group_invalid_user(app, invalid_user,
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_cdf_forecast_group(
             list(demo_group_cdf.values())[0])
+
+
+def test_list_cdf_forecasts(app, user):
+    forecasts = storage_interface.list_cdf_forecasts()
+    for fx in forecasts:
+        single = demo_single_cdf[fx['forecast_id']]
+        parent = demo_group_cdf[single['parent']].copy()
+        del parent['constant_values']
+        parent['constant_value'] = single['constant_value']
+        parent['parent'] = single['parent']
+        parent['forecast_id'] = fx['forecast_id']
+        assert fx == parent
+
+
+def test_list_cdf_forecasts_one_parent(app, user):
+    parent = list(demo_group_cdf.values())[0].copy()
+    forecasts = storage_interface.list_cdf_forecasts(parent['forecast_id'])
+    cv = [p['forecast_id'] for p in parent['constant_values']]
+    for fx in forecasts:
+        assert fx['forecast_id'] in cv
+        assert fx['parent'] == parent['forecast_id']
+
+
+def test_list_cdf_forecasts_invalid_user(app, invalid_user):
+    forecasts = storage_interface.list_cdf_forecasts()
+    assert len(forecasts) == 0
+
+
+def test_list_cdf_forecasts_invalid_site(app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.list_cdf_forecasts(str(uuid.uuid1()))
+
+
+@pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
+def test_delete_cdf_forecast_single(app, user, nocommit_cursor, forecast_id):
+    storage_interface.delete_cdf_forecast(forecast_id)
+    forecast_list = [k['forecast_id']
+                     for k in storage_interface.list_cdf_forecasts()]
+    assert forecast_id not in forecast_list
+
+
+def test_delete_cdf_forecast_single_invalid_user(
+        app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_cdf_forecast(list(demo_single_cdf.keys())[0])
+
+
+def test_delete_cdf_forecast_single_does_not_exist(app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_cdf_forecast(str(uuid.uuid1()))

@@ -643,7 +643,7 @@ def delete_cdf_forecast(forecast_id):
         The CDF Forecast's metadata if successful or None
         if the CDF Forecast does not exist.
     """
-    raise NotImplementedError
+    _call_procedure('delete_cdf_forecasts_single', forecast_id)
 
 
 def list_cdf_forecasts(parent_forecast_id=None):
@@ -659,7 +659,13 @@ def list_cdf_forecasts(parent_forecast_id=None):
     list
         List of dictionaries of CDF Forecast metadata.
     """
-    raise NotImplementedError
+    if parent_forecast_id is not None:
+        read_cdf_forecast_group(parent_forecast_id)
+    forecasts = [_set_cdf_forecast_parameters(fx)
+                 for fx in _call_procedure('list_cdf_forecasts_singles')
+                 if parent_forecast_id is None or
+                 fx['parent'] == parent_forecast_id]
+    return forecasts
 
 
 # CDF Probability Groups
@@ -749,7 +755,7 @@ def delete_cdf_forecast_group(forecast_id):
         The CDF Forecast Groups's metadata if successful or
         None if the CDF Forecast does not exist.
     """
-    raise NotImplementedError
+    _call_procedure('delete_cdf_forecasts_group', forecast_id)
 
 
 def list_cdf_forecast_groups():
