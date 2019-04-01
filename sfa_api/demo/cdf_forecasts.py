@@ -54,6 +54,14 @@ static_cdf_forecasts = {
         "parent": '058b182a-50ba-11e9-8647-d663bd873d93',
     },
 }
+
+
+def _get_constant_values(fxid):
+    out = static_cdf_forecasts[fxid].copy()
+    del out['parent']
+    return out
+
+
 static_cdf_forecast_groups = {
     'ef51e87c-50b9-11e9-8647-d663bd873d93': {
         "forecast_id": "ef51e87c-50b9-11e9-8647-d663bd873d93",
@@ -70,11 +78,11 @@ static_cdf_forecast_groups = {
         "interval_value_type": "interval_mean",
         "axis": "y",
         "constant_values": [
-            static_cdf_forecasts['633f9396-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633f9864-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633f9b2a-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633f9d96-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633fa548-50bb-11e9-8647-d663bd873d93']],
+            _get_constant_values('633f9396-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633f9864-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633f9b2a-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633f9d96-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633fa548-50bb-11e9-8647-d663bd873d93')],
         "created_at": dt.datetime(2019, 3, 2, 14, 55, 37),
         "modified_at": dt.datetime(2019, 3, 2, 14, 55, 37)
     },
@@ -93,11 +101,11 @@ static_cdf_forecast_groups = {
         "interval_value_type": "interval_mean",
         "axis": "x",
         "constant_values": [
-            static_cdf_forecasts['633fb3a8-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633fb114-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633fae62-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633fabec-50bb-11e9-8647-d663bd873d93'],
-            static_cdf_forecasts['633fa94e-50bb-11e9-8647-d663bd873d93']],
+            _get_constant_values('633fb3a8-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633fb114-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633fae62-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633fabec-50bb-11e9-8647-d663bd873d93'),
+            _get_constant_values('633fa94e-50bb-11e9-8647-d663bd873d93')],
         "created_at": dt.datetime(2019, 3, 2, 14, 55, 38),
         "modified_at": dt.datetime(2019, 3, 2, 14, 55, 38)
     }

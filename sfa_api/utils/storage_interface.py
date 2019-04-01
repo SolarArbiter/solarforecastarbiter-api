@@ -17,7 +17,7 @@ from pymysql import converters
 
 
 from sfa_api.auth import current_user
-from sfa_api import schema
+from sfa_api import schema, json
 from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 
 
@@ -693,11 +693,31 @@ def store_cdf_forecast_group(cdf_forecast_group):
                     cdf_forecast_group['interval_value_type'],
                     cdf_forecast_group['extra_parameters'],
                     cdf_forecast_group['axis'])
+    for cv in cdf_forecast_group['constant_values']:
+        cdfsingle = {'parent': forecast_id,
+                     'constant_value': cv}
+        store_cdf_forecast(cdfsingle)
     return forecast_id
 
 
+def _set_cdf_group_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.CDFForecastGroupSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        elif key == 'constant_values':
+            out[key] = []
+            constant_vals = json.loads(forecast_dict['constant_values'])
+            for single_id, val in constant_vals.items():
+                out[key].append({'forecast_id': single_id,
+                                 'constant_value': val})
+        else:
+            out[key] = forecast_dict[key]
+    return out
+
+
 def read_cdf_forecast_group(forecast_id):
-    """Read CDF Forecast metadata.
+    """Read CDF Group Forecast metadata.
 
     Parameters
     ----------
@@ -710,8 +730,9 @@ def read_cdf_forecast_group(forecast_id):
         The CDF Forecast's metadata or None if the Forecast
         does not exist.
     """
-    # PROC: read_cdf_forecasts_group
-    raise NotImplementedError
+    forecast = _set_cdf_group_forecast_parameters(
+        _call_procedure('read_cdf_forecasts_group', forecast_id)[0])
+    return forecast
 
 
 def delete_cdf_forecast_group(forecast_id):
