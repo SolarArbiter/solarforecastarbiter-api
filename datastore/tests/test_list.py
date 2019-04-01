@@ -134,6 +134,20 @@ def test_list_cdf_forecast_groups(dictcursor, twosets):
         == set(cdf[0].keys()) - set(('organization_id', 'id')))
 
 
+def test_list_cdf_forecast_groups_no_singles(dictcursor, twosets):
+    authid = twosets[0]['auth0_id']
+    cdf = twosets[6]
+    dictcursor.execute('DELETE FROM cdf_forecasts_singles')
+    dictcursor.callproc('list_cdf_forecasts_groups', (authid,))
+    res = dictcursor.fetchall()
+    assert ([str(bin_to_uuid(fx['id'])) for fx in cdf] ==
+            [r['forecast_id'] for r in res])
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'forecast_id',))
+        == set(cdf[0].keys()) - set(('organization_id', 'id')))
+
+
 def test_list_cdf_forecast_singles(dictcursor, twosets):
     authid = twosets[0]['auth0_id']
     cdf = twosets[6]

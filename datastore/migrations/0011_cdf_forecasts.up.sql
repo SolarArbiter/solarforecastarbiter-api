@@ -93,19 +93,34 @@ END;
 
 
 -- PROCEDURES
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION get_constant_values (group_id BINARY(16))
+RETURNS JSON
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE jsonout JSON;
+    SET jsonout = (SELECT JSON_OBJECTAGG(BIN_TO_UUID(id, 1), constant_value) as constant_value FROM cdf_forecasts_singles
+        WHERE cdf_forecast_group_id = group_id GROUP BY cdf_forecast_group_id);
+    IF jsonout is NOT NULL THEN
+        RETURN jsonout;
+    ELSE
+        RETURN JSON_OBJECT();
+    END IF;
+END;
+
+
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_cdf_forecasts_groups (IN auth0id VARCHAR(32))
 COMMENT 'List all cdf forecast groups and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT BIN_TO_UUID(cfg.id, 1) as forecast_id, get_organization_name(cfg.organization_id) as provider,
-       BIN_TO_UUID(cfg.site_id, 1) as site_id, cfg.name as name, cfg.variable as variable,
-       cfg.issue_time_of_day as issue_time_of_day, cfg.lead_time_to_start as lead_time_to_start,
-       cfg.interval_label as interval_label, cfg.interval_length as interval_length,
-       cfg.run_length as run_length, cfg.interval_value_type as interval_value_type,
-       cfg.extra_parameters as extra_parameters, cfg.axis as axis, cfg.created_at as created_at,
-       cfg.modified_at as modified_at, JSON_OBJECTAGG(BIN_TO_UUID(cfs.id, 1), cfs.constant_value) as constant_values
-FROM cdf_forecasts_groups as cfg, cdf_forecasts_singles as cfs WHERE cfg.id in (
-     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'cdf_forecasts')
-AND cfs.cdf_forecast_group_id = cfg.id GROUP BY cfg.id;
+SELECT BIN_TO_UUID(id, 1) as forecast_id,
+       get_organization_name(organization_id) as provider,
+       BIN_TO_UUID(site_id, 1) as site_id,
+       name, variable, issue_time_of_day, lead_time_to_start,
+       interval_label, interval_length, run_length,
+       interval_value_type, extra_parameters, axis,
+       created_at, modified_at,
+       get_constant_values(id) as constant_values
+       FROM cdf_forecasts_groups WHERE id in (
+           SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'cdf_forecasts');
 
 
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_cdf_forecasts_singles (IN auth0id VARCHAR(32))
@@ -131,14 +146,9 @@ READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
-    DECLARE constant_values TEXT;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
-        SET constant_values = (
-            SELECT JSON_OBJECTAGG(BIN_TO_UUID(id, 1), constant_value)
-            FROM cdf_forecasts_singles WHERE cdf_forecast_group_id = binid
-            GROUP BY cdf_forecast_group_id);
         SELECT BIN_TO_UUID(id, 1) as forecast_id,
             get_organization_name(organization_id) as provider,
             BIN_TO_UUID(site_id, 1) as site_id, name, variable,
@@ -146,7 +156,8 @@ BEGIN
             interval_label, interval_length,
             run_length, interval_value_type,
             extra_parameters, axis, created_at,
-            modified_at, constant_values
+            modified_at,
+            get_constant_values(id) as constant_values
         FROM cdf_forecasts_groups WHERE id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read cdf forecast group"',
@@ -206,6 +217,7 @@ END;
 GRANT SELECT ON arbiter_data.cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.cdf_forecasts_values TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_constant_values TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_group TO 'select_objects'@'localhost';

@@ -8,6 +8,7 @@ DROP PROCEDURE read_cdf_forecasts_single;
 DROP PROCEDURE read_cdf_forecasts_group;
 DROP PROCEDURE list_cdf_forecasts_singles;
 DROP PROCEDURE list_cdf_forecasts_groups;
+DROP FUNCTION get_constant_values;
 DROP TRIGGER limit_cdf_forecasts_groups_update;
 DROP TRIGGER limit_cdf_forecasts_singles_update;
 DROP TRIGGER add_object_perm_on_cdf_forecasts_groups_insert;

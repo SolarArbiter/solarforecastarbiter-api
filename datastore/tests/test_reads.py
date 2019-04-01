@@ -314,7 +314,7 @@ def test_read_cdf_forecast_no_values(dictcursor, insertuser,
     del forecast['strid']
     forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
     forecast['provider'] = insertuser[4]['name']
-    forecast['constant_values'] = None
+    forecast['constant_values'] = '{}'
     del forecast['organization_id']
     del res['created_at']
     del res['modified_at']
