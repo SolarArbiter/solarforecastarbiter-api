@@ -57,7 +57,7 @@ def mysql_connection():
 
 
 @contextmanager
-def get_cursor(cursor_type):
+def get_cursor(cursor_type, commit=True):
     if cursor_type == 'standard':
         cursorclass = pymysql.cursors.Cursor
     elif cursor_type == 'dict':
@@ -66,9 +66,16 @@ def get_cursor(cursor_type):
         raise AttributeError('cursor_type must be standard or dict')
     connection = mysql_connection()
     cursor = connection.cursor(cursor=cursorclass)
-    yield cursor
-    connection.commit()
-    cursor.close()
+    try:
+        yield cursor
+    except Exception:
+        connection.rollback()
+        raise
+    else:
+        if commit:
+            connection.commit()
+    finally:
+        cursor.close()
 
 
 def try_query(query_cmd):

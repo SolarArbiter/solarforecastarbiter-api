@@ -1,4 +1,4 @@
-from contextlib import contextmanager
+from functools import partial
 import uuid
 
 
@@ -34,17 +34,7 @@ def app():
 @pytest.fixture()
 def nocommit_cursor(app, mocker):
     conn = storage_interface.mysql_connection()
-    @contextmanager
-    def special(cursor_type):
-        if cursor_type == 'standard':
-            cursorclass = pymysql.cursors.Cursor
-        elif cursor_type == 'dict':
-            cursorclass = pymysql.cursors.DictCursor
-        else:
-            raise AttributeError('cursor_type must be standard or dict')
-        cursor = conn.cursor(cursor=cursorclass)
-        yield cursor
-        cursor.close()
+    special = partial(storage_interface.get_cursor, commit=False)
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
     yield
     conn.rollback()
@@ -94,8 +84,40 @@ def test_get_cursor_and_timezone(app):
 
 def test_get_cursor_invalid_type(app):
     with pytest.raises(AttributeError):
-        with storage_interface.get_cursor('oither') as cursor:
-            cursor
+        with storage_interface.get_cursor('oither'): pass  # NOQA
+
+
+def test_cursor_rollback(app, user):
+    obs_id = list(demo_observations.keys())[0]
+    with pytest.raises(ValueError):
+        with storage_interface.get_cursor('standard') as cursor:
+            cursor.execute('CALL delete_observation(%s, %s)',
+                           (storage_interface.current_user, obs_id))
+            raise ValueError
+    res = storage_interface.read_observation(obs_id)
+    assert res == demo_observations[obs_id]
+
+
+def test_cursor_rollback_internal_err(app):
+    obs_id = list(demo_observations.keys())[0]
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_observation(obs_id)
+
+    ctx = app.test_request_context()
+    ctx.user = 'auth0|testtesttest'
+    ctx.push()
+    res = storage_interface.read_observation(obs_id)
+    assert res == demo_observations[obs_id]
+    ctx.pop()
+
+
+def test_cursor_commit(app, user):
+    demo = list(demo_observations.values())[0].copy()
+    demo['name'] = 'demo'
+    new_id = storage_interface.store_observation(demo)
+    storage_interface.delete_observation(new_id)
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_observation(new_id)
 
 
 def test_list_observations(app, user):
