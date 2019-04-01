@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
-from io import StringIO
 from marshmallow import ValidationError
 import pandas as pd
 
@@ -15,7 +14,10 @@ from sfa_api.schema import (ForecastValuesSchema,
                             CDFForecastSchema,
                             CDFForecastValuesSchema)
 
+from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.storage import get_storage
+from sfa_api.utils.request_handling import (validate_parsable_values,
+                                            validate_start_end)
 
 
 def validate_forecast_values(forecast_df):
@@ -25,11 +27,11 @@ def validate_forecast_values(forecast_df):
     ----------
     forecast_df: Pandas DataFrame
 
-    Returns
-    -------
-    errors: dictionary
-        A dictionary of errors where keys are the column names where errors
-        were found, and values are a list of errors for that column.
+    Raises
+    ------
+    BadAPIRequestError
+        If an expected field is missing or contains an entry of incorrect
+        type.
     """
     errors = {}
     try:
@@ -51,7 +53,8 @@ def validate_forecast_values(forecast_df):
         errors.update({'timestamp': [error]})
     except KeyError:
         errors.update({'timestamp': ['Missing "timestamp" field.']})
-    return errors
+    if errors:
+        raise BadAPIRequest(errors)
 
 
 class AllForecastsView(MethodView):
@@ -110,12 +113,12 @@ class AllForecastsView(MethodView):
         try:
             forecast = ForecastPostSchema().load(data)
         except ValidationError as err:
-            return jsonify({"errors": err.messages}), 400
+            raise BadAPIRequest(err.messages)
         else:
             storage = get_storage()
             forecast_id = storage.store_forecast(forecast)
             if forecast_id is None:
-                return jsonify({'errors': 'Site does not exist'}), 400
+                raise NotFoundException(error='Site does not exist')
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for('forecasts.single',
                                                    forecast_id=forecast_id)
@@ -203,21 +206,7 @@ class ForecastValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        errors = {}
-        start = request.args.get('start', None)
-        end = request.args.get('end', None)
-        if start is not None:
-            try:
-                start = pd.Timestamp(start)
-            except ValueError:
-                errors.update({'start': ['Invalid start date format']})
-        if end is not None:
-            try:
-                end = pd.Timestamp(end)
-            except ValueError:
-                errors.update({'end': ['Invalid end date format']})
-        if errors:
-            return jsonify({'errors': errors}), 400
+        start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
         if values is None:
@@ -280,34 +269,8 @@ class ForecastValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        if request.content_type == 'application/json':
-            raw_data = request.get_json()
-            try:
-                raw_values = raw_data['values']
-            except (TypeError, KeyError):
-                error = 'Supplied JSON does not contain "values" field.'
-                return jsonify({'errors': {'error': [error]}}), 400
-            try:
-                forecast_df = pd.DataFrame(raw_values)
-            except ValueError:
-                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
-        elif request.content_type == 'text/csv':
-            raw_data = StringIO(request.get_data(as_text=True))
-            try:
-                forecast_df = pd.read_csv(raw_data,
-                                          na_values=[-999, -9999],
-                                          keep_default_na=True,
-                                          comment='#')
-            except pd.errors.EmptyDataError:
-                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
-            finally:
-                raw_data.close()
-        else:
-            error = 'Invalid Content-type.'
-            return jsonify({'errors': {'error': [error]}}), 400
-        errors = validate_forecast_values(forecast_df)
-        if errors:
-            return jsonify({'errors': errors}), 400
+        forecast_df = validate_parsable_values()
+        validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
@@ -408,12 +371,12 @@ class AllCDFForecastGroupsView(MethodView):
         try:
             cdf_forecast_group = CDFForecastGroupPostSchema().load(data)
         except ValidationError as err:
-            return jsonify({"errors": err.messages}), 400
+            raise BadAPIRequest(err.messages)
         else:
             storage = get_storage()
             forecast_id = storage.store_cdf_forecast_group(cdf_forecast_group)
             if forecast_id is None:
-                return jsonify({'errors': 'Site does not exist'}), 400
+                raise NotFoundException(error='Site does not exist')
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for(
                 'forecasts.single_cdf_group',
@@ -507,21 +470,7 @@ class CDFForecastValues(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        errors = {}
-        start = request.args.get('start', None)
-        end = request.args.get('end', None)
-        if start is not None:
-            try:
-                start = pd.Timestamp(start)
-            except ValueError:
-                errors.update({'start': ['Invalid start date format']})
-        if end is not None:
-            try:
-                end = pd.Timestamp(end)
-            except ValueError:
-                errors.update({'end': ['Invalid end date format']})
-        if errors:
-            return jsonify({'errors': errors}), 400
+        start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_cdf_forecast_values(forecast_id, start, end)
         if values is None:
@@ -583,34 +532,8 @@ class CDFForecastValues(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        if request.content_type == 'application/json':
-            raw_data = request.get_json()
-            try:
-                raw_values = raw_data['values']
-            except (TypeError, KeyError):
-                error = 'Supplied JSON does not contain "values" field.'
-                return jsonify({'errors': {'error': [error]}}), 400
-            try:
-                forecast_df = pd.DataFrame(raw_values)
-            except ValueError:
-                return jsonify({'errors': {'error': ['Malformed JSON']}}), 400
-        elif request.content_type == 'text/csv':
-            raw_data = StringIO(request.get_data(as_text=True))
-            try:
-                forecast_df = pd.read_csv(raw_data,
-                                          na_values=[-999, -9999],
-                                          keep_default_na=True,
-                                          comment='#')
-            except pd.errors.EmptyDataError:
-                return jsonify({'errors': {'error': ['Malformed CSV']}}), 400
-            finally:
-                raw_data.close()
-        else:
-            error = 'Invalid Content-type.'
-            return jsonify({'errors': {'error': [error]}}), 400
-        errors = validate_forecast_values(forecast_df)
-        if errors:
-            return jsonify({'errors': errors}), 400
+        forecast_df = validate_parsable_values()
+        validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
