@@ -9,7 +9,7 @@ class BaseAPIException(Exception):
 
     errors: dict
         A dictionary where keys are names for an error and values are
-        a description. 
+        a description.
         e.g {'Longitude': 'Must be between -180 and 180.'}
 
     Notes
