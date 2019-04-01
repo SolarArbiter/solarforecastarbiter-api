@@ -48,7 +48,7 @@ ALTER TABLE arbiter_data.permissions CHANGE COLUMN object_type object_type ENUM(
 
 -- add permission triggers for cdf groups
 GRANT SELECT, TRIGGER ON arbiter_data.cdf_forecasts_groups TO 'permission_trig'@'localhost';
-GRANT SELECT, TRIGGER ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
+GRANT TRIGGER ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
 
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER add_object_perm_on_cdf_permissions_insert AFTER INSERT ON arbiter_data.permissions
 FOR EACH ROW PRECEDES add_object_perm_on_permissions_insert
@@ -254,7 +254,7 @@ BEGIN
     SET groupid = UUID_TO_BIN(parent_id, 1);
     IF allowed THEN
        SET canupdategroup = (SELECT can_user_perform_action(auth0id, groupid, 'update'));
-       IF canreadsite THEN
+       IF canupdategroup THEN
            INSERT INTO arbiter_data.cdf_forecasts_singles (
                id, cdf_forecast_group_id, constant_value
            ) VALUES (
