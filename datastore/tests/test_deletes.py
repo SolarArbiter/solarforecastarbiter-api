@@ -29,6 +29,13 @@ def obs_obj(site_obj, new_observation):
 
 
 @pytest.fixture()
+def cdf_obj(site_obj, new_cdf_forecast):
+    auth0id, _, site = site_obj
+    cdf = new_cdf_forecast(site=site)
+    return auth0id, str(bin_to_uuid(cdf['id'])), cdf
+
+
+@pytest.fixture()
 def allow_delete(cursor, new_permission, valueset):
     def do(what):
         org = valueset[0][0]
@@ -53,6 +60,21 @@ def allow_delete_observation(allow_delete):
 @pytest.fixture()
 def allow_delete_forecast(allow_delete):
     allow_delete('forecasts')
+
+
+@pytest.fixture()
+def allow_delete_cdf_group(allow_delete):
+    allow_delete('cdf_forecasts')
+
+
+@pytest.fixture()
+def allow_update_cdf_group(cursor, valueset, new_permission):
+    org = valueset[0][0]
+    role = valueset[2][0]
+    perm = new_permission('update', 'cdf_forecasts', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id)'
+        ' VALUES (%s, %s)', (role['id'], perm['id']))
 
 
 def test_delete_site(cursor, site_obj, allow_delete_site):
@@ -113,3 +135,65 @@ def test_delete_observation_denied(cursor, obs_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_observation', (auth0id, obsid))
         assert e.errcode == 1142
+
+
+def test_delete_cdf_forecast(cursor, cdf_obj, allow_delete_cdf_group):
+    auth0id, cdfgroupid, _ = cdf_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_groups WHERE '
+        'id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_cdf_forecasts_group', (auth0id, cdfgroupid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_groups WHERE '
+        'id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_delete_cdf_forecast_denied(cursor, cdf_obj, allow_delete_forecast):
+    auth0id, cdfgroupid, _ = cdf_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('delete_cdf_forecasts_group', (auth0id, cdfgroupid))
+        assert e.errcode == 1142
+
+
+def test_delete_cdf_forecast_single(cursor, cdf_obj, allow_delete_cdf_group,
+                                    allow_update_cdf_group):
+    auth0id, cdfgroupid, cdf = cdf_obj
+    cdf_singles = list(cdf['constant_values'].keys())
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_singles WHERE '
+        'cdf_forecast_group_id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    num = cursor.fetchone()[0]
+    assert num > 0
+    assert num == len(cdf_singles)
+    for cid in cdf_singles:
+        cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_singles WHERE '
+        'cdf_forecast_group_id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_delete_cdf_forecast_single_denied_no_delete(
+        cursor, cdf_obj, allow_update_cdf_group):
+    auth0id, cdfgroupid, cdf = cdf_obj
+    cdf_singles = list(cdf['constant_values'].keys())
+    for cid in cdf_singles:
+        with pytest.raises(pymysql.err.OperationalError) as e:
+            cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
+            assert e.errcode == 1142
+
+
+def test_delete_cdf_forecast_single_denied_no_update(
+        cursor, cdf_obj, allow_delete_cdf_group):
+    auth0id, cdfgroupid, cdf = cdf_obj
+    cdf_singles = list(cdf['constant_values'].keys())
+    for cid in cdf_singles:
+        with pytest.raises(pymysql.err.OperationalError) as e:
+            cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
+            assert e.errcode == 1142

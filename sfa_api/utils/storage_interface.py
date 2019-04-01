@@ -17,7 +17,7 @@ from pymysql import converters
 
 
 from sfa_api.auth import current_user
-from sfa_api import schema
+from sfa_api import schema, json
 from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 
 
@@ -57,7 +57,7 @@ def mysql_connection():
 
 
 @contextmanager
-def get_cursor(cursor_type):
+def get_cursor(cursor_type, commit=True):
     if cursor_type == 'standard':
         cursorclass = pymysql.cursors.Cursor
     elif cursor_type == 'dict':
@@ -66,9 +66,16 @@ def get_cursor(cursor_type):
         raise AttributeError('cursor_type must be standard or dict')
     connection = mysql_connection()
     cursor = connection.cursor(cursor=cursorclass)
-    yield cursor
-    connection.commit()
-    cursor.close()
+    try:
+        yield cursor
+    except Exception:
+        connection.rollback()
+        raise
+    else:
+        if commit:
+            connection.commit()
+    finally:
+        cursor.close()
 
 
 def try_query(query_cmd):
@@ -312,6 +319,20 @@ def store_forecast_values(forecast_id, forecast_df):
     return forecast_id
 
 
+def _read_fx_values(procedure_name, forecast_id, start, end):
+    if start is None:
+        start = MINTIMESTAMP
+    if end is None:
+        end = MAXTIMESTAMP
+
+    fx_vals = _call_procedure(procedure_name, forecast_id,
+                              start, end, cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
+    ).drop(columns='forecast_id').set_index('timestamp').tz_localize('UTC')
+    return df
+
+
 def read_forecast_values(forecast_id, start=None, end=None):
     """Read forecast values between start and end.
 
@@ -326,22 +347,11 @@ def read_forecast_values(forecast_id, start=None, end=None):
 
     Returns
     -------
-    list
-        A list of dictionaries representing data points.
-        Data points contain a timestamp and value. Returns
-        None if the Forecast does not exist.
+    pandas.DataFrame
+        With a value column and datetime index
     """
-    if start is None:
-        start = MINTIMESTAMP
-    if end is None:
-        end = MAXTIMESTAMP
-
-    fx_vals = _call_procedure('read_forecast_values', forecast_id,
-                              start, end, cursor_type='standard')
-    df = pd.DataFrame.from_records(
-        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp').tz_localize('UTC')
-    return df
+    return _read_fx_values('read_forecast_values', forecast_id,
+                           start, end)
 
 
 def store_forecast(forecast):
@@ -535,7 +545,14 @@ def store_cdf_forecast_values(forecast_id, forecast_df):
         The UUID of the associated forecast. Returns
         None if the CDFForecast does not exist.
     """
-    raise NotImplementedError
+    with get_cursor('standard') as cursor:
+        query = 'CALL store_cdf_forecast_values(%s, %s, %s, %s)'
+        query_cmd = partial(
+            cursor.executemany, query,
+            ((current_user, forecast_id, row.Index, row.value)
+             for row in forecast_df.itertuples()))
+        try_query(query_cmd)
+    return forecast_id
 
 
 def read_cdf_forecast_values(forecast_id, start=None, end=None):
@@ -552,16 +569,15 @@ def read_cdf_forecast_values(forecast_id, start=None, end=None):
 
     Returns
     -------
-    list
-        A list of dictionaries representing data points.
-        Data points contain a timestamp and value. Returns
-        None if the CDF Forecast does not exist.
+    pandas.DataFrame
+        With a value column and datetime index
     """
-    raise NotImplementedError
+    return _read_fx_values('read_cdf_forecast_values', forecast_id,
+                           start, end)
 
 
 def store_cdf_forecast(cdf_forecast):
-    """Store Forecast metadata. Should generate and store a uuid
+    """Store CDF Forecast Single metadata. Should generate and store a uuid
     as the 'forecast_id' field.
 
     Parameters
@@ -575,7 +591,23 @@ def store_cdf_forecast(cdf_forecast):
         The UUID of the newly created CDF Forecast.
 
     """
-    raise NotImplementedError
+    forecast_id = generate_uuid()
+    _call_procedure(
+        'store_cdf_forecasts_single', forecast_id, cdf_forecast['parent'],
+        cdf_forecast['constant_value'])
+    return forecast_id
+
+
+def _set_cdf_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.CDFForecastSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        elif key == 'modified_at':
+            out[key] = forecast_dict['created_at']
+        else:
+            out[key] = forecast_dict[key]
+    return out
 
 
 def read_cdf_forecast(forecast_id):
@@ -592,7 +624,9 @@ def read_cdf_forecast(forecast_id):
         The CDF Forecast's metadata or None if the Forecast
         does not exist.
     """
-    raise NotImplementedError
+    forecast = _set_cdf_forecast_parameters(
+        _call_procedure('read_cdf_forecasts_single', forecast_id)[0])
+    return forecast
 
 
 def delete_cdf_forecast(forecast_id):
@@ -609,7 +643,7 @@ def delete_cdf_forecast(forecast_id):
         The CDF Forecast's metadata if successful or None
         if the CDF Forecast does not exist.
     """
-    raise NotImplementedError
+    _call_procedure('delete_cdf_forecasts_single', forecast_id)
 
 
 def list_cdf_forecasts(parent_forecast_id=None):
@@ -625,7 +659,13 @@ def list_cdf_forecasts(parent_forecast_id=None):
     list
         List of dictionaries of CDF Forecast metadata.
     """
-    raise NotImplementedError
+    if parent_forecast_id is not None:
+        read_cdf_forecast_group(parent_forecast_id)
+    forecasts = [_set_cdf_forecast_parameters(fx)
+                 for fx in _call_procedure('list_cdf_forecasts_singles')
+                 if parent_forecast_id is None or
+                 fx['parent'] == parent_forecast_id]
+    return forecasts
 
 
 # CDF Probability Groups
@@ -644,11 +684,46 @@ def store_cdf_forecast_group(cdf_forecast_group):
         The UUID of the newly created CDF Forecast.
 
     """
-    raise NotImplementedError
+    forecast_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure('store_cdf_forecasts_group',
+                    forecast_id,
+                    cdf_forecast_group['site_id'],
+                    cdf_forecast_group['name'],
+                    cdf_forecast_group['variable'],
+                    cdf_forecast_group['issue_time_of_day'],
+                    cdf_forecast_group['lead_time_to_start'],
+                    cdf_forecast_group['interval_label'],
+                    cdf_forecast_group['interval_length'],
+                    cdf_forecast_group['run_length'],
+                    cdf_forecast_group['interval_value_type'],
+                    cdf_forecast_group['extra_parameters'],
+                    cdf_forecast_group['axis'])
+    for cv in cdf_forecast_group['constant_values']:
+        cdfsingle = {'parent': forecast_id,
+                     'constant_value': cv}
+        store_cdf_forecast(cdfsingle)
+    return forecast_id
+
+
+def _set_cdf_group_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.CDFForecastGroupSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        elif key == 'constant_values':
+            out[key] = []
+            constant_vals = json.loads(forecast_dict['constant_values'])
+            for single_id, val in constant_vals.items():
+                out[key].append({'forecast_id': single_id,
+                                 'constant_value': val})
+        else:
+            out[key] = forecast_dict[key]
+    return out
 
 
 def read_cdf_forecast_group(forecast_id):
-    """Read CDF Forecast metadata.
+    """Read CDF Group Forecast metadata.
 
     Parameters
     ----------
@@ -661,7 +736,9 @@ def read_cdf_forecast_group(forecast_id):
         The CDF Forecast's metadata or None if the Forecast
         does not exist.
     """
-    raise NotImplementedError
+    forecast = _set_cdf_group_forecast_parameters(
+        _call_procedure('read_cdf_forecasts_group', forecast_id)[0])
+    return forecast
 
 
 def delete_cdf_forecast_group(forecast_id):
@@ -678,15 +755,26 @@ def delete_cdf_forecast_group(forecast_id):
         The CDF Forecast Groups's metadata if successful or
         None if the CDF Forecast does not exist.
     """
-    raise NotImplementedError
+    _call_procedure('delete_cdf_forecasts_group', forecast_id)
 
 
-def list_cdf_forecast_groups():
+def list_cdf_forecast_groups(site_id=None):
     """Lists all CDF Forecast Groups a user has access to.
+
+    Parameters
+    ----------
+    site_id: string
+        UUID of Site, when supplied returns only CDF Forcast Groups
+        made for this Site.
 
     Returns
     -------
     list
         List of dictionaries of CDF Forecast Group metadata.
     """
-    raise NotImplementedError
+    if site_id is not None:
+        read_site(site_id)
+    forecasts = [_set_cdf_group_forecast_parameters(fx)
+                 for fx in _call_procedure('list_cdf_forecasts_groups')
+                 if site_id is None or fx['site_id'] == site_id]
+    return forecasts

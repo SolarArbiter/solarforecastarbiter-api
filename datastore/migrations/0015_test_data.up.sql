@@ -34,19 +34,26 @@ INSERT INTO arbiter_data.sites (
 INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
     'Read all sites', @orgid, 'read', 'sites', TRUE), (
     'Read all forecasts', @orgid, 'read', 'forecasts', TRUE), (
+    'Read all cdf forecasts', @orgid, 'read', 'cdf_forecasts', TRUE), (
     'Read all observations', @orgid, 'read', 'observations', TRUE), (
     'Read all forecast values', @orgid, 'read_values', 'forecasts', TRUE), (
+    'Read all cdf forecast values', @orgid, 'read_values', 'cdf_forecasts', TRUE), (
     'Read all observation values', @orgid, 'read_values', 'observations', TRUE), (
     'Create all sites', @orgid, 'create', 'sites', TRUE), (
     'Create all forecasts', @orgid, 'create', 'forecasts', TRUE), (
+    'Create all cdf forecasts', @orgid, 'create', 'cdf_forecasts', TRUE), (
     'Create all observations', @orgid, 'create', 'observations', TRUE), (
     'Delete all sites', @orgid, 'delete', 'sites', TRUE), (
     'Delete all forecasts', @orgid, 'delete', 'forecasts', TRUE), (
+    'Delete all cdf forecasts', @orgid, 'delete', 'cdf_forecasts', TRUE), (
     'Delete all observations', @orgid, 'delete', 'observations', TRUE), (
     'Delete all forecast values', @orgid, 'delete_values', 'forecasts', TRUE), (
+    'Delete all cdf forecast values', @orgid, 'delete_values', 'cdf_forecasts', TRUE), (
     'Delete all observation values', @orgid, 'delete_values', 'observations', TRUE), (
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
-    'Write observation values', @orgid, 'write_values', 'observations', TRUE);
+    'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
+    'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
+    'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
@@ -134,6 +141,16 @@ BEGIN
     UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
 END;
 
+CREATE PROCEDURE insertcdffx(IN fxid CHAR(36))
+BEGIN
+SET @id = (SELECT UUID_TO_BIN(fxid, 1));
+SET @timestamp = TIMESTAMP('2019-01-01 12:00');
+REPEAT
+INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value) VALUES (@id, @timestamp, RAND());
+SET @timestamp = (SELECT TIMESTAMPADD(MINUTE, 1, @timestamp));
+UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
+END;
+
 CREATE PROCEDURE insertobs(IN obsid CHAR(36))
 BEGIN
     SET @id = (SELECT UUID_TO_BIN(obsid, 1));
@@ -155,20 +172,79 @@ CALL insertobs('e0da0dea-9482-4073-84de-f1b12c304d23');
 CALL insertobs('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2');
 
 
+SET @cfg0 = UUID_TO_BIN('ef51e87c-50b9-11e9-8647-d663bd873d93', 1);
+SET @cfg0time = TIMESTAMP('2019-03-02 14:55:37');
+SET @cfg1 = UUID_TO_BIN('058b182a-50ba-11e9-8647-d663bd873d93', 1);
+SET @cfg1time = TIMESTAMP('2019-03-02 14:55:38');
+INSERT INTO arbiter_data.cdf_forecasts_groups (
+    id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
+    interval_label, interval_length, run_length, interval_value_type, extra_parameters,
+    created_at, modified_at, axis
+) VALUES (
+    @cfg0,
+    @orgid,
+    UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
+    'DA GHI', 'ghi', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
+    @cfg0time, @cfg0time, 'y'
+), (
+    @cfg1,
+    @orgid,
+    UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440002', 1),
+    'HA Power', 'ac_power', '12:00', 60, 'beginning', 1, 60, 'interval_mean', '',
+    @cfg1time, @cfg1time, 'x'
+);
+
+
+
+INSERT INTO arbiter_data.cdf_forecasts_singles (id, cdf_forecast_group_id, constant_value, created_at)
+VALUES (
+     UUID_TO_BIN('633f9396-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 5.0, @cfg0time), (
+     UUID_TO_BIN('633f9864-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 20.0, @cfg0time), (
+     UUID_TO_BIN('633f9b2a-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 50.0, @cfg0time), (
+     UUID_TO_BIN('633f9d96-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 80.0, @cfg0time), (
+     UUID_TO_BIN('633fa548-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 95.0, @cfg0time), (
+     UUID_TO_BIN('633fa94e-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.0, @cfg1time), (
+     UUID_TO_BIN('633fabec-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 5.0, @cfg1time), (
+     UUID_TO_BIN('633fae62-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 10.0, @cfg1time), (
+     UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 15.0, @cfg1time), (
+     UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 20.0, @cfg1time);
+
+
+CALL insertcdffx('633f9396-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9864-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9b2a-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9d96-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fa548-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fa94e-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fabec-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fae62-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fb114-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fb3a8-50bb-11e9-8647-d663bd873d93');
+
 CREATE USER 'apiuser'@'%' IDENTIFIED BY 'thisisaterribleandpublicpassword';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecast_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_site TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_single TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_group TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecast_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_site TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_observation TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_forecast TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_single TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_cdf_forecasts_group TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_site TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_observation TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_forecast TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_cdf_forecasts_group TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_cdf_forecasts_single TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_observations TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_forecasts TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'apiuser'@'%';

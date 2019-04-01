@@ -18,7 +18,7 @@ def check_table_for_org(cursor, oid, table):
 
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'permissions', 'sites',
-    'forecasts'])
+    'forecasts', 'cdf_forecasts_groups'])
 def test_drop_org(cursor, valueset_org, test):
     oid = valueset_org['id']
     name = valueset_org['name']
@@ -30,7 +30,8 @@ def test_drop_org(cursor, valueset_org, test):
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'permissions', 'sites',
     'forecasts', 'permission_object_mapping',
-    'user_role_mapping', 'role_permission_mapping'])
+    'user_role_mapping', 'role_permission_mapping',
+    'cdf_forecasts_groups'])
 def test_drop_all_orgs_all_tables(cursor, valueset_org, test):
     cursor.execute('DELETE FROM organizations')
     check_table_for_org(cursor, None, test)
@@ -53,6 +54,7 @@ def test_drop_user(cursor, valueset_user):
 @pytest.mark.parametrize('test', [
     'roles', 'permissions', 'sites', 'observations',
     'forecasts', 'aggregates', 'organizations',
+    'cdf_forecasts_groups',
     'permission_object_mapping', 'role_permission_mapping'])
 def test_drop_user_same_count(cursor, valueset_user, test):
     """Check that tables remain unchanged when removing a user"""
@@ -93,6 +95,7 @@ def test_drop_role(cursor, valueset_role):
 @pytest.mark.parametrize('test', [
     'users', 'permissions', 'sites', 'observations',
     'forecasts', 'aggregates', 'organizations',
+    'cdf_forecasts_groups',
     'permission_object_mapping'])
 def test_drop_role_same_count(cursor, test, valueset_role):
     """Check that tables remain unchanged when removing a role"""
@@ -135,6 +138,7 @@ def test_drop_permissions(cursor, valueset_permission):
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'sites', 'observations',
     'forecasts', 'aggregates', 'organizations',
+    'cdf_forecasts_groups',
     'user_role_mapping'])
 def test_drop_permission_same_count(cursor, test, valueset_permission):
     """Check that tables remain unchanged when removing a permission"""
@@ -146,7 +150,7 @@ def test_drop_permission_same_count(cursor, test, valueset_permission):
 
 
 @pytest.mark.parametrize('delt', [
-    None, 'forecasts', 'observations'
+    None, 'forecasts', 'observations', 'cdf_forecasts_groups'
 ])
 def test_drop_site_fail(cursor, delt, valueset_site):
     """
@@ -166,12 +170,14 @@ def test_drop_site(cursor, valueset_site):
     site = valueset_site['id']
     cursor.execute('DELETE FROM forecasts WHERE site_id = %s', site)
     cursor.execute('DELETE FROM observations WHERE site_id = %s', site)
+    cursor.execute('DELETE FROM cdf_forecasts_groups WHERE site_id = %s', site)
     cursor.execute('DELETE FROM sites WHERE id = %s', site)
 
 
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'sites', 'observations',
     'permissions', 'aggregates', 'organizations',
+    'cdf_forecasts_groups',
     'user_role_mapping'])
 def test_drop_forecast(cursor, test, valueset_forecast):
     """Check that tables remain unchanged when removing a forecast"""
@@ -196,6 +202,7 @@ def test_drop_forecast_values(cursor, valueset_forecast):
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'sites', 'forecasts',
     'permissions', 'aggregates', 'organizations',
+    'cdf_forecasts_groups',
     'user_role_mapping'])
 def test_drop_observation(cursor, test, valueset_observation):
     """Check that tables remain unchanged when removing a observation"""

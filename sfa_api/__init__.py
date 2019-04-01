@@ -3,7 +3,7 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-from flask import Flask, Response, jsonify, render_template, url_for  # NOQA
+from flask import Flask, Response, jsonify, json, render_template, url_for  # NOQA
 from flask_marshmallow import Marshmallow  # NOQA
 from flask_talisman import Talisman  # NOQA
 
