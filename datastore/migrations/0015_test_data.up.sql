@@ -140,6 +140,16 @@ BEGIN
     UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
 END;
 
+CREATE PROCEDURE insertcdffx(IN fxid CHAR(36))
+BEGIN
+SET @id = (SELECT UUID_TO_BIN(fxid, 1));
+SET @timestamp = TIMESTAMP('2019-01-01 12:00');
+REPEAT
+INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value) VALUES (@id, @timestamp, RAND());
+SET @timestamp = (SELECT TIMESTAMPADD(MINUTE, 1, @timestamp));
+UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
+END;
+
 CREATE PROCEDURE insertobs(IN obsid CHAR(36))
 BEGIN
     SET @id = (SELECT UUID_TO_BIN(obsid, 1));
@@ -198,6 +208,17 @@ VALUES (
      UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.75, @cfg1time), (
      UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 1.0, @cfg1time);
 
+
+CALL insertcdffx('633f9396-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9864-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9b2a-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633f9d96-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fa548-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fa94e-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fabec-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fae62-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fb114-50bb-11e9-8647-d663bd873d93');
+CALL insertcdffx('633fb3a8-50bb-11e9-8647-d663bd873d93');
 
 CREATE USER 'apiuser'@'%' IDENTIFIED BY 'thisisaterribleandpublicpassword';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation_values TO 'apiuser'@'%';
