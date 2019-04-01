@@ -52,7 +52,8 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Delete all observation values', @orgid, 'delete_values', 'observations', TRUE), (
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
     'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
-    'Write observation values', @orgid, 'write_values', 'observations', TRUE);
+    'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
+    'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
@@ -203,10 +204,10 @@ VALUES (
      UUID_TO_BIN('633f9d96-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 80.0, @cfg0time), (
      UUID_TO_BIN('633fa548-50bb-11e9-8647-d663bd873d93', 1), @cfg0, 95.0, @cfg0time), (
      UUID_TO_BIN('633fa94e-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.0, @cfg1time), (
-     UUID_TO_BIN('633fabec-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.25, @cfg1time), (
-     UUID_TO_BIN('633fae62-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.50, @cfg1time), (
-     UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 0.75, @cfg1time), (
-     UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 1.0, @cfg1time);
+     UUID_TO_BIN('633fabec-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 5.0, @cfg1time), (
+     UUID_TO_BIN('633fae62-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 10.0, @cfg1time), (
+     UUID_TO_BIN('633fb114-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 15.0, @cfg1time), (
+     UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 20.0, @cfg1time);
 
 
 CALL insertcdffx('633f9396-50bb-11e9-8647-d663bd873d93');

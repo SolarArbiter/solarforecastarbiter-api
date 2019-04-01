@@ -480,6 +480,60 @@ def test_store_cdf_forecast_values_invalid_user(app, invalid_user,
         storage_interface.store_cdf_forecast_values(fx_id, fx_vals)
 
 
+@pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
+def test_read_cdf_forecast_single(app, user, forecast_id):
+    single = demo_single_cdf[forecast_id]
+    forecast = storage_interface.read_cdf_forecast(forecast_id)
+    parent = demo_group_cdf[single['parent']].copy()
+    del parent['constant_values']
+    parent['constant_value'] = single['constant_value']
+    parent['parent'] = single['parent']
+    parent['forecast_id'] = forecast_id
+    assert forecast == parent
+
+
+def test_read_cdf_forecast_single_invalid_forecast(app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_cdf_forecast(str(uuid.uuid1()))
+
+
+def test_read_cdf_forecast_single_invalid_user(app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_cdf_forecast(list(demo_single_cdf.keys())[0])
+
+
+def test_store_cdf_forecast_single(app, user, nocommit_cursor):
+    cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
+                    'constant_value': 100.0}
+    new_id = storage_interface.store_cdf_forecast(cdf_forecast)
+    new_cdf_forecast = storage_interface.read_cdf_forecast(new_id)
+    parent = list(demo_group_cdf.values())[0]
+    del parent['constant_values']
+    parent['constant_value'] = cdf_forecast['constant_value']
+    parent['parent'] = cdf_forecast['parent']
+    parent['forecast_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at'):
+        del parent[key]
+        del new_cdf_forecast[key]
+    assert new_cdf_forecast == parent
+
+
+def test_store_cdf_forecast_single_invalid_user(app, invalid_user,
+                                                nocommit_cursor):
+    cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
+                    'constant_value': 100.0}
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_cdf_forecast(cdf_forecast)
+
+
+def test_store_cdf_forecast_single_same_parent_value(app, invalid_user,
+                                                     nocommit_cursor):
+    cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
+                    'constant_value': 5.0}
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_cdf_forecast(cdf_forecast)
+
+
 # @pytest.mark.parametrize('cdf_forecast', demo_group_cdf.values())
 # def test_store_cdf_forecast_group(app, user, cdf_forecast, nocommit_cursor):
 #     cdf_forecast = cdf_forecast.copy()

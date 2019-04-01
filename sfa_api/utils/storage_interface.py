@@ -591,7 +591,23 @@ def store_cdf_forecast(cdf_forecast):
         The UUID of the newly created CDF Forecast.
 
     """
-    raise NotImplementedError
+    forecast_id = generate_uuid()
+    _call_procedure(
+        'store_cdf_forecasts_single', forecast_id, cdf_forecast['parent'],
+        cdf_forecast['constant_value'])
+    return forecast_id
+
+
+def _set_cdf_forecast_parameters(forecast_dict):
+    out = {}
+    for key in schema.CDFForecastSchema().fields.keys():
+        if key in ('_links', ):
+            continue
+        elif key == 'modified_at':
+            out[key] = forecast_dict['created_at']
+        else:
+            out[key] = forecast_dict[key]
+    return out
 
 
 def read_cdf_forecast(forecast_id):
@@ -608,7 +624,9 @@ def read_cdf_forecast(forecast_id):
         The CDF Forecast's metadata or None if the Forecast
         does not exist.
     """
-    raise NotImplementedError
+    forecast = _set_cdf_forecast_parameters(
+        _call_procedure('read_cdf_forecasts_single', forecast_id)[0])
+    return forecast
 
 
 def delete_cdf_forecast(forecast_id):
