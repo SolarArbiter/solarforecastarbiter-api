@@ -10,7 +10,7 @@ from functools import wraps
 
 from flask import (request, Response, current_app, render_template,
                    _request_ctx_stack)
-from jose import jwt
+from jose import jwt, jwk
 from werkzeug.local import LocalProxy
 
 
@@ -29,6 +29,7 @@ def verify_access_token():
             audience=current_app.config['AUTH0_AUDIENCE'],
             issuer=current_app.config['AUTH0_BASE_URL'] + '/')
     except (jwt.JWTError,
+            jwk.JWKError,
             jwt.ExpiredSignatureError,
             jwt.JWTClaimsError,
             AttributeError,
