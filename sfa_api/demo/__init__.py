@@ -18,6 +18,7 @@ from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
 from sfa_api.demo.values import (static_observation_values,
                                  static_forecast_values)
+from sfa_api.utils.errors import DeleteRestrictionError
 
 
 # Initialize static data
@@ -316,12 +317,10 @@ def delete_site(site_id):
         site = sites[site_id]
     except KeyError:
         return None
-    forecasts = list_forecasts(site_id)
-    for forecast in forecasts:
-        delete_forecast(forecast['forecast_id'])
-    observations = list_observations(site_id)
-    for observation in observations:
-        delete_observation(observation['observation_id'])
+    if len(list_forecasts(site_id)) > 0:
+        raise DeleteRestrictionError
+    if len(list_observations(site_id)) > 0:
+        raise DeleteRestrictionError
     sites.pop(site_id)
     return site
 

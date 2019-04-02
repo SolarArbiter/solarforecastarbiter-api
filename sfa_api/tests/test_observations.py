@@ -1,7 +1,7 @@
 import pytest
 
 
-from sfa_api.conftest import (variables, interval_labels,
+from sfa_api.conftest import (variables, interval_labels, BASE_URL,
                               VALID_OBS_JSON, copy_update)
 
 
@@ -16,7 +16,7 @@ empty_json_response = '{"interval_label":["Missing data for required field."],"i
 
 def test_observation_post_success(api):
     r = api.post('/observations/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=VALID_OBS_JSON)
     assert r.status_code == 201
     assert 'Location' in r.headers
@@ -29,7 +29,7 @@ def test_observation_post_success(api):
 ])
 def test_observation_post_bad_request(api, payload, message):
     r = api.post('/observations/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
@@ -37,7 +37,7 @@ def test_observation_post_bad_request(api, payload, message):
 
 def test_get_observation_links(api, observation_id):
     r = api.get(f'/observations/{observation_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     response = r.get_json()
     assert 'observation_id' in response
     assert '_links' in response
@@ -45,13 +45,13 @@ def test_get_observation_links(api, observation_id):
 
 def test_get_observation_links_404(api, missing_id):
     r = api.get(f'/observations/{missing_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
 def test_get_observation_metadata(api, observation_id):
     r = api.get(f'/observations/{observation_id}/metadata',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     response = r.get_json()
     assert 'observation_id' in response
     assert 'variable' in response
@@ -61,7 +61,7 @@ def test_get_observation_metadata(api, observation_id):
 
 def test_get_observation_metadata_404(api, missing_id):
     r = api.get(f'/observations/{missing_id}/metadata',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
@@ -108,7 +108,7 @@ NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,
 
 def test_post_observation_values_valid_json(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=VALID_JSON)
     assert r.status_code == 201
 
@@ -117,7 +117,7 @@ def test_post_json_storage_call(api, observation_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_observation_values')
     storage.return_value = observation_id
     api.post(f'/observations/{observation_id}/values',
-             base_url='https://localhost',
+             base_url=BASE_URL,
              json=VALID_JSON)
     storage.assert_called()
 
@@ -131,7 +131,7 @@ def test_post_json_storage_call(api, observation_id, mocker):
 ])
 def test_post_observation_values_invalid_json(api, payload, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
 
@@ -145,7 +145,7 @@ def test_post_observation_values_invalid_json(api, payload, observation_id):
 ])
 def test_post_observation_values_invalid_csv(api, payload, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=payload)
     assert r.status_code == 400
@@ -153,7 +153,7 @@ def test_post_observation_values_invalid_csv(api, payload, observation_id):
 
 def test_post_observation_values_valid_csv(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CSV)
     assert r.status_code == 201
@@ -161,7 +161,7 @@ def test_post_observation_values_valid_csv(api, observation_id):
 
 def test_get_observation_values_404(api, missing_id):
     r = api.get(f'/observations/{missing_id}/values',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
@@ -171,7 +171,7 @@ def test_get_observation_values_404(api, missing_id):
 ])
 def test_get_observation_values_400(api, start, end, mimetype, observation_id):
     r = api.get(f'/observations/{observation_id}/values',
-                base_url='https://localhost',
+                base_url=BASE_URL,
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == 400
@@ -184,7 +184,7 @@ def test_get_observation_values_400(api, start, end, mimetype, observation_id):
 ])
 def test_get_observation_values_200(api, start, end, mimetype, observation_id):
     r = api.get(f'/observations/{observation_id}/values',
-                base_url='https://localhost',
+                base_url=BASE_URL,
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == 200

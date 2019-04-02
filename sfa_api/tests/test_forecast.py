@@ -2,7 +2,7 @@ import pytest
 
 
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
-                              VALID_FORECAST_JSON, copy_update)
+                              BASE_URL, VALID_FORECAST_JSON, copy_update)
 
 
 INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,
@@ -29,7 +29,7 @@ empty_json_response = '{"interval_label":["Missing data for required field."],"i
 ])
 def test_forecast_post_success(api, payload, status_code):
     r = api.post('/forecasts/single/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == status_code
     assert 'Location' in r.headers
@@ -47,7 +47,7 @@ def test_forecast_post_success(api, payload, status_code):
 ])
 def test_forecast_post_bad_request(api, payload, message):
     r = api.post('/forecasts/single/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
@@ -55,7 +55,7 @@ def test_forecast_post_bad_request(api, payload, message):
 
 def test_get_forecast_links(api, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     response = r.get_json()
     assert 'forecast_id' in response
     assert '_links' in response
@@ -63,13 +63,13 @@ def test_get_forecast_links(api, forecast_id):
 
 def test_get_forecast_404(api, missing_id):
     r = api.get(f'/forecasts/single/{missing_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
 def test_get_forecast_metadata(api, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}/metadata',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     response = r.get_json()
     assert 'forecast_id' in response
     assert 'variable' in response
@@ -79,7 +79,7 @@ def test_get_forecast_metadata(api, forecast_id):
 
 def test_get_forecast_metadata_404(api, missing_id):
     r = api.get(f'/forecasts/single{missing_id}/metadata',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
@@ -113,7 +113,7 @@ NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:23Z,fgh" # NOQA
 
 def test_post_forecast_values_valid_json(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=VALID_VALUE_JSON)
     assert r.status_code == 201
 
@@ -122,7 +122,7 @@ def test_post_json_storage_call(api, forecast_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_forecast_values')
     storage.return_value = forecast_id
     api.post(f'/forecasts/single/{forecast_id}/values',
-             base_url='https://localhost',
+             base_url=BASE_URL,
              json=VALID_VALUE_JSON)
     storage.assert_called()
 
@@ -131,7 +131,7 @@ def test_post_values_404(api, missing_id, mocker):
     storage = mocker.patch('sfa_api.demo.store_forecast_values')
     storage.return_value = None
     r = api.post(f'/forecasts/single/{missing_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=VALID_VALUE_JSON)
     assert r.status_code == 404
 
@@ -144,7 +144,7 @@ def test_post_values_404(api, missing_id, mocker):
 ])
 def test_post_forecast_values_invalid_json(api, payload, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
 
@@ -157,7 +157,7 @@ def test_post_forecast_values_invalid_json(api, payload, forecast_id):
 ])
 def test_post_forecast_values_invalid_csv(api, payload, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=payload)
     assert r.status_code == 400
@@ -165,7 +165,7 @@ def test_post_forecast_values_invalid_csv(api, payload, forecast_id):
 
 def test_post_forecast_values_valid_csv(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CSV)
     assert r.status_code == 201
@@ -173,7 +173,7 @@ def test_post_forecast_values_valid_csv(api, forecast_id):
 
 def test_get_forecast_values_404(api, missing_id):
     r = api.get(f'/forecasts/single/{missing_id}/values',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
@@ -183,7 +183,7 @@ def test_get_forecast_values_404(api, missing_id):
 ])
 def test_get_forecast_values_400(api, start, end, mimetype, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}/values',
-                base_url='https://localhost',
+                base_url=BASE_URL,
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == 400
@@ -196,7 +196,7 @@ def test_get_forecast_values_400(api, start, end, mimetype, forecast_id):
 ])
 def test_get_forecast_values_200(api, start, end, mimetype, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}/values',
-                base_url='https://localhost',
+                base_url=BASE_URL,
                 headers={'Accept': mimetype},
                 query_string={'start': start, 'end': end})
     assert r.status_code == 200

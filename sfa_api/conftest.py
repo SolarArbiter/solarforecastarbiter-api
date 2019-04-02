@@ -6,6 +6,8 @@ from sfa_api import create_app
 from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 
 
+BASE_URL = 'https://localhost'
+
 # Strings of formatted field options for error checking
 # e.g. provides "interval_mean, instantaneous, ..." so
 # f'Must be one of: {interval_value_types}.' can be checked
@@ -13,6 +15,7 @@ from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 variables = ', '.join(VARIABLES)
 interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
 interval_labels = ', '.join(INTERVAL_LABELS)
+
 
 VALID_SITE_JSON = {
     "elevation": 500.0,
@@ -71,7 +74,7 @@ def copy_update(json, key, value):
     return new_json
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def app():
     if not os.getenv('SFA_API_STATIC_DATA'):
         os.environ['SFA_API_STATIC_DATA'] = 'true'

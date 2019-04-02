@@ -1,6 +1,6 @@
 import pytest
 
-from sfa_api.conftest import VALID_SITE_JSON
+from sfa_api.conftest import VALID_SITE_JSON, BASE_URL
 
 
 def invalidate(json, key):
@@ -33,7 +33,7 @@ OUTSIDE_LONGITUDE['longitude'] = 181
 ])
 def test_site_post_201(api, payload):
     r = api.post('/sites/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 201
     assert 'Location' in r.headers
@@ -49,7 +49,7 @@ def test_site_post_201(api, payload):
 ])
 def test_site_post_400(api, payload, message):
     r = api.post('/sites/',
-                 base_url='https://localhost',
+                 base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
@@ -57,55 +57,61 @@ def test_site_post_400(api, payload, message):
 
 def test_all_sites_get_200(api):
     r = api.get('/sites/',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 200
 
 
 def test_site_get_200(api, site_id):
     r = api.get(f'/sites/{site_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 200
 
 
 def test_site_get_404(api, missing_id):
     r = api.get(f'/sites/{missing_id}',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
 def test_site_observations_200(api, site_id):
     r = api.get(f'/sites/{site_id}/observations',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 200
     assert isinstance(r.get_json(), list)
 
 
 def test_site_observations_404(api, missing_id):
     r = api.get(f'/sites/{missing_id}/observations',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
 def test_site_forecasts_200(api, site_id_plant):
     r = api.get(f'/sites/{site_id_plant}/forecasts/single',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 200
     assert isinstance(r.get_json(), list)
 
 
 def test_site_forecasts_404(api, missing_id):
     r = api.get(f'/sites/{missing_id}/forecasts/single',
-                base_url='https://localhost')
+                base_url=BASE_URL)
     assert r.status_code == 404
 
 
 def test_site_delete_200(api, site_id):
-    r = api.delete(f'/sites/{site_id}',
-                   base_url='https://localhost')
+    r = api.post('/sites/',
+                 base_url=BASE_URL,
+                 json=VALID_SITE_JSON)
+    assert r.status_code == 201
+    assert 'Location' in r.headers
+    new_site_id = r.data.decode('utf-8')
+    r = api.delete(f'/sites/{new_site_id}',
+                   base_url=BASE_URL)
     assert r.status_code == 200
 
 
 def test_site_delete_404(api, missing_id):
     r = api.delete(f'/sites/{missing_id}',
-                   base_url='https://localhost')
+                   base_url=BASE_URL)
     assert r.status_code == 404
