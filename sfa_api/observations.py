@@ -130,7 +130,7 @@ class ObservationView(MethodView):
         """
         storage = get_storage()
         deletion_result = storage.delete_observation(observation_id)
-        return deletion_result
+        return jsonify(deletion_result)
 
 
 class ObservationValuesView(MethodView):

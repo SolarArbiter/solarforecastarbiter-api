@@ -172,7 +172,7 @@ class ForecastView(MethodView):
         """
         storage = get_storage()
         deletion_result = storage.delete_forecast(forecast_id)
-        return deletion_result
+        return jsonify(deletion_result)
 
 
 class ForecastValuesView(MethodView):
@@ -413,6 +413,28 @@ class CDFForecastGroupMetadataView(MethodView):
             abort(404)
         return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
 
+    def delete(self, forecast_id, *args):
+        """
+        ---
+        summary: Delete Probabilistic Forecast group.
+        description: >- 
+          Delete a Probabilistic Forecast group, including its constant
+          values and metadata.
+        tags:
+        - Probabilistic Forecasts
+        parameters:
+        - $ref: '#/components/parameters/forecast_id'
+        responses:
+          200:
+            description: Forecast deleted sucessfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        deletion_result = storage.delete_cdf_forecast(forecast_id)
+        return jsonify(deletion_result)
 
 class CDFForecastMetadata(MethodView):
     def get(self, forecast_id):
