@@ -45,7 +45,7 @@ def nocommit_cursor(app, mocker):
 @pytest.fixture()
 def user(app):
     ctx = app.test_request_context()
-    ctx.user = 'auth0|testtesttest'
+    ctx.user = 'auth0|5be343df7025406237820b85'
     ctx.push()
     yield
     ctx.pop()
@@ -113,7 +113,7 @@ def test_cursor_rollback_internal_err(app):
         storage_interface.delete_observation(obs_id)
 
     ctx = app.test_request_context()
-    ctx.user = 'auth0|testtesttest'
+    ctx.user = 'auth0|5be343df7025406237820b85'
     ctx.push()
     res = storage_interface.read_observation(obs_id)
     assert res == demo_observations[obs_id]
