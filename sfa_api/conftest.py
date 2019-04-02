@@ -24,7 +24,9 @@ def app():
 
 
 @pytest.fixture()
-def api(app):
+def api(app, mocker):
+    verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
+    verify.return_value = True
     api = app.test_client()
     return api
 

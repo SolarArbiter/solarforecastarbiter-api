@@ -10,9 +10,18 @@ from flask_talisman import Talisman  # NOQA
 
 from sfa_api.spec import spec   # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
+from sfa_api.utils.auth import requires_auth  # NOQA
+
 
 ma = Marshmallow()
 talisman = Talisman()
+
+
+@requires_auth
+def protect_endpoint():
+    """Require authorization to access the endpoint. To be used as as
+    before_request function"""
+    pass
 
 
 def create_app(config_name='ProductionConfig'):
@@ -39,9 +48,11 @@ def create_app(config_name='ProductionConfig'):
     from sfa_api.observations import obs_blp
     from sfa_api.forecasts import forecast_blp
     from sfa_api.sites import site_blp
-    app.register_blueprint(obs_blp)
-    app.register_blueprint(site_blp)
-    app.register_blueprint(forecast_blp)
+
+    for blp in (obs_blp, forecast_blp, site_blp):
+        blp.before_request(protect_endpoint)
+        app.register_blueprint(blp)
+
     with app.test_request_context():
         for k, view in app.view_functions.items():
             if k == 'static':
