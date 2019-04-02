@@ -1,10 +1,10 @@
 """Tests that API maintains proper state after interactions
 """
-import pandas.testing as pdt
-
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
                               VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
                               BASE_URL)
+from sfa_api.demo.values import (static_observation_values,
+                                 static_forecast_values)
 
 invalid_json = {'invalid': 'garbage'}
 
@@ -110,10 +110,45 @@ def test_create_delete_observation(api):
     assert new_obs in get_obs_list(api)
     assert new_obs in get_site_obs(api, new_obs['site_id'])
 
+    # Post json values to the observation
+    obs_values = static_observation_values()
+    obs_values['quality_flag'] = 0
+    obs_values['timestamp'] = obs_values.index
+    json_values = obs_values.to_dict(orient='records')
+
+    post_values = api.post(f'/observations/{new_obs_id}/values',
+                           base_url=BASE_URL,
+                           json={'values': json_values})
+    assert post_values.status_code == 201
+    get_values = api.get(f'/observations/{new_obs_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'application/json'})
+    assert get_values.status_code == 200
+
+    # post csv_values to the observation
+    obs_values = static_observation_values()
+    obs_values['quality_flag'] = 0
+    csv_values = obs_values.to_csv()
+
+    post_values = api.post(f'/observations/{new_obs_id}/values',
+                           base_url=BASE_URL,
+                           headers={'Content-Type': 'text/csv'},
+                           data=csv_values)
+    assert post_values.status_code == 201
+    get_values = api.get(f'/observations/{new_obs_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'text/csv'})
+    assert get_values.status_code == 200
+
     delete = api.delete(new_obs_links_url)
     assert delete.status_code == 200
     assert new_obs not in get_obs_list(api)
     assert new_obs not in get_site_obs(api, new_obs['site_id'])
+
+    get_values = api.get(f'/observations/{new_obs_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'text/csv'})
+    assert get_values.status_code == 404
 
 
 def test_create_observation_invalid(api):
@@ -160,10 +195,43 @@ def test_create_delete_forecast(api):
     assert new_fx in get_fx_list(api)
     assert new_fx in get_site_fx(api, new_fx['site_id'])
 
+    # Post json values to the forecast
+    fx_values = static_forecast_values()
+    fx_values['timestamp'] = fx_values.index
+    json_values = fx_values.to_dict(orient='records')
+
+    post_values = api.post(f'/forecasts/single/{new_fx_id}/values',
+                           base_url=BASE_URL,
+                           json={'values': json_values})
+    assert post_values.status_code == 201
+    get_values = api.get(f'/forecasts/single/{new_fx_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'application/json'})
+    assert get_values.status_code == 200
+
+    # post csv_values to the forecasts
+    fx_values = static_forecast_values()
+    csv_values = fx_values.to_csv()
+
+    post_values = api.post(f'/forecasts/single/{new_fx_id}/values',
+                           base_url=BASE_URL,
+                           headers={'Content-Type': 'text/csv'},
+                           data=csv_values)
+    assert post_values.status_code == 201
+    get_values = api.get(f'/forecasts/single/{new_fx_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'text/csv'})
+    assert get_values.status_code == 200
+
     delete = api.delete(new_fx_links_url)
     assert delete.status_code == 200
     assert new_fx not in get_fx_list(api)
     assert new_fx not in get_site_fx(api, new_fx['site_id'])
+
+    get_values = api.get(f'/forecasts/single/{new_fx_id}/values',
+                         base_url=BASE_URL,
+                         headers={'Accept': 'text/csv'})
+    assert get_values.status_code == 404
 
 
 def test_create_forecast_invalid(api):
@@ -216,6 +284,19 @@ def test_create_delete_cdf_forecast(api):
         assert get_const.status_code == 200
         get_cdf_const_values = api.get(value['_links']['values'])
         assert get_cdf_const_values.status_code == 200
+
+        # Post values to the forecast
+        fx_values = static_forecast_values()
+        fx_values['timestamp'] = fx_values.index
+        json_values = fx_values.to_dict(orient='records')
+
+        post_values = api.post(value['_links']['values'],
+                               json={'values': json_values})
+        assert post_values.status_code == 201
+        get_values = api.get(value['_links']['values'],
+                             headers={'Accept': 'application/json'})
+        assert get_values.status_code == 200
+
     delete = api.delete(new_cdf_fx_url)
     assert delete.status_code == 200
     assert new_cdf_fx not in get_cdf_fx_list(api)
