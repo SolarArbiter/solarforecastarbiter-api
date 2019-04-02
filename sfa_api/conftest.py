@@ -14,8 +14,64 @@ variables = ', '.join(VARIABLES)
 interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
 interval_labels = ', '.join(INTERVAL_LABELS)
 
+VALID_SITE_JSON = {
+    "elevation": 500.0,
+    "extra_parameters": '{"parameter": "value"}',
+    "latitude": 42.19,
+    "longitude": -122.7,
+    "modeling_parameters": {
+        "ac_capacity": 0.015,
+        "dc_capacity": 0.015,
+        "backtrack": True,
+        "temperature_coefficient": -.002,
+        "ground_coverage_ratio": 0.5,
+        "surface_azimuth": 180,
+        "surface_tilt": 45.0,
+        "tracking_type": "fixed"
+    },
+    "name": "Test Site",
+    "timezone": "Etc/GMT+8",
+}
 
-@pytest.fixture()
+VALID_FORECAST_JSON = {
+    "extra_parameters": '{"instrument": "pyranometer"}',
+    "name": "test forecast",
+    "site_id": "123e4567-e89b-12d3-a456-426655440001",
+    "variable": "ac_power",
+    "interval_label": "beginning",
+    "issue_time_of_day": "12:00",
+    "lead_time_to_start": 60,
+    "interval_length": 1,
+    "run_length": 1440,
+    "interval_value_type": "interval_mean",
+}
+
+
+VALID_OBS_JSON = {
+    "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
+    "name": "Ashland OR, ghi",
+    "site_id": "123e4567-e89b-12d3-a456-426655440001",
+    "variable": "ghi",
+    "interval_label": "beginning",
+    "interval_length": 1,
+}
+
+
+VALID_CDF_FORECAST_JSON = VALID_FORECAST_JSON.copy()
+VALID_CDF_FORECAST_JSON.update({
+    "name": 'test cdf forecast',
+    "axis": 'x',
+    "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
+})
+
+
+def copy_update(json, key, value):
+    new_json = json.copy()
+    new_json[key] = value
+    return new_json
+
+
+@pytest.fixture(scope="class")
 def app():
     if not os.getenv('SFA_API_STATIC_DATA'):
         os.environ['SFA_API_STATIC_DATA'] = 'true'

@@ -1,27 +1,8 @@
 import pytest
 
 
-from sfa_api.conftest import variables, interval_value_types, interval_labels
-
-
-VALID_FORECAST_JSON = {
-    "extra_parameters": '{"instrument": "pyranometer"}',
-    "name": "test forecast",
-    "site_id": "123e4567-e89b-12d3-a456-426655440001",
-    "variable": "ac_power",
-    "interval_label": "beginning",
-    "issue_time_of_day": "12:00",
-    "lead_time_to_start": 60,
-    "interval_length": 1,
-    "run_length": 1440,
-    "interval_value_type": "interval_mean",
-}
-
-
-def copy_update(json, key, value):
-    new_json = json.copy()
-    new_json[key] = value
-    return new_json
+from sfa_api.conftest import (variables, interval_value_types, interval_labels,
+                              VALID_FORECAST_JSON, copy_update)
 
 
 INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,

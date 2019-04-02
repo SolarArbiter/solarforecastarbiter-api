@@ -1,5 +1,7 @@
 import pytest
 
+from sfa_api.conftest import VALID_SITE_JSON
+
 
 def invalidate(json, key):
     new_json = json.copy()
@@ -7,24 +9,6 @@ def invalidate(json, key):
     return new_json
 
 
-VALID_SITE_JSON = {
-    "elevation": 500.0,
-    "extra_parameters": '{"parameter": "value"}',
-    "latitude": 42.19,
-    "longitude": -122.7,
-    "modeling_parameters": {
-        "ac_capacity": 0.015,
-        "dc_capacity": 0.015,
-        "backtrack": True,
-        "temperature_coefficient": -.002,
-        "ground_coverage_ratio": 0.5,
-        "surface_azimuth": 180,
-        "surface_tilt": 45.0,
-        "tracking_type": "fixed"
-    },
-    "name": "Test Site",
-    "timezone": "Etc/GMT+8",
-}
 INVALID_ELEVATION = invalidate(VALID_SITE_JSON, 'elevation')
 INVALID_LATITUDE = invalidate(VALID_SITE_JSON, 'latitude')
 INVALID_LONGITUDE = invalidate(VALID_SITE_JSON, 'longitude')

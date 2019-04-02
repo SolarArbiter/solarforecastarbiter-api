@@ -1,23 +1,8 @@
 import pytest
 
 
-from sfa_api.conftest import variables, interval_labels
-
-
-VALID_OBS_JSON = {
-    "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
-    "name": "Ashland OR, ghi",
-    "site_id": "123e4567-e89b-12d3-a456-426655440001",
-    "variable": "ghi",
-    "interval_label": "beginning",
-    "interval_length": 1,
-}
-
-
-def copy_update(json, key, value):
-    new_json = json.copy()
-    new_json[key] = value
-    return new_json
+from sfa_api.conftest import (variables, interval_labels,
+                              VALID_OBS_JSON, copy_update)
 
 
 INVALID_VARIABLE = copy_update(VALID_OBS_JSON,

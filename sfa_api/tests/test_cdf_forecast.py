@@ -1,48 +1,27 @@
 import pytest
 
 
-from sfa_api.conftest import variables, interval_value_types, interval_labels
+from sfa_api.conftest import (variables, interval_value_types, interval_labels,
+                              VALID_CDF_FORECAST_JSON, copy_update)
 
 
-VALID_FORECAST_JSON = {
-    "extra_parameters": '{"instrument": "pyranometer"}',
-    "name": "test forecast",
-    "site_id": "123e4567-e89b-12d3-a456-426655440001",
-    "variable": "ac_power",
-    "interval_label": "beginning",
-    "issue_time_of_day": "12:00",
-    "lead_time_to_start": 60,
-    "interval_length": 1,
-    "run_length": 1440,
-    "interval_value_type": "interval_mean",
-    "axis": 'x',
-    "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
-}
-
-
-def copy_update(json, key, value):
-    new_json = json.copy()
-    new_json[key] = value
-    return new_json
-
-
-INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,
+INVALID_VARIABLE = copy_update(VALID_CDF_FORECAST_JSON,
                                'variable', 'invalid')
-INVALID_INTERVAL_LABEL = copy_update(VALID_FORECAST_JSON,
+INVALID_INTERVAL_LABEL = copy_update(VALID_CDF_FORECAST_JSON,
                                      'interval_label', 'invalid')
-INVALID_ISSUE_TIME = copy_update(VALID_FORECAST_JSON,
+INVALID_ISSUE_TIME = copy_update(VALID_CDF_FORECAST_JSON,
                                  'issue_time_of_day', 'invalid')
-INVALID_LEAD_TIME = copy_update(VALID_FORECAST_JSON,
+INVALID_LEAD_TIME = copy_update(VALID_CDF_FORECAST_JSON,
                                 'lead_time_to_start', 'invalid')
-INVALID_INTERVAL_LENGTH = copy_update(VALID_FORECAST_JSON,
+INVALID_INTERVAL_LENGTH = copy_update(VALID_CDF_FORECAST_JSON,
                                       'interval_length', 'invalid')
-INVALID_RUN_LENGTH = copy_update(VALID_FORECAST_JSON,
+INVALID_RUN_LENGTH = copy_update(VALID_CDF_FORECAST_JSON,
                                  'run_length', 'invalid')
-INVALID_VALUE_TYPE = copy_update(VALID_FORECAST_JSON,
+INVALID_VALUE_TYPE = copy_update(VALID_CDF_FORECAST_JSON,
                                  'interval_value_type', 'invalid')
-INVALID_AXIS = copy_update(VALID_FORECAST_JSON,
+INVALID_AXIS = copy_update(VALID_CDF_FORECAST_JSON,
                            'interval_value_type', 'invalid')
-INVALID_CONSTANT_VALUES = copy_update(VALID_FORECAST_JSON,
+INVALID_CONSTANT_VALUES = copy_update(VALID_CDF_FORECAST_JSON,
                                       'interval_value_type',
                                       'invalid')
 
@@ -51,7 +30,7 @@ empty_json_response = '{"axis":["Missing data for required field."],"constant_va
 
 
 @pytest.mark.parametrize('payload,status_code', [
-    (VALID_FORECAST_JSON, 201),
+    (VALID_CDF_FORECAST_JSON, 201),
 ])
 def test_cdf_forecast_group_post_success(api, payload, status_code):
     r = api.post('/forecasts/cdf/',
