@@ -16,8 +16,8 @@ import pymysql
 from pymysql import converters
 
 
-from sfa_api.auth import current_user
 from sfa_api import schema, json
+from sfa_api.utils.auth import current_user
 from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 
 

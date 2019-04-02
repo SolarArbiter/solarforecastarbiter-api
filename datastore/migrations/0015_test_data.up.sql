@@ -1,11 +1,11 @@
 SET @orgid = (SELECT UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1));
 
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
-    'Reference', @orgid, TRUE);
+    'Organization 1', @orgid, TRUE);
 
 SET @userid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
-    @userid, 'auth0|testtesttest', @orgid);
+       @userid, 'auth0|5be343df7025406237820b85', @orgid);
 
 SET @roleid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (

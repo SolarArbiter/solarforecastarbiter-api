@@ -25,7 +25,7 @@ static_sites = {
             "tracking_type": None
         },
         "name": "Ashland OR",
-        "provider": "Reference",
+        "provider": "Organization 1",
         "timezone": "Etc/GMT+8",
         "site_id": '123e4567-e89b-12d3-a456-426655440001',
         "created_at": dt.datetime(2019, 3, 1, 11, 44, 38),
@@ -52,7 +52,7 @@ static_sites = {
             "tracking_type": None
         },
         "name": "Weather Station 1",
-        "provider": "Reference",
+        "provider": "Organization 1",
         "timezone": "America/Phoenix",
         "site_id": 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a',
         "created_at": dt.datetime(2019, 3, 1, 11, 44, 44),
@@ -79,7 +79,7 @@ static_sites = {
             "tracking_type": "fixed"
         },
         "name": "Power Plant 1",
-        "provider": "Reference",
+        "provider": "Organization 1",
         "timezone": "Etc/GMT+6",
         "site_id": '123e4567-e89b-12d3-a456-426655440002',
         "created_at": dt.datetime(2019, 3, 1, 11, 44, 46),
