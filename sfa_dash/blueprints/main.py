@@ -105,14 +105,6 @@ class TrialsView(DataDashView):
     template = 'data/trials.html'
 
 
-class ToSites(MethodView):
-    """Temporary redirect to sites until landing/homepage is
-    designed.
-    """
-    def get(self):
-        return redirect(url_for('data_dashboard.sites_view'), 302)
-
-
 data_dash_blp = Blueprint('data_dashboard', 'data_dashboard')
 data_dash_blp.add_url_rule(
     '/sites/',
@@ -141,6 +133,3 @@ data_dash_blp.add_url_rule(
 data_dash_blp.add_url_rule(
     '/forecasts/<uuid>',
     view_func=SingleForecastView.as_view('forecast_view'))
-
-# Temporary redirect to sites page
-data_dash_blp.add_url_rule('/', view_func=ToSites.as_view('root_redirect'))
