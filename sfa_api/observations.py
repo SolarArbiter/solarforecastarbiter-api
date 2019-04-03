@@ -186,7 +186,9 @@ class ObservationValuesView(MethodView):
                                observation_id=observation_id,
                                _external=True)
             csv_header = f'# observation_id: {observation_id}\n# metadata: {meta_url}\n'  # NOQA
-            csv_values = values.to_csv(date_format='%Y%m%dT%H:%M:%S%z')
+            csv_values = values.to_csv(columns=['value','quality_flag'],
+                                       index_label='timestamp',
+                                       date_format='%Y%m%dT%H:%M:%S%z')
             csv_data = csv_header + csv_values
             response = make_response(csv_data, 200)
             response.mimetype = 'text/csv'

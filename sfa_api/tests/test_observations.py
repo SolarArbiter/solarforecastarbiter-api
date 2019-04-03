@@ -102,11 +102,11 @@ NON_BINARY_FLAG_JSON = {
 }
 VALID_CSV = ('# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
              '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
-             'timestamp,quality_flag,value\n'
-             '20190122T12:04:00+0000,0.0,52.0\n'
-             '20190122T12:05:00+0000,0.0,73.0\n'
-             '20190122T12:06:00+0000,0.0,42.0\n'
-             '20190122T12:07:00+0000,0.0,12.0\n')
+             'timestamp,value,quality_flag\n'
+             '20190122T12:04:00+0000,52.0,0\n'
+             '20190122T12:05:00+0000,73.0,0\n'
+             '20190122T12:06:00+0000,42.0,0\n'
+             '20190122T12:07:00+0000,12.0,0\n')
 WRONG_DATE_FORMAT_CSV = "timestamp,value,quality_flag\nksdfjgn,32.93,0"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fgh,0" # NOQA
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
