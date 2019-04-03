@@ -208,7 +208,7 @@ span.help-text.help-text-top::before{
   bottom: -13px;
 }
 
-input[class$="-field"]:focus ~ span.help-text,select[class$="-field"]:focus ~ span.help-text{
+[class$="-field"]:focus ~ span.help-text{
   display: block;
 }
 ul.error-list{

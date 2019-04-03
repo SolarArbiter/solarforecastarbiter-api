@@ -1,13 +1,13 @@
 from sfa_dash.api_interface import get_request, post_request
 
 
-def get_metadata(obs_id):
-    r = get_request(f'/observations/{obs_id}/metadata')
+def get_metadata(observation_id):
+    r = get_request(f'/observations/{observation_id}/metadata')
     return r
 
 
-def get_values(obs_id, **kwargs):
-    r = get_request(f'/observations/{obs_id}/values', **kwargs)
+def get_values(observation_id, **kwargs):
+    r = get_request(f'/observations/{observation_id}/values', **kwargs)
     return r
 
 

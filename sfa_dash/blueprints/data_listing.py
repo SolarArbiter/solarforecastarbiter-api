@@ -11,6 +11,7 @@ class DataListingView(BaseView):
     subnav_format = {
         '{observations_url}': 'Observations',
         '{forecasts_url}': 'Forecasts',
+        '{cdf_forecasts_url}': 'Probabilistic Forecasts',
     }
 
     def __init__(self, data_type, **kwargs):
@@ -20,6 +21,8 @@ class DataListingView(BaseView):
             self.table_function = DataTables.get_forecast_table
         elif data_type == 'observation':
             self.table_function = DataTables.get_observation_table
+        elif data_type == 'cdf_forecast':
+            self.table_function = DataTables.get_cdf_forecast_table
         else:
             raise Exception
         self.data_type = data_type
@@ -40,7 +43,7 @@ class DataListingView(BaseView):
                 text=site_metadata['name'])
         breadcrumb += breadcrumb_format.format(
             url=url_for(f'data_dashboard.{self.data_type}s', site_id=site_id),
-            text=self.data_type.capitalize())
+            text=self.data_type.replace('_', ' ').title())
         return breadcrumb
 
     def get_template_args(self, **kwargs):
@@ -52,6 +55,8 @@ class DataListingView(BaseView):
                                         **kwargs),
             'forecasts_url': url_for('data_dashboard.forecasts',
                                      **kwargs),
+            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
+                                         **kwargs)
         }
         template_args['subnav'] = self.format_subnav(**subnav_kwargs)
         template_args['data_table'] = self.table_function(**kwargs)

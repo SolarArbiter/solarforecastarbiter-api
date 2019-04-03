@@ -24,11 +24,12 @@
 {% if help_text is not none %}<span class="help-text text-muted help-text-top">{{ help_text }}</span>{% endif %}
 {% endmacro %}
 
-{% macro radio(label, name, options, required=False) %}
-<label>{{ label }}</label>
+{% macro radio(label, name, options, help_text=None, required=False, form_data={}) %}
+<label>{{ label }}</label><br/>
 {% for option, option_label in options.items() %}
-<input name="{{ name }}" type="radio" value="{{ option }}">{{ option_label }}</label>
+<input name="{{ name }}" type="radio" class="{{ name }}-field" value="{{ option }}">{{ option_label }}</label>
 {% endfor %}
+{% if help_text is not none %}<span class="help-text text-muted">{{ help_text }}</span>{% endif %}
 {% endmacro %}
 
 {% macro timedelta(label, name, help_text=None, required=False, form_data={}) %}

@@ -29,6 +29,7 @@ class SiteDashView(BaseView):
     subnav_format = {
         '{observations_url}': 'Observations',
         '{forecasts_url}': 'Forecasts',
+        '{cdf_forecasts_url}': 'Probabilistic Forecasts',
     }
 
     def template_args(self, **kwargs):
@@ -40,6 +41,8 @@ class SiteDashView(BaseView):
                                     site_id=self.metadata['site_id']),
            'observations_url': url_for('data_dashboard.observations',
                                        site_id=self.metadata['site_id']),
+           'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
+                                        site_id=self.metadata['site_id'])
         }
         temp_args['subnav'] = self.format_subnav(**subnav_kwargs)
         temp_args['breadcrumb'] = self.breadcrumb_html()

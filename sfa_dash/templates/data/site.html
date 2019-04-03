@@ -5,6 +5,8 @@
 {% block toolbar %}
   <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site_observation', site_id=site_id) }}">Create new Observation</a>
   <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site_forecast', site_id=site_id) }}">Create new Forecast</a>
+  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_cdf_forecast', site_id=site_id) }}">Create new Probabilistic Forecast</a>
+
 {% endblock %}
 {{ listing | safe }}
 {% endblock %}

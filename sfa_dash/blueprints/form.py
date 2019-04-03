@@ -3,7 +3,8 @@ import json
 from flask import (Blueprint, render_template, request,
                    abort, redirect, url_for, make_response)
 import pandas as pd
-from sfa_dash.api_interface import sites, observations, forecasts
+from sfa_dash.api_interface import (sites, observations, forecasts,
+                                    cdf_forecast_groups)
 from sfa_dash.blueprints.base import BaseView
 
 
@@ -18,9 +19,15 @@ class MetadataForm(BaseView):
             self.api_handle = forecasts
             self.formatter = self.forecast_formatter
             self.metadata_template = 'data/metadata/site_metadata.html'
+        elif data_type == 'cdf_forecast':
+            self.template = 'forms/cdf_forecast_form.html'
+            self.id_key = 'forecast_id'
+            self.api_handle = cdf_forecast_groups
+            self.formatter = self.cdf_forecast_formatter
+            self.metadata_template = 'data/metadata/site_metadata.html'
         elif data_type == 'observation':
             self.template = 'forms/observation_form.html'
-            self.id_key = 'obs_id'
+            self.id_key = 'observation_id'
             self.api_handle = observations
             self.formatter = self.observation_formatter
             self.metadata_template = 'data/metadata/site_metadata.html'
@@ -142,8 +149,9 @@ class MetadataForm(BaseView):
             Form data formatted to the API spec.
         """
         observation_metadata = {}
-        direct_keys = ['name', 'variable', 'value_type', 'uncertainty',
-                       'extra_parameters', 'interval_label', 'site_id']
+        direct_keys = ['name', 'variable', 'interval_value_type',
+                       'uncertainty', 'extra_parameters', 'interval_label',
+                       'site_id']
         observation_metadata = {key: observation_dict[key]
                                 for key in direct_keys
                                 if observation_dict.get(key, "") != ""}
@@ -154,8 +162,9 @@ class MetadataForm(BaseView):
 
     def forecast_formatter(self, forecast_dict):
         forecast_metadata = {}
-        direct_keys = ['name', 'variable', 'value_type', 'extra_parameters',
-                       'interval_length', 'interval_label', 'site_id']
+        direct_keys = ['name', 'variable', 'interval_value_type',
+                       'extra_parameters', 'interval_length',
+                       'interval_label', 'site_id']
         forecast_metadata = {key: forecast_dict[key]
                              for key in direct_keys
                              if forecast_dict.get(key, '') != ''}
@@ -172,6 +181,13 @@ class MetadataForm(BaseView):
                 forecast_dict,
                 'interval_length')
         return forecast_metadata
+
+    def cdf_forecast_formatter(self, forecast_dict):
+        cdf_forecast_metadata = self.forecast_formatter(forecast_dict)
+        constant_values = forecast_dict['constant_values'].split(',')
+        cdf_forecast_metadata['constant_values'] = constant_values
+        cdf_forecast_metadata['axis'] = forecast_dict['axis']
+        return cdf_forecast_metadata
 
     def get(self):
         raise NotImplementedError
@@ -226,8 +242,8 @@ class CreateForm(MetadataForm):
                                        'permissions to create resources '
                                        f'of type {self.data_type}'}
         else:
-            template_args['errors'] = {'Error': 'Something went wrong, please '
-                                       'contact a site administrator.'}
+            template_args['errors'] = {'Error': ['Something went wrong, '
+                                       'contact a site administrator.']}
 
         return render_template(self.template, form_data=form_data,
                                **template_args)
@@ -367,19 +383,22 @@ forms_blp.add_url_rule('/sites/create',
 forms_blp.add_url_rule('/sites/<site_id>/observations/create',
                        view_func=CreateForm.as_view('create_site_observation',
                                                     data_type='observation'))
-forms_blp.add_url_rule('/sites/<site_id>/forecasts/create',
+forms_blp.add_url_rule('/sites/<site_id>/forecasts/single/create',
                        view_func=CreateForm.as_view('create_site_forecast',
                                                     data_type='forecast'))
+forms_blp.add_url_rule('/sites/<site_id>/forecasts/cdf/create',
+                       view_func=CreateForm.as_view('create_cdf_forecast',
+                                                    data_type='cdf_forecast'))
 forms_blp.add_url_rule('/observations/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_observation_data',
                                                     data_type='observation'))
-forms_blp.add_url_rule('/forecasts/<uuid>/upload',
+forms_blp.add_url_rule('/forecasts/single/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_forecast_data',
                                                     data_type='forecast'))
 forms_blp.add_url_rule('/observations/<uuid>/download',
                        view_func=DownloadForm.as_view(
                            'download_observation_data',
                            data_type='observation'))
-forms_blp.add_url_rule('/forecasts/<uuid>/download',
+forms_blp.add_url_rule('/forecasts/single/<uuid>/download',
                        view_func=DownloadForm.as_view('download_forecast_data',
                                                       data_type='forecast'))
