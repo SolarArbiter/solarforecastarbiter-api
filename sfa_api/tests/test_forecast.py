@@ -1,9 +1,6 @@
 import pytest
 
 
-import pandas.testing as pdt
-
-
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_FORECAST_JSON, copy_update)
 
@@ -110,7 +107,7 @@ NON_NUMERICAL_VALUE_JSON = {
     ]
 }
 VALID_CSV = ('# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
-             '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' #NOQA
+             '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
              'timestamp,value\n'
              '20190122T12:04:00+0000,7.0\n'
              '20190122T12:05:00+0000,3.0\n'

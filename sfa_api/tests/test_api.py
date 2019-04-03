@@ -204,8 +204,8 @@ def test_create_delete_forecast(api):
                            base_url=BASE_URL,
                            json={'values': json_values})
     assert post_values.status_code == 201
-    
-    #request json values
+
+    # request json values
     get_values = api.get(f'/forecasts/single/{new_fx_id}/values',
                          base_url=BASE_URL,
                          headers={'Accept': 'application/json'})

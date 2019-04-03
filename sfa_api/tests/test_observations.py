@@ -101,7 +101,7 @@ NON_BINARY_FLAG_JSON = {
     ]
 }
 VALID_CSV = ('# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
-             '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' #NOQA
+             '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
              'timestamp,quality_flag,value\n'
              '20190122T12:04:00+0000,0.0,52.0\n'
              '20190122T12:05:00+0000,0.0,73.0\n'

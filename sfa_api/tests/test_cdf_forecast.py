@@ -211,7 +211,7 @@ def test_post_and_get_values_json(api, cdf_forecast_id):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  json=VALID_VALUE_JSON)
-    assert r.status_code == 201 
+    assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
     end = '2019-01-22T17:56:00+00:00'
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
@@ -227,7 +227,7 @@ def test_post_and_get_values_csv(api, cdf_forecast_id):
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CSV)
-    assert r.status_code == 201 
+    assert r.status_code == 201
     start = '2019-01-22T12:04:00+00:00'
     end = '2019-01-22T12:07:00+00:00'
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
