@@ -69,14 +69,14 @@ VALID_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:54:36Z",
-         'value': 1},
+         'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:55:36Z",
-         'value': '32.96'},
+         'timestamp': "2019-01-22T17:55:00+00:00",
+         'value': 32.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:56:36Z",
-         'value': 3}
+         'timestamp': "2019-01-22T17:56:00+00:00",
+         'value': 3.0}
     ]
 }
 WRONG_DATE_FORMAT_JSON = {
@@ -100,7 +100,13 @@ NON_BINARY_FLAG_JSON = {
          'value': 3},
     ]
 }
-VALID_CSV = "#I am a header comment, I am going to be ignored\ntimestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,0\n2018-10-29T12:05:23Z,32.93,0\n2018-10-29T12:06:23Z,32.93,0\n2018-10-29T12:07:23Z,32.93,0\n" # NOQA
+VALID_CSV = ('# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
+             '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' #NOQA
+             'timestamp,quality_flag,value\n'
+             '20190122T12:04:00+0000,0.0,52.0\n'
+             '20190122T12:05:00+0000,0.0,73.0\n'
+             '20190122T12:06:00+0000,0.0,42.0\n'
+             '20190122T12:07:00+0000,0.0,12.0\n')
 WRONG_DATE_FORMAT_CSV = "timestamp,value,quality_flag\nksdfjgn,32.93,0"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fgh,0" # NOQA
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
@@ -189,3 +195,34 @@ def test_get_observation_values_200(api, start, end, mimetype, observation_id):
                 query_string={'start': start, 'end': end})
     assert r.status_code == 200
     assert r.mimetype == mimetype
+
+
+def test_post_and_get_values_json(api, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
+                 base_url=BASE_URL,
+                 json=VALID_JSON)
+    assert r.status_code == 201
+    start = '2019-01-22T17:54:00+00:00'
+    end = '2019-01-22T17:56:00+00:00'
+    r = api.get(f'/observations/{observation_id}/values',
+                base_url=BASE_URL,
+                headers={'Accept': 'application/json'},
+                query_string={'start': start, 'end': end})
+    posted_data = r.get_json()
+    assert VALID_JSON['values'] == posted_data['values']
+
+
+def test_post_and_get_values_csv(api, observation_id):
+    r = api.post(f'/observations/{observation_id}/values',
+                 base_url=BASE_URL,
+                 headers={'Content-Type': 'text/csv'},
+                 data=VALID_CSV)
+    assert r.status_code == 201
+    start = '2019-01-22T12:04:00+00:00'
+    end = '2019-01-22T12:07:00+00:00'
+    r = api.get(f'/observations/{observation_id}/values',
+                base_url=BASE_URL,
+                headers={'Accept': 'text/csv'},
+                query_string={'start': start, 'end': end})
+    posted_data = r.data
+    assert VALID_CSV == posted_data.decode('utf-8')

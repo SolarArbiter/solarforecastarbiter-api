@@ -74,7 +74,7 @@ def copy_update(json, key, value):
     return new_json
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def app():
     if not os.getenv('SFA_API_STATIC_DATA'):
         os.environ['SFA_API_STATIC_DATA'] = 'true'
