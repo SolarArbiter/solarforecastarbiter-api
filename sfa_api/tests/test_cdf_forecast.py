@@ -81,17 +81,6 @@ def test_get_forecast_metadata_404(api, missing_id):
     assert r.status_code == 404
 
 
-VALID_FX_VALUE_JSON = {
-    'id': '123e4567-e89b-12d3-a456-426655440000',
-    'values': [
-        {'timestamp': "2019-01-22T17:54:00+00:00",
-         'value': 1.0},
-        {'timestamp': "2019-01-22T17:55:00+00:00",
-         'value': 32.0},
-        {'timestamp': "2019-01-22T17:56:00+00:00",
-         'value': 3.0}
-    ]
-}
 WRONG_DATE_FORMAT_VALUE_JSON = {
     'values': [
         {'timestamp': '20-2-3T11111F',
@@ -104,13 +93,6 @@ NON_NUMERICAL_VALUE_JSON = {
          'value': 'four'},
     ]
 }
-VALID_FX_VALUE_CSV = ('# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
-             '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
-             'timestamp,value\n'
-             '20190122T12:04:00+0000,5.0\n'
-             '20190122T12:05:00+0000,1.0\n'
-             '20190122T12:06:00+0000,32.0\n'
-             '20190122T12:07:00+0000,3.0\n')
 WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:23Z,fgh" # NOQA
 

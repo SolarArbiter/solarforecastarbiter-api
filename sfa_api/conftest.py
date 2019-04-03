@@ -67,7 +67,7 @@ VALID_CDF_FORECAST_JSON.update({
     "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
 })
 
-VALID_OBS_VALUE_JSON = { 
+VALID_OBS_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
         {'quality_flag': 0,
@@ -79,7 +79,7 @@ VALID_OBS_VALUE_JSON = {
         {'quality_flag': 0,
          'timestamp': "2019-01-22T17:56:00+00:00",
          'value': 3.0}
-    ]   
+    ]
 }
 VALID_OBS_VALUE_CSV = (
     '# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
@@ -89,7 +89,7 @@ VALID_OBS_VALUE_CSV = (
     '20190122T12:05:00+0000,73.0,0\n'
     '20190122T12:06:00+0000,42.0,0\n'
     '20190122T12:07:00+0000,12.0,0\n')
-VALID_FX_VALUE_JSON = { 
+VALID_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
         {'timestamp': "2019-01-22T17:54:00+00:00",
@@ -98,7 +98,7 @@ VALID_FX_VALUE_JSON = {
          'value': 32.0},
         {'timestamp': "2019-01-22T17:56:00+00:00",
          'value': 3.0}
-    ]   
+    ]
 }
 VALID_FX_VALUE_CSV = (
     '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'

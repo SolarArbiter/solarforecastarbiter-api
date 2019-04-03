@@ -84,7 +84,6 @@ def test_get_forecast_metadata_404(api, missing_id):
     assert r.status_code == 404
 
 
-
 WRONG_DATE_FORMAT_VALUE_JSON = {
     'values': [
         {'timestamp': '20-2-3T11111F',
