@@ -2,7 +2,8 @@ import pytest
 
 
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
-                              BASE_URL, VALID_FORECAST_JSON, copy_update)
+                              BASE_URL, VALID_FORECAST_JSON, copy_update,
+                              VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV)
 
 
 INVALID_VARIABLE = copy_update(VALID_FORECAST_JSON,
@@ -83,17 +84,7 @@ def test_get_forecast_metadata_404(api, missing_id):
     assert r.status_code == 404
 
 
-VALID_VALUE_JSON = {
-    'id': '123e4567-e89b-12d3-a456-426655440000',
-    'values': [
-        {'timestamp': "2019-01-22T17:54:00+00:00",
-         'value': 1.0},
-        {'timestamp': "2019-01-22T17:55:00+00:00",
-         'value': 32.0},
-        {'timestamp': "2019-01-22T17:56:00+00:00",
-         'value': 3.0}
-    ]
-}
+
 WRONG_DATE_FORMAT_VALUE_JSON = {
     'values': [
         {'timestamp': '20-2-3T11111F',
@@ -106,13 +97,6 @@ NON_NUMERICAL_VALUE_JSON = {
          'value': 'four'},
     ]
 }
-VALID_CSV = ('# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
-             '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
-             'timestamp,value\n'
-             '20190122T12:04:00+0000,7.0\n'
-             '20190122T12:05:00+0000,3.0\n'
-             '20190122T12:06:00+0000,13.0\n'
-             '20190122T12:07:00+0000,25.0\n')
 WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:00:00+00,fgh" # NOQA
 
@@ -120,7 +104,7 @@ NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:00:00+00,fgh" # NOQ
 def test_post_forecast_values_valid_json(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
-                 json=VALID_VALUE_JSON)
+                 json=VALID_FX_VALUE_JSON)
     assert r.status_code == 201
 
 
@@ -129,7 +113,7 @@ def test_post_json_storage_call(api, forecast_id, mocker):
     storage.return_value = forecast_id
     api.post(f'/forecasts/single/{forecast_id}/values',
              base_url=BASE_URL,
-             json=VALID_VALUE_JSON)
+             json=VALID_FX_VALUE_JSON)
     storage.assert_called()
 
 
@@ -138,7 +122,7 @@ def test_post_values_404(api, missing_id, mocker):
     storage.return_value = None
     r = api.post(f'/forecasts/single/{missing_id}/values',
                  base_url=BASE_URL,
-                 json=VALID_VALUE_JSON)
+                 json=VALID_FX_VALUE_JSON)
     assert r.status_code == 404
 
 
@@ -173,7 +157,7 @@ def test_post_forecast_values_valid_csv(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_CSV)
+                 data=VALID_FX_VALUE_CSV)
     assert r.status_code == 201
 
 
@@ -212,7 +196,7 @@ def test_get_forecast_values_200(api, start, end, mimetype, forecast_id):
 def test_post_and_get_values_json(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
-                 json=VALID_VALUE_JSON)
+                 json=VALID_FX_VALUE_JSON)
     assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
     end = '2019-01-22T17:56:00+00:00'
@@ -221,14 +205,14 @@ def test_post_and_get_values_json(api, forecast_id):
                 headers={'Accept': 'application/json'},
                 query_string={'start': start, 'end': end})
     posted_data = r.get_json()
-    assert VALID_VALUE_JSON['values'] == posted_data['values']
+    assert VALID_FX_VALUE_JSON['values'] == posted_data['values']
 
 
 def test_post_and_get_values_csv(api, forecast_id):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_CSV)
+                 data=VALID_FX_VALUE_CSV)
     assert r.status_code == 201
     start = '2019-01-22T12:04:00+00:00'
     end = '2019-01-22T12:07:00+00:00'
@@ -237,4 +221,4 @@ def test_post_and_get_values_csv(api, forecast_id):
                 headers={'Accept': 'text/csv'},
                 query_string={'start': start, 'end': end})
     posted_data = r.data
-    assert VALID_CSV == posted_data.decode('utf-8')
+    assert VALID_FX_VALUE_CSV == posted_data.decode('utf-8')

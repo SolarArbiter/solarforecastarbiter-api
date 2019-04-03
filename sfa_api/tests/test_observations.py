@@ -2,6 +2,7 @@ import pytest
 
 
 from sfa_api.conftest import (variables, interval_labels, BASE_URL,
+                              VALID_OBS_VALUE_JSON, VALID_OBS_VALUE_CSV,
                               VALID_OBS_JSON, copy_update)
 
 
@@ -65,20 +66,6 @@ def test_get_observation_metadata_404(api, missing_id):
     assert r.status_code == 404
 
 
-VALID_JSON = {
-    'id': '123e4567-e89b-12d3-a456-426655440000',
-    'values': [
-        {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:54:00+00:00",
-         'value': 1.0},
-        {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:55:00+00:00",
-         'value': 32.0},
-        {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:56:00+00:00",
-         'value': 3.0}
-    ]
-}
 WRONG_DATE_FORMAT_JSON = {
     'values': [
         {'quality_flag': 0,
@@ -100,13 +87,6 @@ NON_BINARY_FLAG_JSON = {
          'value': 3},
     ]
 }
-VALID_CSV = ('# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
-             '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
-             'timestamp,value,quality_flag\n'
-             '20190122T12:04:00+0000,52.0,0\n'
-             '20190122T12:05:00+0000,73.0,0\n'
-             '20190122T12:06:00+0000,42.0,0\n'
-             '20190122T12:07:00+0000,12.0,0\n')
 WRONG_DATE_FORMAT_CSV = "timestamp,value,quality_flag\nksdfjgn,32.93,0"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fgh,0" # NOQA
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
@@ -115,7 +95,7 @@ NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,
 def test_post_observation_values_valid_json(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
-                 json=VALID_JSON)
+                 json=VALID_OBS_VALUE_JSON)
     assert r.status_code == 201
 
 
@@ -124,7 +104,7 @@ def test_post_json_storage_call(api, observation_id, mocker):
     storage.return_value = observation_id
     api.post(f'/observations/{observation_id}/values',
              base_url=BASE_URL,
-             json=VALID_JSON)
+             json=VALID_OBS_VALUE_JSON)
     storage.assert_called()
 
 
@@ -161,7 +141,7 @@ def test_post_observation_values_valid_csv(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_CSV)
+                 data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
 
 
@@ -200,7 +180,7 @@ def test_get_observation_values_200(api, start, end, mimetype, observation_id):
 def test_post_and_get_values_json(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
-                 json=VALID_JSON)
+                 json=VALID_OBS_VALUE_JSON)
     assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
     end = '2019-01-22T17:56:00+00:00'
@@ -209,14 +189,14 @@ def test_post_and_get_values_json(api, observation_id):
                 headers={'Accept': 'application/json'},
                 query_string={'start': start, 'end': end})
     posted_data = r.get_json()
-    assert VALID_JSON['values'] == posted_data['values']
+    assert VALID_OBS_VALUE_JSON['values'] == posted_data['values']
 
 
 def test_post_and_get_values_csv(api, observation_id):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_CSV)
+                 data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
     start = '2019-01-22T12:04:00+00:00'
     end = '2019-01-22T12:07:00+00:00'
@@ -225,4 +205,4 @@ def test_post_and_get_values_csv(api, observation_id):
                 headers={'Accept': 'text/csv'},
                 query_string={'start': start, 'end': end})
     posted_data = r.data
-    assert VALID_CSV == posted_data.decode('utf-8')
+    assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')

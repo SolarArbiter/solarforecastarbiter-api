@@ -67,6 +67,48 @@ VALID_CDF_FORECAST_JSON.update({
     "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
 })
 
+VALID_OBS_VALUE_JSON = { 
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:55:00+00:00",
+         'value': 32.0},
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:56:00+00:00",
+         'value': 3.0}
+    ]   
+}
+VALID_OBS_VALUE_CSV = (
+    '# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
+    '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
+    'timestamp,value,quality_flag\n'
+    '20190122T12:04:00+0000,52.0,0\n'
+    '20190122T12:05:00+0000,73.0,0\n'
+    '20190122T12:06:00+0000,42.0,0\n'
+    '20190122T12:07:00+0000,12.0,0\n')
+VALID_FX_VALUE_JSON = { 
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T17:55:00+00:00",
+         'value': 32.0},
+        {'timestamp': "2019-01-22T17:56:00+00:00",
+         'value': 3.0}
+    ]   
+}
+VALID_FX_VALUE_CSV = (
+    '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
+    '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
+    'timestamp,value\n'
+    '20190122T12:04:00+0000,7.0\n'
+    '20190122T12:05:00+0000,3.0\n'
+    '20190122T12:06:00+0000,13.0\n'
+    '20190122T12:07:00+0000,25.0\n')
+
 
 def copy_update(json, key, value):
     new_json = json.copy()
