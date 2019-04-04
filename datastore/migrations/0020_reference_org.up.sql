@@ -24,6 +24,9 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
 
+INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (@userid, @roleid);
+
+
 SET @siteid = UUID_TO_BIN(UUID(), 1);
 INSERT INTO arbiter_data.sites (
     id, organization_id, name, latitude, longitude, elevation, timezone,
