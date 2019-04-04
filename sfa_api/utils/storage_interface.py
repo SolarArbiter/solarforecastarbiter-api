@@ -218,7 +218,7 @@ def store_observation(observation):
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_observation', observation_id,
-        observation['variable'], observation['site_id'],
+        observation['variable'], str(observation['site_id']),
         observation['name'], observation['interval_label'],
         observation['interval_length'], observation['interval_value_type'],
         observation['uncertainty'], observation['extra_parameters'])
@@ -376,8 +376,8 @@ def store_forecast(forecast):
     forecast_id = generate_uuid()
     # the procedure expects arguments in a certain order
     _call_procedure(
-        'store_forecast', forecast_id, forecast['site_id'], forecast['name'],
-        forecast['variable'], forecast['issue_time_of_day'],
+        'store_forecast', forecast_id, str(forecast['site_id']),
+        forecast['name'], forecast['variable'], forecast['issue_time_of_day'],
         forecast['lead_time_to_start'], forecast['interval_label'],
         forecast['interval_length'], forecast['run_length'],
         forecast['interval_value_type'], forecast['extra_parameters'])
@@ -688,7 +688,7 @@ def store_cdf_forecast_group(cdf_forecast_group):
     # the procedure expects arguments in a certain order
     _call_procedure('store_cdf_forecasts_group',
                     forecast_id,
-                    cdf_forecast_group['site_id'],
+                    str(cdf_forecast_group['site_id']),
                     cdf_forecast_group['name'],
                     cdf_forecast_group['variable'],
                     cdf_forecast_group['issue_time_of_day'],

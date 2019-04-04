@@ -8,7 +8,6 @@ import pytest
 import pymysql
 
 
-from sfa_api import create_app
 from sfa_api.demo.sites import static_sites as demo_sites
 from sfa_api.demo.observations import static_observations as demo_observations
 from sfa_api.demo.forecasts import static_forecasts as demo_forecasts
@@ -21,20 +20,8 @@ from sfa_api.utils import storage_interface
 TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
 
 
-@pytest.fixture(scope='module')
-def app():
-    app = create_app('TestingConfig')
-    with app.app_context():
-        try:
-            storage_interface.mysql_connection()
-        except pymysql.err.OperationalError:
-            pytest.skip('No connection to test database')
-        else:
-            yield app
-
-
 @pytest.fixture()
-def nocommit_cursor(app, mocker):
+def nocommit_cursor(sql_app, mocker):
     conn = storage_interface.mysql_connection()
     special = partial(storage_interface.get_cursor, commit=False)
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
@@ -43,8 +30,8 @@ def nocommit_cursor(app, mocker):
 
 
 @pytest.fixture()
-def user(app):
-    ctx = app.test_request_context()
+def user(sql_app):
+    ctx = sql_app.test_request_context()
     ctx.user = 'auth0|5be343df7025406237820b85'
     ctx.push()
     yield
@@ -52,8 +39,8 @@ def user(app):
 
 
 @pytest.fixture()
-def invalid_user(app):
-    ctx = app.test_request_context()
+def invalid_user(sql_app):
+    ctx = sql_app.test_request_context()
     ctx.user = 'bad'
     ctx.push()
     yield
@@ -84,19 +71,19 @@ def test_try_query_raises():
         storage_interface.try_query(f)
 
 
-def test_get_cursor_and_timezone(app):
+def test_get_cursor_and_timezone(sql_app):
     with storage_interface.get_cursor('standard') as cursor:
         cursor.execute('SELECT @@session.time_zone')
         res = cursor.fetchone()[0]
     assert res == '+00:00'
 
 
-def test_get_cursor_invalid_type(app):
+def test_get_cursor_invalid_type(sql_app):
     with pytest.raises(AttributeError):
         with storage_interface.get_cursor('oither'): pass  # NOQA
 
 
-def test_cursor_rollback(app, user):
+def test_cursor_rollback(sql_app, user):
     obs_id = list(demo_observations.keys())[0]
     with pytest.raises(ValueError):
         with storage_interface.get_cursor('standard') as cursor:
@@ -107,12 +94,12 @@ def test_cursor_rollback(app, user):
     assert res == demo_observations[obs_id]
 
 
-def test_cursor_rollback_internal_err(app):
+def test_cursor_rollback_internal_err(sql_app):
     obs_id = list(demo_observations.keys())[0]
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_observation(obs_id)
 
-    ctx = app.test_request_context()
+    ctx = sql_app.test_request_context()
     ctx.user = 'auth0|5be343df7025406237820b85'
     ctx.push()
     res = storage_interface.read_observation(obs_id)
@@ -120,7 +107,7 @@ def test_cursor_rollback_internal_err(app):
     ctx.pop()
 
 
-def test_cursor_commit(app, user):
+def test_cursor_commit(sql_app, user):
     demo = list(demo_observations.values())[0].copy()
     demo['name'] = 'demo'
     new_id = storage_interface.store_observation(demo)
@@ -129,40 +116,40 @@ def test_cursor_commit(app, user):
         storage_interface.read_observation(new_id)
 
 
-def test_list_observations(app, user):
+def test_list_observations(sql_app, user):
     observations = storage_interface.list_observations()
     for obs in observations:
         assert obs == demo_observations[obs['observation_id']]
 
 
-def test_list_observations_invalid_user(app, invalid_user):
+def test_list_observations_invalid_user(sql_app, invalid_user):
     observations = storage_interface.list_observations()
     assert len(observations) == 0
 
 
-def test_list_observations_invalid_site(app, user):
+def test_list_observations_invalid_site(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_observations(str(uuid.uuid1()))
 
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
-def test_read_observation(app, user, observation_id):
+def test_read_observation(sql_app, user, observation_id):
     observation = storage_interface.read_observation(observation_id)
     assert observation == demo_observations[observation_id]
 
 
-def test_read_observation_invalid_observation(app, user):
+def test_read_observation_invalid_observation(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation(str(uuid.uuid1()))
 
 
-def test_read_observation_invalid_user(app, invalid_user):
+def test_read_observation_invalid_user(sql_app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation(list(demo_observations.keys())[0])
 
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
-def test_read_observation_values(app, user, observation_id, startend):
+def test_read_observation_values(sql_app, user, observation_id, startend):
     start, end = startend
     observation_values = storage_interface.read_observation_values(
         observation_id, start, end)
@@ -170,14 +157,14 @@ def test_read_observation_values(app, user, observation_id, startend):
     assert (observation_values.columns == ['value', 'quality_flag']).all()
 
 
-def test_read_observation_values_invalid_observation(app, user, startend):
+def test_read_observation_values_invalid_observation(sql_app, user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation_values(
             str(uuid.uuid1()), start, end)
 
 
-def test_read_observation_values_invalid_user(app, invalid_user, startend):
+def test_read_observation_values_invalid_user(sql_app, invalid_user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation_values(
@@ -185,7 +172,7 @@ def test_read_observation_values_invalid_user(app, invalid_user, startend):
 
 
 @pytest.mark.parametrize('observation', demo_observations.values())
-def test_store_observation(app, user, observation, nocommit_cursor):
+def test_store_observation(sql_app, user, observation, nocommit_cursor):
     observation = observation.copy()
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
@@ -197,14 +184,15 @@ def test_store_observation(app, user, observation, nocommit_cursor):
     assert observation == new_observation
 
 
-def test_store_observation_invalid_user(app, invalid_user, nocommit_cursor):
+def test_store_observation_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_observation(
             list(demo_observations.values())[0])
 
 
 @pytest.mark.parametrize('observation', demo_observations.values())
-def test_store_observation_values(app, user, nocommit_cursor,
+def test_store_observation_values(sql_app, user, nocommit_cursor,
                                   observation):
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
@@ -214,14 +202,15 @@ def test_store_observation_values(app, user, nocommit_cursor,
     pdt.assert_frame_equal(stored, obs_vals)
 
 
-def test_store_observation_values_no_observation(app, user, nocommit_cursor):
+def test_store_observation_values_no_observation(
+        sql_app, user, nocommit_cursor):
     new_id = str(uuid.uuid1())
     obs_vals = values.static_observation_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_observation_values(new_id, obs_vals)
 
 
-def test_store_observation_values_invalid_user(app, invalid_user,
+def test_store_observation_values_invalid_user(sql_app, invalid_user,
                                                nocommit_cursor):
     obs_id = list(demo_observations.keys())[0]
     obs_vals = values.static_observation_values()
@@ -230,57 +219,58 @@ def test_store_observation_values_invalid_user(app, invalid_user,
 
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
-def test_delete_observation(app, user, nocommit_cursor, observation_id):
+def test_delete_observation(sql_app, user, nocommit_cursor, observation_id):
     storage_interface.delete_observation(observation_id)
     observation_list = [
         k['observation_id'] for k in storage_interface.list_observations()]
     assert observation_id not in observation_list
 
 
-def test_delete_observation_invalid_user(app, invalid_user, nocommit_cursor):
+def test_delete_observation_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_observation(list(demo_observations.keys())[0])
 
 
-def test_delete_observation_does_not_exist(app, user, nocommit_cursor):
+def test_delete_observation_does_not_exist(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_observation(str(uuid.uuid1()))
 
 
-def test_list_forecasts(app, user):
+def test_list_forecasts(sql_app, user):
     forecasts = storage_interface.list_forecasts()
     for fx in forecasts:
         assert fx == demo_forecasts[fx['forecast_id']]
 
 
-def test_list_forecasts_invalid_user(app, invalid_user):
+def test_list_forecasts_invalid_user(sql_app, invalid_user):
     forecasts = storage_interface.list_forecasts()
     assert len(forecasts) == 0
 
 
-def test_list_forecasts_invalid_site(app, user):
+def test_list_forecasts_invalid_site(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_forecasts(str(uuid.uuid1()))
 
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
-def test_read_forecast(app, user, forecast_id):
+def test_read_forecast(sql_app, user, forecast_id):
     forecast = storage_interface.read_forecast(forecast_id)
     assert forecast == demo_forecasts[forecast_id]
 
 
-def test_read_forecast_invalid_forecast(app, user):
+def test_read_forecast_invalid_forecast(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_forecast(str(uuid.uuid1()))
 
 
-def test_read_forecast_invalid_user(app, invalid_user):
+def test_read_forecast_invalid_user(sql_app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_forecast(list(demo_forecasts.keys())[0])
 
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
-def test_read_forecast_values(app, user, forecast_id, startend):
+def test_read_forecast_values(sql_app, user, forecast_id, startend):
     start, end = startend
     forecast_values = storage_interface.read_forecast_values(
         forecast_id, start, end)
@@ -288,14 +278,14 @@ def test_read_forecast_values(app, user, forecast_id, startend):
     assert (forecast_values.columns == ['value']).all()
 
 
-def test_read_forecast_values_invalid_forecast(app, user, startend):
+def test_read_forecast_values_invalid_forecast(sql_app, user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_forecast_values(
             str(uuid.uuid1()), start, end)
 
 
-def test_read_forecast_values_invalid_user(app, invalid_user, startend):
+def test_read_forecast_values_invalid_user(sql_app, invalid_user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_forecast_values(
@@ -303,7 +293,7 @@ def test_read_forecast_values_invalid_user(app, invalid_user, startend):
 
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
-def test_store_forecast(app, user, forecast, nocommit_cursor):
+def test_store_forecast(sql_app, user, forecast, nocommit_cursor):
     forecast = forecast.copy()
     forecast['name'] = 'new_forecast'
     new_id = storage_interface.store_forecast(forecast)
@@ -315,13 +305,13 @@ def test_store_forecast(app, user, forecast, nocommit_cursor):
     assert forecast == new_forecast
 
 
-def test_store_forecast_invalid_user(app, invalid_user, nocommit_cursor):
+def test_store_forecast_invalid_user(sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_forecast(list(demo_forecasts.values())[0])
 
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
-def test_store_forecast_values(app, user, nocommit_cursor,
+def test_store_forecast_values(sql_app, user, nocommit_cursor,
                                forecast):
     forecast['name'] = 'new_forecast'
     new_id = storage_interface.store_forecast(forecast)
@@ -331,14 +321,14 @@ def test_store_forecast_values(app, user, nocommit_cursor,
     pdt.assert_frame_equal(stored, fx_vals)
 
 
-def test_store_forecast_values_no_forecast(app, user, nocommit_cursor):
+def test_store_forecast_values_no_forecast(sql_app, user, nocommit_cursor):
     new_id = str(uuid.uuid1())
     fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_forecast_values(new_id, fx_vals)
 
 
-def test_store_forecast_values_invalid_user(app, invalid_user,
+def test_store_forecast_values_invalid_user(sql_app, invalid_user,
                                             nocommit_cursor):
     fx_id = list(demo_forecasts.keys())[0]
     fx_vals = values.static_forecast_values()
@@ -347,52 +337,52 @@ def test_store_forecast_values_invalid_user(app, invalid_user,
 
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
-def test_delete_forecast(app, user, nocommit_cursor, forecast_id):
+def test_delete_forecast(sql_app, user, nocommit_cursor, forecast_id):
     storage_interface.delete_forecast(forecast_id)
     forecast_list = [k['forecast_id']
                      for k in storage_interface.list_forecasts()]
     assert forecast_id not in forecast_list
 
 
-def test_delete_forecast_invalid_user(app, invalid_user, nocommit_cursor):
+def test_delete_forecast_invalid_user(sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_forecast(list(demo_forecasts.keys())[0])
 
 
-def test_delete_forecast_does_not_exist(app, user, nocommit_cursor):
+def test_delete_forecast_does_not_exist(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_forecast(str(uuid.uuid1()))
 
 
 @pytest.mark.parametrize('site_id', demo_sites.keys())
-def test_read_site(app, user, site_id):
+def test_read_site(sql_app, user, site_id):
     site = storage_interface.read_site(site_id)
     assert site == demo_sites[site_id]
 
 
-def test_read_site_invalid_site(app, user):
+def test_read_site_invalid_site(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_site(str(uuid.uuid1()))
 
 
-def test_read_site_invalid_user(app, invalid_user):
+def test_read_site_invalid_user(sql_app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_site(list(demo_sites.keys())[0])
 
 
-def test_list_sites(app, user):
+def test_list_sites(sql_app, user):
     sites = storage_interface.list_sites()
     for site in sites:
         assert site == demo_sites[site['site_id']]
 
 
-def test_list_sites_invalid_user(app, invalid_user):
+def test_list_sites_invalid_user(sql_app, invalid_user):
     sites = storage_interface.list_sites()
     assert len(sites) == 0
 
 
 @pytest.mark.parametrize('site', demo_sites.values())
-def test_store_site(app, user, site, nocommit_cursor):
+def test_store_site(sql_app, user, site, nocommit_cursor):
     site = site.copy()
     site['name'] = 'new_site'
     new_id = storage_interface.store_site(site)
@@ -405,13 +395,13 @@ def test_store_site(app, user, site, nocommit_cursor):
     assert site == new_site
 
 
-def test_store_site_invalid_user(app, invalid_user, nocommit_cursor):
+def test_store_site_invalid_user(sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_site(list(demo_sites.values())[0])
 
 
 @pytest.mark.parametrize('site', demo_sites.values())
-def test_delete_site(app, user, nocommit_cursor, site):
+def test_delete_site(sql_app, user, nocommit_cursor, site):
     # create a new site to delete since it can be restrict by obs/fx
     site = site.copy()
     site['name'] = 'new_site'
@@ -423,24 +413,24 @@ def test_delete_site(app, user, nocommit_cursor, site):
     assert new_id not in site_list
 
 
-def test_delete_site_forecast_restricts(app, user, nocommit_cursor):
+def test_delete_site_forecast_restricts(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.DeleteRestrictionError):
         storage_interface.delete_site(list(demo_sites.keys())[0])
 
 
-def test_delete_site_invalid_user(app, invalid_user, nocommit_cursor):
+def test_delete_site_invalid_user(sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_site(list(demo_sites.keys())[0])
 
 
-def test_delete_site_does_not_exist(app, user, nocommit_cursor):
+def test_delete_site_does_not_exist(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_site(str(uuid.uuid1()))
 
 
 # CDF
 @pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
-def test_read_cdf_forecast_values(app, user, forecast_id, startend):
+def test_read_cdf_forecast_values(sql_app, user, forecast_id, startend):
     start, end = startend
     forecast_values = storage_interface.read_cdf_forecast_values(
         forecast_id, start, end)
@@ -448,14 +438,15 @@ def test_read_cdf_forecast_values(app, user, forecast_id, startend):
     assert (forecast_values.columns == ['value']).all()
 
 
-def test_read_cdf_forecast_values_invalid_forecast(app, user, startend):
+def test_read_cdf_forecast_values_invalid_forecast(sql_app, user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast_values(
             str(uuid.uuid1()), start, end)
 
 
-def test_read_cdf_forecast_values_invalid_user(app, invalid_user, startend):
+def test_read_cdf_forecast_values_invalid_user(
+        sql_app, invalid_user, startend):
     start, end = startend
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast_values(
@@ -463,7 +454,7 @@ def test_read_cdf_forecast_values_invalid_user(app, invalid_user, startend):
 
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
-def test_store_cdf_forecast_values(app, user, nocommit_cursor,
+def test_store_cdf_forecast_values(sql_app, user, nocommit_cursor,
                                    cdf_forecast_id):
     fx_vals = values.static_forecast_values().shift(freq='30d')
     storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
@@ -472,14 +463,14 @@ def test_store_cdf_forecast_values(app, user, nocommit_cursor,
     pdt.assert_frame_equal(stored, fx_vals)
 
 
-def test_store_cdf_forecast_values_no_forecast(app, user, nocommit_cursor):
+def test_store_cdf_forecast_values_no_forecast(sql_app, user, nocommit_cursor):
     new_id = str(uuid.uuid1())
     fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_cdf_forecast_values(new_id, fx_vals)
 
 
-def test_store_cdf_forecast_values_invalid_user(app, invalid_user,
+def test_store_cdf_forecast_values_invalid_user(sql_app, invalid_user,
                                                 nocommit_cursor):
     fx_id = list(demo_single_cdf.keys())[0]
     fx_vals = values.static_forecast_values()
@@ -488,7 +479,7 @@ def test_store_cdf_forecast_values_invalid_user(app, invalid_user,
 
 
 @pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
-def test_read_cdf_forecast_single(app, user, forecast_id):
+def test_read_cdf_forecast_single(sql_app, user, forecast_id):
     single = demo_single_cdf[forecast_id]
     forecast = storage_interface.read_cdf_forecast(forecast_id)
     parent = demo_group_cdf[single['parent']].copy()
@@ -499,17 +490,17 @@ def test_read_cdf_forecast_single(app, user, forecast_id):
     assert forecast == parent
 
 
-def test_read_cdf_forecast_single_invalid_forecast(app, user):
+def test_read_cdf_forecast_single_invalid_forecast(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast(str(uuid.uuid1()))
 
 
-def test_read_cdf_forecast_single_invalid_user(app, invalid_user):
+def test_read_cdf_forecast_single_invalid_user(sql_app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast(list(demo_single_cdf.keys())[0])
 
 
-def test_store_cdf_forecast_single(app, user, nocommit_cursor):
+def test_store_cdf_forecast_single(sql_app, user, nocommit_cursor):
     cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
                     'constant_value': 100.0}
     new_id = storage_interface.store_cdf_forecast(cdf_forecast)
@@ -525,7 +516,7 @@ def test_store_cdf_forecast_single(app, user, nocommit_cursor):
     assert new_cdf_forecast == parent
 
 
-def test_store_cdf_forecast_single_invalid_user(app, invalid_user,
+def test_store_cdf_forecast_single_invalid_user(sql_app, invalid_user,
                                                 nocommit_cursor):
     cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
                     'constant_value': 100.0}
@@ -533,7 +524,7 @@ def test_store_cdf_forecast_single_invalid_user(app, invalid_user,
         storage_interface.store_cdf_forecast(cdf_forecast)
 
 
-def test_store_cdf_forecast_single_same_parent_value(app, invalid_user,
+def test_store_cdf_forecast_single_same_parent_value(sql_app, invalid_user,
                                                      nocommit_cursor):
     cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
                     'constant_value': 5.0}
@@ -542,7 +533,7 @@ def test_store_cdf_forecast_single_same_parent_value(app, invalid_user,
 
 
 @pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
-def test_read_cdf_forecast_group(app, user, forecast_id):
+def test_read_cdf_forecast_group(sql_app, user, forecast_id):
     group = demo_group_cdf[forecast_id].copy()
     forecast = storage_interface.read_cdf_forecast_group(forecast_id)
     group['constant_values'] = {thing['forecast_id']: thing
@@ -552,19 +543,19 @@ def test_read_cdf_forecast_group(app, user, forecast_id):
     assert forecast == group
 
 
-def test_read_cdf_forecast_group_invalid_forecast(app, user):
+def test_read_cdf_forecast_group_invalid_forecast(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast_group(str(uuid.uuid1()))
 
 
-def test_read_cdf_forecast_group_invalid_user(app, invalid_user):
+def test_read_cdf_forecast_group_invalid_user(sql_app, invalid_user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast_group(
             list(demo_group_cdf.keys())[0])
 
 
 @pytest.mark.parametrize('cdf_forecast', demo_group_cdf.values())
-def test_store_cdf_forecast_group(app, user, nocommit_cursor,
+def test_store_cdf_forecast_group(sql_app, user, nocommit_cursor,
                                   cdf_forecast):
     cdf_forecast = cdf_forecast.copy()
     cdf_forecast['constant_values'] = [
@@ -581,14 +572,14 @@ def test_store_cdf_forecast_group(app, user, nocommit_cursor,
     assert new_cdf_forecast == cdf_forecast
 
 
-def test_store_cdf_forecast_group_invalid_user(app, invalid_user,
+def test_store_cdf_forecast_group_invalid_user(sql_app, invalid_user,
                                                nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_cdf_forecast_group(
             list(demo_group_cdf.values())[0])
 
 
-def test_list_cdf_forecasts(app, user):
+def test_list_cdf_forecasts(sql_app, user):
     forecasts = storage_interface.list_cdf_forecasts()
     for fx in forecasts:
         single = demo_single_cdf[fx['forecast_id']]
@@ -600,7 +591,7 @@ def test_list_cdf_forecasts(app, user):
         assert fx == parent
 
 
-def test_list_cdf_forecasts_one_parent(app, user):
+def test_list_cdf_forecasts_one_parent(sql_app, user):
     parent = list(demo_group_cdf.values())[0].copy()
     forecasts = storage_interface.list_cdf_forecasts(parent['forecast_id'])
     cv = [p['forecast_id'] for p in parent['constant_values']]
@@ -609,18 +600,19 @@ def test_list_cdf_forecasts_one_parent(app, user):
         assert fx['parent'] == parent['forecast_id']
 
 
-def test_list_cdf_forecasts_invalid_user(app, invalid_user):
+def test_list_cdf_forecasts_invalid_user(sql_app, invalid_user):
     forecasts = storage_interface.list_cdf_forecasts()
     assert len(forecasts) == 0
 
 
-def test_list_cdf_forecasts_invalid_parent(app, user):
+def test_list_cdf_forecasts_invalid_parent(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_cdf_forecasts(str(uuid.uuid1()))
 
 
 @pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
-def test_delete_cdf_forecast_single(app, user, nocommit_cursor, forecast_id):
+def test_delete_cdf_forecast_single(
+        sql_app, user, nocommit_cursor, forecast_id):
     storage_interface.delete_cdf_forecast(forecast_id)
     forecast_list = [k['forecast_id']
                      for k in storage_interface.list_cdf_forecasts()]
@@ -628,17 +620,18 @@ def test_delete_cdf_forecast_single(app, user, nocommit_cursor, forecast_id):
 
 
 def test_delete_cdf_forecast_single_invalid_user(
-        app, invalid_user, nocommit_cursor):
+        sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast(list(demo_single_cdf.keys())[0])
 
 
-def test_delete_cdf_forecast_single_does_not_exist(app, user, nocommit_cursor):
+def test_delete_cdf_forecast_single_does_not_exist(
+        sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast(str(uuid.uuid1()))
 
 
-def test_list_cdf_forecast_groups(app, user):
+def test_list_cdf_forecast_groups(sql_app, user):
     forecasts = storage_interface.list_cdf_forecast_groups()
     for fx in forecasts:
         group = demo_group_cdf[fx['forecast_id']].copy()
@@ -649,7 +642,7 @@ def test_list_cdf_forecast_groups(app, user):
         assert fx == group
 
 
-def test_list_cdf_forecast_groups_site(app, user):
+def test_list_cdf_forecast_groups_site(sql_app, user):
     site = list(demo_sites.keys())[0]
     forecasts = storage_interface.list_cdf_forecast_groups(site)
     for fx in forecasts:
@@ -662,18 +655,19 @@ def test_list_cdf_forecast_groups_site(app, user):
         assert fx['site_id'] == site
 
 
-def test_list_cdf_forecast_groups_invalid_user(app, invalid_user):
+def test_list_cdf_forecast_groups_invalid_user(sql_app, invalid_user):
     forecasts = storage_interface.list_cdf_forecast_groups()
     assert len(forecasts) == 0
 
 
-def test_list_cdf_forecast_groups_invalid_site(app, user):
+def test_list_cdf_forecast_groups_invalid_site(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_cdf_forecast_groups(str(uuid.uuid1()))
 
 
 @pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
-def test_delete_cdf_forecast_group(app, user, nocommit_cursor, forecast_id):
+def test_delete_cdf_forecast_group(
+        sql_app, user, nocommit_cursor, forecast_id):
     storage_interface.delete_cdf_forecast_group(forecast_id)
     forecast_list = [k['forecast_id']
                      for k in storage_interface.list_cdf_forecast_groups()]
@@ -681,12 +675,13 @@ def test_delete_cdf_forecast_group(app, user, nocommit_cursor, forecast_id):
 
 
 def test_delete_cdf_forecast_group_invalid_user(
-        app, invalid_user, nocommit_cursor):
+        sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast_group(
             list(demo_group_cdf.keys())[0])
 
 
-def test_delete_cdf_forecast_group_does_not_exist(app, user, nocommit_cursor):
+def test_delete_cdf_forecast_group_does_not_exist(
+        sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast_group(str(uuid.uuid1()))

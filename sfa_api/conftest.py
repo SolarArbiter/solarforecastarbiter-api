@@ -1,10 +1,15 @@
 import os
 
 import pytest
+import pymysql
+import requests
 
 from sfa_api import create_app
+from sfa_api.utils import storage_interface
 from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 
+
+BASE_URL = 'https://localhost'
 
 # Strings of formatted field options for error checking
 # e.g. provides "interval_mean, instantaneous, ..." so
@@ -13,6 +18,149 @@ from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 variables = ', '.join(VARIABLES)
 interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
 interval_labels = ', '.join(INTERVAL_LABELS)
+
+
+VALID_SITE_JSON = {
+    "elevation": 500.0,
+    "extra_parameters": '{"parameter": "value"}',
+    "latitude": 42.19,
+    "longitude": -122.7,
+    "modeling_parameters": {
+        "ac_capacity": 0.015,
+        "dc_capacity": 0.015,
+        "backtrack": True,
+        "temperature_coefficient": -.002,
+        "ground_coverage_ratio": 0.5,
+        "surface_azimuth": 180.0,
+        "surface_tilt": 45.0,
+        "tracking_type": "fixed"
+    },
+    "name": "Test Site",
+    "timezone": "Etc/GMT+8",
+}
+
+VALID_FORECAST_JSON = {
+    "extra_parameters": '{"instrument": "pyranometer"}',
+    "name": "test forecast",
+    "site_id": "123e4567-e89b-12d3-a456-426655440001",
+    "variable": "ac_power",
+    "interval_label": "beginning",
+    "issue_time_of_day": "12:00",
+    "lead_time_to_start": 60,
+    "interval_length": 1,
+    "run_length": 1440,
+    "interval_value_type": "interval_mean",
+}
+
+
+VALID_OBS_JSON = {
+    "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
+    "name": "Ashland OR, ghi",
+    "site_id": "123e4567-e89b-12d3-a456-426655440001",
+    "variable": "ghi",
+    "interval_label": "beginning",
+    "interval_length": 1,
+    "interval_value_type": "interval_mean",
+    "uncertainty": 0.10,
+}
+
+
+VALID_CDF_FORECAST_JSON = VALID_FORECAST_JSON.copy()
+VALID_CDF_FORECAST_JSON.update({
+    "name": 'test cdf forecast',
+    "axis": 'x',
+    "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
+})
+
+VALID_OBS_VALUE_JSON = {
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:55:00+00:00",
+         'value': 32.0},
+        {'quality_flag': 0,
+         'timestamp': "2019-01-22T17:56:00+00:00",
+         'value': 3.0}
+    ]
+}
+VALID_OBS_VALUE_CSV = (
+    '# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
+    '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
+    'timestamp,value,quality_flag\n'
+    '20190122T12:04:00+0000,52.0,0\n'
+    '20190122T12:05:00+0000,73.0,0\n'
+    '20190122T12:06:00+0000,42.0,0\n'
+    '20190122T12:07:00+0000,12.0,0\n')
+VALID_FX_VALUE_JSON = {
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T17:55:00+00:00",
+         'value': 32.0},
+        {'timestamp': "2019-01-22T17:56:00+00:00",
+         'value': 3.0}
+    ]
+}
+FORECAST_CSV = (
+    'timestamp,value\n'
+    '20190122T12:04:00+0000,7.0\n'
+    '20190122T12:05:00+0000,3.0\n'
+    '20190122T12:06:00+0000,13.0\n'
+    '20190122T12:07:00+0000,25.0\n')
+
+VALID_FX_VALUE_CSV = (
+    '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
+    '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
+    f'{FORECAST_CSV}')
+VALID_CDF_VALUE_CSV = (
+    '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
+    '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
+    f'{FORECAST_CSV}')
+
+
+def copy_update(json, key, value):
+    new_json = json.copy()
+    new_json[key] = value
+    return new_json
+
+
+@pytest.fixture(scope='module')
+def sql_app():
+    app = create_app('TestingConfig')
+    with app.app_context():
+        try:
+            storage_interface.mysql_connection()
+        except pymysql.err.OperationalError:
+            pytest.skip('No connection to test database')
+        else:
+            yield app
+
+
+@pytest.fixture()
+def sql_api(sql_app, mocker):
+    api = sql_app.test_client()
+    return api
+
+
+@pytest.fixture(scope='session')
+def auth_token():
+    token_req = requests.post(
+        'https://solarforecastarbiter.auth0.com/oauth/token',
+        headers={'content-type': 'application/json'},
+        data=('{"grant_type": "password", '
+              '"username": "testing@solarforecastarbiter.org",'
+              '"password": "Thepassword123!", '
+              '"audience": "https://api.solarforecastarbiter.org", '
+              '"client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}'))
+    if token_req.status_code != 200:
+        pytest.skip('Cannot retrieve valid Auth0 token')
+    else:
+        token = token_req.json()['access_token']
+        return token
 
 
 @pytest.fixture()
@@ -42,11 +190,6 @@ def observation_id():
 
 
 @pytest.fixture()
-def missing_observation_id():
-    return '123e4567-e89b-12d3-a456-426655440007'
-
-
-@pytest.fixture()
 def cdf_forecast_group_id():
     return 'ef51e87c-50b9-11e9-8647-d663bd873d93'
 
@@ -62,11 +205,6 @@ def forecast_id():
 
 
 @pytest.fixture()
-def missing_forecast_id():
-    return 'f8dd49fa-23e2-48a0-862b-ba0afaaaaaa6'
-
-
-@pytest.fixture()
 def site_id():
     return 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a'
 
@@ -74,8 +212,3 @@ def site_id():
 @pytest.fixture()
 def site_id_plant():
     return '123e4567-e89b-12d3-a456-426655440002'
-
-
-@pytest.fixture()
-def missing_site_id():
-    return '123e4567-e89b-12d3-a456-000055440002'
