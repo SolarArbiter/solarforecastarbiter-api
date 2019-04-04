@@ -171,8 +171,8 @@ class ForecastView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        deletion_result = storage.delete_forecast(forecast_id)
-        return jsonify(deletion_result)
+        storage.delete_forecast(forecast_id)
+        return '', 204
 
 
 class ForecastValuesView(MethodView):
@@ -433,8 +433,8 @@ class CDFForecastGroupMetadataView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        deletion_result = storage.delete_cdf_forecast_group(forecast_id)
-        return jsonify(deletion_result)
+        storage.delete_cdf_forecast_group(forecast_id)
+        return '', 204
 
 
 class CDFForecastMetadata(MethodView):

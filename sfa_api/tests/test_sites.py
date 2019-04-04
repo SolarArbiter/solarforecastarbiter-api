@@ -99,7 +99,7 @@ def test_site_forecasts_404(api, missing_id):
     assert r.status_code == 404
 
 
-def test_site_delete_200(api, site_id):
+def test_site_delete_204(api, site_id):
     r = api.post('/sites/',
                  base_url=BASE_URL,
                  json=VALID_SITE_JSON)
@@ -108,10 +108,4 @@ def test_site_delete_200(api, site_id):
     new_site_id = r.data.decode('utf-8')
     r = api.delete(f'/sites/{new_site_id}',
                    base_url=BASE_URL)
-    assert r.status_code == 200
-
-
-def test_site_delete_404(api, missing_id):
-    r = api.delete(f'/sites/{missing_id}',
-                   base_url=BASE_URL)
-    assert r.status_code == 404
+    assert r.status_code == 204

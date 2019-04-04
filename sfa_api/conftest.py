@@ -1,8 +1,11 @@
 import os
 
 import pytest
+import pymysql
+import requests
 
 from sfa_api import create_app
+from sfa_api.utils import storage_interface
 from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
 
 
@@ -28,7 +31,7 @@ VALID_SITE_JSON = {
         "backtrack": True,
         "temperature_coefficient": -.002,
         "ground_coverage_ratio": 0.5,
-        "surface_azimuth": 180,
+        "surface_azimuth": 180.0,
         "surface_tilt": 45.0,
         "tracking_type": "fixed"
     },
@@ -57,6 +60,8 @@ VALID_OBS_JSON = {
     "variable": "ghi",
     "interval_label": "beginning",
     "interval_length": 1,
+    "interval_value_type": "interval_mean",
+    "uncertainty": 0.10,
 }
 
 
@@ -100,20 +105,63 @@ VALID_FX_VALUE_JSON = {
          'value': 3.0}
     ]
 }
-VALID_FX_VALUE_CSV = (
-    '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
-    '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
+FORECAST_CSV = (
     'timestamp,value\n'
     '20190122T12:04:00+0000,7.0\n'
     '20190122T12:05:00+0000,3.0\n'
     '20190122T12:06:00+0000,13.0\n'
     '20190122T12:07:00+0000,25.0\n')
 
+VALID_FX_VALUE_CSV = (
+    '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
+    '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
+    f'{FORECAST_CSV}')
+VALID_CDF_VALUE_CSV =(
+    '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
+    '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
+    f'{FORECAST_CSV}')
+
+
 
 def copy_update(json, key, value):
     new_json = json.copy()
     new_json[key] = value
     return new_json
+
+
+@pytest.fixture(scope='module')
+def sql_app():
+    app = create_app('TestingConfig')
+    with app.app_context():
+        try:
+            storage_interface.mysql_connection()
+        except pymysql.err.OperationalError:
+            pytest.skip('No connection to test database')
+        else:
+            yield app
+
+
+@pytest.fixture()
+def sql_api(sql_app, mocker):
+    api = sql_app.test_client()
+    return api
+
+
+@pytest.fixture(scope='session')
+def auth_token():
+    token_req = requests.post(
+        'https://solarforecastarbiter.auth0.com/oauth/token',
+        headers={'content-type': 'application/json'},
+        data=('{"grant_type": "password", '
+              '"username": "testing@solarforecastarbiter.org",'
+              '"password": "Thepassword123!", '
+              '"audience": "https://api.solarforecastarbiter.org", '
+              '"client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}'))
+    if token_req.status_code != 200:
+        pytest.skip('Cannot retrieve valid Auth0 token')
+    else:
+        token = token_req.json()['access_token']
+        return token
 
 
 @pytest.fixture()

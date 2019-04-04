@@ -3,7 +3,7 @@ import pytest
 
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_CDF_FORECAST_JSON, copy_update,
-                              VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV)
+                              VALID_FX_VALUE_JSON, VALID_CDF_VALUE_CSV)
 
 
 INVALID_VARIABLE = copy_update(VALID_CDF_FORECAST_JSON,
@@ -153,7 +153,7 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_FX_VALUE_CSV)
+                 data=VALID_CDF_VALUE_CSV)
     assert r.status_code == 201
 
 
@@ -209,7 +209,7 @@ def test_post_and_get_values_csv(api, cdf_forecast_id):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
-                 data=VALID_FX_VALUE_CSV)
+                 data=VALID_CDF_VALUE_CSV)
     assert r.status_code == 201
     start = '2019-01-22T12:04:00+00:00'
     end = '2019-01-22T12:07:00+00:00'
@@ -218,4 +218,4 @@ def test_post_and_get_values_csv(api, cdf_forecast_id):
                 headers={'Accept': 'text/csv'},
                 query_string={'start': start, 'end': end})
     posted_data = r.data
-    assert VALID_FX_VALUE_CSV == posted_data.decode('utf-8')
+    assert VALID_CDF_VALUE_CSV == posted_data.decode('utf-8')

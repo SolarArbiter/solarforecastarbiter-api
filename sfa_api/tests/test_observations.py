@@ -12,7 +12,7 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
                                      'interval_label', 'invalid')
 
 
-empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"uncertainty":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 def test_observation_post_success(api):

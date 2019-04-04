@@ -129,8 +129,8 @@ class ObservationView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        deletion_result = storage.delete_observation(observation_id)
-        return jsonify(deletion_result)
+        storage.delete_observation(observation_id)
+        return '', 204
 
 
 class ObservationValuesView(MethodView):
