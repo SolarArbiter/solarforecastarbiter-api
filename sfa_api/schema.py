@@ -45,59 +45,69 @@ class ModelingParameters(ma.Schema):
         ordered = True
     ac_capacity = ma.Float(
         title="AC Capacity",
-        description="Nameplate AC power rating.")
+        description="Nameplate AC power rating.",
+        missing=None)
     dc_capacity = ma.Float(
         title="DC Capacity",
-        description="Nameplate DC power rating.")
+        description="Nameplate DC power rating.",
+        missing=None)
     temperature_coefficient = ma.Float(
         title="Temperature Coefficient",
         description=("The temperature coefficient of DC power in units of "
-                     "1/C. Typically -0.002 to -0.005 per degree C."))
+                     "1/C. Typically -0.002 to -0.005 per degree C."),
+        missing=None)
     tracking_type = ma.String(
         title="Tracking Type",
         description=("Type of tracking system, i.e. fixed, single axis, two "
                      "axis."),
-        validate=validate.OneOf(['fixed', 'single_axis']))
+        validate=validate.OneOf(['fixed', 'single_axis']),
+        missing=None)
     # fixed tilt systems
     surface_tilt = ma.Float(
         title="Surface Tilt",
         description="Tilt from horizontal of a fixed tilt system, degrees.")
     surface_azimuth = ma.Float(
         title="Surface Azimuth",
-        description="Azimuth angle of a fixed tilt system, degrees.")
+        description="Azimuth angle of a fixed tilt system, degrees.",
+        missing=None)
     # single axis tracker
     axis_tilt = ma.Float(
         title="Axis tilt",
-        description="Tilt from horizontal of the tracker axis, degrees.")
+        description="Tilt from horizontal of the tracker axis, degrees.",
+        missing=None)
     axis_azimuth = ma.Float(
         title="Axis azimuth",
-        description="Azimuth angle of the tracker axis, degrees.")
+        description="Azimuth angle of the tracker axis, degrees.",
+        missing=None)
     ground_coverage_ratio = ma.Float(
         title="Ground coverage ratio",
         description=("Ratio of total width of modules on a tracker to the "
                      "distance between tracker axes. For example, for "
                      "trackers each with two modules of 1m width each, and "
                      "a spacing between tracker axes of 7m, the ground "
-                     "coverage ratio is 0.286(=2/7)."))
+                     "coverage ratio is 0.286(=2/7)."),
+        missing=None)
     backtrack = ma.Boolean(
         title="Backtrack",
         description=("True/False indicator of if a tracking system uses "
-                     "backtracking."))
+                     "backtracking."),
+        missing=None)
     max_rotation_angle = ma.Float(
         title="Maximum Rotation Angle",
         description=("Maximum rotation from horizontal of a single axis "
-                     "tracker, degrees."))
+                     "tracker, degrees."),
+        missing=None)
     dc_loss_factor = ma.Float(
         title="DC loss factor",
         description=("Loss factor in %, applied to DC current."),
         validate=validate.Range(0, 100),
-    )
+        missing=None)
     ac_loss_factor = ma.Float(
         title="AC loss factor",
         description=("Loss factor in %, applied to inverter power "
                      "output."),
         validate=validate.Range(0, 100),
-    )
+        missing=None)
 
 
 @spec.define_schema('SiteDefinition')
@@ -211,10 +221,12 @@ class ObservationPostSchema(ma.Schema):
         required=True)
     interval_value_type = ma.String(
         title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES))
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES),
+        required=True)
     uncertainty = ma.Float(
         title='Uncertainty',
-        description='A measure of the uncertainty of the observation values.')
+        description='A measure of the uncertainty of the observation values.',
+        required=True)
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
