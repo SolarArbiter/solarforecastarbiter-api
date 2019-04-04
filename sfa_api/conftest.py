@@ -116,11 +116,10 @@ VALID_FX_VALUE_CSV = (
     '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
     '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
     f'{FORECAST_CSV}')
-VALID_CDF_VALUE_CSV =(
+VALID_CDF_VALUE_CSV = (
     '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
     '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
     f'{FORECAST_CSV}')
-
 
 
 def copy_update(json, key, value):

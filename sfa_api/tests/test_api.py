@@ -1,19 +1,16 @@
 """Tests that API maintains proper state after interactions
 """
 import pytest
-import werkzeug
 
 
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
-                          VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
-                          BASE_URL)
-from sfa_api.schema import SiteSchema, ModelingParameters
+                              VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
+                              BASE_URL)
 from sfa_api.demo.values import (static_observation_values,
                                  static_forecast_values)
 
 
 invalid_json = {'invalid': 'garbage'}
-
 
 
 @pytest.fixture()
@@ -23,8 +20,8 @@ def auth_header(auth_token):
 
 def get_obs_list(sql_api, auth_header):
     get_obs = sql_api.get('/observations/',
-                      base_url=BASE_URL,
-                      headers=auth_header)
+                          base_url=BASE_URL,
+                          headers=auth_header)
     return get_obs.get_json()
 
 
@@ -78,13 +75,13 @@ def test_create_delete_site(sql_api, auth_header):
     assert post.status_code == 201
     new_site_id = post.data.decode('utf-8')
     new_site_url = post.headers['Location']
-    get = sql_api.get(new_site_url,headers=auth_header)
+    get = sql_api.get(new_site_url, headers=auth_header)
     assert get.status_code == 200
     new_site = get.get_json()
     assert new_site['site_id'] == new_site_id
     for key, value in VALID_SITE_JSON.items():
         if key == 'modeling_parameters':
-            for k,v in VALID_SITE_JSON['modeling_parameters'].items():
+            for k, v in VALID_SITE_JSON['modeling_parameters'].items():
                 assert new_site['modeling_parameters'][k] == v
         else:
             assert new_site[key] == value
@@ -98,12 +95,11 @@ def test_create_delete_site(sql_api, auth_header):
 def test_create_invalid_site(sql_api, auth_header):
     original_sites_list = get_site_list(sql_api, auth_header)
     post = sql_api.post('/sites/',
-                    headers=auth_header,
-                    base_url=BASE_URL,
-                    json=invalid_json)
+                        headers=auth_header,
+                        base_url=BASE_URL,
+                        json=invalid_json)
     assert post.status_code == 400
     assert original_sites_list == get_site_list(sql_api, auth_header)
-
 
 
 def test_create_site_unauthenticated(sql_api):
@@ -112,6 +108,7 @@ def test_create_site_unauthenticated(sql_api):
                         json=VALID_SITE_JSON)
     assert post.status_code == 401
 
+
 def test_create_site_unauthorized(sql_api, auth_header):
     # 404
     pass
@@ -119,9 +116,9 @@ def test_create_site_unauthorized(sql_api, auth_header):
 
 def test_create_delete_observation(sql_api, auth_header):
     post = sql_api.post('/observations/',
-                    headers=auth_header,
-                    base_url=BASE_URL,
-                    json=VALID_OBS_JSON)
+                        headers=auth_header,
+                        base_url=BASE_URL,
+                        json=VALID_OBS_JSON)
     assert post.status_code == 201
     new_obs_id = post.data.decode('utf-8')
     new_obs_links_url = post.headers['Location']
@@ -151,27 +148,30 @@ def test_create_delete_observation(sql_api, auth_header):
     assert post_values.status_code == 201
     get_values = sql_api.get(f'/observations/{new_obs_id}/values',
                              base_url=BASE_URL,
-                             headers={'Accept': 'application/json', **auth_header})
+                             headers={'Accept': 'application/json',
+                                      **auth_header})
     assert get_values.status_code == 200
 
-    ## post csv_values to the observation
-    #obs_values = static_observation_values()
-    #obs_values['quality_flag'] = 0
-    #csv_values = obs_values.to_csv()
-    #post_values = sql_api.post(f'/observations/{new_obs_id}/values',
-    #                       base_url=BASE_URL,
-    #                       headers={'Content-Type': 'text/csv', **auth_header},
-    #                       data=csv_values)
-    #assert post_values.status_code == 201
-    #get_values = sql_api.get(f'/observations/{new_obs_id}/values',
-    #                     base_url=BASE_URL,
-    #                     headers={'Accept': 'text/csv', **auth_header})
-    #assert get_values.status_code == 200
+    # # post csv_values to the observation
+    # obs_values = static_observation_values()
+    # obs_values['quality_flag'] = 0
+    # csv_values = obs_values.to_csv()
+    # post_values = sql_api.post(f'/observations/{new_obs_id}/values',
+    #                        base_url=BASE_URL,
+    #                        headers={'Content-Type': 'text/csv',
+    #                                 **auth_header},
+    #                        data=csv_values)
+    # assert post_values.status_code == 201
+    # get_values = sql_api.get(f'/observations/{new_obs_id}/values',
+    #                      base_url=BASE_URL,
+    #                      headers={'Accept': 'text/csv', **auth_header})
+    # assert get_values.status_code == 200
 
     delete = sql_api.delete(new_obs_links_url, headers=auth_header)
     assert delete.status_code == 204
     assert new_obs not in get_obs_list(sql_api, auth_header)
-    assert new_obs not in get_site_obs(sql_api, auth_header, new_obs['site_id'])
+    assert new_obs not in get_site_obs(sql_api, auth_header,
+                                       new_obs['site_id'])
     get_values = sql_api.get(f'/observations/{new_obs_id}/values',
                              base_url=BASE_URL,
                              headers={'Accept': 'text/csv', **auth_header})
@@ -239,33 +239,37 @@ def test_create_delete_forecast(sql_api, auth_header):
     # request json values
     get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
                              base_url=BASE_URL,
-                             headers={'Accept': 'application/json', **auth_header})
+                             headers={'Accept': 'application/json',
+                                      **auth_header})
     assert get_values.status_code == 200
 
-    ## post csv_values to the forecasts
-    #fx_values = static_forecast_values()
-    #csv_values = fx_values.to_csv()
+    # # post csv_values to the forecasts
+    # fx_values = static_forecast_values()
+    # csv_values = fx_values.to_csv()
 
-    #post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
-    #                       base_url=BASE_URL,
-    #                       headers={'Content-Type': 'text/csv', **auth_header},
-    #                       data=csv_values)
-    #assert post_values.status_code == 201
+    # post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
+    #                            base_url=BASE_URL,
+    #                            headers={'Content-Type': 'text/csv',
+    #                            **auth_header},
+    #                            data=csv_values)
+    # assert post_values.status_code == 201
 
-    ## request csv values
-    #get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
-    #                     base_url=BASE_URL,
-    #                     headers={'Accept': 'text/csv', **auth_header})
-    #assert get_values.status_code == 200
+    # # request csv values
+    # get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
+    #                      base_url=BASE_URL,
+    #                      headers={'Accept': 'text/csv', **auth_header})
+    # assert get_values.status_code == 200
 
     delete = sql_api.delete(new_fx_links_url, headers=auth_header)
     assert delete.status_code == 204
     assert new_fx not in get_fx_list(sql_api, auth_header)
-    assert new_fx not in get_site_fx(sql_api, auth_header, new_fx['site_id'])
+    assert new_fx not in get_site_fx(sql_api, auth_header,
+                                     new_fx['site_id'])
 
-    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
-                         base_url=BASE_URL,
-                         headers={'Accept': 'text/csv', **auth_header})
+    get_values = sql_api.get(
+        f'/forecasts/single/{new_fx_id}/values',
+        base_url=BASE_URL,
+        headers={'Accept': 'text/csv', **auth_header})
     assert get_values.status_code == 404
 
 
@@ -313,15 +317,18 @@ def test_create_delete_cdf_forecast(sql_api, auth_header):
         else:
             assert new_cdf_fx[key] == value
     assert new_cdf_fx in get_cdf_fx_list(sql_api, auth_header)
-    assert new_cdf_fx in get_site_cdf_fx(sql_api, auth_header, new_cdf_fx['site_id'])
+    assert new_cdf_fx in get_site_cdf_fx(sql_api, auth_header,
+                                         new_cdf_fx['site_id'])
     for value in new_cdf_fx['constant_values']:
         static_vals = VALID_CDF_FORECAST_JSON['constant_values']
         assert value['constant_value'] in static_vals
-        get_const = sql_api.get(f'/forecasts/cdf/single/{value["forecast_id"]}',
-                                headers=auth_header,
-                                base_url=BASE_URL)
+        get_const = sql_api.get(
+            f'/forecasts/cdf/single/{value["forecast_id"]}',
+            headers=auth_header,
+            base_url=BASE_URL)
         assert get_const.status_code == 200
-        get_cdf_const_values = sql_api.get(value['_links']['values'], headers=auth_header)
+        get_cdf_const_values = sql_api.get(value['_links']['values'],
+                                           headers=auth_header)
         assert get_cdf_const_values.status_code == 200
 
         # Post values to the forecast
@@ -334,13 +341,15 @@ def test_create_delete_cdf_forecast(sql_api, auth_header):
                                    json={'values': json_values})
         assert post_values.status_code == 201
         get_values = sql_api.get(value['_links']['values'],
-                                 headers={'Accept': 'application/json', **auth_header})
+                                 headers={'Accept': 'application/json',
+                                          **auth_header})
         assert get_values.status_code == 200
 
     delete = sql_api.delete(new_cdf_fx_url, headers=auth_header)
     assert delete.status_code == 204
     assert new_cdf_fx not in get_cdf_fx_list(sql_api, auth_header)
-    assert new_cdf_fx not in get_site_cdf_fx(sql_api, auth_header, new_cdf_fx['site_id'])
+    assert new_cdf_fx not in get_site_cdf_fx(sql_api, auth_header,
+                                             new_cdf_fx['site_id'])
     for value in new_cdf_fx['constant_values']:
         fx_id = value['forecast_id']
         get = sql_api.get(f'/forecasts/cdf/single/{fx_id}',
@@ -433,9 +442,9 @@ def test_sequence(sql_api, auth_header):
 
     # Create a cdf fx at the site
     post = sql_api.post('/forecasts/cdf/',
-                    headers=auth_header,
-                    base_url=BASE_URL,
-                    json=VALID_CDF_FORECAST_JSON)
+                        headers=auth_header,
+                        base_url=BASE_URL,
+                        json=VALID_CDF_FORECAST_JSON)
     assert post.status_code == 201
     new_cdf_fx_url = post.headers['Location']
     get_cdf_fx = sql_api.get(new_cdf_fx_url, headers=auth_header)

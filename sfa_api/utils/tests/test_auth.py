@@ -1,5 +1,4 @@
 import pytest
-import requests
 
 
 from sfa_api.utils import auth

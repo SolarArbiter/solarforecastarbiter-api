@@ -77,6 +77,7 @@ def get_cursor(cursor_type, commit=True):
     finally:
         cursor.close()
 
+
 def try_query(query_cmd):
     try:
         query_cmd()
@@ -375,8 +376,8 @@ def store_forecast(forecast):
     forecast_id = generate_uuid()
     # the procedure expects arguments in a certain order
     _call_procedure(
-        'store_forecast', forecast_id, str(forecast['site_id']), forecast['name'],
-        forecast['variable'], forecast['issue_time_of_day'],
+        'store_forecast', forecast_id, str(forecast['site_id']),
+        forecast['name'], forecast['variable'], forecast['issue_time_of_day'],
         forecast['lead_time_to_start'], forecast['interval_label'],
         forecast['interval_length'], forecast['run_length'],
         forecast['interval_value_type'], forecast['extra_parameters'])
