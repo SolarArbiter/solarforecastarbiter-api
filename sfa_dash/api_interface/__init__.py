@@ -21,7 +21,7 @@ def get_request(path, **kwargs):
     """
     # may need to handle errors if oauth_request_session does not exist somehow
     return oauth_request_session.get(
-            f'{app.config["SFA_API_URL"]}{path}', **kwargs)
+        f'{app.config["SFA_API_URL"]}{path}', **kwargs)
 
 
 def post_request(path, payload, json=True):

@@ -33,9 +33,9 @@
     </div>
     <div class="form-element full-width">
 	  <label>Site Type</label><br/>
-      {% set site_type = form_data.get('site-type', None) %}
-      <input type="radio" name="site-type" data-toggle="collapse" data-target=".pv-model-params.show" value="weather-station" {% if site_type == 'weather-station' or site_type is none %}checked {% endif %}/>Weather Station
-      <input type="radio" name="site-type" data-toggle="collapse" data-target=".pv-model-params:not(.show)" value="power-plant" {% if site_type == 'power-plant' %}checked{% endif %}/>Power Plant
+      {% set site_type = form_data.get('site_type', None) %}
+      <input type="radio" name="site_type" data-toggle="collapse" data-target=".pv-model-params.show" value="weather-station" class="site_type-field"{% if site_type == 'weather-station' or site_type is none %} checked {% endif %}/>Weather Station
+      <input type="radio" name="site_type" data-toggle="collapse" data-target=".pv-model-params:not(.show)" value="power-plant" class="site_type-field"{% if site_type == 'power-plant' %} checked{% endif %}/>Power Plant
 	</div>
     <div class="pv-model-params collapse {% if site_type == 'power-plant' %}show{% endif %}">
 	  <fieldset name="modeling_parameters">
@@ -53,12 +53,14 @@
         <div class="form-element">
         {{ form.input('AC Loss Factor', 'number', 'ac_loss_factor',
                       'Loss factor applied to AC current in &percnt;.',
-                      form_data=form_data)}}
+                      form_data=form_data,
+                      default=0)}}
         </div>
         <div class="form-element">
         {{ form.input('DC Loss Factor', 'number', 'dc_loss_factor',
                       'Loss factor applied to DC current in &percnt;.',
-                      form_data=form_data)}}
+                      form_data=form_data,
+                      default=0)}}
         </div>
 	  	<div class="form-element">
         {{ form.input('Temperature Coefficient', 'number', 'temperature_coefficient',
@@ -71,7 +73,7 @@
           <input type="radio" name="tracking_type" value="fixed" data-toggle="collapse" data-target=".tracking_type_fields" {% if tracking_type == "fixed" or tracking_type is none %} checked {% endif %}/>Fixed
           <input type="radio" name="tracking_type" value="single_axis" data-toggle="collapse" data-target=".tracking_type_fields" {% if tracking_type == "single_axis"%}checked{% endif %}/>Single Axis
         </div>
-        <div class="fixed tracking_type_fields collapse{% if tracking_type == "fixed" or tracking_type is none%}show{% endif %}">
+        <div class="fixed tracking_type_fields collapse{% if tracking_type == "fixed" or tracking_type is none%} show{% endif %}">
 	  	  <div class="form-element">
             {{ form.input('Surface Tilt', 'number' ,'surface_tilt', 
                           help_text='Tilt from horizontal of a fixed tilt system.', form_data=form_data) }}
@@ -81,28 +83,31 @@
                           help_text='Azimuth angle of a fixed tilt system.', form_data=form_data) }}
           </div>
         </div>
-        <div class="single_axis tracking_type_fields collapse {% if tracking_type == "single_axis"%}show{% endif %}">
+        <div class="single_axis tracking_type_fields collapse {% if tracking_type == "single_axis"%} show{% endif %}">
           <div class="form-element">
             {{ form.input('Axis Tilt', 'number', 'axis_tilt',
-                          help_text='Tilt from horizontal of the tracker axis, degrees.', form_data=form_data) }}
+                          help_text='Tilt from horizontal of the tracker axis, degrees.',
+                          form_data=form_data, default=0) }}
 	      </div>
           <div class="form-element">
             {{ form.input('Axis Azimuth', 'number', 'axis_azimuth',
-                          help_text='Azimuth angle of the tracker axis, degrees East of North.', form_data=form_data)}}
+                          help_text='Azimuth angle of the tracker axis, degrees East of North.',
+                          form_data=form_data, default=0)}}
 	      </div>
           <div class="form-element">
             {{ form.input('Ground Coverage Ratio', 'number', 'ground_coverage_ratio',
                           help_text='Azimuth angle of the tracker axis, degrees East of North.', form_data=form_data) }}
 	      </div>
           <div class="form-element">
-	        <label>Backtrack</label>
-  	        <input type="checkbox" name="backtrack" value='false' default='false' class="form-control backtrack-field">
-		    <span class="help-text">Indicator of if a tracking system uses backtracking.</span>
-	      </div>
-          <div class="form-element">
             {{ form.input('Maximum Rotation Angle', 'number', 'maximum_ration_angle',
                           help_text='Maximum rotation from horizontal of a single axis tracker, degrees.', form_data=form_data) }}
           </div>
+          <div class="form-element">
+	        <label>Backtrack</label>
+            <input type='radio' name="backtrack" value="true" class="backtrack-field" checked/>True
+            <input type='radio' name="backtrack" value="false" class="backtrack-field"/>False
+		    <span class="help-text">Indicator of if a tracking system uses backtracking.</span>
+	      </div>
         </div>
 	  </fieldset>
 	</div>

@@ -15,7 +15,8 @@ class DataTables(object):
     def create_table_elements(cls, data_list, id_key, **kwargs):
         """Creates a list of objects to be rendered as table by jinja template
         """
-        sites_list = sites.list_metadata().json()
+        sites_list_request = sites.list_metadata()
+        sites_list = sites_list_request.json()
         site_dict = {site['site_id']: site for site in sites_list}
         table_rows = []
         for data in data_list:
@@ -53,7 +54,8 @@ class DataTables(object):
 
     @classmethod
     def create_cdf_forecast_elements(cls, data_list, **kwargs):
-        sites_list = sites.list_metadata().json()
+        sites_list_request = sites.list_metadata()
+        sites_list = sites_list_request.json()
         site_dict = {site['site_id']: site for site in sites_list}
         table_rows = []
         for data in data_list:
@@ -77,7 +79,8 @@ class DataTables(object):
         TODO: fix parameters.
         """
         site_id = kwargs.get('site_id')
-        obs_data = observations.list_metadata(site_id=site_id).json()
+        obs_data_request = observations.list_metadata(site_id=site_id)
+        obs_data = obs_data_request.json()
         rows = cls.create_table_elements(obs_data, 'observation_id', **kwargs)
         rendered_table = render_template(cls.observation_template,
                                          table_rows=rows,
@@ -103,8 +106,9 @@ class DataTables(object):
         """
         """
         site_id = kwargs.get('site_id')
-        cdf_forecast_data = cdf_forecast_groups.list_metadata(
-            site_id=site_id).json()
+        cdf_forecast_request = cdf_forecast_groups.list_metadata(
+            site_id=site_id)
+        cdf_forecast_data = cdf_forecast_request.json()
         rows = cls.create_cdf_forecast_elements(cdf_forecast_data,
                                                 **kwargs)
         rendered_table = render_template(cls.cdf_forecast_template,
@@ -116,7 +120,8 @@ class DataTables(object):
     def get_site_table(cls, **kwargs):
         """
         """
-        site_data = sites.list_metadata().json()
+        site_data_request = sites.list_metadata()
+        site_data = site_data_request.json()
         rows = cls.create_site_table_elements(site_data, 'site_id', **kwargs)
         rendered_table = render_template(cls.site_template, table_rows=rows)
         return rendered_table

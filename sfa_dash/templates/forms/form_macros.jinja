@@ -1,4 +1,4 @@
-{% macro input(label, type, name, help_text=None, form_data=None, required=False, class='') %}
+{% macro input(label, type, name, help_text=None, form_data=None, required=False, class='', default='') %}
 {% set extra_attr = '' %}
 
 {% if type == 'number' %}
@@ -10,7 +10,7 @@
 {% endif %}
 
 <label>{{ label }}</label>
-<input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}" {% if form_data is not none %} value="{{ form_data.get(name,'') }}"{% endif %}>
+<input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}" {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>
 {% if help_text is not none %}<span class="form-text text-muted help-text">{{ help_text }}</span>{% endif %}
 {% endmacro %}
 
@@ -32,9 +32,9 @@
 {% if help_text is not none %}<span class="help-text text-muted">{{ help_text }}</span>{% endif %}
 {% endmacro %}
 
-{% macro timedelta(label, name, help_text=None, required=False, form_data={}) %}
+{% macro timedelta(label, name, help_text=None, form_data={}) %}
   <label>{{ label }}</label><br/>
-  <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} class="form-control time-field {{name }}-field">
+  <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} required class="form-control time-field {{name }}-field">
   <select required name="{{ name }}_units" class="form-control time-field">
     <option value="minutes">Minutes</option>
     <option value="hours">Hours</option>

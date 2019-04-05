@@ -37,12 +37,12 @@ class SiteDashView(BaseView):
         """
         temp_args = {}
         subnav_kwargs = {
-           'forecasts_url': url_for('data_dashboard.forecasts',
-                                    site_id=self.metadata['site_id']),
-           'observations_url': url_for('data_dashboard.observations',
-                                       site_id=self.metadata['site_id']),
-           'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
-                                        site_id=self.metadata['site_id'])
+            'forecasts_url': url_for('data_dashboard.forecasts',
+                                     site_id=self.metadata['site_id']),
+            'observations_url': url_for('data_dashboard.observations',
+                                        site_id=self.metadata['site_id']),
+            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
+                                         site_id=self.metadata['site_id'])
         }
         temp_args['subnav'] = self.format_subnav(**subnav_kwargs)
         temp_args['breadcrumb'] = self.breadcrumb_html()

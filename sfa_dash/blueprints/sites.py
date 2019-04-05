@@ -35,12 +35,12 @@ class SingleSiteView(SiteDashView):
         bc_format = '/<a href="{url}">{text}</a>'
         bc = ''
         bc += bc_format.format(
-                url=url_for('data_dashboard.sites_view'),
-                text="Sites")
+            url=url_for('data_dashboard.sites_view'),
+            text="Sites")
         bc += bc_format.format(
-                url=url_for('data_dashboard.site_view',
-                            uuid=self.metadata['site_id']),
-                text=self.metadata['name'])
+            url=url_for('data_dashboard.site_view',
+                        uuid=self.metadata['site_id']),
+            text=self.metadata['name'])
         return bc
 
     def get(self, uuid, **kwargs):

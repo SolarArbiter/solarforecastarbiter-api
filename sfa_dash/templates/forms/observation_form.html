@@ -39,7 +39,7 @@
 	</div>
     <div class="form-element">
       {{ form.timedelta('Interval length', 'interval_length',
-                        'The length of time that each data point represents inHH:MM format, e.g. 00:05 for 5 minutes.') }}
+                        'The length of time that each data point represents. Values must be integers.') }}
     </div>
     <div class="form-element">
       {{ form.select('Interval Label', 'interval_label',

@@ -119,21 +119,29 @@ class MetadataForm(BaseView):
         dictionary
             Form data formatted to the API spec.
         """
+        tracking_keys = {
+            'fixed': ['surface_tilt', 'surface_azimuth'],
+            'single_axis': ['axis_azimuth', 'backtrack',
+                            'axis_tilt', 'ground_coverage_ratio'],
+        }
         modeling_keys = ['ac_capacity', 'dc_capacity',
                          'ac_loss_factor', 'dc_loss_factor',
-                         'temperature_coefficient', 'axis_azimuth',
-                         'tracking_type', 'backtrack',
-                         'axis_tilt', 'ground_coverage_ratio',
-                         'surface_tilt', 'surface_azimuth']
+                         'temperature_coefficient', 'tracking_type']
+
         top_level_keys = ['name', 'elevation', 'latitude',
                           'longitude', 'timezone', 'extra_parameters']
         site_metadata = {key: site_dict[key]
                          for key in top_level_keys
                          if site_dict.get(key, "") != ""}
-        modeling_params = {key: site_dict[key]
-                           for key in modeling_keys
-                           if site_dict.get(key, "") != ""}
-        site_metadata['modeling_parameters'] = modeling_params
+        if site_dict['site_type'] == 'power-plant':
+            modeling_params = {key: site_dict[key]
+                               for key in modeling_keys
+                               if site_dict.get(key, "") != ""}
+            tracking_type = site_dict['tracking_type']
+            tracking_fields = {key: site_dict[key]
+                               for key in tracking_keys[tracking_type]}
+            modeling_params.update(tracking_fields)
+            site_metadata['modeling_parameters'] = modeling_params
         return site_metadata
 
     def observation_formatter(self, observation_dict):
@@ -156,8 +164,8 @@ class MetadataForm(BaseView):
                                 for key in direct_keys
                                 if observation_dict.get(key, "") != ""}
         observation_metadata['interval_length'] = self.parse_timedelta(
-                observation_dict,
-                'interval_length')
+            observation_dict,
+            'interval_length')
         return observation_metadata
 
     def forecast_formatter(self, forecast_dict):
@@ -169,17 +177,17 @@ class MetadataForm(BaseView):
                              for key in direct_keys
                              if forecast_dict.get(key, '') != ''}
         forecast_metadata['issue_time_of_day'] = self.parse_hhmm_field(
-                forecast_dict,
-                'issue_time')
+            forecast_dict,
+            'issue_time')
         forecast_metadata['lead_time_to_start'] = self.parse_timedelta(
-                forecast_dict,
-                'lead_time')
+            forecast_dict,
+            'lead_time')
         forecast_metadata['run_length'] = self.parse_timedelta(
-                forecast_dict,
-                'run_length')
+            forecast_dict,
+            'run_length')
         forecast_metadata['interval_length'] = self.parse_timedelta(
-                forecast_dict,
-                'interval_length')
+            forecast_dict,
+            'interval_length')
         return forecast_metadata
 
     def cdf_forecast_formatter(self, forecast_dict):

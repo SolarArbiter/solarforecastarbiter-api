@@ -42,7 +42,7 @@ def make_auth0_blueprint(
         redirect_to='.callback_handling',
         scope=scope,
         storage=storage,
-        )
+    )
     auth0_bp.from_config['client_id'] = 'AUTH0_OAUTH_CLIENT_ID'
     auth0_bp.from_config['client_secret'] = 'AUTH0_OAUTH_CLIENT_SECRET'
 

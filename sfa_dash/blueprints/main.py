@@ -4,8 +4,7 @@ from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
 from sfa_dash.api_interface import (observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
 from flask import (Blueprint, render_template,
-                   url_for, redirect, abort)
-from flask.views import MethodView
+                   url_for, abort)
 
 
 class SingleObservationView(DataDashView):
