@@ -7,7 +7,7 @@ from sfa_api.utils.validators import TimeFormat
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
-             'poa', 'ac_power', 'dc_power']
+             'poa_global', 'ac_power', 'dc_power']
 
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 
