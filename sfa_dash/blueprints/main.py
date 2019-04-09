@@ -69,11 +69,11 @@ class SingleCDFForecastView(DataDashView):
                         uuid=self.metadata['site_id']),
             text='CDF Forecasts')
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.cdf_forecast_view',
+            url=url_for('data_dashboard.cdf_forecast_group_view',
                         uuid=self.metadata['parent']),
             text=self.metadata['name'])
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.cdf_forecast_single_view',
+            url=url_for('data_dashboard.cdf_forecast_view',
                         uuid=self.metadata['forecast_id']),
             text=self.metadata['constant_value'])
 
@@ -92,10 +92,10 @@ class SingleCDFForecastView(DataDashView):
             'data/metadata/cdf_forecast_metadata.html',
             **self.metadata)
         temp_args['upload_link'] = url_for(
-            'forms.upload_forecast_data',
+            'forms.upload_cdf_forecast_data',
             uuid=uuid)
         temp_args['download_link'] = url_for(
-            'forms.download_forecast_data',
+            'forms.download_cdf_forecast_data',
             uuid=uuid)
         return render_template(self.template, **temp_args)
 
@@ -162,7 +162,7 @@ class SingleCDFForecastGroupView(DataDashView):
                         site_id=self.metadata['site_id']),
             text='CDF Forecasts')
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.cdf_forecast_view',
+            url=url_for('data_dashboard.cdf_forecast_group_view',
                         uuid=self.metadata['forecast_id']),
             text=self.metadata['name'])
         return breadcrumb
@@ -180,12 +180,6 @@ class SingleCDFForecastGroupView(DataDashView):
         temp_args['metadata_section'] = render_template(
             'data/metadata/cdf_forecast_group_metadata.html',
             **self.metadata)
-        temp_args['upload_link'] = url_for(
-            'forms.upload_forecast_data',
-            uuid=uuid)
-        temp_args['download_link'] = url_for(
-            'forms.download_forecast_data',
-            uuid=uuid)
         return render_template(self.template, **temp_args)
 
 
@@ -235,7 +229,7 @@ data_dash_blp.add_url_rule(
     view_func=SingleForecastView.as_view('forecast_view'))
 data_dash_blp.add_url_rule(
     '/forecasts/cdf/<uuid>',
-    view_func=SingleCDFForecastGroupView.as_view('cdf_forecast_view'))
+    view_func=SingleCDFForecastGroupView.as_view('cdf_forecast_group_view'))
 data_dash_blp.add_url_rule(
     '/forecasts/cdf/single/<uuid>',
-    view_func=SingleCDFForecastView.as_view('cdf_forecast_single_view'))
+    view_func=SingleCDFForecastView.as_view('cdf_forecast_view'))

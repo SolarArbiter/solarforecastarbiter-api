@@ -4,7 +4,7 @@ from flask import (Blueprint, render_template, request,
                    abort, redirect, url_for, make_response)
 import pandas as pd
 from sfa_dash.api_interface import (sites, observations, forecasts,
-                                    cdf_forecast_groups)
+                                    cdf_forecasts, cdf_forecast_groups)
 from sfa_dash.blueprints.base import BaseView
 
 
@@ -268,6 +268,10 @@ class UploadForm(BaseView):
             self.template = 'forms/forecast_upload_form.html'
             self.metadata_template = 'data/metadata/forecast_metadata.html'
             self.api_handle = forecasts
+        elif data_type == 'cdf_forecast':
+            self.template = 'forms/cdf_forecast_upload_form.html'
+            self.metadata_template = 'data/metadata/cdf_forecast_metadata.html'
+            self.api_handle = cdf_forecasts
         else:
             raise ValueError(f'No upload form defined for {data_type}')
 
@@ -319,6 +323,10 @@ class DownloadForm(BaseView):
             self.template = 'forms/forecast_download_form.html'
             self.metadata_template = 'data/metadata/forecast_metadata.html'
             self.api_handle = forecasts
+        elif data_type == 'cdf_forecast':
+            self.template = 'forms/cdf_forecast_download_form.html'
+            self.metadata_template = 'data/metadata/cdf_forecast_metadata.html'
+            self.api_handle = cdf_forecasts
         else:
             raise ValueError(f'No Download form configured for {data_type}.')
 
@@ -403,6 +411,9 @@ forms_blp.add_url_rule('/observations/<uuid>/upload',
 forms_blp.add_url_rule('/forecasts/single/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_forecast_data',
                                                     data_type='forecast'))
+forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/upload',
+                       view_func=UploadForm.as_view('upload_cdf_forecast_data',
+                                                    data_type='cdf_forecast'))
 forms_blp.add_url_rule('/observations/<uuid>/download',
                        view_func=DownloadForm.as_view(
                            'download_observation_data',
@@ -410,3 +421,7 @@ forms_blp.add_url_rule('/observations/<uuid>/download',
 forms_blp.add_url_rule('/forecasts/single/<uuid>/download',
                        view_func=DownloadForm.as_view('download_forecast_data',
                                                       data_type='forecast'))
+forms_blp.add_url_rule('/forecasts/cdf/<uuid>/download',
+                       view_func=DownloadForm.as_view(
+                           'download_cdf_forecast_data',
+                           data_type='cdf_forecast'))

@@ -1,0 +1,74 @@
+{% extends "dash/data.html" %}
+{# {% set sidebar = True %} #}
+{% set page_title = 'Download Forecast data' %}
+{% block content %}
+{{ metadata | safe }}
+<h3>Download data for Forecast 'DA Power'</h3>
+{#<p><b>Available Date Range:</b> <i>2016-01-01T12:00Z</i> to <i>2019-01-01T12:00Z</i></p>#}
+<form action="{{ url_for('forms.download_cdf_forecast_data', uuid=uuid) }}" method="post" id="forecast-download">
+  <div class="form-group">
+	<div class="form-element">
+	  <label for="start">Start time:</label>
+	  <input type="datetime-local" id="start" name="period-start">
+    </div>
+    <div class="form-element">
+	  <label for="end">End time:</label>
+	  <input type="datetime-local" id="end" name="period-end">
+    </div>
+	<div class="form-element">
+	  <label>Timezone</label>
+	  <select required name="timezone" class="form-control">
+        <option value="utc">UTC</option>
+      </select>
+	</div>
+	<div class="form-element full-width">
+	  <label for="format">Format</label><br/>
+	  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="text/csv" checked>CSV</input>
+	  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="application/json">JSON</input>
+	</div>
+	<div class="form-element full-width">
+	  <div class="download-example csv show">
+	  <p>CSV downloads will have the following format.</p>
+	  <pre class="example-text">
+# forecast_id: f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1
+# metadata: https://api.solarforecastarbiter.org/forecasts/f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1/metadata
+timestamp,value
+2018-11-22T18:01:00Z,10.23
+2018-11-22T18:02:00Z,10.67
+2018-11-22T18:03:00Z,10.67
+	  </pre>
+
+	  </div>
+	</div>
+    <div class="form-element full-width">
+	  <div class="download-example json collapse">
+	    <p>JSON downloads will have the following format.</p>
+		<pre class="example-text">{
+    “forecast_id”: “f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1',
+    "_links": {
+        "metadata": "https://api.solarforecastarbiter.org/forecasts/f79e4f84-e2c3-11e8-9f32-f2801f1b9fd1/metadata",
+    },
+    “values”: [
+        { 
+           “timestamp”: “2018-11-22T18:01:001Z”,
+            “value”: 10.23,
+         }, 
+        { 
+           “timestamp”: “2018-11-22T18:02:00Z”,
+            “value”: 10.67,
+         },
+        {
+           “timestamp”: “2018-11-22T18:03:00Z”,
+            “value”: 10.67,
+         }
+    ] 
+}</pre>
+	  </div>
+	</div>
+
+  </div>
+</form>
+<div class="form-element">
+  <button type="submit" form="forecast-download" value="Submit" class="btn btn-primary">Download</button>
+</div>
+{% endblock %}

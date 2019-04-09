@@ -62,8 +62,8 @@
     </div>
     <div class="form-element">
       {{ form.radio('Axis', 'axis', 
-                    {"x": "x",
-                     "y": "y"},
+                    {"x": "x: variable value",
+                     "y": "y: percentile"},
                     'The axis on which the constant values of the CDF is specified. The axis can be either x (constant variable values) or y (constant percentiles). The axis is fixed and the same for all forecasts in the probabilistic forecast.',
                     required=True,
                     form_data=form_data)  }}

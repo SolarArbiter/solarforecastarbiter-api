@@ -1,8 +1,12 @@
 {% extends "dash/data.html" %}
 {% block content %}
 {{ metadata_section | safe }}
+{% if upload_link is defined %}
 <a role="button" class="btn btn-primary btn-sm" href="{{upload_link}}">Upload data</a>
+{% endif %}
+{% if download_link is defined %}
 <a role="button" class="btn btn-primary btn-sm" href="{{download_link}}">Download data</a>
+{% endif %}
 {% if 'constant_values' in metadata %}
 <div class="bin-list">
   <table>
@@ -11,7 +15,7 @@
     </tr>
     {% for cdf_bin in metadata['constant_values'] %}
     <tr>
-        <td><a href="{{url_for('data_dashboard.cdf_forecast_single_view', uuid=cdf_bin['forecast_id'])}}">{{ cdf_bin['constant_value'] }}</a></td>
+        <td><a href="{{url_for('data_dashboard.cdf_forecast_view', uuid=cdf_bin['forecast_id'])}}">{{ cdf_bin['constant_value'] }}</a></td>
     </tr>
     {% endfor %}
   </table>
