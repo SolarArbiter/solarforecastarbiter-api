@@ -1,5 +1,11 @@
 {% extends "base.html" %}
+{% if user is none %}
+{% set sidebar = False %}
+{% endif %}
 {% block dash %}
 <h2 class="page-title">Welcome</h2>
+{% if user is none %}
+<p>Please <a href="{{ url_for('auth0.login') }}">login</a> to access the dashboard.</p>
+{% endif %}
 {% include "dash/subnav.html" %}
 {% endblock %}

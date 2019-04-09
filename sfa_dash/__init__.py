@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template
+from flask import Flask, redirect, url_for, render_template, session
 
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint, logout,
@@ -36,9 +36,11 @@ def create_app(config=None):
 
     @app.context_processor
     def inject_globals():
-        # Injects variables provided in template_globals
-        # into all templates.
-        return template_variables()
+        # Injects variables into all rendered templates
+        global_template_args = {}
+        global_template_args['user'] = session.get('userinfo')
+        global_template_args.update(template_variables())
+        return global_template_args
 
     from sfa_dash.blueprints.main import data_dash_blp
     from sfa_dash.blueprints.form import forms_blp

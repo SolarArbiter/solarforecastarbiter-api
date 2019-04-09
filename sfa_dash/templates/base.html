@@ -3,7 +3,6 @@
   <head>
     {% include "head.html" %}
   </head>
-
   <body class="d-flex flex-column h-100">
     <header>
       {% include "navbar.html" %}
@@ -12,7 +11,10 @@
       <div class="container">
 	  	<!-- Content Block -->
 		  <div class="row">
-			{% if True %} {# if sidebar is defined #}
+            {% if sidebar is not defined %}
+            {% set sidebar = True %}
+            {% endif %}
+			{% if sidebar %}
 		    {% include "sidebar.html" %} 
 		    <div class="content col-sm-9 col-xs-12">
 			{% else %}
