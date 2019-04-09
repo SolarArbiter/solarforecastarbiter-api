@@ -27,8 +27,8 @@
                   required=True, form_data=form_data)}}
 	</div>
     <div class="form-element">
-        {{ form.select('Timezone', 'timezone', {'America/Los_Angeles': 'America/Los Angeles',
-                                                'America/Phoenix': 'America/Phoenix'},
+        {{ form.select('Timezone', 'timezone',
+                       timezone_options,
                        required=True, form_data=form_data)}}
     </div>
     <div class="form-element full-width">

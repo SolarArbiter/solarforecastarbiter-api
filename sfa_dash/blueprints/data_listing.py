@@ -30,6 +30,10 @@ class DataListingView(BaseView):
     def breadcrumb_html(self, site_id=None, organization=None, **kwargs):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
+        if self.data_type == 'cdf_forecast':
+            type_label = 'CDF Forecast'
+        else:
+            type_label = self.data_type.title()
         if site_id is not None:
             site_metadata_request = sites.get_metadata(site_id)
             if site_metadata_request.status_code != 200:
@@ -43,7 +47,7 @@ class DataListingView(BaseView):
                 text=site_metadata['name'])
         breadcrumb += breadcrumb_format.format(
             url=url_for(f'data_dashboard.{self.data_type}s', site_id=site_id),
-            text=self.data_type.replace('_', ' ').title())
+            text=type_label)
         return breadcrumb
 
     def get_template_args(self, **kwargs):

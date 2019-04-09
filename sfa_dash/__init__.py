@@ -3,6 +3,8 @@ from flask import Flask, redirect, url_for, render_template
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint, logout,
                                        oauth_request_session)
+from sfa_dash.filters import register_jinja_filters
+from sfa_dash.template_globals import template_variables
 
 
 def create_app(config=None):
@@ -10,6 +12,7 @@ def create_app(config=None):
     config = config or 'sfa_dash.config.DevConfig'
     app.config.from_object(config)
     app.secret_key = app.config['SECRET_KEY']
+    register_jinja_filters(app)
 
     auth0_bp = make_auth0_blueprint(
         base_url=app.config['AUTH0_OAUTH_BASE_URL'])
@@ -30,6 +33,12 @@ def create_app(config=None):
         # should probably test if authorized and show one
         # page, show a different page w/ login link otherwise
         return render_template('index.html')
+
+    @app.context_processor
+    def inject_globals():
+        # Injects variables provided in template_globals
+        # into all templates.
+        return template_variables()
 
     from sfa_dash.blueprints.main import data_dash_blp
     from sfa_dash.blueprints.form import forms_blp

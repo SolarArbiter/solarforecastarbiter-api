@@ -1,7 +1,7 @@
 {% macro tr(row) %}
 <tr>
   <td><a href="{{ row['link'] }}">{{ row['name'] }}</a></td>
-  <td>{{ row['variable'] }}</td>
+  <td>{{ row['variable'] | convert_varname }}</td>
   <td>{{ row['provider'] }}</td>
   <td>{{ row['site'] }}</td>
 </tr>

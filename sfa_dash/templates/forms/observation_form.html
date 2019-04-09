@@ -15,19 +15,11 @@
 	</div>
 	<div class="form-element">
       {{ form.select('Variable', 'variable',
-                     {"ghi":"Global Horizontal Irradiance (W/m^2)",
-                      "dni":"Direct Normal Irradiance (W/m^2)",
-                      "dhi":"Diffuse Horizontal Irradiance (W/m^2)",
-                      "poa":"Plane of Array Irradiance (W/m^2)",
-                      "rh":"Relative Humidity (%)",
-                      "ac-power":"AC Power (MW)",
-                      "dc-power":"DC Power(MW)",
-                      "surface-temperature":"Surface Temperature (C)",
-                      "surface-wind-speed":"Surface Wind Speed (m/s)"},
-                      form_data=form_data) }}
+                     variable_options,
+                     form_data=form_data) }}
 	</div>
 	<div class="form-element">
-      {{ form.select('Value Type', 'interval_value_type',
+      {{ form.select('Interval Value Type', 'interval_value_type',
                       {"interval_mean": "Interval Mean",
                        "instantaneous": "Instantaneous"},
                        form_data=form_data) }}
