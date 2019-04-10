@@ -145,8 +145,17 @@ ul.data-metadata-fields{
 .form-element label{
   font-weight: 600;
 }
+@media (min-width: 769px) {
+  .form-element{
+    width: 50%;
+  }
+}
+@media (max-width: 768px){
+  .form-element{
+    width: 100%;
+  }
+}
 .form-element{
-  width: 50%;
   float: left;
   padding: .5em 1em;
   position: relative;
@@ -175,7 +184,6 @@ pre.example-text{
   padding: 1em;
 }
 span.help-text{
-  display: none;
   width: 100%;
   padding: .5em;
   border: 2px solid #6c757d;
@@ -196,21 +204,6 @@ span.help-text::before {
   border-style: solid;
   border-color: transparent transparent #6c757d transparent;
 }
-span.help-text.time-field-help::before {
-  left: 20%;
-}
-span.help-text.help-text-top{
-  bottom: 3.5em;
-}
-span.help-text.help-text-top::before{
-  border-color: #6c757d transparent transparent transparent;
-  top: unset;
-  bottom: -13px;
-}
-
-[class$="-field"]:focus ~ span.help-text{
-  display: block;
-}
 ul.error-list{
   list-style: none;
 }
@@ -223,4 +216,17 @@ li.alert p{
 pre.example-text{
     overflow: scroll;
     max-width: 761px;
+}
+a.help-button{
+    color: white;
+    font-weight: bolder;
+    background-color: #6c757d;
+    border-radius: 12px;
+    width: 24px;
+    display: inline-block;
+    text-align: center;
+}
+.input-wrapper{
+    width: calc(100% - 28px);
+    display: inline-block;
 }

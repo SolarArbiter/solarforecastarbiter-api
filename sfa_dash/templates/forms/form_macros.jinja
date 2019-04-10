@@ -1,3 +1,7 @@
+{% macro help_button(name) %}
+<a data-toggle="collapse" data-target=".{{ name }}-help-text" role="button" href="" class="help-button">?</a>
+{% endmacro %}
+
 {% macro input(label, type, name, help_text=None, form_data=None, required=False, class='', default='') %}
 {% set extra_attr = '' %}
 
@@ -8,43 +12,63 @@
 {% if required %}
 {% set extra_attr = extra_attr + ' required' %}
 {% endif %}
-
-<label>{{ label }}</label>
+<label>{{ label }}</label><br/>
+<div class="input-wrapper">
 <input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}" {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>
-{% if help_text is not none %}<span class="form-text text-muted help-text">{{ help_text }}</span>{% endif %}
+</div>
+{% if help_text is not none %}
+{{ help_button(name) }}
+<span class="{{ name }}-help-text form-text text-muted help-text collapse" aria-hidden>{{ help_text }}</span>
+{% endif %}
 {% endmacro %}
 
 {% macro select(label, name, options, help_text=None, required=False, form_data={}) %}
 <label>{{ label }}</label>
+<div class="input-wrapper">
 <select class="form-control {{ name }}-field" name="{{ name }}"{% if required %} required {% endif %}>
   {% for option, option_label in options.items() %}
   <option value="{{ option }}" {% if option == form_data.get(name)  %} selected="selected"{% endif %}>{{ option_label }}</option>
   {% endfor %}
 </select>
-{% if help_text is not none %}<span class="help-text text-muted help-text-top">{{ help_text }}</span>{% endif %}
+</div>
+{% if help_text is not none %}
+{{ help_button(name) }}
+<span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
+{% endif %}
 {% endmacro %}
 
 {% macro radio(label, name, options, help_text=None, required=False, form_data={}) %}
 <label>{{ label }}</label><br/>
+<div class="input-wrapper">
 {% for option, option_label in options.items() %}
 <input name="{{ name }}" type="radio" class="{{ name }}-field" value="{{ option }}">{{ option_label }}</label>
 {% endfor %}
-{% if help_text is not none %}<span class="help-text text-muted">{{ help_text }}</span>{% endif %}
+</div>
+{% if help_text is not none %}
+{{ help_button(name) }}
+<span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
+{% endif %}
 {% endmacro %}
 
 {% macro timedelta(label, name, help_text=None, form_data={}) %}
   <label>{{ label }}</label><br/>
+  <div class="input-wrapper">
   <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} required class="form-control time-field {{name }}-field">
   <select required name="{{ name }}_units" class="form-control time-field">
     <option value="minutes">Minutes</option>
     <option value="hours">Hours</option>
     <option value="days">Days</option>
   </select>
-{% if help_text is not none %}<span class="help-text text-muted  time-field-help help-text-top">{{ help_text }}</span>{% endif %}
+  </div>
+{% if help_text is not none %}
+{{ help_button(name) }}
+<span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
+{% endif %}
 {% endmacro %}
 
 {% macro time_of_day(label, name, help_text=None, required=False, form_data={}) %}
 <label>{{ label }}</label><br/>
+<div class="input-wrapper">
 <select {% if required %}required{% endif %} name="{{ name }}_hours" class="form-control time-field {{ name }}_hours-field">
   {% for i in range(0,24) %}
   <option value="{{ i }}">{{ '%02d' % i }}</option>
@@ -56,5 +80,10 @@
   <option value="{{ i }}">{{ '%02d' % i }}</option>
   {% endfor %}
 </select>
-{% if help_text is not none %}<span class="help-text text-muted  time-field-help help-text-top">{{ help_text }}</span>{% endif %}
+UTC
+</div>
+{% if help_text is not none %}
+{{ help_button(name) }}
+<span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
+{% endif %}
 {% endmacro %}

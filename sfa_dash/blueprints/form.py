@@ -348,9 +348,8 @@ class DownloadForm(BaseView):
             Query parameters start and end, both formatted in iso8601 and
             localized to the provided timezone.
         """
-        timezone = form_data['timezone']
-        start_time = pd.Timestamp(form_data['period-start'], tz=timezone)
-        end_time = pd.Timestamp(form_data['period-end'], tz=timezone)
+        start_time = pd.Timestamp(form_data['period-start'], tz='utc')
+        end_time = pd.Timestamp(form_data['period-end'], tz='utc')
         params = {
             'start': start_time.isoformat(),
             'end': end_time.isoformat(),
