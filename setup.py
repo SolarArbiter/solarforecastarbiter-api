@@ -33,6 +33,8 @@ setup(
         'apispec',
         'marshmallow',
         'pandas'
+        'sqlalchemy',
+        'pymysql'
     ],
     extra_requires={
         'test': ['pytest', 'coverage']

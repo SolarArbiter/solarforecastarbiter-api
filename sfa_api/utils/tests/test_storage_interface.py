@@ -22,7 +22,12 @@ TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
 
 @pytest.fixture()
 def nocommit_cursor(sql_app, mocker):
-    conn = storage_interface.mysql_connection()
+    # on release of a Pool connection, any transaction is rolled back
+    # need to keep the transaction open between nocommit tests
+    conn = storage_interface._make_sql_connection_partial()()
+    mocker.patch.object(conn, 'close')
+    mocker.patch('sfa_api.utils.storage_interface.mysql_connection',
+                 return_value=conn)
     special = partial(storage_interface.get_cursor, commit=False)
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
     yield
