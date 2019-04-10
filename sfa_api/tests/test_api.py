@@ -152,20 +152,20 @@ def test_create_delete_observation(sql_api, auth_header):
                                       **auth_header})
     assert get_values.status_code == 200
 
-    # # post csv_values to the observation
-    # obs_values = static_observation_values()
-    # obs_values['quality_flag'] = 0
-    # csv_values = obs_values.to_csv()
-    # post_values = sql_api.post(f'/observations/{new_obs_id}/values',
-    #                        base_url=BASE_URL,
-    #                        headers={'Content-Type': 'text/csv',
-    #                                 **auth_header},
-    #                        data=csv_values)
-    # assert post_values.status_code == 201
-    # get_values = sql_api.get(f'/observations/{new_obs_id}/values',
-    #                      base_url=BASE_URL,
-    #                      headers={'Accept': 'text/csv', **auth_header})
-    # assert get_values.status_code == 200
+    # post csv_values to the observation
+    obs_values = static_observation_values()
+    obs_values['quality_flag'] = 0
+    csv_values = obs_values.to_csv()
+    post_values = sql_api.post(f'/observations/{new_obs_id}/values',
+                               base_url=BASE_URL,
+                               headers={'Content-Type': 'text/csv',
+                                        **auth_header},
+                               data=csv_values)
+    assert post_values.status_code == 201
+    get_values = sql_api.get(f'/observations/{new_obs_id}/values',
+                             base_url=BASE_URL,
+                             headers={'Accept': 'text/csv', **auth_header})
+    assert get_values.status_code == 200
 
     delete = sql_api.delete(new_obs_links_url, headers=auth_header)
     assert delete.status_code == 204
@@ -243,22 +243,22 @@ def test_create_delete_forecast(sql_api, auth_header):
                                       **auth_header})
     assert get_values.status_code == 200
 
-    # # post csv_values to the forecasts
-    # fx_values = static_forecast_values()
-    # csv_values = fx_values.to_csv()
+    # post csv_values to the forecasts
+    fx_values = static_forecast_values()
+    csv_values = fx_values.to_csv()
 
-    # post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
-    #                            base_url=BASE_URL,
-    #                            headers={'Content-Type': 'text/csv',
-    #                            **auth_header},
-    #                            data=csv_values)
-    # assert post_values.status_code == 201
+    post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
+                               base_url=BASE_URL,
+                               headers={'Content-Type': 'text/csv',
+                                        **auth_header},
+                               data=csv_values)
+    assert post_values.status_code == 201
 
-    # # request csv values
-    # get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
-    #                      base_url=BASE_URL,
-    #                      headers={'Accept': 'text/csv', **auth_header})
-    # assert get_values.status_code == 200
+    # request csv values
+    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
+                             base_url=BASE_URL,
+                             headers={'Accept': 'text/csv', **auth_header})
+    assert get_values.status_code == 200
 
     delete = sql_api.delete(new_fx_links_url, headers=auth_header)
     assert delete.status_code == 204
