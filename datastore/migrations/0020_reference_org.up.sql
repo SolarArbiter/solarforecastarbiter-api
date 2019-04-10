@@ -63,7 +63,7 @@ INSERT INTO arbiter_data.observations (
 ) VALUES (
     @orgid, @siteid, 'PSEL Reference POA Irradiance', 'poa_global', 'beginning',
     1, 'instantaneous', 0.10, '{"network": "Sandia RTC"}'), (
-    @orgid, @siteid, 'PSEL Reference Air Temperature', 'Air Temperature', 'beginning',
+    @orgid, @siteid, 'PSEL Reference Air Temperature', 'temp_air', 'beginning',
     1, 'instantaneous', 0.10, '{"network": "Sandia RTC"}'), (
     @orgid, @siteid, 'PSEL Reference Sys 1 AC Power', 'ac_power', 'beginning',
     1, 'instantaneous', 0.10, '{"network": "Sandia RTC"}'), (
