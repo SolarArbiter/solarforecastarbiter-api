@@ -32,7 +32,7 @@ setup(
         'flask',
         'apispec',
         'marshmallow',
-        'pandas'
+        'pandas',
         'sqlalchemy',
         'pymysql'
     ],
