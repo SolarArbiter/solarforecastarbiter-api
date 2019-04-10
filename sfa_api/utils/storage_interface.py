@@ -10,10 +10,11 @@ import random
 import uuid
 
 
-from flask import g, current_app
+from flask import current_app
 import pandas as pd
 import pymysql
 from pymysql import converters
+from sqlalchemy.pool import QueuePool
 
 
 from sfa_api import schema, json
@@ -31,29 +32,35 @@ def generate_uuid():
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
 
 
+def _make_sql_connection_partial():
+    config = current_app.config
+    conv = converters.conversions.copy()
+    # either convert decimals to floats, or add decimals to schema
+    conv[converters.FIELD_TYPE.DECIMAL] = float
+    conv[converters.FIELD_TYPE.NEWDECIMAL] = float
+    conv[pd.Timestamp] = converters.escape_datetime
+    connect_kwargs = {
+        'host': config['MYSQL_HOST'],
+        'port': int(config['MYSQL_PORT']),
+        'user': config['MYSQL_USER'],
+        'password': config['MYSQL_PASSWORD'],
+        'database': config['MYSQL_DATABASE'],
+        'binary_prefix': True,
+        'conv': conv,
+        'use_unicode': True,
+        'charset': 'utf8mb4',
+        'init_command': "SET time_zone = '+00:00'"
+    }
+    getconn = partial(pymysql.connect, **connect_kwargs)
+    return getconn
+
+
 def mysql_connection():
-    if 'mysql_connection' not in g:
-        config = current_app.config
-        conv = converters.conversions.copy()
-        # either convert decimals to floats, or add decimals to schema
-        conv[converters.FIELD_TYPE.DECIMAL] = float
-        conv[converters.FIELD_TYPE.NEWDECIMAL] = float
-        conv[pd.Timestamp] = converters.escape_datetime
-        connect_kwargs = {
-            'host': config['MYSQL_HOST'],
-            'port': int(config['MYSQL_PORT']),
-            'user': config['MYSQL_USER'],
-            'password': config['MYSQL_PASSWORD'],
-            'database': config['MYSQL_DATABASE'],
-            'binary_prefix': True,
-            'conv': conv,
-            'use_unicode': True,
-            'charset': 'utf8mb4',
-            'init_command': "SET time_zone = '+00:00'"
-        }
-        connection = pymysql.connect(**connect_kwargs)
-        g.mysql_connection = connection
-    return g.mysql_connection
+    if not hasattr(current_app, 'mysql_connection'):
+        getconn = _make_sql_connection_partial()
+        mysqlpool = QueuePool(getconn, recycle=3600)
+        current_app.mysql_connection = mysqlpool
+    return current_app.mysql_connection.connect()
 
 
 @contextmanager
@@ -75,15 +82,16 @@ def get_cursor(cursor_type, commit=True):
         if commit:
             connection.commit()
     finally:
-        cursor.close()
+        connection.close()
 
 
 def try_query(query_cmd):
     try:
         query_cmd()
-    except (pymysql.err.OperationalError, pymysql.err.IntegrityError) as e:
+    except (pymysql.err.OperationalError, pymysql.err.IntegrityError,
+            pymysql.err.InternalError) as e:
         ecode = e.args[0]
-        if ecode == 1142 or ecode == 1143:
+        if ecode == 1142 or ecode == 1143 or ecode == 1411:
             raise StorageAuthError(e.args[1])
         elif ecode == 1451:
             raise DeleteRestrictionError

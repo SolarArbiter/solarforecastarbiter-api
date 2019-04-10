@@ -22,7 +22,12 @@ TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
 
 @pytest.fixture()
 def nocommit_cursor(sql_app, mocker):
-    conn = storage_interface.mysql_connection()
+    # on release of a Pool connection, any transaction is rolled back
+    # need to keep the transaction open between nocommit tests
+    conn = storage_interface._make_sql_connection_partial()()
+    mocker.patch.object(conn, 'close')
+    mocker.patch('sfa_api.utils.storage_interface.mysql_connection',
+                 return_value=conn)
     special = partial(storage_interface.get_cursor, commit=False)
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
     yield
@@ -141,6 +146,12 @@ def test_read_observation(sql_app, user, observation_id):
 def test_read_observation_invalid_observation(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation(str(uuid.uuid1()))
+
+
+def test_read_observation_not_uuid(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError) as err:
+        storage_interface.read_observation('f8dd49fa-23e2-48a0-862b-ba0af6de')
+    assert "Incorrect string value" in str(err.value)
 
 
 def test_read_observation_invalid_user(sql_app, invalid_user):

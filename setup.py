@@ -32,7 +32,9 @@ setup(
         'flask',
         'apispec',
         'marshmallow',
-        'pandas'
+        'pandas',
+        'sqlalchemy',
+        'pymysql'
     ],
     extra_requires={
         'test': ['pytest', 'coverage']

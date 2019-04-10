@@ -299,7 +299,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'write_values'));
     IF allowed THEN
         INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value) VALUES (
-            binid, timestamp, value);
+            binid, timestamp, value) ON DUPLICATE KEY UPDATE value=value;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "write cdf forecast values"',
         MYSQL_ERRNO = 1142;
@@ -308,7 +308,7 @@ END;
 
 GRANT INSERT ON arbiter_data.cdf_forecasts_groups TO 'insert_objects'@'localhost';
 GRANT INSERT, SELECT (id, cdf_forecast_group_id) ON arbiter_data.cdf_forecasts_singles TO 'insert_objects'@'localhost';
-GRANT INSERT ON arbiter_data.cdf_forecasts_values TO 'insert_objects'@'localhost';
+GRANT INSERT, UPDATE ON arbiter_data.cdf_forecasts_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_group TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecasts_single TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_cdf_forecast_values TO 'insert_objects'@'localhost';
