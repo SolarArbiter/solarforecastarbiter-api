@@ -238,6 +238,29 @@ def test_store_observation_values(cursor, allow_write_values,
     assert res == tuple(expected)
 
 
+def test_store_observation_values_duplicates(cursor, allow_write_values,
+                                             observation_values):
+    obsbinid, testobs = observation_values
+    testobs = list(testobs)
+    expected = []
+    # first insert
+    for to in testobs:
+        cursor.callproc('store_observation_values', to)
+    # second insert
+    for to in testobs:
+        to = list(to)
+        to[-1] = 1
+        to[-2] = to[-2] + 1
+        cursor.callproc('store_observation_values', to)
+        expected.append((obsbinid, *to[-3:]))
+    cursor.execute(
+        'SELECT * FROM arbiter_data.observations_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        obsbinid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
 def test_store_observation_values_cant_write(cursor, observation_values):
     obsbinid, testobs = observation_values
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -273,6 +296,28 @@ def test_store_forecast_values(cursor, allow_write_values,
     fxbinid, testfx = forecast_values
     expected = []
     for tf in testfx:
+        expected.append((fxbinid, *tf[2:]))
+        cursor.callproc('store_forecast_values', tf)
+    cursor.execute(
+        'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        fxbinid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
+def test_store_forecast_values_duplicates(cursor, allow_write_values,
+                                          forecast_values):
+    fxbinid, testfx = forecast_values
+    testfx = list(testfx)
+    expected = []
+    # first insert
+    for tf in testfx:
+        cursor.callproc('store_forecast_values', tf)
+    # second insert
+    for tf in testfx:
+        tf = list(tf)
+        tf[-1] = tf[-1] + 1
         expected.append((fxbinid, *tf[2:]))
         cursor.callproc('store_forecast_values', tf)
     cursor.execute(
@@ -397,6 +442,29 @@ def test_store_cdf_forecast_values(
     for tf in testfx:
         expected.append((fxid, *tf[2:]))
         cursor.callproc('store_cdf_forecast_values', tf)
+    cursor.execute(
+        'SELECT BIN_TO_UUID(id, 1) as id, timestamp, value '
+        'FROM arbiter_data.cdf_forecasts_values WHERE id = UUID_TO_BIN(%s, 1)'
+        ' AND timestamp > CURRENT_TIMESTAMP()',
+        fxid)
+    res = cursor.fetchall()
+    assert res == tuple(expected)
+
+
+def test_store_cdf_forecast_values_duplicates(
+        cursor, allow_write_values, cdf_forecast_values):
+    fxid, testfx = cdf_forecast_values
+    testfx = list(testfx)
+    expected = []
+    # first
+    for tf in testfx:
+        cursor.callproc('store_cdf_forecast_values', tf)
+    # duplicate
+    for tf in testfx:
+        tf = list(tf)
+        tf[-1] = tf[-1] + 9
+        cursor.callproc('store_cdf_forecast_values', tf)
+        expected.append((fxid, *tf[2:]))
     cursor.execute(
         'SELECT BIN_TO_UUID(id, 1) as id, timestamp, value '
         'FROM arbiter_data.cdf_forecasts_values WHERE id = UUID_TO_BIN(%s, 1)'

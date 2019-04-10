@@ -118,7 +118,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'write_values'));
     IF allowed THEN
         INSERT INTO arbiter_data.observations_values (id, timestamp, value, quality_flag) VALUES (
-            binid, timestamp, value, quality_flag);
+            binid, timestamp, value, quality_flag) ON DUPLICATE KEY UPDATE value=value, quality_flag=quality_flag;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "write observation values"',
         MYSQL_ERRNO = 1142;
@@ -137,7 +137,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'write_values'));
     IF allowed THEN
         INSERT INTO arbiter_data.forecasts_values (id, timestamp, value) VALUES (
-            binid, timestamp, value);
+            binid, timestamp, value) ON DUPLICATE KEY UPDATE value=value;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "write forecast values"',
         MYSQL_ERRNO = 1142;
@@ -148,9 +148,9 @@ END;
 
 GRANT INSERT ON arbiter_data.sites TO 'insert_objects'@'localhost';
 GRANT INSERT ON arbiter_data.observations TO 'insert_objects'@'localhost';
-GRANT INSERT ON arbiter_data.observations_values TO 'insert_objects'@'localhost';
+GRANT INSERT, UPDATE ON arbiter_data.observations_values TO 'insert_objects'@'localhost';
 GRANT INSERT ON arbiter_data.forecasts TO 'insert_objects'@'localhost';
-GRANT INSERT ON arbiter_data.forecasts_values TO 'insert_objects'@'localhost';
+GRANT INSERT, UPDATE ON arbiter_data.forecasts_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_site to 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation to 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_forecast to 'insert_objects'@'localhost';
