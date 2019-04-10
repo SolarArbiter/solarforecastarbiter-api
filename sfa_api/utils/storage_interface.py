@@ -81,9 +81,10 @@ def get_cursor(cursor_type, commit=True):
 def try_query(query_cmd):
     try:
         query_cmd()
-    except (pymysql.err.OperationalError, pymysql.err.IntegrityError) as e:
+    except (pymysql.err.OperationalError, pymysql.err.IntegrityError,
+            pymysql.err.InternalError) as e:
         ecode = e.args[0]
-        if ecode == 1142 or ecode == 1143:
+        if ecode == 1142 or ecode == 1143 or ecode == 1411:
             raise StorageAuthError(e.args[1])
         elif ecode == 1451:
             raise DeleteRestrictionError
