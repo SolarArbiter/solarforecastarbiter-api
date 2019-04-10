@@ -149,8 +149,9 @@ def test_read_observation_invalid_observation(sql_app, user):
 
 
 def test_read_observation_not_uuid(sql_app, user):
-    with pytest.raises(storage_interface.StorageAuthError):
+    with pytest.raises(storage_interface.StorageAuthError) as err:
         storage_interface.read_observation('f8dd49fa-23e2-48a0-862b-ba0af6de')
+    assert "Incorrect string value" in str(err.value)
 
 
 def test_read_observation_invalid_user(sql_app, invalid_user):
