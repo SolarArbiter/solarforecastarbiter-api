@@ -66,7 +66,8 @@ class ModelingParameters(ma.Schema):
     # fixed tilt systems
     surface_tilt = ma.Float(
         title="Surface Tilt",
-        description="Tilt from horizontal of a fixed tilt system, degrees.")
+        description="Tilt from horizontal of a fixed tilt system, degrees.",
+        missing=None)
     surface_azimuth = ma.Float(
         title="Surface Azimuth",
         description="Azimuth angle of a fixed tilt system, degrees.",
@@ -138,7 +139,8 @@ class SiteSchema(ma.Schema):
         title="Timezone",
         description="IANA Timezone",
         required=True)
-    modeling_parameters = ma.Nested(ModelingParameters)
+    modeling_parameters = ma.Nested(ModelingParameters,
+                                    missing=ModelingParameters().load({}))
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates('timezone')
