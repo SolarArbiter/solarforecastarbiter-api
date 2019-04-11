@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from functools import partial
 
 
@@ -131,8 +132,8 @@ def copy_update(json, key, value):
     return new_json
 
 
-@pytest.fixture(scope='module')
-def sql_app():
+@contextmanager
+def _make_sql_app():
     app = create_app('TestingConfig')
     with app.app_context():
         try:
@@ -143,14 +144,20 @@ def sql_app():
             yield app
 
 
+@pytest.fixture(scope='module')
+def sql_app():
+    with _make_sql_app() as app:
+        yield app
+
+
 @pytest.fixture()
 def sql_api(sql_app, mocker):
     api = sql_app.test_client()
     return api
 
 
-@pytest.fixture()
-def nocommit_cursor(sql_app, mocker):
+@contextmanager
+def _make_nocommit_cursor(mocker):
     # on release of a Pool connection, any transaction is rolled back
     # need to keep the transaction open between nocommit tests
     conn = storage_interface._make_sql_connection_partial()()
@@ -161,6 +168,12 @@ def nocommit_cursor(sql_app, mocker):
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
     yield
     conn.rollback()
+
+
+@pytest.fixture()
+def nocommit_cursor(mocker, sql_app):
+    with _make_nocommit_cursor(mocker) as cursor:
+        yield cursor
 
 
 @pytest.fixture(scope='session')
@@ -214,11 +227,14 @@ def invalid_user(sql_app):
 
 
 @pytest.fixture(params=[0, 1])
-def both_apps(request, app, sql_app, nocommit_cursor, user):
+def both_apps(request, app, mocker):
     if request.param:
-        return app
+        yield app
     else:
-        return sql_app
+        # do this to avoid skipping app when no mysql
+        with _make_sql_app() as sql_app:
+            with _make_nocommit_cursor(mocker):
+                yield sql_app
 
 
 @pytest.fixture()
