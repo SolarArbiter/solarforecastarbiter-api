@@ -32,9 +32,9 @@ VALID_SITE_JSON = {
     "modeling_parameters": {
         "ac_capacity": 0.015,
         "dc_capacity": 0.015,
-        "backtrack": True,
+        "ac_loss_factor": 0,
+        "dc_loss_factor": 0,
         "temperature_coefficient": -.002,
-        "ground_coverage_ratio": 0.5,
         "surface_azimuth": 180.0,
         "surface_tilt": 45.0,
         "tracking_type": "fixed"

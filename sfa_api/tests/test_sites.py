@@ -9,6 +9,12 @@ def invalidate(json, key):
     return new_json
 
 
+def removekey(json, key):
+    new_json = json.copy()
+    del new_json[key]
+    return new_json
+
+
 INVALID_ELEVATION = invalidate(VALID_SITE_JSON, 'elevation')
 INVALID_LATITUDE = invalidate(VALID_SITE_JSON, 'latitude')
 INVALID_LONGITUDE = invalidate(VALID_SITE_JSON, 'longitude')
@@ -29,7 +35,11 @@ OUTSIDE_LONGITUDE['longitude'] = 181
 
 
 @pytest.mark.parametrize('payload', [
-    (VALID_SITE_JSON)
+    VALID_SITE_JSON,
+    removekey(VALID_SITE_JSON, 'extra_parameters'),
+    removekey(VALID_SITE_JSON, 'modeling_parameters'),
+    removekey(removekey(VALID_SITE_JSON, 'modeling_parameters'),
+              'extra_parameters')
 ])
 def test_site_post_201(api, payload):
     r = api.post('/sites/',

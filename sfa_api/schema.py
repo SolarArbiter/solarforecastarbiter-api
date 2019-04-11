@@ -1,4 +1,4 @@
-from marshmallow import validate, validates
+from marshmallow import validate, validates, validates_schema
 from marshmallow.exceptions import ValidationError
 import pytz
 
@@ -110,6 +110,46 @@ class ModelingParameters(ma.Schema):
                      "output."),
         validate=validate.Range(0, 100),
         missing=None)
+
+    @validates_schema
+    def validate_modeling_parameters(self, data):
+        common_fields = {
+            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
+            'dc_loss_factor', 'ac_loss_factor'}
+        fixed_fields = {'surface_tilt', 'surface_azimuth'}
+        singleaxis_fields = {
+            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
+            'backtrack', 'max_rotation_angle'}
+        # if tracking type is None (weather station),
+        # ensure all fields are None
+        if data['tracking_type'] is None:
+            errors = {
+                key: ['Field must be null/none when tracking_type is none']
+                for key in common_fields | fixed_fields | singleaxis_fields
+                if data[key] is not None}
+            if errors:
+                raise ValidationError(errors)
+        elif data['tracking_type'] == 'fixed':
+            errors = {
+                key: ["Field should be none with tracking_type='fixed'"]
+                for key in singleaxis_fields if data[key] is not None}
+            errors.update({key: ["Value required when tracking_type='fixed'"]
+                           for key in common_fields | fixed_fields
+                           if data[key] is None})
+            if errors:
+                raise ValidationError(errors)
+        elif data['tracking_type'] == 'single_axis':
+            errors = {
+                key: ["Field should be none with tracking_type='single_axis'"]
+                for key in fixed_fields if data[key] is not None}
+            errors.update({
+                key: ["Value required when tracking_type='single_axis'"]
+                for key in common_fields | singleaxis_fields
+                if data[key] is None})
+            if errors:
+                raise ValidationError(errors)
+        else:
+            raise ValidationError({'tracking_type': ['Invalid tracking type']})
 
 
 @spec.define_schema('SiteDefinition')
