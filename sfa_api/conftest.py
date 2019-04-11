@@ -1,8 +1,11 @@
-import os
+from functools import partial
 
+
+from flask import _request_ctx_stack
 import pytest
 import pymysql
 import requests
+
 
 from sfa_api import create_app
 from sfa_api.utils import storage_interface
@@ -146,6 +149,20 @@ def sql_api(sql_app, mocker):
     return api
 
 
+@pytest.fixture()
+def nocommit_cursor(sql_app, mocker):
+    # on release of a Pool connection, any transaction is rolled back
+    # need to keep the transaction open between nocommit tests
+    conn = storage_interface._make_sql_connection_partial()()
+    mocker.patch.object(conn, 'close')
+    mocker.patch('sfa_api.utils.storage_interface.mysql_connection',
+                 return_value=conn)
+    special = partial(storage_interface.get_cursor, commit=False)
+    mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
+    yield
+    conn.rollback()
+
+
 @pytest.fixture(scope='session')
 def auth_token():
     token_req = requests.post(
@@ -176,6 +193,43 @@ def api(app, mocker):
     verify.return_value = True
     api = app.test_client()
     return api
+
+
+@pytest.fixture()
+def user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'auth0|5be343df7025406237820b85'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.fixture()
+def invalid_user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'bad'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.fixture(params=[0, 1])
+def both_apps(request, app, sql_app, nocommit_cursor, user):
+    if request.param:
+        return app
+    else:
+        return sql_app
+
+
+@pytest.fixture()
+def both_apis(both_apps, mocker):
+    def add_user():
+        _request_ctx_stack.top.user = 'auth0|5be343df7025406237820b85'
+        return True
+
+    verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
+    verify.side_effect = add_user
+    yield both_apps.test_client()
 
 
 @pytest.fixture()
