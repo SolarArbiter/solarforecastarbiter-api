@@ -62,8 +62,11 @@
     </div>
     <div class="form-element">
         <label>Constant Values</label>
+        <div class="input-wrapper">
         <input type="text" name="constant_values" class="form-control constant_values-field" pattern="((\d+)(\.\d+)?)(,\s*\d+(\.\d+)?)*">
-        <span class="help-text text-muted  constant_values-help">A comma-separated list of variable values or percentiles for the set of forecasts in the probabilistic forecast. Each value can be a non-negative float or integer. e.g. "5.0,20.0,50.0,80.0,95.0"</span>
+        </div>
+        {{ form.help_button('constant_values') }}
+        <span class="help-text text-muted  constant_values-help-text collapse">A comma-separated list of variable values or percentiles for the set of forecasts in the probabilistic forecast. Each value can be a non-negative float or integer. e.g. "5.0,20.0,50.0,80.0,95.0"</span>
     </div>
     <div class="form-element">
       

@@ -192,6 +192,8 @@ span.help-text{
   background-color: white;
   box-shadow: 1px 1px 1px;
   z-index: 1;
+  left: 0;
+  top: 100%;
 }
 /* Tooltip arrow */
 span.help-text::before {
@@ -226,7 +228,10 @@ a.help-button{
     display: inline-block;
     text-align: center;
 }
-.input-wrapper{
-    width: calc(100% - 28px);
+.form-control{
     display: inline-block;
+}
+.input-wrapper{
+    width: calc(100% - 29px);
+    display: inline-flex;
 }

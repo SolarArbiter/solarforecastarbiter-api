@@ -106,7 +106,8 @@
 	        <label>Backtrack</label>
             <input type='radio' name="backtrack" value="true" class="backtrack-field" checked/>True
             <input type='radio' name="backtrack" value="false" class="backtrack-field"/>False
-		    <span class="help-text">Indicator of if a tracking system uses backtracking.</span>
+            {{ form.help_button('backtrack') }}
+		    <span class="help-text backtrack-help-text collapse">Indicator of if a tracking system uses backtracking.</span>
 	      </div>
         </div>
 	  </fieldset>
