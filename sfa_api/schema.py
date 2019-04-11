@@ -19,7 +19,8 @@ ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
 
 EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
-    description='Additional user specified parameters.')
+    description='Additional user specified parameters.',
+    missing='')
 
 VARIABLE_FIELD = ma.String(
     title='Variable',
