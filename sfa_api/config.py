@@ -19,6 +19,7 @@ class Config(object):
     MYSQL_USER = os.getenv('MYSQL_USER', None)
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', None)
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', None)
+    SFA_API_STATIC_DATA = os.getenv('SFA_API_STATIC_DATA', False)
 
 
 class ProductionConfig(Config):

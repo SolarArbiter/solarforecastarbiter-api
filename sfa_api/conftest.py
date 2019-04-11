@@ -165,9 +165,8 @@ def auth_token():
 
 @pytest.fixture()
 def app():
-    if not os.getenv('SFA_API_STATIC_DATA'):
-        os.environ['SFA_API_STATIC_DATA'] = 'true'
     app = create_app(config_name='TestingConfig')
+    app.config['SFA_API_STATIC_DATA'] = True
     return app
 
 
