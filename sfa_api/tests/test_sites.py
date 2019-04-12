@@ -4,12 +4,12 @@ from itertools import combinations
 import pytest
 
 
-from sfa_api.conftest import VALID_SITE_JSON, BASE_URL
+from sfa_api.conftest import VALID_SITE_JSON, BASE_URL, copy_update
 
 
-def altervalue(json, key, new='invalid'):
+def invalidate(json, key):
     new_json = json.copy()
-    new_json[key] = new
+    new_json[key] = 'invalid'
     return new_json
 
 
@@ -19,18 +19,19 @@ def removekey(json, key):
     return new_json
 
 
-INVALID_ELEVATION = altervalue(VALID_SITE_JSON, 'elevation')
-INVALID_LATITUDE = altervalue(VALID_SITE_JSON, 'latitude')
-INVALID_LONGITUDE = altervalue(VALID_SITE_JSON, 'longitude')
-INVALID_TIMEZONE = altervalue(VALID_SITE_JSON, 'timezone')
-INVALID_AC_CAPACITY = altervalue(VALID_SITE_JSON, 'ac_capacity')
-INVALID_DC_CAPACITY = altervalue(VALID_SITE_JSON, 'dc_capacity')
-INVALID_BACKTRACK = altervalue(VALID_SITE_JSON, 'backtrack')
-INVALID_T_COEFF = altervalue(VALID_SITE_JSON, 'temperature_coefficient')
-INVALID_COVERAGE = altervalue(VALID_SITE_JSON, 'ground_coverage_ratio')
-INVALID_SURFACE_AZIMUTH = altervalue(VALID_SITE_JSON, 'surface_azimuth')
-INVALID_SURFACE_TILT = altervalue(VALID_SITE_JSON, 'surface_tilt')
-INVALID_TRACKING_TYPE = altervalue(VALID_SITE_JSON, 'tracking_type')
+INVALID_NAME = copy_update(VALID_SITE_JSON, 'name', '<script>kiddies</script>')
+INVALID_ELEVATION = invalidate(VALID_SITE_JSON, 'elevation')
+INVALID_LATITUDE = invalidate(VALID_SITE_JSON, 'latitude')
+INVALID_LONGITUDE = invalidate(VALID_SITE_JSON, 'longitude')
+INVALID_TIMEZONE = invalidate(VALID_SITE_JSON, 'timezone')
+INVALID_AC_CAPACITY = invalidate(VALID_SITE_JSON, 'ac_capacity')
+INVALID_DC_CAPACITY = invalidate(VALID_SITE_JSON, 'dc_capacity')
+INVALID_BACKTRACK = invalidate(VALID_SITE_JSON, 'backtrack')
+INVALID_T_COEFF = invalidate(VALID_SITE_JSON, 'temperature_coefficient')
+INVALID_COVERAGE = invalidate(VALID_SITE_JSON, 'ground_coverage_ratio')
+INVALID_SURFACE_AZIMUTH = invalidate(VALID_SITE_JSON, 'surface_azimuth')
+INVALID_SURFACE_TILT = invalidate(VALID_SITE_JSON, 'surface_tilt')
+INVALID_TRACKING_TYPE = invalidate(VALID_SITE_JSON, 'tracking_type')
 
 OUTSIDE_LATITUDE = VALID_SITE_JSON.copy()
 OUTSIDE_LATITUDE['latitude'] = 91
@@ -42,7 +43,7 @@ OUTSIDE_LONGITUDE['longitude'] = 181
     VALID_SITE_JSON,
     removekey(VALID_SITE_JSON, 'extra_parameters'),
     removekey(VALID_SITE_JSON, 'modeling_parameters'),
-    altervalue(VALID_SITE_JSON, 'modeling_parameters', {}),
+    copy_update(VALID_SITE_JSON, 'modeling_parameters', {}),
     removekey(removekey(VALID_SITE_JSON, 'modeling_parameters'),
               'extra_parameters')
 ])
@@ -154,7 +155,8 @@ def test_site_post_extra_modeling_params(api, tracking_type, params, extras):
     (INVALID_LONGITUDE, '{"longitude":["Not a valid number."]}'),
     (OUTSIDE_LONGITUDE, '{"longitude":["Must be between -180 and 180."]}'),
     (INVALID_TIMEZONE, '{"timezone":["Invalid timezone."]}'),
-    (INVALID_TRACKING_TYPE, '{"tracking_type":["Unknown field."]}')
+    (INVALID_TRACKING_TYPE, '{"tracking_type":["Unknown field."]}'),
+    (INVALID_NAME, '{"name":["Invalid characters in string."]}')
 ])
 def test_site_post_400(api, payload, message):
     r = api.post('/sites/',
