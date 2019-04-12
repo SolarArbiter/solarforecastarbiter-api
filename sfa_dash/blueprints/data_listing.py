@@ -21,7 +21,7 @@ class DataListingView(BaseView):
             self.table_function = DataTables.get_forecast_table
         elif data_type == 'observation':
             self.table_function = DataTables.get_observation_table
-        elif data_type == 'cdf_forecast':
+        elif data_type == 'cdf_forecast_group':
             self.table_function = DataTables.get_cdf_forecast_table
         else:
             raise Exception
@@ -30,7 +30,7 @@ class DataListingView(BaseView):
     def breadcrumb_html(self, site_id=None, organization=None, **kwargs):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
-        if self.data_type == 'cdf_forecast':
+        if self.data_type == 'cdf_forecast_group':
             type_label = 'CDF Forecast'
         else:
             type_label = self.data_type.title()
@@ -40,7 +40,7 @@ class DataListingView(BaseView):
                 abort(404)
             site_metadata = site_metadata_request.json()
             breadcrumb += breadcrumb_format.format(
-                url=url_for('data_dashboard.sites_view'),
+                url=url_for('data_dashboard.sites'),
                 text='Sites')
             breadcrumb += breadcrumb_format.format(
                 url=url_for('data_dashboard.site_view', uuid=site_id),
@@ -59,7 +59,7 @@ class DataListingView(BaseView):
                                         **kwargs),
             'forecasts_url': url_for('data_dashboard.forecasts',
                                      **kwargs),
-            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
+            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecast_groups',
                                          **kwargs)
         }
         template_args['subnav'] = self.format_subnav(**subnav_kwargs)

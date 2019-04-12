@@ -7,6 +7,9 @@
 {% if download_link is defined %}
 <a role="button" class="btn btn-primary btn-sm" href="{{download_link}}">Download data</a>
 {% endif %}
+{% if delete_link is defined %}
+<a role="button" class="btn btn-danger btn-sm" href="{{ delete_link }}">Delete</a>
+{% endif %}
 <div class="row data-plots-wrapper">
     <!-- PLOTS -->
 </div>

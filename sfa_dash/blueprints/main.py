@@ -1,6 +1,7 @@
 from sfa_dash.blueprints.dash import DataDashView
 from sfa_dash.blueprints.data_listing import DataListingView
 from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
+from sfa_dash.blueprints.delete import DeleteConfirmation
 from sfa_dash.api_interface import (observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
 from flask import (Blueprint, render_template,
@@ -14,7 +15,7 @@ class SingleObservationView(DataDashView):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text='Sites')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.site_view',
@@ -48,6 +49,9 @@ class SingleObservationView(DataDashView):
         temp_args['download_link'] = url_for(
             'forms.download_observation_data',
             uuid=uuid)
+        temp_args['delete_link'] = url_for(
+            f'data_dashboard.delete_observation',
+            uuid=uuid)
         return render_template(self.template, **temp_args)
 
 
@@ -58,14 +62,14 @@ class SingleCDFForecastView(DataDashView):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text='Sites')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.site_view',
                         uuid=self.metadata['site_id']),
             text=self.metadata['site']['name'])
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.cdf_forecasts',
+            url=url_for('data_dashboard.cdf_forecast_groups',
                         uuid=self.metadata['site_id']),
             text='CDF Forecasts')
         breadcrumb += breadcrumb_format.format(
@@ -76,7 +80,6 @@ class SingleCDFForecastView(DataDashView):
             url=url_for('data_dashboard.cdf_forecast_view',
                         uuid=self.metadata['forecast_id']),
             text=self.metadata['constant_value'])
-
         return breadcrumb
 
     def get(self, uuid, **kwargs):
@@ -107,7 +110,7 @@ class SingleForecastView(DataDashView):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text='Sites')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.site_view',
@@ -141,6 +144,9 @@ class SingleForecastView(DataDashView):
         temp_args['download_link'] = url_for(
             'forms.download_forecast_data',
             uuid=uuid)
+        temp_args['delete_link'] = url_for(
+            f'data_dashboard.delete_forecast',
+            uuid=uuid)
         return render_template(self.template, **temp_args)
 
 
@@ -151,14 +157,14 @@ class SingleCDFForecastGroupView(DataDashView):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = ''
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text='Sites')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.site_view',
                         uuid=self.metadata['site_id']),
             text=self.metadata['site']['name'])
         breadcrumb += breadcrumb_format.format(
-            url=url_for('data_dashboard.cdf_forecasts',
+            url=url_for('data_dashboard.cdf_forecast_groups',
                         site_id=self.metadata['site_id']),
             text='CDF Forecasts')
         breadcrumb += breadcrumb_format.format(
@@ -180,6 +186,9 @@ class SingleCDFForecastGroupView(DataDashView):
         temp_args['metadata_section'] = render_template(
             'data/metadata/cdf_forecast_group_metadata.html',
             **self.metadata)
+        temp_args['delete_link'] = url_for(
+            f'data_dashboard.delete_cdf_forecast_group',
+            uuid=uuid)
         return render_template(self.template, **temp_args)
 
 
@@ -198,7 +207,7 @@ class TrialsView(DataDashView):
 data_dash_blp = Blueprint('data_dashboard', 'data_dashboard')
 data_dash_blp.add_url_rule(
     '/sites/',
-    view_func=SitesListingView.as_view('sites_view'))
+    view_func=SitesListingView.as_view('sites'))
 data_dash_blp.add_url_rule(
     '/sites/<uuid>/',
     view_func=SingleSiteView.as_view('site_view'))
@@ -222,8 +231,8 @@ data_dash_blp.add_url_rule(
     view_func=DataListingView.as_view('forecasts', data_type='forecast'))
 data_dash_blp.add_url_rule(
     '/forecasts/cdf/',
-    view_func=DataListingView.as_view('cdf_forecasts',
-                                      data_type='cdf_forecast'))
+    view_func=DataListingView.as_view('cdf_forecast_groups',
+                                      data_type='cdf_forecast_group'))
 data_dash_blp.add_url_rule(
     '/forecasts/single/<uuid>',
     view_func=SingleForecastView.as_view('forecast_view'))
@@ -233,3 +242,19 @@ data_dash_blp.add_url_rule(
 data_dash_blp.add_url_rule(
     '/forecasts/cdf/single/<uuid>',
     view_func=SingleCDFForecastView.as_view('cdf_forecast_view'))
+
+data_dash_blp.add_url_rule(
+    '/sites/<uuid>/delete',
+    view_func=DeleteConfirmation.as_view('delete_site', data_type='site'))
+data_dash_blp.add_url_rule(
+    '/observations/<uuid>/delete',
+    view_func=DeleteConfirmation.as_view(
+        'delete_observation', data_type='observation'))
+data_dash_blp.add_url_rule(
+    '/forecasts/single/<uuid>/delete',
+    view_func=DeleteConfirmation.as_view(
+        'delete_forecast', data_type='forecast'))
+data_dash_blp.add_url_rule(
+    '/forecasts/cdf/<uuid>/delete',
+    view_func=DeleteConfirmation.as_view(
+        'delete_cdf_forecast_group', data_type='cdf_forecast_group'))

@@ -2,7 +2,7 @@
 {% block tools %}
 <input type="text" placeholder="Search" class="search">
 {% if site_id is defined %}
-<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_cdf_forecast', site_id=site_id)}}">Create new Probabilistic Forecast</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_cdf_forecast_group', site_id=site_id)}}">Create new Probabilistic Forecast</a>
 {% endif %}
 {% endblock %}
 {% import "data/table/forecast_macro.jinja" as table_macro %}

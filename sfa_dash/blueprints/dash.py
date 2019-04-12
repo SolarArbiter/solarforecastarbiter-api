@@ -41,7 +41,7 @@ class SiteDashView(BaseView):
                                      site_id=self.metadata['site_id']),
             'observations_url': url_for('data_dashboard.observations',
                                         site_id=self.metadata['site_id']),
-            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecasts',
+            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecast_groups',
                                          site_id=self.metadata['site_id'])
         }
         temp_args['subnav'] = self.format_subnav(**subnav_kwargs)

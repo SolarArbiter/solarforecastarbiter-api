@@ -7,7 +7,7 @@
 {% if form_data is not defined %}
 {% set form_data = {} %}
 {% endif %}
-<form action="{{ url_for('forms.create_cdf_forecast', site_id=site_metadata['site_id']) }}" method="post" enctype='application/json' id="cdf-forecast-form">
+<form action="{{ url_for('forms.create_cdf_forecast_group', site_id=site_metadata['site_id']) }}" method="post" enctype='application/json' id="cdf-forecast-form">
   <div class="form-group">
     <input type="hidden" name="site_id" value="{{ site_metadata['site_id'] }}">
 	<div class="form-element">

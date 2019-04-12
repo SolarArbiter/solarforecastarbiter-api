@@ -19,8 +19,8 @@ class MetadataForm(BaseView):
             self.api_handle = forecasts
             self.formatter = self.forecast_formatter
             self.metadata_template = 'data/metadata/site_metadata.html'
-        elif data_type == 'cdf_forecast':
-            self.template = 'forms/cdf_forecast_form.html'
+        elif data_type == 'cdf_forecast_group':
+            self.template = 'forms/cdf_forecast_group_form.html'
             self.id_key = 'forecast_id'
             self.api_handle = cdf_forecast_groups
             self.formatter = self.cdf_forecast_formatter
@@ -237,7 +237,6 @@ class CreateForm(MetadataForm):
             template_args['site_metadata'] = site_metadata
             template_args['metadata'] = self.render_metadata_section(
                 site_metadata)
-
         if response.status_code == 201:
             uuid = response.text
             return redirect(url_for(f'data_dashboard.{self.data_type}_view',
@@ -402,8 +401,9 @@ forms_blp.add_url_rule('/sites/<site_id>/forecasts/single/create',
                        view_func=CreateForm.as_view('create_site_forecast',
                                                     data_type='forecast'))
 forms_blp.add_url_rule('/sites/<site_id>/forecasts/cdf/create',
-                       view_func=CreateForm.as_view('create_cdf_forecast',
-                                                    data_type='cdf_forecast'))
+                       view_func=CreateForm.as_view(
+                           'create_cdf_forecast_group',
+                           data_type='cdf_forecast_group'))
 forms_blp.add_url_rule('/observations/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_observation_data',
                                                     data_type='observation'))

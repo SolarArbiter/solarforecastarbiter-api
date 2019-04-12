@@ -1,29 +1,34 @@
-from sfa_dash.api_interface import get_request, post_request
+from sfa_dash.api_interface import get_request, post_request, delete_request
 
 
 def get_metadata(observation_id):
-    r = get_request(f'/observations/{observation_id}/metadata')
-    return r
+    req = get_request(f'/observations/{observation_id}/metadata')
+    return req
 
 
 def get_values(observation_id, **kwargs):
-    r = get_request(f'/observations/{observation_id}/values', **kwargs)
-    return r
+    req = get_request(f'/observations/{observation_id}/values', **kwargs)
+    return req
 
 
 def list_metadata(site_id=None):
     if site_id is not None:
-        r = get_request(f'/sites/{site_id}/observations')
+        req = get_request(f'/sites/{site_id}/observations')
     else:
-        r = get_request('/observations/')
-    return r
+        req = get_request('/observations/')
+    return req
 
 
 def post_metadata(obs_dict):
-    r = post_request('/observations/', obs_dict)
-    return r
+    req = post_request('/observations/', obs_dict)
+    return req
 
 
 def post_values(uuid, values, json=True):
-    r = post_request(f'/observations/{uuid}/values', values, json)
-    return r
+    req = post_request(f'/observations/{uuid}/values', values, json)
+    return req
+
+
+def delete(observation_id):
+    req = delete_request(f'/observations/{observation_id}')
+    return req

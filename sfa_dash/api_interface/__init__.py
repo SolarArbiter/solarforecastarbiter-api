@@ -50,3 +50,20 @@ def post_request(path, payload, json=True):
                   'data': payload}
     return oauth_request_session.post(
         f'{app.config["SFA_API_URL"]}{path}', **kwargs)
+
+
+def delete_request(path, **kwargs):
+    """Make a delete request.
+
+    Parameters
+    ----------
+    path: str
+        The api endpoint to post to including leading slash.
+
+    Returns
+    -------
+    requests.Response
+        The api response.
+    """
+    return oauth_request_session.delete(
+        f'{app.config["SFA_API_URL"]}{path}', **kwargs)

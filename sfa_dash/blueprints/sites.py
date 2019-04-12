@@ -10,7 +10,7 @@ class SitesListingView(SiteDashView):
     def breadcrumb_html(self, site=None, **kwargs):
         breadcrumb_format = '/<a href="{url}">{text}</a>'
         breadcrumb = breadcrumb_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text='Sites')
         return breadcrumb
 
@@ -35,7 +35,7 @@ class SingleSiteView(SiteDashView):
         bc_format = '/<a href="{url}">{text}</a>'
         bc = ''
         bc += bc_format.format(
-            url=url_for('data_dashboard.sites_view'),
+            url=url_for('data_dashboard.sites'),
             text="Sites")
         bc += bc_format.format(
             url=url_for('data_dashboard.site_view',
