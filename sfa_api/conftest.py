@@ -1,8 +1,12 @@
-import os
+from contextlib import contextmanager
+from functools import partial
 
+
+from flask import _request_ctx_stack
 import pytest
 import pymysql
 import requests
+
 
 from sfa_api import create_app
 from sfa_api.utils import storage_interface
@@ -128,8 +132,8 @@ def copy_update(json, key, value):
     return new_json
 
 
-@pytest.fixture(scope='module')
-def sql_app():
+@contextmanager
+def _make_sql_app():
     app = create_app('TestingConfig')
     with app.app_context():
         try:
@@ -140,10 +144,36 @@ def sql_app():
             yield app
 
 
+@pytest.fixture(scope='module')
+def sql_app():
+    with _make_sql_app() as app:
+        yield app
+
+
 @pytest.fixture()
 def sql_api(sql_app, mocker):
     api = sql_app.test_client()
     return api
+
+
+@contextmanager
+def _make_nocommit_cursor(mocker):
+    # on release of a Pool connection, any transaction is rolled back
+    # need to keep the transaction open between nocommit tests
+    conn = storage_interface._make_sql_connection_partial()()
+    mocker.patch.object(conn, 'close')
+    mocker.patch('sfa_api.utils.storage_interface.mysql_connection',
+                 return_value=conn)
+    special = partial(storage_interface.get_cursor, commit=False)
+    mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
+    yield
+    conn.rollback()
+
+
+@pytest.fixture()
+def nocommit_cursor(mocker, sql_app):
+    with _make_nocommit_cursor(mocker) as cursor:
+        yield cursor
 
 
 @pytest.fixture(scope='session')
@@ -164,19 +194,58 @@ def auth_token():
 
 
 @pytest.fixture()
-def app():
-    if not os.getenv('SFA_API_STATIC_DATA'):
-        os.environ['SFA_API_STATIC_DATA'] = 'true'
+def demo_app():
     app = create_app(config_name='TestingConfig')
+    app.config['SFA_API_STATIC_DATA'] = True
     return app
 
 
 @pytest.fixture()
-def api(app, mocker):
+def demo_api(demo_app, mocker):
     verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
     verify.return_value = True
-    api = app.test_client()
+    api = demo_app.test_client()
     return api
+
+
+@pytest.fixture()
+def user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'auth0|5be343df7025406237820b85'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.fixture()
+def invalid_user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'bad'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.fixture(params=[0, 1])
+def app(request, demo_app, mocker):
+    if request.param:
+        yield demo_app
+    else:
+        # do this to avoid skipping app when no mysql
+        with _make_sql_app() as sql_app:
+            with _make_nocommit_cursor(mocker):
+                yield sql_app
+
+
+@pytest.fixture()
+def api(app, mocker):
+    def add_user():
+        _request_ctx_stack.top.user = 'auth0|5be343df7025406237820b85'
+        return True
+
+    verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
+    verify.side_effect = add_user
+    yield app.test_client()
 
 
 @pytest.fixture()

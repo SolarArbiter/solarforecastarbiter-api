@@ -107,22 +107,31 @@ def test_post_forecast_values_valid_json(api, forecast_id):
     assert r.status_code == 201
 
 
-def test_post_json_storage_call(api, forecast_id, mocker):
-    storage = mocker.patch('sfa_api.demo.store_forecast_values')
-    storage.return_value = forecast_id
+@pytest.fixture()
+def patched_store_values(mocker):
+    new = mocker.MagicMock()
+    mocker.patch('sfa_api.utils.storage_interface.store_forecast_values',
+                 new=new)
+    mocker.patch('sfa_api.demo.store_forecast_values',
+                 new=new)
+    return new
+
+
+def test_post_json_storage_call(api, forecast_id, patched_store_values):
+    patched_store_values.return_value = forecast_id
     api.post(f'/forecasts/single/{forecast_id}/values',
              base_url=BASE_URL,
              json=VALID_FX_VALUE_JSON)
-    storage.assert_called()
+    patched_store_values.assert_called()
 
 
-def test_post_values_404(api, missing_id, mocker):
-    storage = mocker.patch('sfa_api.demo.store_forecast_values')
-    storage.return_value = None
+def test_post_values_404(api, missing_id, patched_store_values):
+    patched_store_values.return_value = None
     r = api.post(f'/forecasts/single/{missing_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 404
+    patched_store_values.assert_called()
 
 
 @pytest.mark.parametrize('payload', [

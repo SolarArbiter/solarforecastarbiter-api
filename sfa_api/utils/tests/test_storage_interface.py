@@ -1,4 +1,3 @@
-from functools import partial
 import uuid
 
 
@@ -18,38 +17,6 @@ from sfa_api.utils import storage_interface
 
 
 TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
-
-
-@pytest.fixture()
-def nocommit_cursor(sql_app, mocker):
-    # on release of a Pool connection, any transaction is rolled back
-    # need to keep the transaction open between nocommit tests
-    conn = storage_interface._make_sql_connection_partial()()
-    mocker.patch.object(conn, 'close')
-    mocker.patch('sfa_api.utils.storage_interface.mysql_connection',
-                 return_value=conn)
-    special = partial(storage_interface.get_cursor, commit=False)
-    mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
-    yield
-    conn.rollback()
-
-
-@pytest.fixture()
-def user(sql_app):
-    ctx = sql_app.test_request_context()
-    ctx.user = 'auth0|5be343df7025406237820b85'
-    ctx.push()
-    yield
-    ctx.pop()
-
-
-@pytest.fixture()
-def invalid_user(sql_app):
-    ctx = sql_app.test_request_context()
-    ctx.user = 'bad'
-    ctx.push()
-    yield
-    ctx.pop()
 
 
 @pytest.fixture(params=[0, 1, 2, 3])

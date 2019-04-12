@@ -1,7 +1,4 @@
-import os
-
-
-from flask import g
+from flask import current_app
 
 
 import sfa_api.demo as demo
@@ -15,9 +12,9 @@ def get_storage():
     A non-persistent, in-memory storage backend can be used
     for development by setting the 'STATIC_DATA' config variable.
     """
-    if 'storage' not in g:
-        if os.getenv('SFA_API_STATIC_DATA'):
-            g.storage = demo
+    if not hasattr(current_app, 'storage'):
+        if current_app.config['SFA_API_STATIC_DATA']:
+            current_app.storage = demo
         else:
-            g.storage = storage
-    return g.storage
+            current_app.storage = storage
+    return current_app.storage
