@@ -6,6 +6,7 @@ from sfa_api.conftest import (variables, interval_labels, BASE_URL,
                               VALID_OBS_JSON, copy_update)
 
 
+INVALID_NAME = copy_update(VALID_OBS_JSON, 'name', '#Nope')
 INVALID_VARIABLE = copy_update(VALID_OBS_JSON,
                                'variable', 'invalid')
 INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
@@ -26,7 +27,8 @@ def test_observation_post_success(api):
 @pytest.mark.parametrize('payload,message', [
     (INVALID_VARIABLE, f'{{"variable":["Must be one of: {variables}."]}}'),
     (INVALID_INTERVAL_LABEL, f'{{"interval_label":["Must be one of: {interval_labels}."]}}'),  # NOQA
-    ({}, empty_json_response)
+    ({}, empty_json_response),
+    (INVALID_NAME, '{"name":["Invalid characters in string."]}')
 ])
 def test_observation_post_bad_request(api, payload, message):
     r = api.post('/observations/',
