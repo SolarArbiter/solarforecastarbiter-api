@@ -1,9 +1,9 @@
-from marshmallow import validate, validates
+from marshmallow import validate, validates, validates_schema
 from marshmallow.exceptions import ValidationError
 import pytz
 
 from sfa_api import spec, ma
-from sfa_api.utils.validators import TimeFormat
+from sfa_api.utils.validators import TimeFormat, UserstringValidator
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
@@ -19,7 +19,8 @@ ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
 
 EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
-    description='Additional user specified parameters.')
+    description='Additional user specified parameters.',
+    missing='')
 
 VARIABLE_FIELD = ma.String(
     title='Variable',
@@ -65,7 +66,8 @@ class ModelingParameters(ma.Schema):
     # fixed tilt systems
     surface_tilt = ma.Float(
         title="Surface Tilt",
-        description="Tilt from horizontal of a fixed tilt system, degrees.")
+        description="Tilt from horizontal of a fixed tilt system, degrees.",
+        missing=None)
     surface_azimuth = ma.Float(
         title="Surface Azimuth",
         description="Azimuth angle of a fixed tilt system, degrees.",
@@ -109,6 +111,44 @@ class ModelingParameters(ma.Schema):
         validate=validate.Range(0, 100),
         missing=None)
 
+    @validates_schema
+    def validate_modeling_parameters(self, data):
+        common_fields = {
+            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
+            'dc_loss_factor', 'ac_loss_factor'}
+        fixed_fields = {'surface_tilt', 'surface_azimuth'}
+        singleaxis_fields = {
+            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
+            'backtrack', 'max_rotation_angle'}
+        # if tracking type is None (weather station),
+        # ensure all fields are None
+        if data['tracking_type'] is None:
+            errors = {
+                key: ['Field must be null/none when tracking_type is none']
+                for key in common_fields | fixed_fields | singleaxis_fields
+                if data[key] is not None}
+            if errors:
+                raise ValidationError(errors)
+        elif data['tracking_type'] == 'fixed':
+            errors = {
+                key: ["Field should be none with tracking_type='fixed'"]
+                for key in singleaxis_fields if data[key] is not None}
+            errors.update({key: ["Value required when tracking_type='fixed'"]
+                           for key in common_fields | fixed_fields
+                           if data[key] is None})
+            if errors:
+                raise ValidationError(errors)
+        elif data['tracking_type'] == 'single_axis':
+            errors = {
+                key: ["Field should be none with tracking_type='single_axis'"]
+                for key in fixed_fields if data[key] is not None}
+            errors.update({
+                key: ["Value required when tracking_type='single_axis'"]
+                for key in common_fields | singleaxis_fields
+                if data[key] is None})
+            if errors:
+                raise ValidationError(errors)
+
 
 @spec.define_schema('SiteDefinition')
 class SiteSchema(ma.Schema):
@@ -118,7 +158,8 @@ class SiteSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description="Name of the Site",
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     latitude = ma.Float(
         title='Latitude',
         description="Latitude in degrees North",
@@ -137,7 +178,8 @@ class SiteSchema(ma.Schema):
         title="Timezone",
         description="IANA Timezone",
         required=True)
-    modeling_parameters = ma.Nested(ModelingParameters)
+    modeling_parameters = ma.Nested(ModelingParameters,
+                                    missing=ModelingParameters().load({}))
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates('timezone')
@@ -206,7 +248,8 @@ class ObservationPostSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description='Human friendly name for the observation',
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
@@ -326,7 +369,8 @@ class ForecastPostSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description="Human friendly name for forecast",
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     variable = VARIABLE_FIELD
     issue_time_of_day = ma.String(
         title='Issue Time of Day',

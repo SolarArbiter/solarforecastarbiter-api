@@ -6,6 +6,7 @@ from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               VALID_FX_VALUE_JSON, VALID_CDF_VALUE_CSV)
 
 
+INVALID_NAME = copy_update(VALID_CDF_FORECAST_JSON, 'name', '@drain')
 INVALID_VARIABLE = copy_update(VALID_CDF_FORECAST_JSON,
                                'variable', 'invalid')
 INVALID_INTERVAL_LABEL = copy_update(VALID_CDF_FORECAST_JSON,
@@ -49,7 +50,8 @@ def test_cdf_forecast_group_post_success(api, payload, status_code):
     (INVALID_INTERVAL_LENGTH, '{"interval_length":["Not a valid integer."]}'), # NOQA
     (INVALID_RUN_LENGTH, '{"run_length":["Not a valid integer."]}'),
     (INVALID_VALUE_TYPE, f'{{"interval_value_type":["Must be one of: {interval_value_types}."]}}'), # NOQA
-    ({}, empty_json_response)
+    ({}, empty_json_response),
+    (INVALID_NAME, '{"name":["Invalid characters in string."]}')
 ])
 def test_cdf_forecast_group_post_bad_request(api, payload, message):
     r = api.post('/forecasts/cdf/',
