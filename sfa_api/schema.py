@@ -3,7 +3,7 @@ from marshmallow.exceptions import ValidationError
 import pytz
 
 from sfa_api import spec, ma
-from sfa_api.utils.validators import TimeFormat
+from sfa_api.utils.validators import TimeFormat, UserstringValidator
 
 
 VARIABLES = ['ghi', 'dni', 'dhi', 'temp_air', 'wind_speed',
@@ -158,7 +158,8 @@ class SiteSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description="Name of the Site",
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     latitude = ma.Float(
         title='Latitude',
         description="Latitude in degrees North",
@@ -247,7 +248,8 @@ class ObservationPostSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description='Human friendly name for the observation',
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
@@ -367,7 +369,8 @@ class ForecastPostSchema(ma.Schema):
     name = ma.String(
         title='Name',
         description="Human friendly name for forecast",
-        required=True)
+        required=True,
+        validate=UserstringValidator())
     variable = VARIABLE_FIELD
     issue_time_of_day = ma.String(
         title='Issue Time of Day',
