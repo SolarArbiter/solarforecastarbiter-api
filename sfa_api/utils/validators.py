@@ -23,10 +23,10 @@ class UserstringValidator(Validator):
     """
     Validates a string the user provides does not include invalid characters.
     Currently must only match word characters (letters, numbers, underscore),
-    space, and apostrophe. Must have not only have non-word characters.
+    space, comma, and apostrophe. Must have not only have non-word characters.
     """
     def __init__(self):
-        self.compiled_re = re.compile("^(?!\\W+$)(?!_+$)[\\w ']+$")
+        self.compiled_re = re.compile("^(?!\\W+$)(?!_+$)[\\w ',]+$")
 
     def __call__(self, value):
         match = self.compiled_re.match(value)
