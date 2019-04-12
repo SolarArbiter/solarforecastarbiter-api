@@ -154,6 +154,7 @@ def test_site_post_extra_modeling_params(api, tracking_type, params, extras):
     (INVALID_LONGITUDE, '{"longitude":["Not a valid number."]}'),
     (OUTSIDE_LONGITUDE, '{"longitude":["Must be between -180 and 180."]}'),
     (INVALID_TIMEZONE, '{"timezone":["Invalid timezone."]}'),
+    (INVALID_TRACKING_TYPE, '{"tracking_type":["Unknown field."]}')
 ])
 def test_site_post_400(api, payload, message):
     r = api.post('/sites/',

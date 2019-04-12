@@ -148,8 +148,6 @@ class ModelingParameters(ma.Schema):
                 if data[key] is None})
             if errors:
                 raise ValidationError(errors)
-        else:
-            raise ValidationError({'tracking_type': ['Invalid tracking type']})
 
 
 @spec.define_schema('SiteDefinition')
