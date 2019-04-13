@@ -58,6 +58,6 @@ def make_auth0_blueprint(
         # sub or email
         userinfo = oauth_request_session.get(f'{base_url}/userinfo').json()
         session['userinfo'] = userinfo
-        return redirect(url_for('index'))
+        return redirect(session.get('redirect_path', url_for('index')))
 
     return auth0_bp

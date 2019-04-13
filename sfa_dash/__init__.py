@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, render_template, session
+from flask import Flask, redirect, url_for, render_template, session, request
 
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint, logout,
@@ -25,6 +25,7 @@ def create_app(config=None):
             # hasn't expired, but refreshing is handled
             # by request_oauthlib and oauthlib
             # and the api validates expiration
+            session['redirect_path'] = request.path
             return redirect(url_for('auth0.login'))
 
     @app.route('/')
