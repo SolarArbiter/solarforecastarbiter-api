@@ -1,11 +1,12 @@
 from flask import Flask, redirect, url_for, render_template, session, request
 from flask_seasurf import SeaSurf
-
+from flask_dance.consumer.storage.session import SessionStorage
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint, logout,
                                        oauth_request_session)
 from sfa_dash.filters import register_jinja_filters
 from sfa_dash.template_globals import template_variables
+from sfa_dash import error_handlers
 
 
 def create_app(config=None):
@@ -15,9 +16,12 @@ def create_app(config=None):
     app.secret_key = app.config['SECRET_KEY']
     SeaSurf(app)
     register_jinja_filters(app)
+    error_handlers.register_handlers(app)
 
+    session_storage = SessionStorage()
     auth0_bp = make_auth0_blueprint(
-        base_url=app.config['AUTH0_OAUTH_BASE_URL'])
+        base_url=app.config['AUTH0_OAUTH_BASE_URL'],
+        storage=session_storage)
     app.register_blueprint(auth0_bp, url_prefix='/login')
     app.route('/logout')(logout)
 

@@ -13,5 +13,9 @@ class LocalConfig(BaseConfig):
     TEMPLATES_AUTO_RELOAD = True
 
 
+class TestConfig(BaseConfig):
+    SFA_API_URL = 'http://localhost:5000'
+
+
 class DevConfig(BaseConfig):
     SFA_API_URL = 'https://dev-api.solarforecastarbiter.org'
