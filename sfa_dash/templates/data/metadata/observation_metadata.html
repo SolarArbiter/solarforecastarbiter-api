@@ -1,15 +1,2 @@
-{% extends "data/metadata/meta_container.html" %}
-{% import "data/metadata/meta_macro.jinja" as macro %}
+{% extends "data/metadata/data_metadata.html" %}
 {% set data_type = 'Observation' %}
-{% block metadata %}
-<ul class="data-metadata-fields col-md-6 col-xs-12">
-  {{ macro.li('Name', name) }}
-  {{ macro.li('Site', site_link) }}
-</ul>
-<ul class="data-metadata-fields col-md-6 col-xs-12">
- {{ macro.li('Variable', variable | convert_varname, variable | var_to_units) }}
- {{ macro.li('Value Type', interval_value_type) }}
- {{ macro.li('Interval Label', interval_label) }}
- {{ macro.li('Interval Length', interval_length | string, 'minutes') }}
-</ul>
-{% endblock %}

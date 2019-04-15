@@ -1,19 +1,6 @@
-{% extends "data/metadata/meta_container.html" %}
+{% extends "data/metadata/forecast_metadata.html" %}
 {% import "data/metadata/meta_macro.jinja" as macro %}
 {% set data_type = 'Probabilistic Forecast' %}
-{% block metadata %}
-<ul class="data-metadata-fields col-md-6 col-xs-12">
-  {{ macro.li('Name', name) }}
-  {{ macro.li('Site', site_link )}}
-</ul>
-<ul class="data-metadata-fields col-md-6 col-xs-12">
-  {{ macro.li('Variable', variable | convert_varname, variable | var_to_units ) }}
-  {{ macro.li('Value type', interval_value_type) }}
-  {{ macro.li('Issue time of day', issue_time_of_day) }}
-  {{ macro.li('Interval label', interval_label) }}
-  {{ macro.li('Interval length', interval_length | string, 'minutes') }}
-  {{ macro.li('Run length / Issue frequency', run_length | string, 'minutes' ) }}
-  {{ macro.li('Lead time to start', lead_time_to_start | string, 'minutes') }}
+{% block cdf_fields %}
   {{ macro.li('Axis', axis) }}
-</ul>
 {% endblock %}

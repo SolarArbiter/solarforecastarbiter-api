@@ -1,19 +1,17 @@
-{% extends "data/metadata/meta_container.html" %}
-{% import "data/metadata/meta_macro.jinja" as macro %}
+{% extends "data/metadata/data_metadata.html" %}
+{# Since we might extend this template, check before overwriting data_tpye #}
+{% if data_type is not defined %} 
 {% set data_type = 'Forecast' %}
-{% block metadata %}
-<ul class="data-metadata-fields col-md-6 col-xs-12">
-  {{ macro.li('Name', name) }}
-  {# {{ macro.li('UUID', observation_id) }} #}
-  {{ macro.li('Site', site_link )}}
-</ul>
-<ul class="data-metadata-fields col-md-6 col-xs-12">
-  {{ macro.li('Variable', variable |convert_varname, variable | var_to_units) }}
-  {{ macro.li('Value type', interval_value_type) }}
-  {{ macro.li('Issue time of day', issue_time_of_day) }}
-  {{ macro.li('Interval label', interval_label) }}
-  {{ macro.li('Interval length', interval_length | string, 'minutes') }}
-  {{ macro.li('Run length / Issue frequency', run_length | string, 'minutes' ) }}
-  {{ macro.li('Lead time to start', lead_time_to_start | string, 'minutes') }}
-</ul>
+{% endif %}
+{% block extra_fields %}
+{{ macro.li('Issue time of day', issue_time_of_day) }}
+{{ macro.li('Run length / Issue frequency', run_length | display_timedelta) }}
+{{ macro.li('Lead time to start', lead_time_to_start | display_timedelta) }}
+{# 
+We don't expect cdf_fields to be defined on a regular forecast,
+but we'll extend this template with extra probabilistic forecast
+fields.
+#}
+{% block cdf_fields %}
+{% endblock %}
 {% endblock %}
