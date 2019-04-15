@@ -1,0 +1,18 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+{% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+<form action="{{ url_for('forms.download_' + data_type + '_data', uuid=uuid) }}" method="post"  id="{{ data_type }}-download">
+  <div class="form-group">
+    {% block fields %}
+    {% endblock %}
+    {{ form.token() }}
+  </div>
+</form>
+<div class="form-element">
+  <button type="submit" form="{{ data_type }}-download" value="Submit" class="btn btn-primary">Download</button>
+</div>
+{% endblock %}
+

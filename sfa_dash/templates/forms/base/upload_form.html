@@ -1,0 +1,21 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+{% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+<form action="{{ url_for('forms.upload_' + data_type + '_data', uuid=uuid) }}" method="post"  id="{{ data_type }}-upload-form" enctype='multipart/form-data'>
+  <div class="form-group">
+    {% block fields %}
+    {% endblock %}
+    <div class="form-element full-width">
+        <input type="file" name="{{ data_type }}-data" accept=".csv, .json">
+    </div>
+    {{ form.token() }}
+  </div>
+</form>
+<div class="form-element">
+  <button type="submit" form="{{ data_type }}-upload-form" value="Submit" class="btn btn-primary">Upload</button>
+</div>
+{% endblock %}
+

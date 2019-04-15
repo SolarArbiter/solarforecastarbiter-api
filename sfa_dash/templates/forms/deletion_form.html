@@ -8,5 +8,6 @@
   <p>Are you sure you want to delete this resource? This action is irreversible.</p>
   <button type="submit" form="delete-form" value="Submit" class="btn btn-danger btn-sml">Yes</button>
   <a href="{{ url_for('data_dashboard.' + data_type + '_view', uuid=uuid) }}" class="btn btn-primary">No</a>
+  {{ form.token() }}
 </form>
 {% endblock %}

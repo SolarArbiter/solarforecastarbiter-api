@@ -1,11 +1,7 @@
-{% extends "dash/data.html" %}
+{% extends "forms/base/upload_form.html" %}
 {% set page_title = 'Upload Forecast data' %}
-{% block content %}
-{% include "sections/notifications.html" %}
-{{ metadata | safe }}
-<h3>Upload data for Forecast 'AC Power'</h3>
-<form action="{{ url_for('forms.upload_cdf_forecast_data', uuid=uuid) }}" method="post" id="cdf-forecast-upload-form" enctype="multipart/form-data">
-  <div class="form-group">
+{% set data_type = "cdf_forecast" %}
+{% block fields %}
 	<div class="form-element">
 	  <label>My data is formatted in:</label><br>
 	  <input type="radio" data-toggle="collapse" data-target=".upload-example" name="file-format" value="csv" checked/>CSV
@@ -35,14 +31,6 @@ timestamp,value
          }            
     ] 
 }</pre>
-      </div>
-    </div>
-    <div class="form-element full-width">
-      <input type="file" name="cdf_forecast-data" accept=".csv, .json">
-    </div>
   </div>
-</form>
-<div class="form-element">
-  <button type="submit" form="cdf-forecast-upload-form" value="Submit" class="btn btn-primary">Submit</button>
 </div>
 {% endblock %}

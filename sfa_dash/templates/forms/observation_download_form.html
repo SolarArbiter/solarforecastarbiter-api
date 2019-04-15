@@ -1,41 +1,36 @@
-{% extends "dash/data.html" %}
-{# {% set sidebar = True %} #}
+{% extends "forms/base/download_form.html" %}
 {% set page_title = 'Download Observation data' %}
-{% block content %}
-{{ metadata | safe }}
-<h3>Download data for Observation 'GHI Instrument 1'</h3>
-{# <p><b>Available Date Range:</b> 2016-01-01T12:00Z to 2019-01-01T12:00Z</p> #}
-<form action="{{ url_for('forms.download_observation_data', uuid=uuid) }}" method="post" id="observation-download">
-  <div class="form-group">
-	<div class="form-element">
-	  <label for="start">Start time:</label>
-	  <input type="datetime-local" id="start" name="period-start">
-    </div>
-    <div class="form-element">
-	  <label for="end">End time:</label>
-	  <input type="datetime-local" id="end" name="period-end">
-    </div>
-    <div class="form-element full-width">
-      <label for="format">Format</label><br/>
-      <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="text/csv" checked>CSV</input>
-      <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="application/json">JSON</input>
-    </div>
-    <div class="form-element full-width">
-      <div class="download-example csv show">
-      <p>CSV downloads will have the following format.</p>
-      <pre class="example-text">
+{% set data_type = 'observation' %}
+{% block fields %}
+<div class="form-element">
+  <label for="start">Start time:</label>
+  <input type="datetime-local" id="start" name="period-start">
+</div>
+<div class="form-element">
+  <label for="end">End time:</label>
+  <input type="datetime-local" id="end" name="period-end">
+</div>
+<div class="form-element full-width">
+  <label for="format">Format</label><br/>
+  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="text/csv" checked>CSV</input>
+  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="application/json">JSON</input>
+</div>
+<div class="form-element full-width">
+  <div class="download-example csv show">
+  <p>CSV downloads will have the following format.</p>
+  <pre class="example-text">
 # observation_id: 123e4567-e89b-12d3-a456-426655440000
 # metadata: https://api.solarforecastarbiter.org/observations/123e4567-e89b-12d3-a456-426655440000/metadata
 timestamp,value,quality_flag
 2018-11-22T18:01:00Z,10.23,0
 2018-11-22T18:02:00Z,10.67,0
 2018-11-22T18:03:00Z,10.67,0
-      </pre>
-    </div>
-    <div class="form-element full-width">
-      <div class="download-example json collapse">
-        <p>JSON downloads will have the following format.</p>
-        <pre class="example-text">{
+  </pre>
+</div>
+<div class="form-element full-width">
+  <div class="download-example json collapse">
+    <p>JSON downloads will have the following format.</p>
+    <pre class="example-text">{
     "id": "123e4567-e89b-12d3-a456-426655440000",
     "_links": {
         "metadata": "https://api.solarforecastarbiter.org/observations/123e4567-e89b-12d3-a456-426655440000/metadata",
@@ -58,10 +53,6 @@ timestamp,value,quality_flag
          }
     ]
 }</pre>
-      </div>
-    </div>
-</form>
-<div class="form-element">
-  <button type="submit" form="observation-download" value="Submit" class="btn btn-primary">Download</button>
+  </div>
 </div>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block tools %}
 <input type="text" placeholder="Search" class="search">
 {% if site_id is defined %}
-<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site_observation', site_id=site_id)}}">Create new Observation</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_observation', site_id=site_id)}}">Create new Observation</a>
 {% endif %}
 {% endblock %}
 {% import "data/table/observation_macro.jinja" as table_macro %}

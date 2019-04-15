@@ -395,10 +395,10 @@ forms_blp.add_url_rule('/sites/create',
                        view_func=CreateForm.as_view('create_site',
                                                     data_type='site'))
 forms_blp.add_url_rule('/sites/<site_id>/observations/create',
-                       view_func=CreateForm.as_view('create_site_observation',
+                       view_func=CreateForm.as_view('create_observation',
                                                     data_type='observation'))
 forms_blp.add_url_rule('/sites/<site_id>/forecasts/single/create',
-                       view_func=CreateForm.as_view('create_site_forecast',
+                       view_func=CreateForm.as_view('create_forecast',
                                                     data_type='forecast'))
 forms_blp.add_url_rule('/sites/<site_id>/forecasts/cdf/create',
                        view_func=CreateForm.as_view(

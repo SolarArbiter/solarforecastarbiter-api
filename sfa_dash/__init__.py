@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for, render_template, session, request
+from flask_seasurf import SeaSurf
 
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint, logout,
@@ -12,6 +13,7 @@ def create_app(config=None):
     config = config or 'sfa_dash.config.DevConfig'
     app.config.from_object(config)
     app.secret_key = app.config['SECRET_KEY']
+    SeaSurf(app)
     register_jinja_filters(app)
 
     auth0_bp = make_auth0_blueprint(

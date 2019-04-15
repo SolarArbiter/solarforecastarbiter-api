@@ -87,3 +87,7 @@ UTC
 <span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
 {% endif %}
 {% endmacro %}
+
+{% macro token() %}
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+{% endmacro %}

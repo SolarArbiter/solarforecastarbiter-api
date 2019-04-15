@@ -3,8 +3,8 @@
 {% block content %}
 {{ metadata | safe }}
 {% block toolbar %}
-  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site_observation', site_id=site_id) }}">Create new Observation</a>
-  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site_forecast', site_id=site_id) }}">Create new Forecast</a>
+  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_observation', site_id=site_id) }}">Create new Observation</a>
+  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_forecast', site_id=site_id) }}">Create new Forecast</a>
   <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_cdf_forecast_group', site_id=site_id) }}">Create new Probabilistic Forecast</a>
   <a role="button" class="btn btn-danger btn-sm" href="{{ url_for('data_dashboard.delete_site', uuid=site_id) }}">Delete this site</a>
 
