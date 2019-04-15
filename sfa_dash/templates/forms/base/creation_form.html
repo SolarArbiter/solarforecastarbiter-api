@@ -4,7 +4,7 @@
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
-<form action="{{ url_for('forms.create_' + data_type, site_id=site_metadata['site_id']) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+<form action="{% if data_type == 'site' %} {{ url_for('forms.create_' + data_type) }}{% else %}{{ url_for('forms.create_' + data_type, site_id=site_metadata['site_id']) }} {% endif %}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
   <div class="form-group">
     {% block fields %}
     {% endblock %}
