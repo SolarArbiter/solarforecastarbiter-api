@@ -27,6 +27,9 @@ jobs:
         pip install -r requirements-test.txt
       displayName: 'Install dependencies'
 
+    - script: pip install .
+      displayName: 'Install sfa_dash'
+
     - script: pytest sfa_dash
       displayName: 'pytest'
 

@@ -15,7 +15,7 @@ setup(
         'flask-dance',
         'sqlalchemy',
         'flask-sqlalchemy',
-        'flask-seasurf'
+        'flask-seasurf',
         'python-jose',
         'cryptography',
         'blinker'
