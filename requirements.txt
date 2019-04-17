@@ -5,3 +5,9 @@ pandas==0.24.2
 flask-dance
 gunicorn
 gevent
+sqlalchemy
+flask-sqlalchemy
+sqlalchemy_utils
+python-jose
+blinker
+cryptography

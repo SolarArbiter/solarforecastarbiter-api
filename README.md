@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/solararbiter/solarforecastarbiter/_apis/build/status/SolarArbiter.solarforecastarbiter_dashboard?branchName=master)](https://dev.azure.com/solararbiter/solarforecastarbiter/_build/latest?definitionId=3&branchName=master)
+
 # Solar Forecast Arbiter Dashboard
 The front end [Flask](http://flask.pocoo.org/) application for the Solar Forecast Arbiter.
 
@@ -5,6 +7,7 @@ The front end [Flask](http://flask.pocoo.org/) application for the Solar Forecas
 
 Currently the dashboard is hardcoded to utilize a local development api instance. These instructions will guide you through running it locally.
 
+**You will need to set the environment variables `AUTH0_CLIENT_SECRET` and `AUTH0_CLIENT_ID` for authentication to operate correctly.**
 
 - Install the [Solar Forecast Arbiter API](https://github.com/SolarArbiter/solarforecastarbiter-api) and run it with the `SFA_API_STATIC_DATA=true` option and `port` set to 5000.
 
@@ -15,7 +18,6 @@ Currently the dashboard is hardcoded to utilize a local development api instance
 - Open [http://localhost:8080/](http://localhost:8080/) in a browser to view the dashboard.
 
 
-
 ### Template Layout
 
 base.html
@@ -23,7 +25,7 @@ base.html
  - Basic html structure, includes navbar, footer and head. Will conditionally include sidebar if `sidebar` variable is defined.
 
 navbar.html
-	
+
  - Includes header for logo/site name and main navigation.
 
 head.html
@@ -40,12 +42,16 @@ footer.html
 
 dash/
 
- - Dash includes secondary nav content and anything else that may be section-wide. 
+ - Dash includes secondary nav content and anything else that may be section-wide.
 
-data/  
+data/
 
  - Templates extending the `dash/data.html` dashboard.
 
 org/
 
  - Templates extending the `dash/org.html` dashboard.
+
+sections/
+
+ - Templates to be included in others. I.E. a notifications section.

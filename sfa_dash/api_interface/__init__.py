@@ -20,6 +20,7 @@ def get_request(path, **kwargs):
         The api response.
     """
     # may need to handle errors if oauth_request_session does not exist somehow
+    # definitely need to handle errors here
     return oauth_request_session.get(
         f'{app.config["SFA_API_URL"]}{path}', **kwargs)
 
