@@ -18,6 +18,7 @@ setup(
         'flask-seasurf',
         'python-jose',
         'cryptography',
-        'blinker'
+        'blinker',
+        'bokeh'
         ]
 )
