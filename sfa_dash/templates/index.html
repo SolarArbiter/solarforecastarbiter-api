@@ -3,9 +3,24 @@
 {% set sidebar = False %}
 {% endif %}
 {% block dash %}
-<h2 class="page-title">Welcome</h2>
+<h2 class="page-title">Solar Forecast Arbiter Dashboard</h2>
 {% if user is none %}
 <p>Please <a href="{{ url_for('auth0.login') }}">login</a> to access the dashboard.</p>
+{% else %}
+<p>Use the links on the left to access your data.</p>
+
+<p>The <b>Sites</b> link will list the sites available to you.
+From this menu, you explore Sites and their associated data. Selecting
+a Site will display its metadata and present options to list or create
+Observations, Forecasts and Probabilistic Forecasts associated with the
+Site. This is currently the only menu from which you can create new
+Sites, Forecasts, Observations and Probabilistic Forecasts. <p>
+
+<p>The <b>Observations</b>, <b>Forecasts</b> and <b>Probabilistic
+Forecasts</b> links will list all of the items you have access to
+regardless of their Site association. However, you will not be able
+to Create new items from these pages.</p>
+ 
 {% endif %}
 {% include "dash/subnav.html" %}
 {% endblock %}

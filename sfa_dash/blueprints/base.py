@@ -1,4 +1,4 @@
-from flask import url_for
+from flask import url_for, render_template
 from flask.views import MethodView
 
 
@@ -39,12 +39,8 @@ class BaseView(MethodView):
         return breadcrumb
 
     def get(self, **kwargs):
-        template = self.env.get_template(self.template)
         if hasattr(self, 'subnav') and self.subnav is not None:
             subnav = self.subnav
         else:
             subnav = {}
-        rendered = template.render(breadcrumb=self.breadcrumb_html(),
-                                   current_path=self.request.uri,
-                                   subnav=subnav)
-        self.write(rendered)
+        return render_template(self.template, subnav=subnav)

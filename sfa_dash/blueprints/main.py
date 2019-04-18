@@ -251,6 +251,7 @@ class TrialsView(DataDashView):
 
 
 data_dash_blp = Blueprint('data_dashboard', 'data_dashboard')
+
 data_dash_blp.add_url_rule(
     '/sites/',
     view_func=SitesListingView.as_view('sites'))

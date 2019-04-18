@@ -50,6 +50,14 @@ def create_app(config=None):
         # page, show a different page w/ login link otherwise
         return render_template('index.html')
 
+    @app.route('/documentation/')
+    def documentation():
+        return render_template('documentation.html')
+
+    @app.route('/changelog/')
+    def changelog():
+        return render_template('changelog.html')
+
     @app.context_processor
     def inject_globals():
         # Injects variables into all rendered templates
