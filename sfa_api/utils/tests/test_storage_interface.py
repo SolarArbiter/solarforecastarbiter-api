@@ -16,7 +16,11 @@ from sfa_api.demo import values
 from sfa_api.utils import storage_interface
 
 
-TESTINDEX = values.generate_randoms()[0].to_series(keep_tz=True)
+#TODO: MAKE ME WORK WITH THE NEW CSV DATA
+TESTINDICES = {
+    1: values.generate_randoms(1)[0].to_series(keep_tz=True),
+    5: values.generate_randoms(5)[0].to_series(keep_tz=True),
+}
 
 
 @pytest.fixture(params=[0, 1, 2, 3])
@@ -25,14 +29,14 @@ def startend(request):
         start = None
         end = None
     elif request.param == 1:
-        start = pd.Timestamp('20190101T1205Z')
+        start = pd.Timestamp('20190414T1205Z')
         end = None
     elif request.param == 2:
         start = None
-        end = pd.Timestamp('20190101T1215Z')
+        end = pd.Timestamp('20190414T1215Z')
     else:
-        start = pd.Timestamp('20190101T1205Z')
-        end = pd.Timestamp('20190101T1215Z')
+        start = pd.Timestamp('20190414T1205Z')
+        end = pd.Timestamp('20190414T1215Z')
     return start, end
 
 
@@ -128,10 +132,11 @@ def test_read_observation_invalid_user(sql_app, invalid_user):
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
 def test_read_observation_values(sql_app, user, observation_id, startend):
+    idx_step = demo_observations[observation_id]['interval_length']
     start, end = startend
     observation_values = storage_interface.read_observation_values(
         observation_id, start, end)
-    assert (observation_values.index == TESTINDEX.loc[start:end].index).all()
+    assert (observation_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
     assert (observation_values.columns == ['value', 'quality_flag']).all()
 
 
@@ -249,10 +254,11 @@ def test_read_forecast_invalid_user(sql_app, invalid_user):
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
 def test_read_forecast_values(sql_app, user, forecast_id, startend):
+    idx_step = demo_forecasts[forecast_id]['interval_length']
     start, end = startend
     forecast_values = storage_interface.read_forecast_values(
         forecast_id, start, end)
-    assert (forecast_values.index == TESTINDEX.loc[start:end].index).all()
+    assert (forecast_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 
@@ -409,10 +415,12 @@ def test_delete_site_does_not_exist(sql_app, user, nocommit_cursor):
 # CDF
 @pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
 def test_read_cdf_forecast_values(sql_app, user, forecast_id, startend):
+    parent_id = demo_single_cdf[forecast_id]['parent']
+    idx_step = demo_group_cdf[parent_id]['interval_length']
     start, end = startend
     forecast_values = storage_interface.read_cdf_forecast_values(
         forecast_id, start, end)
-    assert (forecast_values.index == TESTINDEX.loc[start:end].index).all()
+    assert (forecast_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 

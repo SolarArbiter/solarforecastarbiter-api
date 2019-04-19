@@ -117,8 +117,8 @@ FORECAST_CSV = (
     '20190122T12:07:00+0000,25.0\n')
 
 VALID_FX_VALUE_CSV = (
-    '# forecast_id: f8dd49fa-23e2-48a0-862b-ba0af6dec276\n'
-    '# metadata: https://localhost/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/metadata\n' # NOQA
+    '# forecast_id: 11c20780-76ae-4b11-bef1-7a75bdc784e3\n'
+    '# metadata: https://localhost/forecasts/single/11c20780-76ae-4b11-bef1-7a75bdc784e3/metadata\n' # NOQA
     f'{FORECAST_CSV}')
 VALID_CDF_VALUE_CSV = (
     '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
@@ -270,7 +270,7 @@ def cdf_forecast_id():
 
 @pytest.fixture()
 def forecast_id():
-    return 'f8dd49fa-23e2-48a0-862b-ba0af6dec276'
+    return '11c20780-76ae-4b11-bef1-7a75bdc784e3'
 
 
 @pytest.fixture()

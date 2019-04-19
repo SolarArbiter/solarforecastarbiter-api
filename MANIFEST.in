@@ -1,2 +1,3 @@
 include versioneer.py
 include sfa_api/_version.py
+include sfa_api/demo/demo_data/*

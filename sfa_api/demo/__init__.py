@@ -32,13 +32,20 @@ forecast_values = {}
 cdf_forecast_values = {}
 
 for observation_id, obs in observations.items():
-    observation_values[observation_id] = static_observation_values()
+    observation_values[observation_id] = static_observation_values(
+        variable=obs['variable'],
+        freq=obs['interval_length'])
 
 for forecast_id, forecast in forecasts.items():
-    forecast_values[forecast_id] = static_forecast_values()
+    forecast_values[forecast_id] = static_forecast_values(
+        variable=forecast['variable'],
+        freq=forecast['interval_length'])
 
 for forecast_id, forecast in cdf_forecasts.items():
-    cdf_forecast_values[forecast_id] = static_forecast_values()
+    parent = cdf_forecast_groups[forecast['parent']]
+    cdf_forecast_values[forecast_id] = static_forecast_values(
+        variable=parent['variable'],
+        freq=parent['interval_length'])
 
 
 def store_observation_values(observation_id, observation_df):
