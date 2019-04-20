@@ -16,7 +16,6 @@ from sfa_api.demo import values
 from sfa_api.utils import storage_interface
 
 
-#TODO: MAKE ME WORK WITH THE NEW CSV DATA
 TESTINDICES = {
     1: values.generate_randoms(1)[0].to_series(keep_tz=True),
     5: values.generate_randoms(5)[0].to_series(keep_tz=True),
@@ -136,7 +135,8 @@ def test_read_observation_values(sql_app, user, observation_id, startend):
     start, end = startend
     observation_values = storage_interface.read_observation_values(
         observation_id, start, end)
-    assert (observation_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
+    obs_index = observation_values.index
+    assert (obs_index == TESTINDICES[idx_step].loc[start:end].index).all() # NOQA
     assert (observation_values.columns == ['value', 'quality_flag']).all()
 
 
@@ -258,7 +258,8 @@ def test_read_forecast_values(sql_app, user, forecast_id, startend):
     start, end = startend
     forecast_values = storage_interface.read_forecast_values(
         forecast_id, start, end)
-    assert (forecast_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
+    fx_index = forecast_values.index
+    assert (fx_index == TESTINDICES[idx_step].loc[start:end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 
@@ -420,7 +421,8 @@ def test_read_cdf_forecast_values(sql_app, user, forecast_id, startend):
     start, end = startend
     forecast_values = storage_interface.read_cdf_forecast_values(
         forecast_id, start, end)
-    assert (forecast_values.index == TESTINDICES[idx_step].loc[start:end].index).all()
+    fx_index = forecast_values.index
+    assert (fx_index == TESTINDICES[idx_step].loc[start:end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 
