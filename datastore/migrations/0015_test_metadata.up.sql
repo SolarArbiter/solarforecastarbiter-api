@@ -131,47 +131,6 @@ INSERT INTO arbiter_data.observations (
 );
 
 
-CREATE PROCEDURE insertfx(IN fxid CHAR(36))
-BEGIN
-    SET @id = (SELECT UUID_TO_BIN(fxid, 1));
-    SET @timestamp = TIMESTAMP('2019-01-01 12:00');
-    REPEAT
-        INSERT INTO arbiter_data.forecasts_values (id, timestamp, value) VALUES (@id, @timestamp, RAND());
-        SET @timestamp = (SELECT TIMESTAMPADD(MINUTE, 1, @timestamp));
-    UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
-END;
-
-CREATE PROCEDURE insertcdffx(IN fxid CHAR(36))
-BEGIN
-SET @id = (SELECT UUID_TO_BIN(fxid, 1));
-SET @timestamp = TIMESTAMP('2019-01-01 12:00');
-REPEAT
-INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value) VALUES (@id, @timestamp, RAND());
-SET @timestamp = (SELECT TIMESTAMPADD(MINUTE, 1, @timestamp));
-UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
-END;
-
-CREATE PROCEDURE insertobs(IN obsid CHAR(36))
-BEGIN
-    SET @id = (SELECT UUID_TO_BIN(obsid, 1));
-    SET @timestamp = TIMESTAMP('2019-01-01 12:00');
-    REPEAT
-        INSERT INTO arbiter_data.observations_values (id, timestamp, value, quality_flag) VALUES (
-            @id, @timestamp, RAND(), 0);
-        SET @timestamp = (SELECT TIMESTAMPADD(MINUTE, 1, @timestamp));
-    UNTIL @timestamp = TIMESTAMP('2019-01-01 12:20') END REPEAT;
-END;
-
-CALL insertfx('11c20780-76ae-4b11-bef1-7a75bdc784e3');
-CALL insertfx('f8dd49fa-23e2-48a0-862b-ba0af6dec276');
-
-CALL insertobs('123e4567-e89b-12d3-a456-426655440000');
-CALL insertobs('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f');
-CALL insertobs('9ce9715c-bd91-47b7-989f-50bb558f1eb9');
-CALL insertobs('e0da0dea-9482-4073-84de-f1b12c304d23');
-CALL insertobs('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2');
-
-
 SET @cfg0 = UUID_TO_BIN('ef51e87c-50b9-11e9-8647-d663bd873d93', 1);
 SET @cfg0time = TIMESTAMP('2019-03-02 14:55:37');
 SET @cfg1 = UUID_TO_BIN('058b182a-50ba-11e9-8647-d663bd873d93', 1);
@@ -210,16 +169,7 @@ VALUES (
      UUID_TO_BIN('633fb3a8-50bb-11e9-8647-d663bd873d93', 1), @cfg1, 20.0, @cfg1time);
 
 
-CALL insertcdffx('633f9396-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633f9864-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633f9b2a-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633f9d96-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fa548-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fa94e-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fabec-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fae62-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fb114-50bb-11e9-8647-d663bd873d93');
-CALL insertcdffx('633fb3a8-50bb-11e9-8647-d663bd873d93');
+
 
 CREATE USER 'apiuser'@'%' IDENTIFIED BY 'thisisaterribleandpublicpassword';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_observation_values TO 'apiuser'@'%';

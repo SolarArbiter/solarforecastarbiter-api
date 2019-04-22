@@ -22,6 +22,16 @@ queries and enforce RBAC on each call.
 ## Testing
 A ``docker-compose.yml`` file is provided to start a database and apply the
 migrations for testing. Tests are written in python with pytest.
+
+Test values exist inside of the migration file `0016_test_data.up.sql`, it is a
+dump of the values tables of the database with the values from
+`sfa_api/demo/demo_data` loaded. To update this test data, run the docker
+container and an instance of the API and use the API to add new values. Then use
+the command `docker exec <Container ID> /usr/bin/mysqldump -u root
+--password=testpassword --no-create-info arbiter_data forecasts_values
+cdf_forecasts_values observations_values > 0016_test_data.up.sql` to dump a new
+copy of the values tables.
+
 - test_authorization.py contains tests for the role based access control
   procedures and functions including tests that ensure the user cannot access
   items for which they do not have permissions.
