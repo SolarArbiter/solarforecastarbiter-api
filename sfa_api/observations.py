@@ -151,9 +151,7 @@ class ObservationValuesView(MethodView):
             content:
               application/json:
                 schema:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/ObservationValues'
+                  $ref: '#/components/schemas/ObservationValues'
               text/csv:
                 schema:
                   type: string
