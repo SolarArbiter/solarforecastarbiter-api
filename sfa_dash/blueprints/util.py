@@ -12,6 +12,13 @@ class DataTables(object):
     cdf_forecast_template = 'data/table/cdf_forecast_table.html'
 
     @classmethod
+    def creation_link(cls, data_type, site_id=None):
+        if site_id is not None:
+            return url_for(f'forms.create_{data_type}', uuid=site_id)
+        else:
+            return url_for('data_dashboard.sites', create=data_type)
+
+    @classmethod
     def create_table_elements(cls, data_list, id_key, **kwargs):
         """Creates a list of objects to be rendered as table by jinja template
         """
@@ -39,18 +46,82 @@ class DataTables(object):
         return table_rows
 
     @classmethod
-    def create_site_table_elements(cls, data_list, id_key, **kwargs):
-        table_rows = []
-        for data in data_list:
-            table_row = {}
-            table_row['name'] = data['name']
-            table_row['provider'] = 'Test User'
-            table_row['latitude'] = data['latitude']
-            table_row['longitude'] = data['longitude']
-            table_row['link'] = url_for("data_dashboard.site_view",
-                                        uuid=data['site_id'])
-            table_rows.append(table_row)
-        return table_rows
+    def get_observation_table(cls, site_id=None, **kwargs):
+        """Generates an html element containing a table of Observations
+
+        Parameters
+        ----------
+        site_id: string
+            The UUID of a site to filter for.
+
+        Returns
+        -------
+        string
+            Rendered HTML table with search bar and a 'Create
+            new Observation' button.
+        """
+        creation_link = cls.creation_link('observation', site_id)
+        obs_data_request = observations.list_metadata(site_id=site_id)
+        obs_data = obs_data_request.json()
+        rows = cls.create_table_elements(obs_data, 'observation_id', **kwargs)
+        rendered_table = render_template(cls.observation_template,
+                                         table_rows=rows,
+                                         creation_link=creation_link,
+                                         **kwargs)
+        return rendered_table
+
+    @classmethod
+    def get_forecast_table(cls, site_id=None, **kwargs):
+        """Generates an html element containing a table of Forecasts
+
+        Parameters
+        ----------
+        site_id: string
+            The UUID of a site to filter for.
+
+        Returns
+        -------
+        string
+            Rendered HTML table with search bar and a 'Create
+            new Forecast' button.
+        """
+        creation_link = cls.creation_link('forecast', site_id)
+        forecast_data = forecasts.list_metadata(site_id=site_id).json()
+        rows = cls.create_table_elements(forecast_data,
+                                         'forecast_id',
+                                         **kwargs)
+        rendered_table = render_template(cls.forecast_template,
+                                         table_rows=rows,
+                                         creation_link=creation_link,
+                                         **kwargs)
+        return rendered_table
+
+    @classmethod
+    def get_cdf_forecast_table(cls, site_id=None, **kwargs):
+        """Generates an html element containing a table of CDF Forecasts.
+
+        Parameters
+        ----------
+        site_id: string, optional
+            The UUID of a site to filter for.
+
+        Returns
+        -------
+        string
+            Rendered HTML table with search bar and a 'Create
+            new Probabilistic Forecast' button.
+        """
+        creation_link = cls.creation_link('cdf_forecast_group', site_id)
+        cdf_forecast_request = cdf_forecast_groups.list_metadata(
+            site_id=site_id)
+        cdf_forecast_data = cdf_forecast_request.json()
+        rows = cls.create_cdf_forecast_elements(cdf_forecast_data,
+                                                **kwargs)
+        rendered_table = render_template(cls.cdf_forecast_template,
+                                         table_rows=rows,
+                                         creation_link=creation_link,
+                                         **kwargs)
+        return rendered_table
 
     @classmethod
     def create_cdf_forecast_elements(cls, data_list, **kwargs):
@@ -75,54 +146,60 @@ class DataTables(object):
         return table_rows
 
     @classmethod
-    def get_observation_table(cls, **kwargs):
-        """Returns a rendered observation table.
-        TODO: fix parameters.
-        """
-        site_id = kwargs.get('site_id')
-        obs_data_request = observations.list_metadata(site_id=site_id)
-        obs_data = obs_data_request.json()
-        rows = cls.create_table_elements(obs_data, 'observation_id', **kwargs)
-        rendered_table = render_template(cls.observation_template,
-                                         table_rows=rows,
-                                         **kwargs)
-        return rendered_table
+    def get_site_table(cls, create=None, **kwargs):
+        """Generates an html element containing a table of Sites.
 
-    @classmethod
-    def get_forecast_table(cls, **kwargs):
-        """
-        """
-        site_id = kwargs.get('site_id')
-        forecast_data = forecasts.list_metadata(site_id=site_id).json()
-        rows = cls.create_table_elements(forecast_data,
-                                         'forecast_id',
-                                         **kwargs)
-        rendered_table = render_template(cls.forecast_template,
-                                         table_rows=rows,
-                                         **kwargs)
-        return rendered_table
+        Parameters
+        ----------
+        create: {'None', 'observation', 'forecast', 'cdf_forecast_group'}
+            If set, Site names will be links to create an object of type
+            `create` for the given site.
 
-    @classmethod
-    def get_cdf_forecast_table(cls, **kwargs):
-        """
-        """
-        site_id = kwargs.get('site_id')
-        cdf_forecast_request = cdf_forecast_groups.list_metadata(
-            site_id=site_id)
-        cdf_forecast_data = cdf_forecast_request.json()
-        rows = cls.create_cdf_forecast_elements(cdf_forecast_data,
-                                                **kwargs)
-        rendered_table = render_template(cls.cdf_forecast_template,
-                                         table_rows=rows,
-                                         **kwargs)
-        return rendered_table
-
-    @classmethod
-    def get_site_table(cls, **kwargs):
-        """
+        Returns
+        -------
+        string
+            The rendered html template, including a table of sites, with search
+            bar and 'Create new Site' button.
         """
         site_data_request = sites.list_metadata()
         site_data = site_data_request.json()
-        rows = cls.create_site_table_elements(site_data, 'site_id', **kwargs)
-        rendered_table = render_template(cls.site_template, table_rows=rows)
+        rows = cls.create_site_table_elements(site_data, create, **kwargs)
+        if create is None:
+            # If the create argument is present, we don't need a "Create
+            # Site" button, because we're using the view as a selector for
+            # another object's `site` field.
+            kwargs.update({'creation_link': url_for('forms.create_site')})
+        rendered_table = render_template(cls.site_template,
+                                         table_rows=rows)
         return rendered_table
+
+    @classmethod
+    def create_site_table_elements(cls, data_list, create=None, **kwargs):
+        """Creates a dictionary to feed to the Site table template as the
+        `table_rows` parameter.
+
+        Parameters
+        ----------
+        data_list: list
+            List of site metadata dictionaries, typically an API response from
+            the /sites/ endpoint.
+
+        Returns
+        -------
+        dict
+            A dict of site data to pass to the template.
+        """
+        if create not in ['observation', 'forecast', 'cdf_forecast_group']:
+            link_view = 'data_dashboard.site_view'
+        else:
+            link_view = f'forms.create_{create}'
+        table_rows = []
+        for data in data_list:
+            table_row = {}
+            table_row['name'] = data['name']
+            table_row['provider'] = data['provider']
+            table_row['latitude'] = data['latitude']
+            table_row['longitude'] = data['longitude']
+            table_row['link'] = url_for(link_view, uuid=data['site_id'])
+            table_rows.append(table_row)
+        return table_rows

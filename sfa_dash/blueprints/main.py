@@ -211,7 +211,7 @@ class SingleCDFForecastGroupView(DataDashView):
             text=self.metadata['site']['name'])
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.cdf_forecast_groups',
-                        site_id=self.metadata['site_id']),
+                        uuid=self.metadata['site_id']),
             text='CDF Forecasts')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.cdf_forecast_group_view',

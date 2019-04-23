@@ -20,5 +20,5 @@ setup(
         'cryptography',
         'blinker',
         'bokeh'
-        ]
+    ]
 )

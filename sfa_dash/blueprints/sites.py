@@ -5,6 +5,8 @@ from flask import render_template, url_for, request, abort
 
 
 class SitesListingView(SiteDashView):
+    """Render a page with a table listing Sites.
+    """
     template = 'org/obs.html'
 
     def breadcrumb_html(self, site=None, **kwargs):
@@ -20,15 +22,22 @@ class SitesListingView(SiteDashView):
         template_args = {}
         template_args['data_table'] = DataTables.get_site_table(**kwargs)
         template_args['current_path'] = request.path
-        template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
+        if 'create' in kwargs:
+            template_args['page_title'] = f"Select a Site"
+        else:
+            template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
         return template_args
 
     def get(self, **kwargs):
+        # Update kwargs with the create query parameter
+        kwargs.update({'create': request.args.get('create')})
         return render_template(self.template,
                                **self.get_template_args(**kwargs))
 
 
 class SingleSiteView(SiteDashView):
+    """Render a page to display the metadata of a a single Site.
+    """
     template = 'data/site.html'
 
     def breadcrumb_html(self, **kwargs):

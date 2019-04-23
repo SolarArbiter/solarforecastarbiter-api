@@ -1,6 +1,8 @@
 <div class="tools {{ table_type }}-tools mt-1">
   <input type="text" placeholder="Search" class="search">
-  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_site') }}">Create new Site</a>
+  {% if creation_link is defined %}
+    <a role="button" class="btn btn-primary btn-sm" href="{{ creation_link }}">Create new Site</a>
+  {% endif %}
 </div> 
 <table class="{{ table_type }}-table table results">
   <thead class="{{ table_type }}-thead">

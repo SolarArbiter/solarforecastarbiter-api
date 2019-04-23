@@ -218,29 +218,29 @@ class CreateForm(MetadataForm):
     def render_metadata_section(self, metadata):
         return render_template(self.metadata_template, **metadata)
 
-    def get(self, site_id=None):
+    def get(self, uuid=None):
         template_args = {}
-        if site_id is not None:
-            site_metadata = self.get_site_metadata(site_id)
+        if uuid is not None:
+            site_metadata = self.get_site_metadata(uuid)
             template_args['site_metadata'] = site_metadata
             template_args['metadata'] = self.render_metadata_section(
                 site_metadata)
         return render_template(self.template, **template_args)
 
-    def post(self, site_id=None):
+    def post(self, uuid=None):
         form_data = request.form
         formatted_form = self.formatter(form_data)
         response = self.api_handle.post_metadata(formatted_form)
         template_args = {}
-        if site_id is not None:
-            site_metadata = self.get_site_metadata(site_id)
+        if uuid is not None:
+            site_metadata = self.get_site_metadata(uuid)
             template_args['site_metadata'] = site_metadata
             template_args['metadata'] = self.render_metadata_section(
                 site_metadata)
         if response.status_code == 201:
-            uuid = response.text
+            created_uuid = response.text
             return redirect(url_for(f'data_dashboard.{self.data_type}_view',
-                                    uuid=uuid))
+                                    uuid=created_uuid))
         elif response.status_code == 400:
             errors = response.json()['errors']
             template_args['errors'] = self.flatten_dict(errors)
@@ -394,13 +394,13 @@ forms_blp = Blueprint('forms', 'forms')
 forms_blp.add_url_rule('/sites/create',
                        view_func=CreateForm.as_view('create_site',
                                                     data_type='site'))
-forms_blp.add_url_rule('/sites/<site_id>/observations/create',
+forms_blp.add_url_rule('/sites/<uuid>/observations/create',
                        view_func=CreateForm.as_view('create_observation',
                                                     data_type='observation'))
-forms_blp.add_url_rule('/sites/<site_id>/forecasts/single/create',
+forms_blp.add_url_rule('/sites/<uuid>/forecasts/single/create',
                        view_func=CreateForm.as_view('create_forecast',
                                                     data_type='forecast'))
-forms_blp.add_url_rule('/sites/<site_id>/forecasts/cdf/create',
+forms_blp.add_url_rule('/sites/<uuid>/forecasts/cdf/create',
                        view_func=CreateForm.as_view(
                            'create_cdf_forecast_group',
                            data_type='cdf_forecast_group'))

@@ -1,3 +1,6 @@
+"""Flask endpoints for listing Observations, Forecasts and CDF Forecasts.
+Defers actual table creation and rendering to DataTables in the util module.
+"""
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import DataTables
 from sfa_dash.api_interface import sites
@@ -54,13 +57,14 @@ class DataListingView(BaseView):
         """Create a dictionary containing the required arguments for the template
         """
         template_args = {}
+        uuid = request.args.get('uuid')
         subnav_kwargs = {
             'observations_url': url_for('data_dashboard.observations',
-                                        **kwargs),
+                                        uuid=uuid),
             'forecasts_url': url_for('data_dashboard.forecasts',
-                                     **kwargs),
+                                     uuid=uuid),
             'cdf_forecasts_url': url_for('data_dashboard.cdf_forecast_groups',
-                                         **kwargs)
+                                         uuid=uuid)
         }
         template_args['subnav'] = self.format_subnav(**subnav_kwargs)
         template_args['data_table'] = self.table_function(**kwargs)
@@ -71,8 +75,11 @@ class DataListingView(BaseView):
     def get(self, **kwargs):
         """
         """
-        site_id = request.args.get('site_id')
-        if site_id is not None:
-            kwargs.update({'site_id': site_id})
+        # Check for a uuid parameter indicating we should filter by site.
+        # otherwise, set the create key to pass as a query parameter to
+        # the site listing page.
+        uuid = request.args.get('uuid')
+        if uuid is not None:
+            kwargs.update({'site_id': uuid})
         return render_template(self.template,
                                **self.get_template_args(**kwargs))
