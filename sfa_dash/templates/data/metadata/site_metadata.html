@@ -10,7 +10,7 @@
   {{ macro.li('Elevation', elevation | string, 'm') }}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-xs-12">
-  {% if modeling_parameters %}
+  {% if modeling_parameters and modeling_parameters['ac_capacity'] is not none %}
     <li><b>Modeling Parameters:</b>
       <div class="data-metadata-field-modeling-parameters pl-2">
         <ul class="data-metadata-fields">
