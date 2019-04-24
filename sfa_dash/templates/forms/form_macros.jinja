@@ -41,7 +41,7 @@
 <label>{{ label }}</label><br/>
 <div class="input-wrapper">
 {% for option, option_label in options.items() %}
-<input name="{{ name }}" type="radio" class="{{ name }}-field" value="{{ option }}">{{ option_label }}</label>
+<input name="{{ name }}" type="radio" class="{{ name }}-field" {% if required %}required{% endif %} value="{{ option }}">{{ option_label }}</label>
 {% endfor %}
 </div>
 {% if help_text is not none %}

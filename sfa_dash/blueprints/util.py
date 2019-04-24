@@ -1,4 +1,3 @@
-import pdb
 """ Utility classes/functions. Mostly for handling api data.
 """
 from sfa_dash.api_interface import (sites, forecasts, observations,

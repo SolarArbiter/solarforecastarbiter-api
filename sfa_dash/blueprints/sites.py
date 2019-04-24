@@ -1,4 +1,3 @@
-import pdb
 from sfa_dash.blueprints.util import DataTables
 from sfa_dash.blueprints.dash import SiteDashView
 from sfa_dash.api_interface import sites
