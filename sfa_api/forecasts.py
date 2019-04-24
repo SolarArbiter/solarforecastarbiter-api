@@ -479,8 +479,7 @@ class CDFForecastValues(MethodView):
             content:
               applciation/json:
                 schema:
-                  items:
-                    $ref: '#/components/schemas/ForecastValues'
+                  $ref: '#/components/schemas/CDFForecastValues'
               text/csv:
                 schema:
                   type: string
