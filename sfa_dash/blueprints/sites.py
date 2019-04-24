@@ -1,3 +1,4 @@
+import pdb
 from sfa_dash.blueprints.util import DataTables
 from sfa_dash.blueprints.dash import SiteDashView
 from sfa_dash.api_interface import sites
@@ -16,13 +17,14 @@ class SitesListingView(SiteDashView):
             text='Sites')
         return breadcrumb
 
-    def get_template_args(self, **kwargs):
+    def get_template_args(self, create=None, **kwargs):
         """Create a dictionary containing the required arguments for the template
         """
         template_args = {}
-        template_args['data_table'] = DataTables.get_site_table(**kwargs)
+        template_args['data_table'] = DataTables.get_site_table(create=create,
+                                                                **kwargs)
         template_args['current_path'] = request.path
-        if 'create' in kwargs:
+        if create is not None:
             template_args['page_title'] = f"Select a Site"
         else:
             template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)

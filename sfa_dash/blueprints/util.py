@@ -1,3 +1,4 @@
+import pdb
 """ Utility classes/functions. Mostly for handling api data.
 """
 from sfa_dash.api_interface import (sites, forecasts, observations,
@@ -168,8 +169,11 @@ class DataTables(object):
             # If the create argument is present, we don't need a "Create
             # Site" button, because we're using the view as a selector for
             # another object's `site` field.
-            kwargs.update({'creation_link': url_for('forms.create_site')})
+            creation_link = url_for('forms.create_site')
+        else:
+            creation_link = None
         rendered_table = render_template(cls.site_template,
+                                         creation_link=creation_link,
                                          table_rows=rows)
         return rendered_table
 
