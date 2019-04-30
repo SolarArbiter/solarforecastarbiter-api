@@ -2,7 +2,7 @@ variable_mapping = {
     'ghi': ('GHI', '(W/m^2)'),
     'dni': ('DNI', '(W/m^2)'),
     'dhi': ('DHI', '(W/m^2)'),
-    'temp_air': ('Air Temperature', '(&deg;C)'),
+    'air_temperature': ('Air Temperature', '(&deg;C)'),
     'wind_speed': ('Wind Speed', '(m/s)'),
     'poa_global': ('Plane of Array Irradiance', '(W/m^2)'),
     'ac_power': ('AC Power', '(MW)'),
