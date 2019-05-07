@@ -108,7 +108,7 @@ END;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_observation_values (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN timestamp TIMESTAMP, IN value FLOAT,
-    IN quality_flag TINYINT UNSIGNED)
+    IN quality_flag SMALLINT UNSIGNED)
 COMMENT 'Store a single time, value, quality_flag row into observation_values'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
