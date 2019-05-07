@@ -34,7 +34,8 @@ setup(
         'marshmallow',
         'pandas',
         'sqlalchemy',
-        'pymysql'
+        'pymysql',
+        'solarforecastarbiter'
     ],
     extra_requires={
         'test': ['pytest', 'coverage']
