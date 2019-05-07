@@ -1,14 +1,16 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
-import pandas as pd
+from solarforecastarbiter import tasks
 
 
 from sfa_api import spec
+from sfa_api.utils.auth import current_access_token
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.request_handling import (validate_parsable_values,
-                                            validate_start_end)
+                                            validate_start_end,
+                                            validate_observation_values)
 from sfa_api.schema import (ObservationValuesSchema,
                             ObservationSchema,
                             ObservationPostSchema,
@@ -232,43 +234,31 @@ class ObservationValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        observation_df = validate_parsable_values()
-        errors = {}
-        try:
-            observation_df['value'] = pd.to_numeric(observation_df['value'],
-                                                    downcast='float')
-        except ValueError:
-            error = ('Invalid item in "value" field. Ensure that all '
-                     'values are integers, floats, empty, NaN, or NULL.')
-            errors.update({'values': [error]})
-        except KeyError:
-            errors.update({'values': ['Missing "value" field.']})
+        run_validation = 'donotvalidate' not in request.args
+        if run_validation:
+            # users should only upload 0 or 1 for quality_flag
+            qf_range = [0, 1]
+        else:
+            # but the validation task will post the quality flag
+            # up a 2 byte unsigned int
+            qf_range = [0, 2**16 - 1]
 
-        try:
-            observation_df['timestamp'] = pd.to_datetime(
-                observation_df['timestamp'],
-                utc=True)
-        except ValueError:
-            error = ('Invalid item in "timestamp" field. Ensure '
-                     'that timestamps are ISO8601 compliant')
-            errors.update({'timestamp': [error]})
-        except KeyError:
-            errors.update({'values': ['Missing "timestamp" field.']})
-
-        if 'quality_flag' not in observation_df.columns:
-            errors.update({'quality_flag': ['Missing "quality_flag" field.']})
-        elif not observation_df['quality_flag'].isin([0, 1]).all():
-            error = 'Invalid item in "quality_flag" field.'
-            errors.update({'quality_flag': [error]})
-
-        if errors:
-            raise BadAPIRequest(errors)
+        observation_df = validate_observation_values(
+            validate_parsable_values(), qf_range)
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
         stored = storage.store_observation_values(
             observation_id, observation_df)
         if stored is None:
             abort(404)
+        if run_validation:
+            tasks.enqueue_function(
+                tasks.immediate_observation_validation,
+                str(current_access_token),
+                observation_id,
+                observation_df.index[0].isoformat(),
+                observation_df.index[-1].isoformat(),
+                base_url=request.url_root.rstrip('/'))
         return stored, 201
 
 
