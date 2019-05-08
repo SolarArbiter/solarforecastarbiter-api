@@ -10,7 +10,27 @@ import pandas as pd
 from sfa_api.utils.errors import BadAPIRequest
 
 
-def validate_observation_values(observation_df, quality_flag_range=[0, 1]):
+def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
+    """
+    Validate the columns of an observation value DataFrame.
+
+    Parameters
+    ----------
+    observation_df : pandas.DataFrame
+        DataFrame to validate columns and values
+    quality_flag_range : tuple, default (0, 1)
+        Range of allowable quality_flag
+
+    Returns
+    -------
+    pandas.DataFrame
+       With types adjusted as appropriate
+
+    Raises
+    ------
+    BadAPIRequest
+        For any errors in the columns or values
+    """
     errors = defaultdict(list)
     try:
         observation_df['value'] = pd.to_numeric(observation_df['value'],
@@ -33,10 +53,14 @@ def validate_observation_values(observation_df, quality_flag_range=[0, 1]):
     except KeyError:
         errors['timestamp'].append('Missing "timestamp" field.')
 
-    if 'quality_flag' not in observation_df.columns:
+    try:
+        observation_df['quality_flag'].astype(int)
+    except KeyError:
         errors['quality_flag'].append('Missing "quality_flag" field.')
+    except (ValueError, TypeError):
+        errors['quality_flag'].append(
+            'Item in "quality_flag" field is not an integer.')
     else:
-        # make sure quality flag is an integer
         if not np.isclose(
                 observation_df['quality_flag'].mod(1), 0, 1e-12).all():
             errors['quality_flag'].append(

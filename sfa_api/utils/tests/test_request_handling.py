@@ -1,7 +1,9 @@
+import pandas as pd
 import pytest
 
 
 from sfa_api.utils import request_handling
+from sfa_api.utils.errors import BadAPIRequest
 
 
 @pytest.mark.parametrize('start,end', [
@@ -47,3 +49,73 @@ def test_validate_parsable_success(app, content_type, payload, forecast_id):
                                   content_type=content_type, data=payload,
                                   method='POST'):
         request_handling.validate_parsable_values()
+
+
+def test_validate_observation_values():
+    df = pd.DataFrame({'value': [0.1, '.2'],
+                       'quality_flag': [0.0, 1],
+                       'timestamp': ['20190101T0000Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    request_handling.validate_observation_values(df)
+
+
+def test_validate_observation_values_bad_value():
+    df = pd.DataFrame({'value': [0.1, 's.2'],
+                       'quality_flag': [0.0, 1],
+                       'timestamp': ['20190101T0000Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'value' in e.value.errors
+
+
+def test_validate_observation_values_no_value():
+    df = pd.DataFrame({'quality_flag': [0.0, 1],
+                       'timestamp': ['20190101T0000Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'value' in e.value.errors
+
+
+def test_validate_observation_values_bad_timestamp():
+    df = pd.DataFrame({'value': [0.1, '.2'],
+                       'quality_flag': [0.0, 1],
+                       'timestamp': ['20190101T008Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'timestamp' in e.value.errors
+
+
+def test_validate_observation_values_no_timestamp():
+    df = pd.DataFrame({
+        'value': [0.1, '.2'], 'quality_flag': [0.0, 1]})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'timestamp' in e.value.errors
+
+
+@pytest.mark.parametrize('quality', [
+    [1, .1],
+    [1, '0.9'],
+    [2, 0],
+    ['ham', 0]
+])
+def test_validate_observation_values_bad_quality(quality):
+    df = pd.DataFrame({'value': [0.1, .2],
+                       'quality_flag': quality,
+                       'timestamp': ['20190101T008Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'quality_flag' in e.value.errors
+
+
+def test_validate_observation_values_no_quality():
+    df = pd.DataFrame({'value': [0.1, '.2'],
+                       'timestamp': ['20190101T008Z',
+                                     '2019-01-01T03:00:00+07:00']})
+    with pytest.raises(BadAPIRequest) as e:
+        request_handling.validate_observation_values(df)
+    assert 'quality_flag' in e.value.errors
