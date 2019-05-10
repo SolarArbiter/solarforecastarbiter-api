@@ -281,3 +281,10 @@ def site_id():
 @pytest.fixture()
 def site_id_plant():
     return '123e4567-e89b-12d3-a456-426655440002'
+
+
+@pytest.fixture()
+def mocked_validation(mocker):
+    mocked = mocker.patch('solarforecastarbiter.tasks.enqueue_function')
+    yield
+    assert mocked.called

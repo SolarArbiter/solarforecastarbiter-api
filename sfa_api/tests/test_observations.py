@@ -94,13 +94,6 @@ NON_NUMERICAL_VALUE_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,fg
 NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,B" # NOQA
 
 
-@pytest.fixture()
-def mocked_validation(mocker):
-    mocked = mocker.patch('solarforecastarbiter.tasks.enqueue_function')
-    yield
-    assert mocked.called
-
-
 def test_post_observation_values_valid_json(api, observation_id,
                                             mocked_validation):
     r = api.post(f'/observations/{observation_id}/values',
