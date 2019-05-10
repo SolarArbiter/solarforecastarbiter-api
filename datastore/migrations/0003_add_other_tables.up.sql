@@ -62,7 +62,7 @@ CREATE TABLE arbiter_data.observations_values (
     id BINARY(16) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
     value FLOAT NOT NULL,
-    quality_flag TINYINT UNSIGNED NOT NULL,
+    quality_flag SMALLINT UNSIGNED NOT NULL,
 
     PRIMARY KEY (id, timestamp),
     FOREIGN KEY (id)

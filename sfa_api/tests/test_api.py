@@ -114,7 +114,7 @@ def test_create_site_unauthorized(sql_api, auth_header):
     pass
 
 
-def test_create_delete_observation(sql_api, auth_header):
+def test_create_delete_observation(sql_api, auth_header, mocked_validation):
     post = sql_api.post('/observations/',
                         headers=auth_header,
                         base_url=BASE_URL,

@@ -16,7 +16,10 @@ from werkzeug.local import LocalProxy
 
 current_user = LocalProxy(
     lambda: getattr(_request_ctx_stack.top, 'user', ''))
-current_jwt = LocalProxy(lambda: getattr(_request_ctx_stack.top, 'jwt', None))
+current_jwt_claims = LocalProxy(
+    lambda: getattr(_request_ctx_stack.top, 'jwt_claims', None))
+current_access_token = LocalProxy(
+    lambda: getattr(_request_ctx_stack.top, 'access_token', ''))
 
 
 def verify_access_token():
@@ -39,7 +42,8 @@ def verify_access_token():
         # add the token and sub to the request context stack
         # so they can be accessed elsewhere in the code for
         # proper authorization
-        _request_ctx_stack.top.jwt = token
+        _request_ctx_stack.top.jwt_claims = token
+        _request_ctx_stack.top.access_token = auth[1]
         _request_ctx_stack.top.user = token['sub']
         return True
 

@@ -1,8 +1,79 @@
-from flask import request
+from collections import defaultdict
 from io import StringIO
+
+
+from flask import request
+import numpy as np
 import pandas as pd
 
+
 from sfa_api.utils.errors import BadAPIRequest
+
+
+def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
+    """
+    Validate the columns of an observation value DataFrame.
+
+    Parameters
+    ----------
+    observation_df : pandas.DataFrame
+        DataFrame to validate columns and values
+    quality_flag_range : tuple, default (0, 1)
+        Range of allowable quality_flag
+
+    Returns
+    -------
+    pandas.DataFrame
+       With types adjusted as appropriate
+
+    Raises
+    ------
+    BadAPIRequest
+        For any errors in the columns or values
+    """
+    errors = defaultdict(list)
+    try:
+        observation_df['value'] = pd.to_numeric(observation_df['value'],
+                                                downcast='float')
+    except ValueError:
+        errors['value'].append(
+            'Invalid item in "value" field. Ensure that all '
+            'values are integers, floats, empty, NaN, or NULL.')
+    except KeyError:
+        errors['value'].append('Missing "value" field.')
+
+    try:
+        observation_df['timestamp'] = pd.to_datetime(
+            observation_df['timestamp'],
+            utc=True)
+    except ValueError:
+        errors['timestamp'].append(
+            'Invalid item in "timestamp" field. Ensure '
+            'that timestamps are ISO8601 compliant')
+    except KeyError:
+        errors['timestamp'].append('Missing "timestamp" field.')
+
+    try:
+        observation_df['quality_flag'].astype(int)
+    except KeyError:
+        errors['quality_flag'].append('Missing "quality_flag" field.')
+    except (ValueError, TypeError):
+        errors['quality_flag'].append(
+            'Item in "quality_flag" field is not an integer.')
+    else:
+        if not np.isclose(
+                observation_df['quality_flag'].mod(1), 0, 1e-12).all():
+            errors['quality_flag'].append(
+                'Item in "quality_flag" field is not an integer.')
+
+        if not observation_df['quality_flag'].between(
+                *quality_flag_range).all():
+            errors['quality_flag'].append(
+                'Item in "quality_flag" field out of range '
+                f'{quality_flag_range}.')
+    if errors:
+        raise BadAPIRequest(errors)
+    return observation_df
 
 
 def validate_parsable_values():
@@ -11,7 +82,7 @@ def validate_parsable_values():
 
     Raises
     ------
-    BasAPIRequest
+    BadAPIRequest
         If the data cannot be parsed.
     """
     if request.content_type == 'application/json':
