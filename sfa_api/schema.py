@@ -4,10 +4,12 @@ import pytz
 
 from sfa_api import spec, ma
 from sfa_api.utils.validators import TimeFormat, UserstringValidator
+from solarforecastarbiter import datamodel
 
 
-VARIABLES = ['ghi', 'dni', 'dhi', 'air_temperature', 'wind_speed',
-             'poa_global', 'ac_power', 'dc_power']
+# datamodel defines allowed variable as a dict of variable: units
+# we just want the variable names here
+VARIABLES = datamodel.ALLOWED_VARIABLES.keys()
 
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 
