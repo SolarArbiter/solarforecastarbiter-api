@@ -69,7 +69,8 @@ def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
         if not observation_df['quality_flag'].between(
                 *quality_flag_range).all():
             errors['quality_flag'].append(
-                'Item in "quality_flag" field out of range.')
+                'Item in "quality_flag" field out of range '
+                f'{quality_flag_range}.')
     if errors:
         raise BadAPIRequest(errors)
     return observation_df
