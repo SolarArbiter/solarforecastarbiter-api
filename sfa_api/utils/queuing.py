@@ -1,12 +1,9 @@
-from functools import partial
-
-
 from flask import current_app
 from redis import Redis
 from rq import Queue
 
 
-def _make_redis_connection_partial():
+def _make_redis_connection():
     config = current_app.config
     host = config.get('REDIS_HOST', '127.0.0.1')
     port = int(config.get('REDIS_PORT', '6379'))
@@ -16,11 +13,11 @@ def _make_redis_connection_partial():
     ssl = config.get('REDIS_USE_SSL', False)
     ssl_ca_certs = config.get(
         'REDIS_CA_CERTS', '/var/run/secrets/kubernetes.io/service-ca.crt')
-    getredis = partial(Redis, host=host, port=port, db=db,
-                       socket_timeout=socket_timeout,
-                       socket_connect_timeout=socket_connect_timeout,
-                       ssl=ssl, ssl_ca_certs=ssl_ca_certs)
-    return getredis
+    r = Redis(host=host, port=port, db=db,
+              socket_timeout=socket_timeout,
+              socket_connect_timeout=socket_connect_timeout,
+              ssl=ssl, ssl_ca_certs=ssl_ca_certs)
+    return r
 
 
 def get_queue():
@@ -30,6 +27,6 @@ def get_queue():
             current_app.background_queue = Queue(
                 is_async=False, connection=FakeStrictRedis())
         else:
-            redis = _make_redis_connection_partial()
-            current_app.background_queue = Queue(connection=redis())
+            redis_conn = _make_redis_connection()
+            current_app.background_queue = Queue(connection=redis_conn)
     return current_app.background_queue
