@@ -3,6 +3,9 @@ __version__ = get_versions()['version']
 del get_versions
 
 
+import os  # NOQA
+
+
 from flask import Flask, Response, jsonify, json, render_template, url_for  # NOQA
 from flask_marshmallow import Marshmallow  # NOQA
 from flask_talisman import Talisman  # NOQA
@@ -11,6 +14,7 @@ from flask_talisman import Talisman  # NOQA
 from sfa_api.spec import spec   # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
 from sfa_api.utils.auth import requires_auth  # NOQA
+from sfa_api.utils.queuing import get_queue  # NOQA
 
 
 ma = Marshmallow()
@@ -28,6 +32,10 @@ def create_app(config_name='ProductionConfig'):
 
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
+    if 'MYSQL_SETTINGS' in os.environ:
+        app.config.from_envvar('MYSQL_SETTINGS')
+    if 'REDIS_SETTINGS' in os.environ:
+        app.config.from_envvar('REDIS_SETTINGS')
     ma.init_app(app)
     register_error_handlers(app)
     redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA

@@ -1,12 +1,14 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
-from solarforecastarbiter import tasks
+from solarforecastarbiter.io.utils import HiddenToken
+from solarforecastarbiter.validation import tasks
 
 
 from sfa_api import spec
 from sfa_api.utils.auth import current_access_token
 from sfa_api.utils.storage import get_storage
+from sfa_api.utils.queuing import get_queue
 from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
@@ -252,9 +254,10 @@ class ObservationValuesView(MethodView):
         if stored is None:
             abort(404)
         if run_validation:
-            tasks.enqueue_function(
+            q = get_queue()
+            q.enqueue(
                 tasks.immediate_observation_validation,
-                str(current_access_token),
+                HiddenToken(current_access_token),
                 observation_id,
                 observation_df.index[0].isoformat(),
                 observation_df.index[-1].isoformat(),

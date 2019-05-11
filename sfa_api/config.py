@@ -31,6 +31,7 @@ class DevelopmentConfig(Config):
     MYSQL_USER = 'apiuser'
     MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
     MYSQL_DATABASE = 'arbiter_data'
+    USE_FAKE_REDIS = True
 
 
 class TestingConfig(Config):
@@ -38,3 +39,4 @@ class TestingConfig(Config):
     MYSQL_USER = 'apiuser'
     MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
     MYSQL_DATABASE = 'arbiter_data'
+    USE_FAKE_REDIS = True
