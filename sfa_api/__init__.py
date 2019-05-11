@@ -32,8 +32,6 @@ def create_app(config_name='ProductionConfig'):
 
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
-    if 'MYSQL_SETTINGS' in os.environ:
-        app.config.from_envvar('MYSQL_SETTINGS')
     if 'REDIS_SETTINGS' in os.environ:
         app.config.from_envvar('REDIS_SETTINGS')
     ma.init_app(app)
