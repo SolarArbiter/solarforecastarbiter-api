@@ -35,7 +35,9 @@ setup(
         'pandas',
         'sqlalchemy',
         'pymysql',
-        'solarforecastarbiter'
+        'solarforecastarbiter',
+        'redis',
+        'rq'
     ],
     extra_requires={
         'test': ['pytest', 'coverage']
