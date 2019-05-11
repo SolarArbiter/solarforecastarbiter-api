@@ -14,7 +14,6 @@ from flask_talisman import Talisman  # NOQA
 from sfa_api.spec import spec   # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
 from sfa_api.utils.auth import requires_auth  # NOQA
-from sfa_api.utils.queuing import get_queue  # NOQA
 
 
 ma = Marshmallow()
