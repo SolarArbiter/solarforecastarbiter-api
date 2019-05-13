@@ -11,7 +11,7 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README.md')) as f:
 
 EXTRAS_REQUIRE = {
     'test': ['pytest', 'pytest-cov', 'pytest-mock', 'flake8'],
-    'cli': ['click', 'pyyaml', 'sentry_sdk'],
+    'cli': ['click', 'sentry_sdk'],
     'queue': ['rq', 'redis']
 }
 EXTRAS_REQUIRE['all'] = [

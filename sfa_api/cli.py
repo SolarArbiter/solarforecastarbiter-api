@@ -1,6 +1,9 @@
+from pathlib import Path
+
+
 import click
+from flask import Config
 import sentry_sdk
-import yaml
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -23,8 +26,8 @@ def worker(verbose, queues, config_file):
     import solarforecastarbiter  # NOQA preload
     from sfa_api.utils.queuing import make_redis_connection
 
-    with open(config_file, 'r') as f:
-        config = yaml.safe_load(f)
+    config = Config(Path.cwd())
+    config.from_pyfile(config_file)
 
     if 'LOG_LEVEL' in config:
         loglevel = config['LOG_LEVEL']
