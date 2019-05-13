@@ -12,7 +12,8 @@ def _make_redis_connection():
     socket_connect_timeout = config.get('REDIS_SOCKET_CONNECT_TIMEOUT', 5)
     ssl = config.get('REDIS_USE_SSL', False)
     ssl_ca_certs = config.get(
-        'REDIS_CA_CERTS', '/var/run/secrets/kubernetes.io/service-ca.crt')
+        'REDIS_CA_CERTS',
+        '/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt')
     r = Redis(host=host, port=port, db=db,
               socket_timeout=socket_timeout,
               socket_connect_timeout=socket_connect_timeout,
