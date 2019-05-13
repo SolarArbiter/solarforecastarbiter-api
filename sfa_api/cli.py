@@ -41,6 +41,8 @@ def worker(verbose, queues, config_file):
 
     if 'QUEUES' in config:
         queues = config['QUEUES']
+    elif not queues:
+        queues = ['default']
 
     # will likely want to add prometheus in here somewhere,
     # perhaps as custom worker class
