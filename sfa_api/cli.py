@@ -57,12 +57,11 @@ def worker(verbose, queues, config_file):
 
 
 @cli.command()
-@click.option('-v', '--verbose', count=True, help='Increase logging verbosity')
 @click.option('-p', '--port', type=int, help='Port for the server to run on',
               default=5000)
 @click.argument('config_name', required=False,
                 default='DevelopmentConfig')
-def devserver(verbose, port, config_name):
+def devserver(port, config_name):
     """Run a flask development server with config from CONFIG_NAME"""
     from sfa_api import create_app
     app = create_app(config_name)
