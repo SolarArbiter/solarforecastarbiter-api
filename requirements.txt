@@ -17,3 +17,4 @@ sqlalchemy
 git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
 redis
 rq
+fakeredis
