@@ -11,7 +11,7 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README.md')) as f:
 
 EXTRAS_REQUIRE = {
     'test': ['pytest', 'pytest-cov', 'pytest-mock', 'flake8'],
-    'cli': ['click', 'sentry_sdk'],
+    'cli': ['click'],
     'queue': ['rq', 'redis']
 }
 EXTRAS_REQUIRE['all'] = [
@@ -45,6 +45,7 @@ setup(
         'sqlalchemy',
         'pymysql',
         'solarforecastarbiter',
+        'sentry_sdk'
     ],
     extras_require=EXTRAS_REQUIRE,
     project_urls={

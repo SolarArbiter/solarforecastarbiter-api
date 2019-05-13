@@ -6,12 +6,14 @@ del get_versions
 import os  # NOQA
 
 
-from flask import Flask, Response, jsonify, json, render_template, url_for  # NOQA
+from flask import Flask, Response, json, jsonify, render_template, url_for  # NOQA
 from flask_marshmallow import Marshmallow  # NOQA
 from flask_talisman import Talisman  # NOQA
+import sentry_sdk  # NOQA
+from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
 
 
-from sfa_api.spec import spec   # NOQA
+from sfa_api.spec import spec  # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
 from sfa_api.utils.auth import requires_auth  # NOQA
 
@@ -28,7 +30,8 @@ def protect_endpoint():
 
 
 def create_app(config_name='ProductionConfig'):
-
+    sentry_sdk.init(send_default_pii=False,
+                    integrations=[FlaskIntegration()])
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
     if 'REDIS_SETTINGS' in os.environ:
