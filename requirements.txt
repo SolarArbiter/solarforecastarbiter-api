@@ -18,3 +18,4 @@ git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarb
 redis
 rq
 fakeredis
+sentry_sdk
