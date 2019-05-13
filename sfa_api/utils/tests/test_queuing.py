@@ -8,12 +8,12 @@ from sfa_api.utils import queuing
 
 def test_make_redis_connection(demo_app):
     with demo_app.app_context():
-        r = queuing._make_redis_connection()
+        r = queuing.make_redis_connection(current_app.config)
     assert isinstance(r, Redis)
 
 
 def test_get_queue_real(mocker, demo_app):
-    mocked = mocker.patch.object(queuing, '_make_redis_connection')
+    mocked = mocker.patch.object(queuing, 'make_redis_connection')
     with demo_app.app_context():
         current_app.config['USE_FAKE_REDIS'] = False
         q = queuing.get_queue()
