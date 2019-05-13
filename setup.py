@@ -45,7 +45,8 @@ setup(
         'sqlalchemy',
         'pymysql',
         'solarforecastarbiter',
-        'sentry_sdk'
+        'sentry_sdk',
+        'blinker'
     ],
     extras_require=EXTRAS_REQUIRE,
     project_urls={

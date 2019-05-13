@@ -19,3 +19,4 @@ redis
 rq
 fakeredis
 sentry_sdk
+blinker
