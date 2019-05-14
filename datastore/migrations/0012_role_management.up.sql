@@ -9,11 +9,11 @@ COMMENT 'Create a user with the given id, auth0 id, and organization'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE orgid BINARY(16);
-    SET orgid = (SELECT id from arbiter_data.organizations where name = organization_name);
+    SET orgid = get_organization_id(organization_name);
     INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (UUID_TO_BIN(strid, 1), auth0id, orgid);
 END;
 
-CREATE DEFINER = 'insert_rbac'@'locahost' PROCEDURE create_role (
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_role (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
     IN description VARCHAR(255))
 COMMENT 'Create a role'
@@ -21,7 +21,7 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE orgid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
-    SET allowed = (SELECT user_can_create(auth0id, 'roles'));
+    SET allowed = user_can_create(auth0id, 'roles');
     IF allowed THEN
         SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.roles(
@@ -33,7 +33,7 @@ BEGIN
     END IF;
 END;
 
-CREATE DEFINER = 'insert_rbac'@'locahost' PROCEDURE create_permission (
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_permission (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN description VARCHAR(255),
     IN action VARCHAR(32), IN object_type VARCHAR(32),
     IN applies_to_all BOOLEAN)
@@ -42,7 +42,7 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE orgid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
-    SET allowed = user_can_create(auth0id, 'roles');
+    SET allowed = user_can_create(auth0id, 'permissions');
     IF allowed THEN
         SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.permissions(
@@ -70,7 +70,7 @@ BEGIN
     SET allowed = can_user_perform_action(auth0id, permid, 'update');
     IF allowed THEN
         INSERT INTO arbiter_data.permission_object_mapping (
-            permission_id, object_id) VALUES (objid, permid);
+            permission_id, object_id) VALUES (permid, objid);
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add object to permission"',
         MYSQL_ERRNO = 1142;
@@ -126,6 +126,16 @@ GRANT INSERT ON arbiter_data.roles TO 'insert_rbac'@'localhost';
 GRANT INSERT ON arbiter_data.role_permission_mapping TO 'insert_rbac'@'localhost';
 GRANT INSERT ON arbiter_data.permissions to 'insert_rbac'@'localhost';
 GRANT INSERT ON arbiter_data.permission_object_mapping to 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_permission TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_object_to_permission TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'insert_rbac'@'localhost';
 
 /*
 add locks to user accounts (update users permission)
