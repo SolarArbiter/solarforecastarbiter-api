@@ -90,6 +90,24 @@ def allow_update_permissions(cursor, new_permission, insertuser):
 
 
 @pytest.fixture()
+def allow_update_roles(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf = insertuser
+    perm = new_permission('update', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_update_users(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf = insertuser
+    perm = new_permission('update', 'users', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
 def obs_callargs(insertuser):
     auth0id = insertuser[0]['auth0_id']
     site_id = insertuser[1]['strid']
@@ -571,12 +589,12 @@ def test_add_object_to_permission(cursor, getfcn, new_permission,
     assert res
 
 
-def test_add_object_to_permission_denied(cursor, getfcn, new_permission,
+def test_add_object_to_permission_denied(cursor, new_observation,
+                                         new_permission,
                                          insertuser):
     user, _, _, _, org, role, _ = insertuser
-    fcn, obj_type = getfcn
-    objid = fcn(org=org)['id']
-    perm = new_permission('read', obj_type, False, org=org)
+    objid = new_observation(org=org)['id']
+    perm = new_permission('read', 'observations', False, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
@@ -588,13 +606,60 @@ def test_add_object_to_permission_denied(cursor, getfcn, new_permission,
         assert e.errcode == 1142
 
 
-def test_add_object_to_permission_no_perm(cursor, getfcn, new_permission,
+def test_add_object_to_permission_no_perm(cursor, new_site, new_permission,
                                           allow_update_permissions, insertuser):
     user, _, _, _, org, role, _ = insertuser
-    fcn, obj_type = getfcn
-    objid = fcn(org=org)['id']
+    objid = new_site(org=org)['id']
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_object_to_permission',
                         (user['auth0_id'], str(bin_to_uuid(objid)),
                          str(uuid.uuid1())))
+        assert e.errcode == 1142
+
+
+@pytest.mark.parametrize('obj_type', ['users', 'roles', 'forecasts',
+                                      'permissions', 'observations',
+                                      'cdf_forecasts', 'sites'])
+def test_add_permission_to_role(cursor, new_permission, insertuser, obj_type,
+                                allow_update_roles):
+    user, _, _, _, org, role, _ = insertuser
+    perm = new_permission('read', obj_type, False, org=org)
+    cursor.callproc('add_permission_to_role', (
+        user['auth0_id'], str(bin_to_uuid(role['id'])),
+        str(bin_to_uuid(perm['id']))))
+    cursor.execute(
+        'SELECT 1 FROM role_permission_mapping WHERE role_id = %s and '
+        'permission_id = %s', (role['id'], perm['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
+    user, _, _, _, org, role, _ = insertuser
+    perm = new_permission('read', 'sites', False, org=org)
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_permission_to_role', (
+            user['auth0_id'], str(bin_to_uuid(role['id'])),
+            str(bin_to_uuid(perm['id']))))
+        assert e.errcode == 1142
+
+
+def test_add_role_to_user(cursor, new_role, allow_update_users,
+                          insertuser):
+    user, _, _, _, org, _, _ = insertuser
+    role = new_role(org=org)
+    cursor.callproc('add_role_to_user', (
+        user['auth0_id'], str(bin_to_uuid(user['id'])),
+        str(bin_to_uuid(role['id']))))
+    cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
+                   'role_id = %s', (user['id'], role['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_denied(cursor, new_role, insertuser):
+    user, _, _, _, org, _, _ = insertuser
+    role = new_role(org=org)
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(user['id'])),
+            str(bin_to_uuid(role['id']))))
         assert e.errcode == 1142
