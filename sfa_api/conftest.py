@@ -285,6 +285,6 @@ def site_id_plant():
 
 @pytest.fixture()
 def mocked_validation(mocker):
-    mocked = mocker.patch('solarforecastarbiter.tasks.enqueue_function')
+    mocked = mocker.patch('rq.Queue.enqueue')
     yield
     assert mocked.called

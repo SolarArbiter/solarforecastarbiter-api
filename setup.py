@@ -9,6 +9,15 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README.md')) as f:
     long_description = f.read()
 
 
+EXTRAS_REQUIRE = {
+    'test': ['pytest', 'pytest-cov', 'pytest-mock', 'flake8'],
+    'cli': ['click'],
+    'queue': ['rq', 'redis']
+}
+EXTRAS_REQUIRE['all'] = [
+    vv for v in EXTRAS_REQUIRE.values() for vv in v]
+
+
 setup(
     name='sfa-api',
     version=versioneer.get_version(),
@@ -35,13 +44,17 @@ setup(
         'pandas',
         'sqlalchemy',
         'pymysql',
-        'solarforecastarbiter'
+        'solarforecastarbiter',
+        'sentry_sdk',
+        'blinker'
     ],
-    extra_requires={
-        'test': ['pytest', 'coverage']
-    },
+    extras_require=EXTRAS_REQUIRE,
     project_urls={
         'Bug Reports': 'https://github.com/solararbiter/solarforecastarbiter-api/issues',  # NOQA,
         'Source': 'https://github.com/solararbiter/solarforecastarbiter-api'
-    }
+    },
+    entry_points='''
+    [console_scripts]
+    sfa-api=sfa_api.cli:cli
+    '''
 )

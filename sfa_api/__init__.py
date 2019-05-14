@@ -3,12 +3,17 @@ __version__ = get_versions()['version']
 del get_versions
 
 
-from flask import Flask, Response, jsonify, json, render_template, url_for  # NOQA
+import os  # NOQA
+
+
+from flask import Flask, Response, json, jsonify, render_template, url_for  # NOQA
 from flask_marshmallow import Marshmallow  # NOQA
 from flask_talisman import Talisman  # NOQA
+import sentry_sdk  # NOQA
+from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
 
 
-from sfa_api.spec import spec   # NOQA
+from sfa_api.spec import spec  # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
 from sfa_api.utils.auth import requires_auth  # NOQA
 
@@ -25,9 +30,12 @@ def protect_endpoint():
 
 
 def create_app(config_name='ProductionConfig'):
-
+    sentry_sdk.init(send_default_pii=False,
+                    integrations=[FlaskIntegration()])
     app = Flask(__name__)
     app.config.from_object(f'sfa_api.config.{config_name}')
+    if 'REDIS_SETTINGS' in os.environ:
+        app.config.from_envvar('REDIS_SETTINGS')
     ma.init_app(app)
     register_error_handlers(app)
     redoc_script = f"https://cdn.jsdelivr.net/npm/redoc@{app.config['REDOC_VERSION']}/bundles/redoc.standalone.js"  # NOQA
