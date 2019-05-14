@@ -9,22 +9,29 @@ SELECT users.auth0_id as auth0_id, pom.object_id as object_id, permissions.objec
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_roles (IN auth0id VARCHAR(32))
 COMMENT 'List all roles and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT * FROM roles WHERE id in (
-       SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'roles');
+SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
+    get_organization_name(organization_id) as provider, created_at, modified_at
+FROM roles WHERE id in (
+    SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'roles');
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_users (IN auth0id VARCHAR(32))
 COMMENT 'List all users and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT * FROM users WHERE id in (
+SELECT BIN_TO_UUID(id, 1) as user_id, auth0_id,
+    get_organization_name(organization_id) as provider, created_at, modified_at
+FROM users WHERE id in (
     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'users');
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_permissions (IN auth0id VARCHAR(32))
 COMMENT 'List all permissions and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT * FROM permissions WHERE id in (
-       SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'permissions');
+SELECT BIN_TO_UUID(id, 1) as permission_id, description,
+    get_organization_name(organization_id) as provider, action, object_type, applies_to_all,
+    created_at
+FROM permissions WHERE id in (
+    SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'permissions');
 
 -- select_rbac needs to view user_objects to be able to list rbac objects
 GRANT SELECT ON arbiter_data.user_objects TO 'select_rbac'@'localhost';
