@@ -79,12 +79,20 @@ READS SQL DATA SQL SECURITY DEFINER
 RETURN (SELECT organization_id FROM arbiter_data.users WHERE auth0_id = auth0id);
 
 
--- function to get organization name
+-- function to get organization name from id
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_organization_name (orgid BINARY(16))
 RETURNS VARCHAR(32)
 COMMENT 'Return the name of the organization'
 READS SQL DATA SQL SECURITY DEFINER
 RETURN (SELECT name from arbiter_data.organizations WHERE id = orgid);
+
+
+-- function to get organization id from name
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_organization_id (org_name VARCHAR(32))
+RETURNS BINARY(16)
+COMMENT 'Return the id of the organization'
+READS SQL DATA SQL SECURITY DEFINER
+RETURN (SELECT id from arbiter_data.organizations WHERE name = org_name);
 
 
 -- Grant only required permissions to limited user account to execute rbac functions
@@ -100,3 +108,4 @@ GRANT EXECUTE ON FUNCTION `arbiter_data`.`can_user_perform_action` TO `select_rb
 GRANT EXECUTE ON FUNCTION `arbiter_data`.`user_can_create` TO `select_rbac`@`localhost`;
 GRANT EXECUTE ON FUNCTION `arbiter_data`.`get_user_organization` TO `select_rbac`@`localhost`;
 GRANT EXECUTE ON FUNCTION `arbiter_data`.`get_organization_name` TO `select_rbac`@`localhost`;
+GRANT EXECUTE ON FUNCTION `arbiter_data`.`get_organization_id` TO `select_rbac`@`localhost`;
