@@ -2,16 +2,24 @@ import tempfile
 
 
 from click.testing import CliRunner
+import pytest
+
 
 import sfa_api
 from sfa_api import cli
 
 
-def test_worker(mocker):
+@pytest.mark.parametrize('args', [
+    ['-v'],
+    ['-vv'],
+    ['-q one', '-q two'],
+    ['-v', '-q default'],
+])
+def test_worker(mocker, args):
     w = mocker.patch('rq.Worker')
     runner = CliRunner()
     with tempfile.NamedTemporaryFile('r') as f:
-        r = runner.invoke(cli.cli, ['worker', f.name])
+        r = runner.invoke(cli.cli, ['worker', *args, f.name])
     assert r.exit_code == 0
     w.assert_called
 

@@ -35,7 +35,7 @@ def worker(verbose, queues, config_file):
     config = Config(Path.cwd())
     config.from_pyfile(config_file)
 
-    if 'LOG_LEVEL' in config:
+    if 'LOG_LEVEL' in config:  # pragma: no cover
         loglevel = config['LOG_LEVEL']
     else:
         if verbose == 1:
@@ -45,7 +45,7 @@ def worker(verbose, queues, config_file):
         else:
             loglevel = 'WARNING'
 
-    if 'QUEUES' in config:
+    if 'QUEUES' in config:  # pragma: no cover
         queues = config['QUEUES']
 
     # will likely want to add prometheus in here somewhere,
@@ -68,5 +68,5 @@ def devserver(port, config_name):
     app.run(port=port)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     cli()
