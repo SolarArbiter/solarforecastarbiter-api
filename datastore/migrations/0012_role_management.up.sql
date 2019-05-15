@@ -255,8 +255,40 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.read_user TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_permissions_of_role TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'select_rbac'@'localhost';
 
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_roles (IN auth0id VARCHAR(32))
+COMMENT 'List all roles and associated metadata that the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
+    get_organization_name(organization_id) as organization, created_at, modified_at
+FROM roles WHERE id in (
+    SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'roles');
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_users (IN auth0id VARCHAR(32))
+COMMENT 'List all users and associated metadata that the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT BIN_TO_UUID(id, 1) as user_id, auth0_id,
+    get_organization_name(organization_id) as organization, created_at, modified_at
+FROM users WHERE id in (
+    SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'users');
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_permissions (IN auth0id VARCHAR(32))
+COMMENT 'List all permissions and associated metadata that the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT BIN_TO_UUID(id, 1) as permission_id, description,
+    get_organization_name(organization_id) as organization, action, object_type, applies_to_all,
+    created_at
+FROM permissions WHERE id in (
+    SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'permissions');
+
+GRANT SELECT ON arbiter_data.user_objects TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_roles TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_users TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_permissions TO 'select_rbac'@'localhost';
+
+
 /*
-read things
 list permissions reference object
 update ?
 delete user, roles, permissions, remove objs from permission, remove permission from roles, remove roles from user
