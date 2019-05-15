@@ -3,7 +3,6 @@ import json
 import random
 
 
-import pandas as pd
 import pytest
 import pymysql
 
@@ -449,7 +448,7 @@ def test_read_user(dictcursor, new_user, allow_read_users,
     res = dictcursor.fetchall()[0]
     res_roles = set(json.loads(res['roles']).keys())
     for tstr in json.loads(res['roles']).values():
-        pd.Timestamp(tstr)
+        dt.datetime.strptime(tstr, '%Y-%m-%d %H:%M:%S.%f')
     assert res_roles == set([str(bin_to_uuid(r['id'])) for r in roles])
     assert res['auth0_id'] == user['auth0_id']
     assert res['user_id'] == str(bin_to_uuid(user['id']))
@@ -503,7 +502,7 @@ def test_read_role(dictcursor, new_role, allow_read_roles,
     res = dictcursor.fetchall()[0]
     res_perms = set(json.loads(res['permissions']).keys())
     for tstr in json.loads(res['permissions']).values():
-        pd.Timestamp(tstr)
+        dt.datetime.strptime(tstr, '%Y-%m-%d %H:%M:%S.%f')
     assert res_perms == set([str(bin_to_uuid(r['id'])) for r in perms])
     assert res['role_id'] == str(bin_to_uuid(role['id']))
     assert res['name'] == role['name']
@@ -535,8 +534,6 @@ def test_read_role_denied(dictcursor, new_role,
         assert e.errcode == 1142
 
 
-
-
 @pytest.fixture()
 def allow_read_permissions(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role, cdf = insertuser
@@ -560,7 +557,7 @@ def test_read_permission(dictcursor, new_permission, allow_read_permissions,
     res = dictcursor.fetchall()[0]
     res_obs = set(json.loads(res['objects']).keys())
     for tstr in json.loads(res['objects']).values():
-        pd.Timestamp(tstr)
+        dt.datetime.strptime(tstr, '%Y-%m-%d %H:%M:%S.%f')
     assert res_obs == set([str(bin_to_uuid(o['id'])) for o in obs])
     assert res['permission_id'] == str(bin_to_uuid(perm['id']))
     for key in ('description', 'action', 'object_type', 'applies_to_all'):
