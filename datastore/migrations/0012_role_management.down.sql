@@ -1,3 +1,6 @@
+DROP PROCEDURE remove_object_from_permission;
+DROP PROCEDURE remove_permission_from_role;
+DROP PROCEDURE remove_role_from_user;
 DROP PROCEDURE delete_permission;
 DROP PROCEDURE delete_role;
 DROP USER 'delete_rbac'@'localhost';

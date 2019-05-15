@@ -273,3 +273,129 @@ def test_delete_permission_no_perm(cursor, permission_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_permission', (auth0id, permissionid))
         assert e.errcode == 142
+
+
+@pytest.fixture()
+def allow_update(cursor, new_permission, valueset):
+    def do(what):
+        org = valueset[0][0]
+        role = valueset[2][0]
+        perm = new_permission('update', what, True, org=org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id)'
+            ' VALUES (%s, %s)', (role['id'], perm['id']))
+    return do
+
+
+@pytest.fixture()
+def role_user_obj(cursor, new_role, new_user, valueset):
+    auth0id = valueset[1][0]['auth0_id']
+    org = valueset[0][0]
+    role = new_role(org=org)
+    user = new_user(org=org)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id)'
+        ' VALUES (%s, %s)', (user['id'], role['id']))
+    return auth0id, str(bin_to_uuid(user['id'])), str(bin_to_uuid(role['id']))
+
+
+@pytest.fixture()
+def allow_update_users(allow_update):
+    allow_update('users')
+
+
+def test_remove_role_from_user(cursor, role_user_obj, allow_update_users):
+    auth0id, userid, roleid = role_user_obj
+    cursor.execute(
+        'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
+        ' user_id = UUID_TO_BIN(%s, 1)', userid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('remove_role_from_user', (auth0id, roleid, userid))
+    cursor.execute(
+        'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
+        ' user_id = UUID_TO_BIN(%s, 1)', userid)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_remove_role_from_user_denied(cursor, role_user_obj):
+    auth0id, userid, roleid = role_user_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_permission_from_role',
+                        (auth0id, roleid, userid))
+        assert e.errcode == 1142
+
+
+@pytest.fixture()
+def perm_role_obj(role_obj, cursor, new_permission):
+    auth0id, rolestrid, role = role_obj
+    perm = new_permission('read', 'permissions', False)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id)'
+        ' VALUES (%s, %s)', (role['id'], perm['id']))
+    return auth0id, rolestrid, str(bin_to_uuid(perm['id']))
+
+
+@pytest.fixture()
+def allow_update_roles(allow_update):
+    allow_update('roles')
+
+
+def test_remove_permission_from_role(cursor, perm_role_obj,
+                                     allow_update_roles):
+    auth0id, roleid, permid = perm_role_obj
+    cursor.execute(
+        'SELECT COUNT(role_id) FROM arbiter_data.role_permission_mapping WHERE'
+        ' role_id = UUID_TO_BIN(%s, 1)', roleid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('remove_permission_from_role', (auth0id, permid, roleid))
+    cursor.execute(
+        'SELECT COUNT(role_id) FROM arbiter_data.role_permission_mapping WHERE'
+        ' role_id = UUID_TO_BIN(%s, 1)', roleid)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_remove_permission_from_role_denied(cursor, perm_role_obj):
+    auth0id, roleid, permid = perm_role_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_permission_from_role',
+                        (auth0id, permid, roleid))
+        assert e.errcode == 142
+
+
+@pytest.fixture()
+def permission_object_obj(permission_obj, cursor, new_forecast):
+    auth0id, permstrid, permission = permission_obj
+    fx = new_forecast()
+    cursor.execute(
+        'INSERT INTO permission_object_mapping (permission_id, object_id)'
+        ' VALUES (%s, %s)', (permission['id'], fx['id']))
+    return auth0id, permstrid, str(bin_to_uuid(fx['id']))
+
+
+@pytest.fixture()
+def allow_update_permission(allow_update):
+    allow_update('permissions')
+
+
+def test_remove_object_from_permission(cursor, permission_object_obj,
+                                       allow_update_permission):
+    auth0id, permid, objid = permission_object_obj
+    cursor.execute(
+        'SELECT BIN_TO_UUID(object_id, 1) FROM arbiter_data.permission_object_mapping'
+        ' WHERE permission_id = UUID_TO_BIN(%s, 1)', permid)
+    count = cursor.fetchall()[0]
+    assert len(count) == 1
+    assert count[0] == objid
+    cursor.callproc('remove_object_from_permission', (auth0id, objid, permid))
+    cursor.execute(
+        'SELECT count(object_id) FROM arbiter_data.permission_object_mapping'
+        ' WHERE permission_id = UUID_TO_BIN(%s, 1)', permid)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_remove_object_from_permission_denied(cursor, permission_object_obj):
+    auth0id, permid, objid = permission_object_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_object_from_permission',
+                        (auth0id, objid, permid))
+        assert e.errcode == 142

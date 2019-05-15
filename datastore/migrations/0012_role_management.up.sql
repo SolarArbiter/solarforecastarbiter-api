@@ -326,16 +326,73 @@ BEGIN
 END;
 
 
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_role_from_user (
+    IN auth0id VARCHAR(32), IN roleid CHAR(36), IN userid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE rid BINARY(16);
+    DECLARE uid BINARY(16);
+    SET rid = UUID_TO_BIN(roleid, 1);
+    SET uid = UUID_TO_BIN(userid, 1);
+    SET allowed = can_user_perform_action(auth0id, uid, 'update');
+    IF allowed THEN
+        DELETE FROM arbiter_data.user_role_mapping WHERE user_id = uid AND role_id = rid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove role from user"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_permission_from_role(
+    IN auth0id VARCHAR(32), IN permissionid CHAR(36), IN roleid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE rid BINARY(16);
+    DECLARE permid BINARY(16);
+    SET rid = UUID_TO_BIN(roleid, 1);
+    SET permid = UUID_TO_BIN(permissionid, 1);
+    SET allowed = can_user_perform_action(auth0id, rid, 'update');
+    IF allowed THEN
+        DELETE FROM arbiter_data.role_permission_mapping WHERE role_id = rid AND
+            permission_id = permid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove permission from role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_object_from_permission (
+    IN auth0id VARCHAR(32), IN objectid CHAR(36), IN permissionid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE objid BINARY(16);
+    DECLARE permid BINARY(16);
+    SET objid = UUID_TO_BIN(objectid, 1);
+    SET permid = UUID_TO_BIN(permissionid, 1);
+    SET allowed = can_user_perform_action(auth0id, permid, 'update');
+    IF allowed THEN
+        DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = objid AND
+            permission_id = permid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove object from permission"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
 GRANT DELETE, SELECT (id) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
 GRANT DELETE, SELECT (id) ON arbiter_data.permissions to 'delete_rbac'@'localhost';
-GRANT DELETE, SELECT (role_id) ON arbiter_data.user_role_mapping TO 'delete_rbac'@'localhost';
-GRANT DELETE, SELECT(permission_id) ON arbiter_data.role_permission_mapping TO 'delete_rbac'@'localhost';
-GRANT DELETE, SELECT (object_id) ON arbiter_data.permission_object_mapping to 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT ON arbiter_data.user_role_mapping TO 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT ON arbiter_data.role_permission_mapping TO 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT ON arbiter_data.permission_object_mapping to 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_role TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_permission TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'delete_rbac'@'localhost';
-
-/*
-update ?
-delete user, roles, permissions, remove objs from permission, remove permission from roles, remove roles from user
-*/
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_permission_from_role TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'delete_rbac'@'localhost';
