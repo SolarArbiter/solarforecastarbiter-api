@@ -137,9 +137,127 @@ GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'insert_rbac'@'localho
 GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'insert_rbac'@'localhost';
 
+
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_roles_of_user(userid BINARY(16))
+RETURNS JSON
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE jsonout JSON;
+    SET jsonout = (SELECT JSON_OBJECTAGG(BIN_TO_UUID(role_id, 1), created_at)
+        FROM arbiter_data.user_role_mapping WHERE user_id = userid
+        GROUP BY user_id);
+    IF jsonout is NOT NULL THEN
+        RETURN jsonout;
+    ELSE
+        RETURN JSON_OBJECT();
+    END IF;
+END;
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_user(
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read user metadata'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+       SELECT BIN_TO_UUID(id, 1) as user_id, auth0_id,
+           get_organization_name(organization_id) as organization, created_at, modified_at,
+           get_roles_of_user(id) as roles
+       FROM arbiter_data.users WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read user"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_permissions_of_role(roleid BINARY(16))
+RETURNS JSON
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE jsonout JSON;
+    SET jsonout = (SELECT JSON_OBJECTAGG(BIN_TO_UUID(permission_id, 1), created_at)
+        FROM arbiter_data.role_permission_mapping WHERE role_id = roleid
+        GROUP BY role_id);
+    IF jsonout is NOT NULL THEN
+        RETURN jsonout;
+    ELSE
+        RETURN JSON_OBJECT();
+    END IF;
+END;
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_role(
+   IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read role metadata'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+       SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
+           get_organization_name(organization_id) as organization, created_at, modified_at,
+           get_permissions_of_role(id) as permissions
+       FROM arbiter_data.roles WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_permission_objects(permid BINARY(16))
+RETURNS JSON
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE jsonout JSON;
+    SET jsonout = (SELECT JSON_OBJECTAGG(BIN_TO_UUID(object_id, 1), created_at)
+        FROM arbiter_data.permission_object_mapping WHERE permission_id = permid
+        GROUP BY permission_id);
+    IF jsonout is NOT NULL THEN
+        RETURN jsonout;
+    ELSE
+        RETURN JSON_OBJECT();
+    END IF;
+END;
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_permission(
+   IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read permission metadata'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+       SELECT BIN_TO_UUID(id, 1) as permission_id, description,
+           get_organization_name(organization_id) as organization, action, object_type, applies_to_all,
+           created_at, get_permission_objects(id) as objects
+       FROM arbiter_data.permissions WHERE id = binid;
+     ELSE
+         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read permission"',
+         MYSQL_ERRNO = 1142;
+     END IF;
+END;
+
+
+GRANT EXECUTE ON FUNCTION arbiter_data.get_permission_objects TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_permission TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_roles_of_user TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_user TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_permissions_of_role TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'select_rbac'@'localhost';
+
 /*
-add locks to user accounts (update users permission)
-add other things
+read things
+list permissions reference object
+update ?
 delete user, roles, permissions, remove objs from permission, remove permission from roles, remove roles from user
-super super user create organization?
 */

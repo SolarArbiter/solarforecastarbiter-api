@@ -1,3 +1,15 @@
+REVOKE EXECUTE ON PROCEDURE arbiter_data.read_role FROM 'select_rbac'@'localhost';
+REVOKE EXECUTE ON FUNCTION arbiter_data.get_permissions_of_role FROM 'select_rbac'@'localhost';
+REVOKE EXECUTE ON PROCEDURE arbiter_data.read_user FROM 'select_rbac'@'localhost';
+REVOKE EXECUTE ON FUNCTION arbiter_data.get_roles_of_user FROM 'select_rbac'@'localhost';
+REVOKE EXECUTE ON PROCEDURE arbiter_data.read_permission FROM 'select_rbac'@'localhost';
+REVOKE EXECUTE ON FUNCTION arbiter_data.get_permission_objects FROM 'select_rbac'@'localhost';
+DROP PROCEDURE read_permission;
+DROP FUNCTION get_permission_objects;
+DROP PROCEDURE read_role;
+DROP FUNCTION get_permissions_of_role;
+DROP PROCEDURE read_user;
+DROP FUNCTION get_roles_of_user;
 DROP PROCEDURE add_role_to_user;
 DROP PROCEDURE add_permission_to_role;
 DROP PROCEDURE add_object_to_permission;
