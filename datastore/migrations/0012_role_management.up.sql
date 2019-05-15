@@ -259,7 +259,8 @@ CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_roles (IN auth0id VARC
 COMMENT 'List all roles and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
 SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
-    get_organization_name(organization_id) as organization, created_at, modified_at
+    get_organization_name(organization_id) as organization, created_at, modified_at,
+    get_permissions_of_role(id) as permissions
 FROM roles WHERE id in (
     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'roles');
 
@@ -268,7 +269,8 @@ CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_users (IN auth0id VARC
 COMMENT 'List all users and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
 SELECT BIN_TO_UUID(id, 1) as user_id, auth0_id,
-    get_organization_name(organization_id) as organization, created_at, modified_at
+    get_organization_name(organization_id) as organization, created_at, modified_at,
+    get_roles_of_user(id) as roles
 FROM users WHERE id in (
     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'users');
 
@@ -278,7 +280,7 @@ COMMENT 'List all permissions and associated metadata that the user can read'
 READS SQL DATA SQL SECURITY DEFINER
 SELECT BIN_TO_UUID(id, 1) as permission_id, description,
     get_organization_name(organization_id) as organization, action, object_type, applies_to_all,
-    created_at
+    created_at, get_permission_objects(id) as objects
 FROM permissions WHERE id in (
     SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'permissions');
 

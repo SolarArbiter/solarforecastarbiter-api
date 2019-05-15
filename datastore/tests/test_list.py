@@ -61,6 +61,7 @@ def test_list_users(dictcursor, twosets):
     del res['modified_at']
     del res['organization']
     del user['organization_id']
+    del res['roles']
     user['user_id'] = str(bin_to_uuid(user.pop('id')))
     assert res == user
 
@@ -74,6 +75,7 @@ def test_list_roles(dictcursor, twosets):
     del res['modified_at']
     del res['organization']
     del role['organization_id']
+    del res['permissions']
     role['role_id'] = str(bin_to_uuid(role.pop('id')))
     assert res == role
 
@@ -86,6 +88,7 @@ def test_list_permissions(dictcursor, twosets):
     for r in res:
         del r['created_at']
         del r['organization']
+        del r['objects']
     for p in perms:
         p['permission_id'] = str(bin_to_uuid(p.pop('id')))
         del p['organization_id']
