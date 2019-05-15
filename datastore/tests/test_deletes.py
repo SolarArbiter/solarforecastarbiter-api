@@ -197,3 +197,79 @@ def test_delete_cdf_forecast_single_denied_no_update(
         with pytest.raises(pymysql.err.OperationalError) as e:
             cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
             assert e.errcode == 1142
+
+
+@pytest.fixture()
+def role_obj(valueset, new_role):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    auth0id = user['auth0_id']
+    role = new_role(org=org)
+    return auth0id, str(bin_to_uuid(role['id'])), role
+
+
+@pytest.fixture()
+def allow_delete_role(allow_delete):
+    allow_delete('roles')
+
+
+def test_delete_role(cursor, role_obj, allow_delete_role):
+    auth0id, roleid, role = role_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.roles WHERE id = %s',
+        role['id'])
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_role', (auth0id, roleid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.roles WHERE id = %s',
+        role['id'])
+    assert cursor.fetchone()[0] == 0
+
+
+def test_delete_role_no_perm(cursor, role_obj):
+    auth0id, roleid, role = role_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.roles WHERE id = %s',
+        role['id'])
+    assert cursor.fetchone()[0] > 0
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('delete_role', (auth0id, roleid))
+        assert e.errcode == 142
+
+
+@pytest.fixture()
+def permission_obj(valueset, new_permission):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    auth0id = user['auth0_id']
+    permission = new_permission('read', 'forecasts', False, org=org)
+    return auth0id, str(bin_to_uuid(permission['id'])), permission
+
+
+@pytest.fixture()
+def allow_delete_permission(allow_delete):
+    allow_delete('permissions')
+
+
+def test_delete_permission(cursor, permission_obj, allow_delete_permission):
+    auth0id, permissionid, permission = permission_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.permissions WHERE id = %s',
+        permission['id'])
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_permission', (auth0id, permissionid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.permissions WHERE id = %s',
+        permission['id'])
+    assert cursor.fetchone()[0] == 0
+
+
+def test_delete_permission_no_perm(cursor, permission_obj):
+    auth0id, permissionid, permission = permission_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.permissions WHERE id = %s',
+        permission['id'])
+    assert cursor.fetchone()[0] > 0
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('delete_permission', (auth0id, permissionid))
+        assert e.errcode == 142

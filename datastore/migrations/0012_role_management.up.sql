@@ -290,8 +290,52 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_permissions TO 'select_rbac'@'localhost';
 
 
+CREATE USER 'delete_rbac'@'localhost' IDENTIFIED WITH caching_sha2_password as '$A$005$THISISACOMBINATIONOFINVALIDSALTANDPASSWORDTHATMUSTNEVERBRBEUSED' ACCOUNT LOCK;
+
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE delete_role (
+    IN auth0id VARCHAR(32), IN strid char(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'delete');
+    IF allowed THEN
+        DELETE FROM arbiter_data.roles WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE delete_permission (
+    IN auth0id VARCHAR(32), IN strid char(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'delete');
+    IF allowed THEN
+       DELETE FROM arbiter_data.permissions WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete permission"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+
+GRANT DELETE, SELECT (id) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT (id) ON arbiter_data.permissions to 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT (role_id) ON arbiter_data.user_role_mapping TO 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT(permission_id) ON arbiter_data.role_permission_mapping TO 'delete_rbac'@'localhost';
+GRANT DELETE, SELECT (object_id) ON arbiter_data.permission_object_mapping to 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_role TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_permission TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'delete_rbac'@'localhost';
+
 /*
-list permissions reference object
 update ?
 delete user, roles, permissions, remove objs from permission, remove permission from roles, remove roles from user
 */

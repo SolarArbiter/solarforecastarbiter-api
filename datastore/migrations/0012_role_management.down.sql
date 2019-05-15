@@ -1,3 +1,6 @@
+DROP PROCEDURE delete_permission;
+DROP PROCEDURE delete_role;
+DROP USER 'delete_rbac'@'localhost';
 DROP PROCEDURE arbiter_data.list_permissions;
 DROP PROCEDURE arbiter_data.list_users;
 DROP PROCEDURE arbiter_data.list_roles;
