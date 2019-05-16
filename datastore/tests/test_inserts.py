@@ -658,6 +658,17 @@ def test_add_permission_to_role(cursor, new_permission, insertuser, obj_type,
     assert cursor.fetchall()[0][0]
 
 
+def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
+                                          allow_update_roles):
+    user, _, _, _, org, role, _ = insertuser
+    perm = new_permission('read', 'sites', False)
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_permission_to_role', (
+            user['auth0_id'], str(bin_to_uuid(role['id'])),
+            str(bin_to_uuid(perm['id']))))
+        assert e.errcode == 1142
+
+
 def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     user, _, _, _, org, role, _ = insertuser
     perm = new_permission('read', 'sites', False, org=org)
@@ -678,6 +689,17 @@ def test_add_role_to_user(cursor, new_role, allow_update_users,
     cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
                    'role_id = %s', (user['id'], role['id']))
     assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
+                                       allow_update_users):
+    user, _, _, _, org, _, _ = insertuser
+    role = new_role()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(user['id'])),
+            str(bin_to_uuid(role['id']))))
+        assert e.errcode == 1142
 
 
 def test_add_role_to_user_denied(cursor, new_role, insertuser):

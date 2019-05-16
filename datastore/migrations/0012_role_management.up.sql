@@ -175,10 +175,16 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE roleid BINARY(16);
     DECLARE permid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
     SET roleid = UUID_TO_BIN(role_id, 1);
     SET permid = UUID_TO_BIN(permission_id, 1);
-    SET allowed = can_user_perform_action(auth0id, roleid, 'update');
-    IF allowed THEN
+    -- Check if user has update permission on the role and that
+    -- user, role, and permission have same organization
+    SET allowed = can_user_perform_action(auth0id, roleid, 'update') AND
+        userorg = get_object_organization(permid, 'permissions') AND
+        userorg = get_object_organization(roleid, 'roles');
+    IF allowed IS NOT NULL AND allowed THEN
         INSERT INTO arbiter_data.role_permission_mapping (
             role_id, permission_id) VALUES (roleid, permid);
     ELSE
@@ -196,10 +202,17 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE roleid BINARY(16);
     DECLARE userid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
     SET roleid = UUID_TO_BIN(role_id, 1);
     SET userid = UUID_TO_BIN(user_id, 1);
-    SET allowed = can_user_perform_action(auth0id, userid, 'update');
-    IF allowed THEN
+    -- calling user must have update permission on user and
+    -- calling user, user, role must be in same org
+    -- add role from outside org is handled separately
+    SET allowed = can_user_perform_action(auth0id, userid, 'update') AND
+        userorg = get_object_organization(userid, 'users') AND
+        userorg = get_object_organization(roleid, 'roles');
+    IF allowed IS NOT NULL AND allowed THEN
     INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
         userid, roleid);
     ELSE
@@ -225,6 +238,7 @@ GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id TO 'insert_rbac'@'loc
 GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.is_permission_allowed TO 'insert_rbac'@'localhost';
 
 
