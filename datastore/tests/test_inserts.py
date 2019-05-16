@@ -576,22 +576,47 @@ def test_add_object_to_permission(cursor, getfcn, new_permission,
     user, _, _, _, org, role, _ = insertuser
     fcn, obj_type = getfcn
     objid = fcn(org=org)['id']
-    perm = new_permission('read', obj_type, False, org=org)
+    readperm = new_permission('read', obj_type, False, org=org)
     cursor.execute(
+        'INSERT INTO permission_object_mapping (permission_id, object_id) '
+        'VALUES (%s, %s)', (readperm['id'], objid))
+    perm = new_permission('delete', obj_type, False, org=org)
+    cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
-        (role['id'], perm['id']))
+        [(role['id'], perm['id']), (role['id'], readperm['id'])])
     cursor.callproc('add_object_to_permission',
                     (user['auth0_id'], str(bin_to_uuid(objid)),
                      str(bin_to_uuid(perm['id']))))
-    res = cursor.execute("SELECT can_user_perform_action(%s, %s, 'read')",
+    res = cursor.execute("SELECT can_user_perform_action(%s, %s, 'delete')",
                          (user['auth0_id'], objid))
     assert res
 
 
-def test_add_object_to_permission_denied(cursor, new_observation,
-                                         new_permission,
-                                         insertuser):
+def test_add_object_to_permission_denied_no_update(
+        cursor, new_observation, new_permission,
+        insertuser):
+    user, _, _, _, org, role, _ = insertuser
+    objid = new_observation(org=org)['id']
+    readperm = new_permission('read', 'observations', False, org=org)
+    cursor.execute(
+        'INSERT INTO permission_object_mapping (permission_id, object_id) '
+        'VALUES (%s, %s)', (readperm['id'], objid))
+    perm = new_permission('read', 'observations', False, org=org)
+    cursor.executemany(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)',
+        [(role['id'], perm['id']), (role['id'], readperm['id'])])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_object_to_permission',
+                        (user['auth0_id'], str(bin_to_uuid(objid)),
+                         str(bin_to_uuid(perm['id']))))
+        assert e.errcode == 1142
+
+
+def test_add_object_to_permission_denied_no_read(
+        cursor, new_observation, new_permission, allow_update_permissions,
+        insertuser):
     user, _, _, _, org, role, _ = insertuser
     objid = new_observation(org=org)['id']
     perm = new_permission('read', 'observations', False, org=org)

@@ -133,6 +133,7 @@ BEGIN
     SELECT object_type INTO objtype FROM permissions WHERE id = permission_id;
     -- Must be allowed to update permission and read object
     -- and user, permission, object must belong to same org
+    -- and object must be same type as described in permission
     SET allowed = can_user_perform_action(auth0id, permission_id, 'update') AND
         can_user_perform_action(auth0id, object_id, 'read') AND
         userorg = get_object_organization(permission_id, 'permissions') AND
@@ -152,16 +153,11 @@ CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_object_to_permission (
 COMMENT 'Add an object to the permission object mapping table'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
-    DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE objid BINARY(16);
     DECLARE permid BINARY(16);
     SET objid = UUID_TO_BIN(object_id, 1);
     SET permid = UUID_TO_BIN(permission_id, 1);
-    -- Must be allowed to update permission and read object
-    --
-    SET allowed = can_user_perform_action(auth0id, permid, 'update') AND
-        can_user_perform_action(auth0id, objid, 'read');
-    IF allowed THEN
+    IF is_permission_allowed(auth0id, permid, objid) THEN
         INSERT INTO arbiter_data.permission_object_mapping (
             permission_id, object_id) VALUES (permid, objid);
     ELSE
@@ -229,6 +225,7 @@ GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id TO 'insert_rbac'@'loc
 GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.is_permission_allowed TO 'insert_rbac'@'localhost';
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_roles_of_user(userid BINARY(16))
