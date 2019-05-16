@@ -16,6 +16,7 @@ DROP FUNCTION get_roles_of_user;
 DROP PROCEDURE add_role_to_user;
 DROP PROCEDURE add_permission_to_role;
 DROP PROCEDURE add_object_to_permission;
+DROP FUNCTION is_permission_allowed;
 DROP FUNCTION get_object_organization;
 DROP FUNCTION get_nonrbac_object_organization;
 DROP FUNCTION get_rbac_object_organization;

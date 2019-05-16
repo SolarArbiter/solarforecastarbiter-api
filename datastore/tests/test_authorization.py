@@ -298,3 +298,126 @@ def test_get_object_organization_fake(cursor, otype):
     oid = newuuid()
     cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
     assert cursor.fetchone()[0] is None
+
+
+@pytest.fixture()
+def rbac_user(cursor, make_user_roles, new_permission):
+    def f(read_obj_type, read_obj=True):
+        vals = make_user_roles('update', 'permissions', True)
+        if read_obj:
+            perm = new_permission('read', read_obj_type, True, org=vals['org'])
+            cursor.execute(
+                'INSERT INTO role_permission_mapping (role_id, permission_id )'
+                ' VALUES (%s, %s)', (vals['role']['id'], perm['id']))
+        return vals['user']['auth0_id'], vals['org']
+    return f
+
+
+@pytest.mark.parametrize('action', ['create', 'update', 'read', 'delete'])
+@pytest.mark.parametrize('otype', ['forecasts', 'observations',
+                                   'cdf_forecasts', 'sites',
+                                   'users', 'roles', 'permissions'])
+def test_is_permission_allowed(cursor, otype, rbac_user,
+                               make_test_permissions,
+                               new_permission, action):
+    auth0id, org = rbac_user(otype)
+    others = make_test_permissions(org)
+    perm = new_permission(action, otype, False, org=org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 1
+
+
+def test_is_permission_allowed_cantread(cursor, rbac_user,
+                                        make_test_permissions,
+                                        new_permission):
+    action = 'read'
+    otype = 'observations'
+    auth0id, org = rbac_user(otype, False)
+    others = make_test_permissions(org)
+    perm = new_permission(action, otype, False, org=org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 0
+
+
+def test_is_permission_allowed_diff_user_org(cursor, rbac_user,
+                                             make_test_permissions,
+                                             new_permission,
+                                             new_user):
+    action = 'create'
+    otype = 'forecasts'
+    _, org = rbac_user(otype)
+    auth0id = new_user()['auth0_id']
+    others = make_test_permissions(org)
+    perm = new_permission(action, otype, False, org=org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 0
+
+
+def test_is_permission_allowed_diff_perm_org(cursor, rbac_user,
+                                             make_test_permissions,
+                                             new_permission):
+
+    action = 'read'
+    otype = 'sites'
+    auth0id, org = rbac_user(otype)
+    others = make_test_permissions(org)
+    perm = new_permission(action, otype, False)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 0
+
+
+def test_is_permission_allowed_diff_obj_org(cursor, rbac_user,
+                                            make_test_permissions,
+                                            new_permission,
+                                            new_organization):
+    action = 'delete'
+    otype = 'roles'
+    auth0id, org = rbac_user(otype)
+    others = make_test_permissions(new_organization())
+    perm = new_permission(action, otype, False, org=org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 0
+
+
+def test_is_permission_allowed_cant_update_perm(
+        cursor, make_user_roles, make_test_permissions,
+        new_permission):
+    action = 'read'
+    otype = 'observations'
+    vals = make_user_roles('read', otype, True)
+    auth0id = vals['user']['auth0_id']
+    org = vals['org']
+    others = make_test_permissions(org)
+    perm = new_permission(action, otype, False, org=org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
+                   (auth0id, perm['id'], oid))
+    assert cursor.fetchone()[0] == 0

@@ -120,6 +120,33 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'select_rbac'@'localhost';
 
 
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION is_permission_allowed (
+    auth0id VARCHAR(32), permission_id BINARY(16), object_id BINARY(16))
+RETURNS BOOLEAN
+COMMENT 'Determines if the user is allowed to add the object to the permission'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE userorg BINARY(16);
+    DECLARE objtype VARCHAR(32);
+    SET userorg = get_user_organization(auth0id);
+    SELECT object_type INTO objtype FROM permissions WHERE id = permission_id;
+    -- Must be allowed to update permission and read object
+    -- and user, permission, object must belong to same org
+    SET allowed = can_user_perform_action(auth0id, permission_id, 'update') AND
+        can_user_perform_action(auth0id, object_id, 'read') AND
+        userorg = get_object_organization(permission_id, 'permissions') AND
+        userorg = get_object_organization(object_id, objtype);
+    IF allowed IS NOT NULL AND allowed THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+
+GRANT EXECUTE ON FUNCTION arbiter_data.is_permission_allowed TO 'select_rbac'@'localhost';
+
+
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_object_to_permission (
     IN auth0id VARCHAR(32), IN object_id CHAR(36), IN permission_id CHAR(36))
 COMMENT 'Add an object to the permission object mapping table'
