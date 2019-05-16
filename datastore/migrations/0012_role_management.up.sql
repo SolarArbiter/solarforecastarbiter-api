@@ -437,10 +437,17 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE rid BINARY(16);
     DECLARE uid BINARY(16);
+    DECLARE userorg BINARY(16);
     SET rid = UUID_TO_BIN(roleid, 1);
     SET uid = UUID_TO_BIN(userid, 1);
-    SET allowed = can_user_perform_action(auth0id, uid, 'update');
-    IF allowed THEN
+    SET userorg = get_user_organization(auth0id);
+    -- calling user must have update permission on user and
+    -- calling user, user, role must be in same org
+    -- add role from outside org is handled separately
+    SET allowed = can_user_perform_action(auth0id, uid, 'update') AND
+        userorg = get_object_organization(uid, 'users') AND
+        userorg = get_object_organization(rid, 'roles');
+    IF allowed IS NOT NULL AND allowed THEN
         DELETE FROM arbiter_data.user_role_mapping WHERE user_id = uid AND role_id = rid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove role from user"',
@@ -456,10 +463,15 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE rid BINARY(16);
     DECLARE permid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
     SET rid = UUID_TO_BIN(roleid, 1);
     SET permid = UUID_TO_BIN(permissionid, 1);
-    SET allowed = can_user_perform_action(auth0id, rid, 'update');
-    IF allowed THEN
+    -- Check if user has update permission on the role and that
+    -- user and role must be in same org
+    SET allowed = can_user_perform_action(auth0id, rid, 'update') AND
+        userorg = get_object_organization(rid, 'roles');
+    IF allowed IS NOT NULL AND allowed THEN
         DELETE FROM arbiter_data.role_permission_mapping WHERE role_id = rid AND
             permission_id = permid;
     ELSE
@@ -476,10 +488,13 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE objid BINARY(16);
     DECLARE permid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
     SET objid = UUID_TO_BIN(objectid, 1);
     SET permid = UUID_TO_BIN(permissionid, 1);
-    SET allowed = can_user_perform_action(auth0id, permid, 'update');
-    IF allowed THEN
+    SET allowed = can_user_perform_action(auth0id, permid, 'update') AND
+        userorg = get_object_organization(permid, 'permissions');
+    IF allowed IS NOT NULL AND allowed THEN
         DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = objid AND
             permission_id = permid;
     ELSE
@@ -500,3 +515,5 @@ GRANT EXECUTE ON FUNCTION arbiter_data.can_user_perform_action TO 'delete_rbac'@
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_permission_from_role TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'delete_rbac'@'localhost';

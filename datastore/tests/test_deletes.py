@@ -94,7 +94,7 @@ def test_delete_site_denied(cursor, site_obj):
     auth0id, siteid, *_ = site_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_site', (auth0id, siteid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_delete_forecast(cursor, fx_obj, allow_delete_forecast):
@@ -114,7 +114,7 @@ def test_delete_forecast_denied(cursor, fx_obj):
     auth0id, fxid = fx_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_forecast', (auth0id, fxid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_delete_observation(cursor, obs_obj, allow_delete_observation):
@@ -134,7 +134,7 @@ def test_delete_observation_denied(cursor, obs_obj):
     auth0id, obsid = obs_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_observation', (auth0id, obsid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_delete_cdf_forecast(cursor, cdf_obj, allow_delete_cdf_group):
@@ -156,7 +156,7 @@ def test_delete_cdf_forecast_denied(cursor, cdf_obj, allow_delete_forecast):
     auth0id, cdfgroupid, _ = cdf_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_cdf_forecasts_group', (auth0id, cdfgroupid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_delete_cdf_forecast_single(cursor, cdf_obj, allow_delete_cdf_group,
@@ -186,7 +186,7 @@ def test_delete_cdf_forecast_single_denied_no_delete(
     for cid in cdf_singles:
         with pytest.raises(pymysql.err.OperationalError) as e:
             cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
-            assert e.errcode == 1142
+        assert e.value.args[0] == 1142
 
 
 def test_delete_cdf_forecast_single_denied_no_update(
@@ -196,7 +196,7 @@ def test_delete_cdf_forecast_single_denied_no_update(
     for cid in cdf_singles:
         with pytest.raises(pymysql.err.OperationalError) as e:
             cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
-            assert e.errcode == 1142
+        assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -234,7 +234,7 @@ def test_delete_role_no_perm(cursor, role_obj):
     assert cursor.fetchone()[0] > 0
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_role', (auth0id, roleid))
-        assert e.errcode == 142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -272,7 +272,7 @@ def test_delete_permission_no_perm(cursor, permission_obj):
     assert cursor.fetchone()[0] > 0
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_permission', (auth0id, permissionid))
-        assert e.errcode == 142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -322,7 +322,7 @@ def test_remove_role_from_user_denied(cursor, role_user_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_permission_from_role',
                         (auth0id, roleid, userid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -354,12 +354,45 @@ def test_remove_permission_from_role(cursor, perm_role_obj,
     assert cursor.fetchone()[0] == 0
 
 
+@pytest.mark.parametrize('permorg', [
+    False,
+    pytest.param(True, marks=pytest.mark.xfail)
+])
+def gest_remove_object_from_permission_bad_org(cursor, valueset,
+                                               new_permission,
+                                               new_forecast,
+                                               permorg):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    role = valueset[2][0]
+    auth0id = user['auth0_id']
+    if permorg:
+        permission = new_permission('read', 'forecasts', False, org=org)
+    else:
+        permission = new_permission('read', 'forecasts', False)
+    updateperm = new_permission('update', 'permissions', False, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)', (role['id'], updateperm['id']))
+    fx = new_forecast(org=org)
+    cursor.executemany(
+        'INSERT INTO permission_object_mapping (permission_id, object_id) '
+        'VALUES (%s, %s)', [(permission['id'], fx['id']),
+                            (updateperm['id'], permission['id'])])
+    objid = str(bin_to_uuid(fx['id']))
+    permid = str(bin_to_uuid(permission['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_object_from_permission',
+                        (auth0id, objid, permid))
+    assert e.errcode == 1142
+
+
 def test_remove_permission_from_role_denied(cursor, perm_role_obj):
     auth0id, roleid, permid = perm_role_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_permission_from_role',
                         (auth0id, permid, roleid))
-        assert e.errcode == 142
+    assert e.errcode == 1142
 
 
 @pytest.fixture()
@@ -393,9 +426,42 @@ def test_remove_object_from_permission(cursor, permission_object_obj,
     assert cursor.fetchone()[0] == 0
 
 
+@pytest.mark.parametrize('permorg', [
+    False,
+    pytest.param(True, marks=pytest.mark.xfail)
+])
+def test_remove_object_from_permission_bad_org(cursor, valueset,
+                                               new_permission,
+                                               new_forecast,
+                                               permorg):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    role = valueset[2][0]
+    auth0id = user['auth0_id']
+    if permorg:
+        permission = new_permission('read', 'forecasts', False, org=org)
+    else:
+        permission = new_permission('read', 'forecasts', False)
+    updateperm = new_permission('update', 'permissions', False, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)', (role['id'], updateperm['id']))
+    fx = new_forecast(org=org)
+    cursor.executemany(
+        'INSERT INTO permission_object_mapping (permission_id, object_id) '
+        'VALUES (%s, %s)', [(permission['id'], fx['id']),
+                            (updateperm['id'], permission['id'])])
+    objid = str(bin_to_uuid(fx['id']))
+    permid = str(bin_to_uuid(permission['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_object_from_permission',
+                        (auth0id, objid, permid))
+    assert e.value.args[0] == 1142
+
+
 def test_remove_object_from_permission_denied(cursor, permission_object_obj):
     auth0id, permid, objid = permission_object_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_object_from_permission',
                         (auth0id, objid, permid))
-        assert e.errcode == 142
+    assert e.value.args[0] == 1142
