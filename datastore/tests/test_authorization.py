@@ -24,7 +24,7 @@ def make_user_roles(cursor, new_organization, new_permission, new_user,
 
 @pytest.fixture()
 def make_test_permissions(cursor, new_organization, new_permission,
-                          new_user, new_role, new_forecast,
+                          new_user, new_role, new_forecast, new_site,
                           new_observation, new_cdf_forecast, request):
     def make(org):
         user = new_user(org=org)
@@ -51,7 +51,10 @@ def make_test_permissions(cursor, new_organization, new_permission,
             [(perm0['id'], obj0['id']), (perm0['id'], obj1['id'])])
         fx = new_forecast(org=org)
         cdf = new_cdf_forecast(org=org)
-        return {'user': user, 'roles': [role0, role1],
+        site = new_site(org=org)
+        return {'user': user,
+                'roles': [role0, role1],
+                'sites': [site],
                 'observations': [obj0, obj1],
                 'forecasts': [fx],
                 'cdf_forecasts': [cdf],
@@ -231,7 +234,7 @@ def test_get_rbac_object_organization_fake(cursor, otype):
 
 
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
-                                   'cdf_forecasts'])
+                                   'cdf_forecasts', 'sites'])
 def test_get_rbac_object_organization_other_types(cursor, otype,
                                                   new_organization,
                                                   make_test_permissions):
@@ -239,4 +242,26 @@ def test_get_rbac_object_organization_other_types(cursor, otype,
     others = make_test_permissions(org)
     oid = others[otype][0]['id']
     cursor.execute('SELECT get_rbac_object_organization(%s, %s)', (oid, otype))
+    assert cursor.fetchone()[0] is None
+
+
+@pytest.mark.parametrize('otype', ['forecasts', 'observations',
+                                   'cdf_forecasts', 'sites'])
+def test_get_object_organization(cursor, otype,
+                                 new_organization,
+                                 make_test_permissions):
+    org = new_organization()
+    others = make_test_permissions(org)
+    oid = others[otype][0]['id']
+    cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
+    assert cursor.fetchone()[0] == org['id']
+
+
+@pytest.mark.parametrize('otype', ['users', 'permissions', 'roles'])
+def test_get_object_organization_other_types(cursor, otype,
+                                             new_organization,
+                                             make_user_roles):
+    vals = make_user_roles('read', onall=False)
+    oid = vals[otype.rstrip('s')]['id']
+    cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
     assert cursor.fetchone()[0] is None
