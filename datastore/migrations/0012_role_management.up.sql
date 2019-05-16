@@ -78,7 +78,7 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_rbac_object_organization TO 'select_rbac'@'localhost';
 
 -- function to get organization of any non-rbac object
-CREATE DEFINER = 'select_objects'@'localhost' FUNCTION get_object_organization (
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION get_nonrbac_object_organization (
     object_id BINARY(16), object_type VARCHAR(32))
 RETURNS BINARY(16)
 COMMENT 'Return the id of the organization for the object'
@@ -97,7 +97,27 @@ BEGIN
     END IF;
 END;
 
-GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_nonrbac_object_organization TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_nonrbac_object_organization TO 'select_rbac'@'localhost';
+
+
+-- function to get organization of any object
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_object_organization (
+    object_id BINARY(16), object_type VARCHAR(32))
+RETURNS BINARY(16)
+COMMENT 'Return the id of the organization for the object'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    IF object_type in ('users', 'roles', 'permissions') THEN
+        RETURN get_rbac_object_organization(object_id, object_type);
+    ELSEIF object_type in ('sites', 'observations', 'forecasts', 'cdf_forecasts') THEN
+        RETURN get_nonrbac_object_organization(object_id, object_type);
+    ELSE
+        RETURN NULL;
+    END IF;
+END;
+
+GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'select_rbac'@'localhost';
 
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_object_to_permission (

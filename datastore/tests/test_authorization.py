@@ -247,21 +247,54 @@ def test_get_rbac_object_organization_other_types(cursor, otype,
 
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
                                    'cdf_forecasts', 'sites'])
+def test_get_nonrbac_object_organization(cursor, otype,
+                                         new_organization,
+                                         make_test_permissions):
+    org = new_organization()
+    others = make_test_permissions(org)
+    oid = others[otype][0]['id']
+    cursor.execute('SELECT get_nonrbac_object_organization(%s, %s)',
+                   (oid, otype))
+    assert cursor.fetchone()[0] == org['id']
+
+
+@pytest.mark.parametrize('otype', ['users', 'permissions', 'roles'])
+def test_get_nonrbac_object_organization_other_types(cursor, otype,
+                                                     new_organization,
+                                                     make_test_permissions):
+    org = new_organization()
+    others = make_test_permissions(org)
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT get_nonrbac_object_organization(%s, %s)',
+                   (oid, otype))
+    assert cursor.fetchone()[0] is None
+
+
+@pytest.mark.parametrize('otype', ['forecasts', 'observations',
+                                   'cdf_forecasts', 'sites',
+                                   'users', 'roles', 'permissions'])
 def test_get_object_organization(cursor, otype,
                                  new_organization,
                                  make_test_permissions):
     org = new_organization()
     others = make_test_permissions(org)
-    oid = others[otype][0]['id']
-    cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
+    if otype == 'users':
+        oid = others['user']['id']
+    else:
+        oid = others[otype][0]['id']
+    cursor.execute('SELECT get_object_organization(%s, %s)',
+                   (oid, otype))
     assert cursor.fetchone()[0] == org['id']
 
 
-@pytest.mark.parametrize('otype', ['users', 'permissions', 'roles'])
-def test_get_object_organization_other_types(cursor, otype,
-                                             new_organization,
-                                             make_user_roles):
-    vals = make_user_roles('read', onall=False)
-    oid = vals[otype.rstrip('s')]['id']
+@pytest.mark.parametrize('otype', ['forecasts', 'observations',
+                                   'cdf_forecasts', 'sites',
+                                   'users', 'roles', 'permissions',
+                                   'blah'])
+def test_get_object_organization_fake(cursor, otype):
+    oid = newuuid()
     cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
     assert cursor.fetchone()[0] is None
