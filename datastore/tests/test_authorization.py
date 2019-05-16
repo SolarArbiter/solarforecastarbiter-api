@@ -1,6 +1,9 @@
 import pytest
 
 
+from conftest import newuuid
+
+
 @pytest.fixture()
 def make_user_roles(cursor, new_organization, new_permission, new_user,
                     new_role, new_forecast):
@@ -19,7 +22,7 @@ def make_user_roles(cursor, new_organization, new_permission, new_user,
     return fcn
 
 
-@pytest.fixture(params=[0, 1])
+@pytest.fixture()
 def make_test_permissions(cursor, new_organization, new_permission,
                           new_user, new_role, new_forecast,
                           new_observation, new_cdf_forecast, request):
@@ -210,3 +213,30 @@ def test_user_can_create_multiple_permissions(cursor, make_user_roles,
         'SELECT user_can_create(%s, %s)',
         (user['auth0_id'], 'forecasts'))
     assert cursor.fetchone()[0] == 1
+
+
+@pytest.mark.parametrize('otype', ['users', 'permissions', 'roles'])
+def test_get_rbac_object_organization(cursor, make_user_roles, otype):
+    vals = make_user_roles('read', onall=False)
+    oid = vals[otype.rstrip('s')]['id']
+    cursor.execute('SELECT get_rbac_object_organization(%s, %s)', (oid, otype))
+    assert cursor.fetchone()[0] == vals['org']['id']
+
+
+@pytest.mark.parametrize('otype', ['users', 'permissions', 'roles'])
+def test_get_rbac_object_organization_fake(cursor, otype):
+    oid = newuuid()
+    cursor.execute('SELECT get_rbac_object_organization(%s, %s)', (oid, otype))
+    assert cursor.fetchone()[0] is None
+
+
+@pytest.mark.parametrize('otype', ['forecasts', 'observations',
+                                   'cdf_forecasts'])
+def test_get_rbac_object_organization_other_types(cursor, otype,
+                                                  new_organization,
+                                                  make_test_permissions):
+    org = new_organization()
+    others = make_test_permissions(org)
+    oid = others[otype][0]['id']
+    cursor.execute('SELECT get_rbac_object_organization(%s, %s)', (oid, otype))
+    assert cursor.fetchone()[0] is None

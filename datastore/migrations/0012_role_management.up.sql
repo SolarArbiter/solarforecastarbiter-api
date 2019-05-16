@@ -57,6 +57,26 @@ BEGIN
 END;
 
 
+-- function to get organization of any rbac object
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_rbac_object_organization (
+object_id BINARY(16), object_type VARCHAR(32))
+RETURNS BINARY(16)
+COMMENT 'Return the id of the organization for the rbac object'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+IF object_type = 'users' THEN
+RETURN (SELECT organization_id FROM arbiter_data.users WHERE id = object_id);
+ELSEIF object_type = 'roles' THEN
+RETURN (SELECT organization_id FROM arbiter_data.roles WHERE id = object_id);
+ELSEIF object_type = 'permissions' THEN
+RETURN (SELECT organization_id FROM arbiter_data.permissions WHERE id = object_id);
+ELSE
+RETURN NULL;
+END IF;
+END;
+
+GRANT EXECUTE ON FUNCTION `arbiter_data`.`get_rbac_object_organization` TO `select_rbac`@`localhost`;
+
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_object_to_permission (
     IN auth0id VARCHAR(32), IN object_id CHAR(36), IN permission_id CHAR(36))
 COMMENT 'Add an object to the permission object mapping table'
