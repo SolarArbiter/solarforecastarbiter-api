@@ -37,19 +37,12 @@ INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES(
 
 INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
     'Create all sites', @orgid, 'create', 'sites', TRUE), (
-    'Delete all sites', @orgid, 'delete', 'sites', TRUE), (
     'Create all forecasts', @orgid, 'create', 'forecasts', TRUE), (
-    'Delete all forecasts', @orgid, 'delete', 'forecasts', TRUE), (
     'Create all forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
-    'Delete all forecast values', @orgid, 'delete_values', 'forecasts', TRUE), (
     'Create all CDF forecasts', @orgid, 'create', 'cdf_forecasts', TRUE), (
-    'Delete all CDF forecasts', @orgid, 'delete', 'cdf_forecasts', TRUE), (
     'Create all CDF forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
-    'Delete all CDF forecast values', @orgid, 'delete_values', 'cdf_forecasts', TRUE), (
     'Create all observations', @orgid, 'create', 'observations', TRUE), (
-    'Delete all observations', @orgid, 'delete', 'observations', TRUE), (
     'Create all observation values', @orgid, 'write_values', 'observations', TRUE), (
-    'Delete all observation values', @orgid, 'delete_values', 'observations', TRUE);
 
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @reference_roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
