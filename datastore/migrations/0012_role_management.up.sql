@@ -442,11 +442,9 @@ BEGIN
     SET uid = UUID_TO_BIN(userid, 1);
     SET userorg = get_user_organization(auth0id);
     -- calling user must have update permission on user and
-    -- calling user, user, role must be in same org
-    -- add role from outside org is handled separately
+    -- calling user and user must be in same org
     SET allowed = can_user_perform_action(auth0id, uid, 'update') AND
-        userorg = get_object_organization(uid, 'users') AND
-        userorg = get_object_organization(rid, 'roles');
+        userorg = get_object_organization(uid, 'users');
     IF allowed IS NOT NULL AND allowed THEN
         DELETE FROM arbiter_data.user_role_mapping WHERE user_id = uid AND role_id = rid;
     ELSE

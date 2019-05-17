@@ -320,7 +320,7 @@ def test_remove_role_from_user(cursor, role_user_obj, allow_update_users):
 @pytest.mark.parametrize('userorg,roleorg', [
     (False, False),
     (False, True),
-    (True, False),
+    pytest.param(True, False, marks=pytest.mark.xfail(strict=True)),
     pytest.param(True, True, marks=pytest.mark.xfail(strict=True))
 ])
 def test_remove_role_from_user_bad_org(cursor, valueset, new_role,
