@@ -109,7 +109,7 @@ def test_read_site_denied(cursor, insertuser):
     site = insertuser[1]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_site', (auth0id, site['strid']))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_observation(dictcursor, insertuser, allow_read_observations):
@@ -133,7 +133,7 @@ def test_read_observation_denied(cursor, insertuser):
     obs = insertuser[3]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_observation', (auth0id, obs['strid']))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_forecast(dictcursor, insertuser, allow_read_forecasts):
@@ -157,7 +157,7 @@ def test_read_forecast_denied(cursor, insertuser):
     forecast = insertuser[3]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast', (auth0id, forecast['strid']))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -210,7 +210,7 @@ def test_read_observation_values_denied(cursor, obs_values):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_observation_values',
                         (auth0id, obsid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_observation_values_denied_can_read_meta(
@@ -219,7 +219,7 @@ def test_read_observation_values_denied_can_read_meta(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_observation_values',
                         (auth0id, obsid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -272,7 +272,7 @@ def test_read_forecast_values_denied(cursor, fx_values):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast_values',
                         (auth0id, fxid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_forecast_values_denied_can_read_meta(
@@ -280,7 +280,7 @@ def test_read_forecast_values_denied_can_read_meta(
     auth0id, fxid, vals, start, end = fx_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
@@ -328,7 +328,7 @@ def test_read_cdf_forecast_denied(cursor, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecasts_group',
                         (auth0id, forecast['strid']))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_cdf_forecast_single(dictcursor, insertuser,
@@ -359,7 +359,7 @@ def test_read_cdf_forecast_single_denied(cursor, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecasts_single',
                         (auth0id, strid))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture(params=[0, 1, 2])
@@ -414,7 +414,7 @@ def test_read_cdf_forecast_values_denied(cursor, cdf_fx_values,
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecast_values',
                         (auth0id, fxid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_read_cdf_forecast_values_denied_can_read_meta(
@@ -422,7 +422,7 @@ def test_read_cdf_forecast_values_denied_can_read_meta(
     auth0id, fxid, vals, start, end = cdf_fx_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecast_values', (auth0id, fxid, start, end))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -475,7 +475,7 @@ def test_read_user_denied(dictcursor, new_user,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('read_user', (old_user['auth0_id'],
                                           str(bin_to_uuid(user['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -531,7 +531,7 @@ def test_read_role_denied(dictcursor, new_role,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('read_role', (user['auth0_id'],
                                           str(bin_to_uuid(role['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -587,4 +587,4 @@ def test_read_permission_denied(dictcursor, new_permission,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('read_permission', (user['auth0_id'],
                                                 str(bin_to_uuid(perm['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142

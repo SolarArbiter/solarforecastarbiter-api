@@ -177,7 +177,7 @@ def test_store_observation_denied_cant_create(dictcursor, obs_callargs,
                                               allow_read_sites):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_observation', list(obs_callargs.values()))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_observation_denied_cant_read_sites(dictcursor, obs_callargs,
@@ -186,7 +186,7 @@ def test_store_observation_denied_cant_read_sites(dictcursor, obs_callargs,
     site metadata"""
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_observation', list(obs_callargs.values()))
-        assert e.errcode == 1143
+    assert e.value.args[0] == 1143
 
 
 def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
@@ -206,7 +206,7 @@ def test_store_forecast_denied_cant_create(dictcursor, fx_callargs,
                                            allow_read_sites):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_forecast', list(fx_callargs.values()))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_forecast_denied_cant_read_sites(dictcursor, fx_callargs,
@@ -215,7 +215,7 @@ def test_store_forecast_denied_cant_read_sites(dictcursor, fx_callargs,
     site metadata"""
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_forecast', list(fx_callargs.values()))
-        assert e.errcode == 1143
+    assert e.value.args[0] == 1143
 
 
 def test_store_site(dictcursor, site_callargs, allow_create):
@@ -232,7 +232,7 @@ def test_store_site(dictcursor, site_callargs, allow_create):
 def test_store_site_denied_cant_create(dictcursor, site_callargs):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_site', list(site_callargs.values()))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -292,7 +292,7 @@ def test_store_observation_values_cant_write(cursor, observation_values):
     obsbinid, testobs = observation_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_observation_values', list(testobs)[0])
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_observation_values_cant_write_cant_delete(
@@ -300,7 +300,7 @@ def test_store_observation_values_cant_write_cant_delete(
     obsbinid, testobs = observation_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_observation_values', list(testobs)[0])
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -359,7 +359,7 @@ def test_store_forecast_values_cant_write(cursor, forecast_values):
     fxbinid, testfx = forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_forecast_values', list(testfx)[0])
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_forecast_values_cant_write_cant_delete(
@@ -367,7 +367,7 @@ def test_store_forecast_values_cant_write_cant_delete(
     fxbinid, testfx = forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_forecast_values', list(testfx)[0])
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
@@ -390,7 +390,7 @@ def test_store_cdf_forecast_denied_cant_create(dictcursor, cdf_fx_callargs,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_group',
                             list(cdf_fx_callargs.values()))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_cdf_forecast_denied_cant_read_sites(dictcursor, cdf_fx_callargs,
@@ -400,7 +400,7 @@ def test_store_cdf_forecast_denied_cant_read_sites(dictcursor, cdf_fx_callargs,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_group',
                             list(cdf_fx_callargs.values()))
-        assert e.errcode == 1143
+    assert e.value.args[0] == 1143
 
 
 def test_store_cdf_forecast_single(dictcursor, cdf_single_callargs,
@@ -427,7 +427,7 @@ def test_store_cdf_forecast_single_denied_cant_create(
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_single',
                             list(cdf_single_callargs.values()))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_store_cdf_forecast_single_denied_cant_read_sites(
@@ -437,7 +437,7 @@ def test_store_cdf_forecast_single_denied_cant_read_sites(
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_single',
                             list(cdf_single_callargs.values()))
-        assert e.errcode == 1143
+    assert e.value.args[0] == 1143
 
 
 def test_store_cdf_forecast_single_denied_cant_update_group(
@@ -445,7 +445,7 @@ def test_store_cdf_forecast_single_denied_cant_update_group(
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_single',
                             list(cdf_single_callargs.values()))
-        assert e.errcode == 1143
+    assert e.value.args[0] == 1143
 
 
 @pytest.fixture(params=[0, 1, 2])
@@ -505,7 +505,7 @@ def test_store_cdf_forecast_values_cant_write(cursor, cdf_forecast_values):
     fxid, testfx = cdf_forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_cdf_forecast_values', list(testfx)[0])
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_create_user(dictcursor, valueset_org):
@@ -542,7 +542,7 @@ def test_create_role_fail(dictcursor, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('create_role', (auth0id, strid, 'newrole',
                                             'A brandh new role!'))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_create_permission(dictcursor, allow_create, insertuser):
@@ -568,7 +568,7 @@ def test_create_permission_denied(dictcursor, insertuser):
         dictcursor.callproc('create_permission', (
             auth0id, strid, 'New permission', 'read', 'observations',
             False))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_object_to_permission(cursor, getfcn, new_permission,
@@ -611,7 +611,7 @@ def test_add_object_to_permission_denied_no_update(
         cursor.callproc('add_object_to_permission',
                         (user['auth0_id'], str(bin_to_uuid(objid)),
                          str(bin_to_uuid(perm['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_object_to_permission_denied_no_read(
@@ -628,7 +628,7 @@ def test_add_object_to_permission_denied_no_read(
         cursor.callproc('add_object_to_permission',
                         (user['auth0_id'], str(bin_to_uuid(objid)),
                          str(bin_to_uuid(perm['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_object_to_permission_no_perm(cursor, new_site, new_permission,
@@ -639,7 +639,7 @@ def test_add_object_to_permission_no_perm(cursor, new_site, new_permission,
         cursor.callproc('add_object_to_permission',
                         (user['auth0_id'], str(bin_to_uuid(objid)),
                          str(uuid.uuid1())))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.mark.parametrize('obj_type', ['users', 'roles', 'forecasts',
@@ -666,7 +666,7 @@ def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
         cursor.callproc('add_permission_to_role', (
             user['auth0_id'], str(bin_to_uuid(role['id'])),
             str(bin_to_uuid(perm['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
@@ -676,7 +676,7 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
         cursor.callproc('add_permission_to_role', (
             user['auth0_id'], str(bin_to_uuid(role['id'])),
             str(bin_to_uuid(perm['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_role_to_user(cursor, new_role, allow_update_users,
@@ -699,7 +699,7 @@ def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(user['id'])),
             str(bin_to_uuid(role['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 def test_add_role_to_user_denied(cursor, new_role, insertuser):
@@ -709,4 +709,4 @@ def test_add_role_to_user_denied(cursor, new_role, insertuser):
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(user['id'])),
             str(bin_to_uuid(role['id']))))
-        assert e.errcode == 1142
+    assert e.value.args[0] == 1142
