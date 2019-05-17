@@ -317,6 +317,45 @@ def test_remove_role_from_user(cursor, role_user_obj, allow_update_users):
     assert cursor.fetchone()[0] == 0
 
 
+@pytest.mark.parametrize('userorg,roleorg', [
+    (False, False),
+    (False, True),
+    (True, False),
+    pytest.param(True, True, marks=pytest.mark.xfail(strict=True))
+])
+def test_remove_role_from_user_bad_org(cursor, valueset, new_role,
+                                       new_user, new_permission,
+                                       roleorg, userorg):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    role = valueset[2][0]
+    auth0id = user['auth0_id']
+    permission = new_permission('update', 'users', False, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)', (role['id'], permission['id']))
+    if roleorg:
+        newrole = new_role(org=org)
+    else:
+        newrole = new_role()
+    if userorg:
+        newuser = new_user(org=org)
+    else:
+        newuser = new_user()
+    cursor.execute(
+        'INSERT INTO permission_object_mapping (permission_id, object_id) '
+        'VALUES (%s, %s)', (permission['id'], newuser['id']))
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) '
+        'VALUES (%s, %s)', (newuser['id'], newrole['id']))
+    uid = str(bin_to_uuid(newuser['id']))
+    rid = str(bin_to_uuid(newrole['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_role_from_user',
+                        (auth0id, rid, uid))
+    assert e.value.args[0] == 1142
+
+
 def test_remove_role_from_user_denied(cursor, role_user_obj):
     auth0id, userid, roleid = role_user_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -354,37 +393,36 @@ def test_remove_permission_from_role(cursor, perm_role_obj,
     assert cursor.fetchone()[0] == 0
 
 
-@pytest.mark.parametrize('permorg', [
+@pytest.mark.parametrize('roleorg', [
     False,
-    pytest.param(True, marks=pytest.mark.xfail)
+    pytest.param(True, marks=pytest.mark.xfail(strict=True))
 ])
-def gest_remove_object_from_permission_bad_org(cursor, valueset,
-                                               new_permission,
-                                               new_forecast,
-                                               permorg):
+def test_remove_permission_from_role_bad_org(cursor, valueset,
+                                             new_role, new_permission,
+                                             roleorg):
     org = valueset[0][0]
     user = valueset[1][0]
-    role = valueset[2][0]
+    oldrole = valueset[2][0]
     auth0id = user['auth0_id']
-    if permorg:
-        permission = new_permission('read', 'forecasts', False, org=org)
+    if roleorg:
+        role = new_role(org=org)
     else:
-        permission = new_permission('read', 'forecasts', False)
-    updateperm = new_permission('update', 'permissions', False, org=org)
-    cursor.execute(
+        role = new_role()
+    permission = new_permission('read', 'forecasts', False, org=org)
+    updateperm = new_permission('update', 'roles', False, org=org)
+    cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)', (role['id'], updateperm['id']))
-    fx = new_forecast(org=org)
+        'VALUES (%s, %s)', [(oldrole['id'], updateperm['id']),
+                            (role['id'], permission['id'])])
     cursor.executemany(
         'INSERT INTO permission_object_mapping (permission_id, object_id) '
-        'VALUES (%s, %s)', [(permission['id'], fx['id']),
-                            (updateperm['id'], permission['id'])])
-    objid = str(bin_to_uuid(fx['id']))
+        'VALUES (%s, %s)', [(updateperm['id'], role['id'])])
+    roleid = str(bin_to_uuid(role['id']))
     permid = str(bin_to_uuid(permission['id']))
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('remove_object_from_permission',
-                        (auth0id, objid, permid))
-    assert e.errcode == 1142
+        cursor.callproc('remove_permission_from_role',
+                        (auth0id, permid, roleid))
+    assert e.value.args[0] == 1142
 
 
 def test_remove_permission_from_role_denied(cursor, perm_role_obj):
@@ -392,7 +430,7 @@ def test_remove_permission_from_role_denied(cursor, perm_role_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_permission_from_role',
                         (auth0id, permid, roleid))
-    assert e.errcode == 1142
+    assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
@@ -428,7 +466,7 @@ def test_remove_object_from_permission(cursor, permission_object_obj,
 
 @pytest.mark.parametrize('permorg', [
     False,
-    pytest.param(True, marks=pytest.mark.xfail)
+    pytest.param(True, marks=pytest.mark.xfail(strict=True))
 ])
 def test_remove_object_from_permission_bad_org(cursor, valueset,
                                                new_permission,
