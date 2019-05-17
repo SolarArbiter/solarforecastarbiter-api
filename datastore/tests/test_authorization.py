@@ -340,10 +340,7 @@ def test_is_permission_allowed_cantread(cursor, rbac_user,
     auth0id, org = rbac_user(otype, False)
     others = make_test_permissions(org)
     perm = new_permission(action, otype, False, org=org)
-    if otype == 'users':
-        oid = others['user']['id']
-    else:
-        oid = others[otype][0]['id']
+    oid = others[otype][0]['id']
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
@@ -359,10 +356,7 @@ def test_is_permission_allowed_diff_user_org(cursor, rbac_user,
     auth0id = new_user()['auth0_id']
     others = make_test_permissions(org)
     perm = new_permission(action, otype, False, org=org)
-    if otype == 'users':
-        oid = others['user']['id']
-    else:
-        oid = others[otype][0]['id']
+    oid = others[otype][0]['id']
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
@@ -377,10 +371,7 @@ def test_is_permission_allowed_diff_perm_org(cursor, rbac_user,
     auth0id, org = rbac_user(otype)
     others = make_test_permissions(org)
     perm = new_permission(action, otype, False)
-    if otype == 'users':
-        oid = others['user']['id']
-    else:
-        oid = others[otype][0]['id']
+    oid = others[otype][0]['id']
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
@@ -395,10 +386,7 @@ def test_is_permission_allowed_diff_obj_org(cursor, rbac_user,
     auth0id, org = rbac_user(otype)
     others = make_test_permissions(new_organization())
     perm = new_permission(action, otype, False, org=org)
-    if otype == 'users':
-        oid = others['user']['id']
-    else:
-        oid = others[otype][0]['id']
+    oid = others[otype][0]['id']
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
@@ -414,10 +402,7 @@ def test_is_permission_allowed_cant_update_perm(
     org = vals['org']
     others = make_test_permissions(org)
     perm = new_permission(action, otype, False, org=org)
-    if otype == 'users':
-        oid = others['user']['id']
-    else:
-        oid = others[otype][0]['id']
+    oid = others[otype][0]['id']
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
