@@ -4,3 +4,4 @@ DROP FUNCTION can_user_perform_action;
 DROP FUNCTION user_can_create;
 DROP FUNCTION get_user_organization;
 DROP FUNCTION get_organization_name;
+DROP FUNCTION get_organization_id;
