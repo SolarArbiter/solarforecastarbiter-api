@@ -29,6 +29,12 @@ def test_verify_access_token_invalid(app):
         assert not auth.verify_access_token()
 
 
+def test_verify_access_token_no_token(app):
+    with app.test_request_context(
+            headers={'Authorization': 'Bearer'}):
+        assert not auth.verify_access_token()
+
+
 def test_verify_access_token_bad_audience(app, valid_auth):
     app.config['AUTH0_AUDIENCE'] = ''
     assert not auth.verify_access_token()

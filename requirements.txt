@@ -14,9 +14,10 @@ pandas
 pyyaml
 pymysql
 sqlalchemy
-git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
 redis
 rq
 fakeredis
 sentry_sdk
 blinker
+prometheus_flask_exporter
+git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]

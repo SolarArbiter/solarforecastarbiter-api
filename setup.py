@@ -12,7 +12,8 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README.md')) as f:
 EXTRAS_REQUIRE = {
     'test': ['pytest', 'pytest-cov', 'pytest-mock', 'flake8'],
     'cli': ['click'],
-    'queue': ['rq', 'redis']
+    'queue': ['rq', 'redis'],
+    'metrics': ['prometheus-flask-exporter']
 }
 EXTRAS_REQUIRE['all'] = [
     vv for v in EXTRAS_REQUIRE.values() for vv in v]

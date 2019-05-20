@@ -14,6 +14,7 @@ from flask import current_app
 import pandas as pd
 import pymysql
 from pymysql import converters
+from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import QueuePool
 
 
@@ -58,7 +59,12 @@ def _make_sql_connection_partial():
 def mysql_connection():
     if not hasattr(current_app, 'mysql_connection'):
         getconn = _make_sql_connection_partial()
-        mysqlpool = QueuePool(getconn, recycle=3600)
+        # use create engine to make pool in order to properly set dialect
+        mysqlpool = create_engine('mysql+pymysql://',
+                                  creator=getconn,
+                                  poolclass=QueuePool,
+                                  pool_recycle=3600,
+                                  pool_pre_ping=True).pool
         current_app.mysql_connection = mysqlpool
     return current_app.mysql_connection.connect()
 

@@ -81,3 +81,11 @@ def create_app(config_name='ProductionConfig'):
                                apispec_path=url_for('get_apispec_json'),
                                redoc_script=redoc_script)
     return app
+
+
+def create_app_with_metrics(config_name='ProductionConfig'):  # pragma: no cover  # NOQA
+    from prometheus_flask_exporter.multiprocess import (
+        GunicornPrometheusMetrics)
+    app = create_app(config_name)
+    GunicornPrometheusMetrics(app=app, group_by='url_rule')
+    return app
