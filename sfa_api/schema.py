@@ -526,3 +526,39 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+
+
+@spec.define_schema('UserPostSchema')
+class UserPostSchema(ma.Schema):
+    auth0_id = ma.String(
+        title="Auth0 ID",
+        description="The User's unique Auth0 identifier.",
+    )
+    # Not sure if this should be here, on one hand we want Admin at an
+    # Organization to only be able to add Users for their organization,
+    # but framework administrators would need a way to add a user to any
+    # organization.
+    organization_id = ma.UUID(
+        title="Organization ID",
+        description="UUID of the Organization the User belongs to.")
+    )
+
+
+@spec.define_schema('UserSchema')
+class UserSchema(ma.Schema):
+    _links = ma.Hyperlinks(
+        {
+            'roles': ma.AbsoluteURLFor('roles.user_roles',
+                                       user_id='<user_id>'),
+        },
+        description="Contains a link to the Users associated Roles."
+    )
+    # Should auth0_id be included in the response schema?
+    user_id = ma.UUID(
+        title="User ID",
+        description="Unique UUID of the User.",
+    )
+    organization_id = ma.UUID(
+        title="Organization ID",
+        description="UUID of the Organization the User belongs to.")
+    )
