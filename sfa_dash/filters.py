@@ -7,6 +7,7 @@ variable_mapping = {
     'poa_global': ('Plane of Array Irradiance', '(W/m^2)'),
     'ac_power': ('AC Power', '(MW)'),
     'dc_power': ('DC Power', '(MW)'),
+    'relative_humidity': ('Relative Humidity', '(%)'),
 }
 
 
