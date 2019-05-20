@@ -99,8 +99,73 @@ class UserView(MethodView):
         pass
 
 
+class UserRolesView(MethodView):
+    def get(self, user_id):
+        """
+        ---
+        summary: List Roles of User.
+        tags:
+          - Users
+          - Roles
+        responses:
+          200:
+            description: List of User's roles retrieved successfully.
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        # PROCEDURE: list_roles
+        pass
+
+
+class UserRolesManagementView(MethodView):
+    def post(self, user_id, role_id):
+        """
+        ---
+        summary: Add a Role to a User.
+        tags:
+          - Users
+          - Roles
+        responses:
+          200:
+            description: Role Added Successfully.
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        # PROCEDURE: add_role_to_user
+        pass
+
+    def delete(self, user_id, role_id):
+        """
+        ---
+        summary: Remove a role from a User.
+        tags:
+          - Users
+          - Roles
+        responses:
+          200:
+            description: Role removed successfully..
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        # PROCEDURE: remove_role_from_user
+        pass
+
+
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
 user_blp.add_url_rule('/', view_func=AllUsersView.as_view('all'))
 user_blp.add_url_rule('/<user_id>', view_func=UserView.as_view('single'))
+user_blp.add_url_rule(
+    '/<user_id>/roles/',
+    view_func=UserRolesView.as_view('user_roles'))
+user_blp.add_url_rule(
+    '/<user_id>/roles/<role_id>',
+    view_func=UserRolesManagementView.as_view('user_roles_management')
+)
