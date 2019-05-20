@@ -786,3 +786,14 @@ def list_cdf_forecast_groups(site_id=None):
                  for fx in _call_procedure('list_cdf_forecasts_groups')
                  if site_id is None or fx['site_id'] == site_id]
     return forecasts
+
+
+def list_users():
+    """List all users that calling user has access to.
+
+    Returns
+    -------
+        List of dictionaries of user information.
+    """
+    users = _call_procedure('list_users')
+    return users
