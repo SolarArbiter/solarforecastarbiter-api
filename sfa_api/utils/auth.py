@@ -36,7 +36,8 @@ def verify_access_token():
             jwt.ExpiredSignatureError,
             jwt.JWTClaimsError,
             AttributeError,
-            AssertionError):
+            AssertionError,
+            IndexError):
         return False
     else:
         # add the token and sub to the request context stack
