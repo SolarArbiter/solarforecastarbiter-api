@@ -294,7 +294,7 @@ spec = APISpec(
                         'API to be determined in March/April 2019.'},
         {'name': 'Trials',
          'description': 'Access information about forecast trials. '
-                        'API to be determined in March/April 2019.'}
+                        'API to be determined in March/April 2019.'},
         {'name': 'Users',
          'description': 'Access and update information about users '
                         'in your Organization.'},

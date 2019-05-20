@@ -540,7 +540,7 @@ class UserPostSchema(ma.Schema):
     # organization.
     organization_id = ma.UUID(
         title="Organization ID",
-        description="UUID of the Organization the User belongs to.")
+        description="UUID of the Organization the User belongs to."
     )
 
 
@@ -560,5 +560,5 @@ class UserSchema(ma.Schema):
     )
     organization_id = ma.UUID(
         title="Organization ID",
-        description="UUID of the Organization the User belongs to.")
+        description="UUID of the Organization the User belongs to."
     )
