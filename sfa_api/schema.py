@@ -30,9 +30,9 @@ VARIABLE_FIELD = ma.String(
     required=True,
     validate=validate.OneOf(VARIABLES))
 ORGANIZATION_ID = ma.UUID(
-        title="Organization ID",
-        description="UUID of the Organization the Object belongs to."
-    )
+    title="Organization ID",
+    description="UUID of the Organization the Object belongs to."
+)
 CREATED_AT = ma.DateTime(
     title="Creation time",
     description="ISO 8601 Datetime when object was created",
@@ -545,7 +545,6 @@ class UserPostSchema(ma.Schema):
         title="Organization ID",
         description="UUID of the Organization the User belongs to."
     )
-    
 
 
 @spec.define_schema('UserSchema')
@@ -569,7 +568,7 @@ class UserSchema(ma.Schema):
 
 @spec.define_schema('PermissionPostSchema')
 class PermissionPostSchema(ma.Schema):
-    description=ma.String(
+    description = ma.String(
         title='Desctription',
         required=True,
         description="Description of the purpose of a permission.",
@@ -582,7 +581,7 @@ class PermissionPostSchema(ma.Schema):
                                  'delete', 'read_values', 'write_values',
                                  'delete_values']),
     )
-    object_type=ma.String(
+    object_type = ma.String(
         title="Object Type",
         description="The type of object this permission will act on.",
         required=True,
@@ -600,7 +599,7 @@ class PermissionPostSchema(ma.Schema):
 
 @spec.define_schema('PermissionSchema')
 class PermissionSchema(PermissionPostSchema):
-    permission_id=ma.UUID(
+    permission_id = ma.UUID(
         title="Permission ID",
         description="UUID of the Permission",
     )
@@ -620,7 +619,7 @@ class RolePostSchema(ma.Schema):
     # Perhaps this needs some validation?
     description = ma.String(
         title='Description',
-        description= "A description of the responsibility of the role.",
+        description="A description of the responsibility of the role.",
         required=True,
     )
 

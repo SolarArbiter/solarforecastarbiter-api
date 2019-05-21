@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
+from marshmallow import ValidationError
 
 
-from sfa_api import spec
 from sfa_api.utils.storage import get_storage
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.schema import (RoleSchema,
                             RolePostSchema)
 
@@ -54,15 +55,17 @@ class AllRolesView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: create_role
         data = request.get_json()
         try:
-            role = RoleSchema().load(data)
+            role = RolePostSchema().load(data)
         except ValidationError as err:
             raise BadAPIRequest(err.messages)
         storage = get_storage()
         role_id = storage.store_role(role)
-        return role_id, 201
+        response = make_response(role_id, 201)
+        response.headers['Location'] = url_for('roles.single',
+                                               role_id=role_id)
+        return response
 
 
 class RoleView(MethodView):

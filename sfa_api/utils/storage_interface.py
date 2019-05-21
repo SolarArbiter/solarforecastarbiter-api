@@ -797,3 +797,202 @@ def list_users():
     """
     users = _call_procedure('list_users')
     return users
+
+
+def list_roles():
+    """List all roles a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of Role information.
+    """
+    roles = _call_procedure('list_roles')
+    return roles
+
+
+def store_role(role):
+    """Create a new role.
+
+    Parameters
+    ----------
+    role : dict
+        A Dictionary containing the role's name and description.
+
+    Returns
+    -------
+    string
+        The UUID of the new Role.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to create roles.
+    """
+    role_id = generate_uuid()
+    name = role['name']
+    description = role['description']
+    role = _call_procedure('create_role', role_id, name, description)
+    return role_id
+
+
+def read_role(role_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the role to read.
+
+    Returns
+    -------
+    dict
+        Dictionary of role information.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the role or
+        the role does not exist.
+    """
+    role = _call_procedure('read_role', role_id)[0]
+    return role
+
+
+def delete_role(role_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the role to delete.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the role or
+        the role does not exist.
+
+    """
+    _call_procedure('delete_role', role_id)
+
+
+def add_permission_to_role(role_id, permission_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the Role to add a permission to.
+    permission_id : str
+        The UUID of the permission to add.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to update the role or
+        the role does not exist.
+    """
+    _call_procedure('add_permission_to_role', role_id, permission_id)
+
+
+def remove_permission_from_role(role_id, permission_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the Role to remove a permission from.
+    permission_id : str
+        The UUID of the permission to remove.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to alter the role or
+        the role does not exist.
+    """
+    _call_procedure('remove_permission_from_role', role_id, permission_id)
+
+
+def read_permission(permission_id):
+    """
+    Parameters
+    ----------
+    permission_id : str
+        The UUID of the Permission to read.
+
+    Returns
+    -------
+    dict
+        Dict of permission information.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the permission
+        or the permission does not exist.
+
+    """
+    permission = _call_procedure('read_permission', permission_id)[0]
+    return permission
+
+
+def delete_permission(permission_id):
+    """
+    Parameters
+    ----------
+    permission_id : str
+        The UUID of the Permission to delete.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the permission,
+        or the permission does not exist.
+    """
+    _call_procedure('delete_permission', permission_id)
+
+
+def list_permissions():
+    """List all permissions readable by the user.
+
+    Returns
+    -------
+    list of dicts
+        A list of dicts of Permissions information
+
+    Raises
+    ------
+    StorageAuthError
+        If the User does not have permission to list permissions.
+        
+    """
+    permissions = _call_procedure('list_permissions')
+    return permissions
+
+
+def store_permission(permission):
+    """Create a new permission.
+    
+    Parameters
+    ----------
+    permission : dict
+        Dictionary of permission data.
+
+    Returns
+    -------
+    str
+        UUID of the newly created permission.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to create new
+        permissions.
+    """
+    uuid = generate_uuid()
+    _call_procedure(
+        'create_permission',
+        uuid,
+        permission['description'],
+        permission['action'],
+        permission['object_type'],
+        permission['applies_to_all']
+    )
+    return uuid

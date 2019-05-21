@@ -57,8 +57,11 @@ def create_app(config_name='ProductionConfig'):
     from sfa_api.forecasts import forecast_blp
     from sfa_api.sites import site_blp
     from sfa_api.users import user_blp
+    from sfa_api.roles import role_blp
+    from sfa_api.permissions import permission_blp
 
-    for blp in (obs_blp, forecast_blp, site_blp, user_blp):
+    for blp in (obs_blp, forecast_blp, site_blp, user_blp,
+                role_blp, permission_blp):
         blp.before_request(protect_endpoint)
         app.register_blueprint(blp)
 

@@ -1,10 +1,7 @@
-import pdb
+"""Currently just method stubs.
+"""
 from flask import Blueprint
 from flask.views import MethodView
-
-
-from sfa_api import spec
-from sfa_api.utils.storage import get_storage
 
 
 class AllUsersView(MethodView):
@@ -29,11 +26,7 @@ class AllUsersView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        storage = get_storage()
-        users = storage.list_users()
-        pdb.set_trace()
-        # PROCEDURE: list_users
-        return users
+        pass
 
     def post(self):
         """

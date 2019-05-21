@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
+from marshmallow import ValidationError
 
 
-from sfa_api import spec
 from sfa_api.utils.storage import get_storage
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.schema import (PermissionSchema,
                             PermissionPostSchema)
 
@@ -64,7 +65,10 @@ class AllPermissionsView(MethodView):
             raise BadAPIRequest(err.messages)
         storage = get_storage()
         permission_id = storage.store_permission(permission)
-        return permission_id, 201
+        response = make_response(permission_id, 201)
+        response.headers['Location'] = url_for('permissions.single',
+                                               permission_id=permission_id)
+        return response
 
 
 class PermissionView(MethodView):
