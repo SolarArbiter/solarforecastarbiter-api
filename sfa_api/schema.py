@@ -537,10 +537,6 @@ class UserPostSchema(ma.Schema):
         title="Auth0 ID",
         description="The User's unique Auth0 identifier.",
     )
-    # Not sure if this should be here, on one hand we want Admin at an
-    # Organization to only be able to add Users for their organization,
-    # but framework administrators would need a way to add a user to any
-    # organization.
     organization_id = ma.UUID(
         title="Organization ID",
         description="UUID of the Organization the User belongs to."
@@ -556,7 +552,6 @@ class UserSchema(ma.Schema):
         },
         description="Contains a link to the Users associated Roles."
     )
-    # Should auth0_id be included in the response schema?
     user_id = ma.UUID(
         title="User ID",
         description="Unique UUID of the User.",

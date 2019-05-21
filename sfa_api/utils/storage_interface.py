@@ -961,7 +961,6 @@ def list_permissions():
     ------
     StorageAuthError
         If the User does not have permission to list permissions.
-        
     """
     permissions = _call_procedure('list_permissions')
     return permissions
@@ -969,7 +968,7 @@ def list_permissions():
 
 def store_permission(permission):
     """Create a new permission.
-    
+
     Parameters
     ----------
     permission : dict
