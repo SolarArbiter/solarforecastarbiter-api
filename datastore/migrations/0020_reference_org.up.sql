@@ -5,6 +5,11 @@ SET @userid = (SELECT id FROM arbiter_data.users WHERE auth0_id = 'auth0|5be343d
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
     'Reference', @orgid, TRUE);
 
+SET @reference_userid = UUID_TO_BIN(UUID(), 1);
+
+INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
+    @reference_userid, 'auth0|5cc8aeff0ec8b510a4c7f2f1', @orgid);
+
 SET @roleid = UUID_TO_BIN(UUID(), 1);
 
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES(
@@ -23,8 +28,27 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
+SET @reference_roleid = UUID_TO_BIN(UUID(), 1);
+
+INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES(
+    'Reference user role',
+    'Role to read and create all reference data.',
+    @reference_roleid, @orgid);
+
+INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
+    'Create all sites', @orgid, 'create', 'sites', TRUE), (
+    'Create all forecasts', @orgid, 'create', 'forecasts', TRUE), (
+    'Create all forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
+    'Create all CDF forecasts', @orgid, 'create', 'cdf_forecasts', TRUE), (
+    'Create all CDF forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
+    'Create all observations', @orgid, 'create', 'observations', TRUE), (
+    'Create all observation values', @orgid, 'write_values', 'observations', TRUE), (
+
+
+INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @reference_roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
 INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (@userid, @roleid);
+INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (@reference_userid, @reference_roleid);
 
 
 SET @siteid = UUID_TO_BIN(UUID(), 1);
