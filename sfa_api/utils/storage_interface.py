@@ -50,7 +50,8 @@ def _make_sql_connection_partial():
         'conv': conv,
         'use_unicode': True,
         'charset': 'utf8mb4',
-        'init_command': "SET time_zone = '+00:00'"
+        'init_command': "SET time_zone = '+00:00'",
+        'ssl': {'ssl': True}
     }
     getconn = partial(pymysql.connect, **connect_kwargs)
     return getconn
