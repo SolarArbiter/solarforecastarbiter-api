@@ -3,7 +3,7 @@ SET @orgid = (SELECT UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1));
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
     'Organization 1', @orgid, TRUE);
 
-SET @userid = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @userid = (SELECT UUID_TO_BIN('0c90950a-7cca-11e9-a81f-54bf64606445', 1));
 INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
        @userid, 'auth0|5be343df7025406237820b85', @orgid);
 
@@ -54,7 +54,9 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
     'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
     'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
-    'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE), (
+    'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
+
+INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
     'Read Roles', @orgid, 'read', 'roles', TRUE), (
     'Read Permissions', @orgid, 'read', 'permissions', TRUE), (
     'Create Roles', @orgid, 'create', 'roles', TRUE), (

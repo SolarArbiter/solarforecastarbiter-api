@@ -35,6 +35,7 @@ CREATE TABLE arbiter_data.roles (
   modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   PRIMARY KEY (id),
+  UNIQUE KEY (name, organization_id),
   KEY (organization_id),
   FOREIGN KEY (organization_id)
     REFERENCES organizations(id)

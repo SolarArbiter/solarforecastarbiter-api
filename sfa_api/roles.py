@@ -147,6 +147,7 @@ class RolePermissionManagementView(MethodView):
         """
         storage = get_storage()
         storage.remove_permission_from_role(role_id, permission_id)
+        return '', 204
 
 
 role_blp = Blueprint(

@@ -545,13 +545,6 @@ class UserPostSchema(ma.Schema):
 
 @spec.define_schema('UserSchema')
 class UserSchema(ma.Schema):
-    _links = ma.Hyperlinks(
-        {
-            'roles': ma.AbsoluteURLFor('roles.user_roles',
-                                       user_id='<user_id>'),
-        },
-        description="Contains a link to the Users associated Roles."
-    )
     user_id = ma.UUID(
         title="User ID",
         description="Unique UUID of the User.",
@@ -598,7 +591,8 @@ class PermissionSchema(PermissionPostSchema):
         title="Permission ID",
         description="UUID of the Permission",
     )
-    organization_id = ORGANIZATION_ID
+    organization = ma.String()
+    #organization_id = ORGANIZATION_ID
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 
@@ -625,7 +619,8 @@ class RoleSchema(RolePostSchema):
         title='Role ID',
         description="UUID of the role",
     )
-    organization_id = ORGANIZATION_ID
+    organization = ma.String()
+    #organization_id = ORGANIZATION_ID
     permissions = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT

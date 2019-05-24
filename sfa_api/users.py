@@ -26,7 +26,9 @@ class AllUsersView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        pass
+        storage = get_storage()
+        users = storage.list_users()
+        return jsonify(UserSchema(many=True).load(users))
 
     def post(self):
         """
@@ -79,8 +81,9 @@ class UserView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: read_user
-        pass
+        storage = get_storage()
+        user = storage.read_user(user_id)
+        return jsonify(UserSchema().load(user))
 
     def delete(self, user_id):
         """
@@ -100,26 +103,6 @@ class UserView(MethodView):
         pass
 
 
-class UserRolesView(MethodView):
-    def get(self, user_id):
-        """
-        ---
-        summary: List Roles of User.
-        tags:
-          - Users
-          - Roles
-        responses:
-          200:
-            description: List of User's roles retrieved successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-        """
-        # PROCEDURE: list_roles
-        pass
-
-
 class UserRolesManagementView(MethodView):
     def post(self, user_id, role_id):
         """
@@ -136,8 +119,9 @@ class UserRolesManagementView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: add_role_to_user
-        pass
+        storage = get_storage()
+        storage.add_role_to_user(user_id, role_id)
+        return '', 204
 
     def delete(self, user_id, role_id):
         """
@@ -154,8 +138,9 @@ class UserRolesManagementView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: remove_role_from_user
-        pass
+        storage = get_storage()
+        storage.remove_role_from_user(user_id, role_id)
+        return '', 204
 
 
 user_blp = Blueprint(
@@ -163,9 +148,6 @@ user_blp = Blueprint(
 )
 user_blp.add_url_rule('/', view_func=AllUsersView.as_view('all'))
 user_blp.add_url_rule('/<user_id>', view_func=UserView.as_view('single'))
-user_blp.add_url_rule(
-    '/<user_id>/roles/',
-    view_func=UserRolesView.as_view('user_roles'))
 user_blp.add_url_rule(
     '/<user_id>/roles/<role_id>',
     view_func=UserRolesManagementView.as_view('user_roles_management')

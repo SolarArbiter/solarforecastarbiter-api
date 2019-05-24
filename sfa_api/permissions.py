@@ -111,6 +111,28 @@ class PermissionView(MethodView):
         storage.delete_permission(permission_id)
         return '', 204
 
+class PermissionObjectManagementView(MethodView):
+    def post(self, permission_id, uuid):
+        """
+        ---
+        summary: Add an object to the permission
+        tags:
+          - Permissions
+        reponses:
+          204:
+            description: Object added to permission successfilly.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storagE()
+        storage.add_object_to_permission(role_id, permission_id)
+        return '', 204
+
+
 
 permission_blp = Blueprint(
     'permissions', 'permissions', url_prefix='/permissions',
