@@ -144,8 +144,8 @@ def _make_sql_app():
             yield app
 
 
-@pytest.fixture()
-def sql_app(mocker):
+@pytest.fixture(scope='module')
+def sql_app():
     with _make_sql_app() as app:
         yield app
 
