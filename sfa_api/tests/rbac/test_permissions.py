@@ -1,4 +1,3 @@
-import json
 import pytest
 
 from sfa_api.tests.rbac.conftest import PERMISSION
@@ -45,7 +44,7 @@ def perm(action, object_type, description, applies_to_all):
     (perm('nope', 'roles', 'role perm', True),
         '{"action":["Must be one of: create, read, update, delete, read_values, write_values, delete_values."]}'),  # noqa: E501
     (perm('create', 'role', 'role perm', True),
-     '{"object_type":["Must be one of: sites, aggregates, forecasts, observations, users, roles, permissions."]}'),  # noqa: E501
+     '{"object_type":["Must be one of: sites, aggregates, forecasts, observations, users, roles, permissions, cdf_forecasts."]}'),  # noqa: E501
     (perm('create', 'roles', 'role perm', 5),
      '{"applies_to_all":["Not a valid boolean."]}'),
 ])
@@ -90,7 +89,7 @@ def test_add_object_to_permission(api, new_perm, new_observation):
     assert add_to_perm.status_code == 204
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     perm = get_perm.json
-    objects_on_perm = json.loads(perm['objects'])
+    objects_on_perm = perm['objects']
     assert new_obs in objects_on_perm.keys()
 
 
@@ -119,7 +118,7 @@ def test_remove_object_from_permission(api, new_perm, new_observation):
     assert delete_object.status_code == 204
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     perm = get_perm.json
-    objects_on_perm = json.loads(perm['objects'])
+    objects_on_perm = perm['objects']
     assert obs_id not in objects_on_perm.keys()
 
 
@@ -141,7 +140,7 @@ def test_remove_object_from_permission_object_dne(
     assert add_to_perm.status_code == 204
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     perm = get_perm.json
-    objects_on_perm = json.loads(perm['objects'])
+    objects_on_perm = perm['objects']
 
     remove_object = api.delete(f'/permissions/{perm_id}/objects/{missing_id}',
                                BASE_URL)
@@ -149,7 +148,7 @@ def test_remove_object_from_permission_object_dne(
 
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     perm = get_perm.json
-    new_objects_on_perm = json.loads(perm['objects'])
+    new_objects_on_perm = perm['objects']
     assert objects_on_perm == new_objects_on_perm
 
 

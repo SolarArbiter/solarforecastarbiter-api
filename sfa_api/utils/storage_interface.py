@@ -813,6 +813,7 @@ def read_user(user_id):
         Dictionary of user information.
     """
     user = _call_procedure('read_user', user_id)[0]
+    user['roles'] = json.loads(user['roles'])
     return user
 
 
@@ -916,6 +917,7 @@ def read_role(role_id):
         the role does not exist.
     """
     role = _call_procedure('read_role', role_id)[0]
+    role['permissions'] = json.loads(role['permissions'])
     return role
 
 
@@ -996,6 +998,7 @@ def read_permission(permission_id):
 
     """
     permission = _call_procedure('read_permission', permission_id)[0]
+    permission['objects'] = json.loads(permission['objects'])
     return permission
 
 

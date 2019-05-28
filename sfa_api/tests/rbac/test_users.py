@@ -1,4 +1,3 @@
-import json
 from sfa_api.conftest import BASE_URL
 
 
@@ -45,7 +44,7 @@ def test_add_role_to_user(api, user_id, new_role):
     assert add_role.status_code == 204
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
-    roles_on_user = json.loads(user['roles']).keys()
+    roles_on_user = user['roles'].keys()
     assert role_id in roles_on_user
 
 
@@ -67,7 +66,7 @@ def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
     assert add_role.status_code == 404
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
-    roles_on_user = json.loads(user['roles']).keys()
+    roles_on_user = user['roles'].keys()
     assert role_id not in roles_on_user
 
 
@@ -79,7 +78,7 @@ def test_remove_role_from_user(api, user_id, new_role):
     assert remove_role.status_code == 204
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
-    roles_on_user = json.loads(user['roles']).keys()
+    roles_on_user = user['roles'].keys()
     assert role_id not in roles_on_user
 
 
@@ -93,14 +92,14 @@ def test_remove_role_from_user_role_dne(api, user_id, missing_id):
     # test that no change is made, even though 204 is returned.
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
-    roles_on_user = json.loads(user['roles']).keys()
+    roles_on_user = user['roles'].keys()
 
     add_role = api.delete(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
     assert add_role.status_code == 204
 
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
-    new_roles_on_user = json.loads(user['roles']).keys()
+    new_roles_on_user = user['roles'].keys()
     assert roles_on_user == new_roles_on_user
 
 

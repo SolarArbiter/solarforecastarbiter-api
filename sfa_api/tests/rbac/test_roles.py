@@ -1,4 +1,3 @@
-import json
 import pytest
 
 
@@ -106,7 +105,7 @@ def test_add_perm_to_role(api, new_role, new_perm, missing_id):
                           BASE_URL)
     assert added_perm.status_code == 204
     role = get_role(api, role_id).json
-    permissions_on_role = json.loads(role['permissions']).keys()
+    permissions_on_role = role['permissions'].keys()
     assert perm_id in permissions_on_role
 
 
@@ -134,7 +133,7 @@ def test_remove_perm_from_role(api, new_role, new_perm):
                               BASE_URL)
     assert removed_perm.status_code == 204
     role = get_role(api, role_id).json
-    permissions_on_role = json.loads(role['permissions']).keys()
+    permissions_on_role = role['permissions'].keys()
     assert perm_id not in permissions_on_role
 
 
@@ -150,13 +149,13 @@ def test_remove_perm_from_role_perm_dne(api, new_role, missing_id):
     role_id = new_role()
     get_role = api.get(f'/roles/{role_id}', BASE_URL)
     role = get_role.json
-    perms_on_role = json.loads(role['permissions'])
+    perms_on_role = role['permissions']
     removed_perm = api.delete(f'/roles/{role_id}/permissions/{missing_id}',
                               BASE_URL)
     assert removed_perm.status_code == 204
     get_role = api.get(f'/roles/{role_id}', BASE_URL)
     role = get_role.json
-    new_perms_on_role = json.loads(role['permissions'])
+    new_perms_on_role = role['permissions']
     assert perms_on_role == new_perms_on_role
 
 
