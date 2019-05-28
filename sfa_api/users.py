@@ -1,7 +1,10 @@
 """Currently just method stubs.
 """
-from flask import Blueprint
+from flask import Blueprint, jsonify
 from flask.views import MethodView
+
+from sfa_api.schema import UserSchema
+from sfa_api.utils.storage import get_storage
 
 
 class AllUsersView(MethodView):
@@ -28,7 +31,7 @@ class AllUsersView(MethodView):
         """
         storage = get_storage()
         users = storage.list_users()
-        return jsonify(UserSchema(many=True).load(users))
+        return jsonify(UserSchema(many=True).dump(users))
 
     def post(self):
         """
@@ -83,7 +86,7 @@ class UserView(MethodView):
         """
         storage = get_storage()
         user = storage.read_user(user_id)
-        return jsonify(UserSchema().load(user))
+        return jsonify(UserSchema().dump(user))
 
     def delete(self, user_id):
         """

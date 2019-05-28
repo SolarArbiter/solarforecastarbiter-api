@@ -798,6 +798,66 @@ def list_users():
     users = _call_procedure('list_users')
     return users
 
+def read_user(user_id):
+    """Read user information.
+
+    Parameters
+    ----------
+    user_id : str
+        The UUID of the user to read.
+
+    Returns
+    -------
+    user : dict
+        Dictionary of user information.
+    """
+    user = _call_procedure('read_user', user_id)[0]
+    return user
+
+
+def remove_role_from_user(user_id, role_id):
+    """
+    Parameters
+    ----------
+    user_id : str
+        UUID of the user to remove role from.
+    role_id : str
+        UUID of role to remove from user
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user or role does not exist
+        - If the calling user does not have
+          permissions to read role and user.
+        - If the calling user does not have
+          permission to update the user.
+    """
+    _call_procedure('remove_role_from_user',
+                    role_id, user_id)
+
+
+def add_role_to_user(user_id, role_id):
+    """
+    Parameters
+    ----------
+    user_id : str
+        UUID of the user to remove role from.
+    role_id : str
+        UUID of role to remove from user
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user or role does not exist
+        - If the calling user does not have
+          permissions to read role and user.
+        - If the calling user does not have
+          permission to update the user.
+    """
+    _call_procedure('add_role_to_user',
+                    user_id, role_id)
+
 
 def list_roles():
     """List all roles a user has access to.
@@ -837,7 +897,8 @@ def store_role(role):
 
 
 def read_role(role_id):
-    """
+    """Read role information.
+
     Parameters
     ----------
     role_id : str
@@ -886,8 +947,10 @@ def add_permission_to_role(role_id, permission_id):
     Raises
     ------
     StorageAuthError
-        If the user does not have permission to update the role or
-        the role does not exist.
+        - If the user does not have permission to update the role.
+        - If the role or permission does not exist.
+        - If the iser does not have permission to read the role and
+          permission.
     """
     _call_procedure('add_permission_to_role', role_id, permission_id)
 
@@ -904,10 +967,12 @@ def remove_permission_from_role(role_id, permission_id):
     Raises
     ------
     StorageAuthError
-        If the user does not have permission to alter the role or
-        the role does not exist.
+        - If the user does not have permission to update the role.
+        - If the role or permission does not exist.
+        - If the iser does not have permission to read the role and
+          permission.
     """
-    _call_procedure('remove_permission_from_role', role_id, permission_id)
+    _call_procedure('remove_permission_from_role', permission_id, role_id)
 
 
 def read_permission(permission_id):
@@ -995,3 +1060,46 @@ def store_permission(permission):
         permission['applies_to_all']
     )
     return uuid
+
+
+def add_object_to_permission(permission_id, uuid):
+    """
+    Parameters
+    ----------
+    permission_id: str
+        The UUID of the permission to add the object to.
+    uuid: str
+        UUID of the object to add.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the object or permission does not exist.
+        - If user does not have permissions to read
+          both permission and object.
+        - If the user does not have permission to update
+          the permission.
+    """
+    _call_procedure('add_object_to_permission',
+                    permission_id, uuid)
+
+def remove_object_from_permission(permission_id, uuid):
+    """
+    Parameters
+    ----------
+    permission_id: str
+        The UUID of the permission to remove the object from.
+    uuid: str
+        UUID of the object to remove.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the object or permission does not exist.
+        - If user does not have permissions to read
+          both permission and object.
+        - If the user does not have permission to update
+          the permission.
+    """   
+    _call_procedure('remove_object_from_permission',
+                    uuid, permission_id)

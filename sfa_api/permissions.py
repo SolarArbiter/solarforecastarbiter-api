@@ -120,19 +120,33 @@ class PermissionObjectManagementView(MethodView):
           - Permissions
         reponses:
           204:
-            description: Object added to permission successfilly.
-          400:
-            $ref: '#/components/responses/400-BadRequest'
+            description: Object added to permission successfully.
           404:
             $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        storage = get_storagE()
-        storage.add_object_to_permission(role_id, permission_id)
+        storage = get_storage()
+        storage.add_object_to_permission(uuid, permission_id)
         return '', 204
 
+    def delete(self, permission_id, uuid):
+        """
+        summary: Remove an object from the permission
+        tags:
+          - Permissions
+        reponses:
+          204:
+            description: Object removed from permission successfully.
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
 
+        """
+        storage = get_storage()
+        storage.remove_object_from_permission(permission_id, uuid)
+        return '', 204
 
 permission_blp = Blueprint(
     'permissions', 'permissions', url_prefix='/permissions',
@@ -141,3 +155,6 @@ permission_blp.add_url_rule('/', view_func=AllPermissionsView.as_view('all'))
 permission_blp.add_url_rule(
     '/<permission_id>',
     view_func=PermissionView.as_view('single'))
+permission_blp.add_url_rule(
+    '/<permission_id>/objects/<uuid>',
+    view_func=PermissionObjectManagementView.as_view('objects'))

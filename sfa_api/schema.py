@@ -549,9 +549,10 @@ class UserSchema(ma.Schema):
         title="User ID",
         description="Unique UUID of the User.",
     )
-    organization_id = ORGANIZATION_ID
+    organization = ma.String(title='Organization')
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+    roles = ma.Dict()
 
 
 @spec.define_schema('PermissionPostSchema')
@@ -591,8 +592,8 @@ class PermissionSchema(PermissionPostSchema):
         title="Permission ID",
         description="UUID of the Permission",
     )
-    organization = ma.String()
-    #organization_id = ORGANIZATION_ID
+    organization = ma.String(title="Organization")
+    objects = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 
@@ -619,8 +620,7 @@ class RoleSchema(RolePostSchema):
         title='Role ID',
         description="UUID of the role",
     )
-    organization = ma.String()
-    #organization_id = ORGANIZATION_ID
+    organization = ma.String(title="Organization")
     permissions = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
