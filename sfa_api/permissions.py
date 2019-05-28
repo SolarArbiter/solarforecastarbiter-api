@@ -133,6 +133,7 @@ class PermissionObjectManagementView(MethodView):
 
     def delete(self, permission_id, uuid):
         """
+        ---
         summary: Remove an object from the permission
         tags:
           - Permissions
