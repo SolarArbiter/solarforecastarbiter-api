@@ -796,6 +796,8 @@ def list_users():
         List of dictionaries of user information.
     """
     users = _call_procedure('list_users')
+    for user in users:
+        user['roles'] = json.loads(user['roles'])
     return users
 
 
@@ -870,6 +872,8 @@ def list_roles():
         List of dictionaries of Role information.
     """
     roles = _call_procedure('list_roles')
+    for role in roles:
+        role['permissions'] = json.loads(role['permissions'])
     return roles
 
 
@@ -1032,6 +1036,8 @@ def list_permissions():
         If the User does not have permission to list permissions.
     """
     permissions = _call_procedure('list_permissions')
+    for permission in permissions:
+        permission['objects'] = json.loads(permission['objects'])
     return permissions
 
 
