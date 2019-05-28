@@ -798,6 +798,7 @@ def list_users():
     users = _call_procedure('list_users')
     return users
 
+
 def read_user(user_id):
     """Read user information.
 
@@ -1083,6 +1084,7 @@ def add_object_to_permission(permission_id, uuid):
     _call_procedure('add_object_to_permission',
                     permission_id, uuid)
 
+
 def remove_object_from_permission(permission_id, uuid):
     """
     Parameters
@@ -1100,6 +1102,6 @@ def remove_object_from_permission(permission_id, uuid):
           both permission and object.
         - If the user does not have permission to update
           the permission.
-    """   
+    """
     _call_procedure('remove_object_from_permission',
                     uuid, permission_id)

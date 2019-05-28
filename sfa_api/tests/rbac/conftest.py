@@ -6,6 +6,7 @@ from flask import _request_ctx_stack
 
 from sfa_api.conftest import BASE_URL, VALID_OBS_JSON
 
+
 ROLE = {
     "name": "test created role",
     "description": "testing role creation",
@@ -43,6 +44,7 @@ def new_role(api):
         return role_id
     return fn
 
+
 @pytest.fixture
 def new_observation(api):
     def fn():
@@ -62,7 +64,7 @@ def new_perm(api):
 
 
 @pytest.fixture
-def current_role(api):    
+def current_role(api):
     roles_req = api.get('/roles/', BASE_URL)
     role = roles_req.json[0]
     return role['role_id']
@@ -79,4 +81,4 @@ def remove_perms(api, current_role):
         for perm_id in to_remove:
             api.delete(f'/roles/{current_role}/permissions/{perm_id}',
                        BASE_URL)
-    return fn           
+    return fn

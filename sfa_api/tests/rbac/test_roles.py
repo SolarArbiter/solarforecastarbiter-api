@@ -3,7 +3,7 @@ import pytest
 
 
 from sfa_api.conftest import BASE_URL
-from sfa_api.tests.rbac.conftest import ROLE, PERMISSION
+from sfa_api.tests.rbac.conftest import ROLE
 
 
 def get_role(api, role_id):
@@ -14,13 +14,17 @@ def get_perm(api, perm_id):
     return api.get(f'/permissions/{perm_id}', BASE_URL)
 
 
-def test_list_roles_get_role(api):
+def test_list_roles(api):
     roles = api.get('/roles/',
                     BASE_URL)
     assert roles.json[0]['name'] == 'Test user role'
     assert roles.status_code == 200
-    role = api.get(f'/roles/{roles.json[0]["role_id"]}',
-                   BASE_URL)
+
+
+def test_get_role(api, new_role):
+    role_id = new_role()
+    get_role = api.get(f'/roles/{role_id}', BASE_URL)
+    assert get_role.status_code == 200
 
 
 def test_list_roles_missing_perms(api, remove_perms):
@@ -37,19 +41,20 @@ def test_create_delete_role(api):
     new_role = api.get(f'/roles/{new_role_id}', BASE_URL)
     assert new_role.status_code == 200
     deleted = api.delete(f'/roles/{new_role_id}', BASE_URL)
-    assert deleted.status_code ==204
+    assert deleted.status_code == 204
     role_dne = api.get(f'/roles/{new_role_id}', BASE_URL)
     assert role_dne.status_code == 404
 
-    
 
 @pytest.mark.parametrize('role,error', [
     ({'name': 'brad'}, '{"description":["Missing data for required field."]}'),
-    ({'description': 'brad role'}, '{"name":["Missing data for required field."]}'),
-    ({'name': '!@$^Y','description': 'description'}, '{"name":["Invalid characters in string."]}'),
+    ({'description': 'brad role'},
+     '{"name":["Missing data for required field."]}'),
+    ({'name': '!@$^Y', 'description': 'description'},
+     '{"name":["Invalid characters in string."]}'),
 ])
 def test_create_role_invalid_json(api, role, error):
-    failed_role = api.post('/roles/',BASE_URL, json=role)
+    failed_role = api.post('/roles/', BASE_URL, json=role)
     assert failed_role.status_code == 400
     assert failed_role.get_data(as_text=True) == f'{{"errors":{error}}}\n'
 
@@ -69,8 +74,7 @@ def test_get_role_missing_perms(api, new_role, remove_perms):
     role_id = new_role()
     assert api.get(f'/roles/{role_id}', BASE_URL).status_code == 200
     remove_perms('read', 'roles')
-    assert  api.get(f'/roles/{role_id}', BASE_URL).status_code == 404
-
+    assert api.get(f'/roles/{role_id}', BASE_URL).status_code == 404
 
 
 def test_delete_role(api, new_role):
@@ -97,11 +101,14 @@ def test_add_perm_to_role(api, new_role, new_perm, missing_id):
     role_id = new_role()
     perm_id = new_perm()
     perms = api.get('/permissions/', BASE_URL)
-    assert perm_id in [ perm['permission_id'] for perm in perms.json]
+    assert perm_id in [perm['permission_id'] for perm in perms.json]
     added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
-                          BASE_URL )
+                          BASE_URL)
     assert added_perm.status_code == 204
-    assert perm_id in json.loads(get_role(api, role_id).json['permissions']).keys()
+    role = get_role(api, role_id).json
+    permissions_on_role = json.loads(role['permissions']).keys()
+    assert perm_id in permissions_on_role
+
 
 def test_add_perm_to_role_role_dne(api, missing_id, new_perm):
     perm_id = new_perm()
@@ -112,10 +119,11 @@ def test_add_perm_to_role_role_dne(api, missing_id, new_perm):
 
 def test_add_perm_to_role_perm_dne(api, missing_id, new_role):
     role_id = new_role()
-    perm_dne =api.post(f'/roles/{role_id}/permissions/{missing_id}',
-                       BASE_URL)
+    perm_dne = api.post(f'/roles/{role_id}/permissions/{missing_id}',
+                        BASE_URL)
     assert perm_dne.status_code == 404
-                         
+
+
 def test_remove_perm_from_role(api, new_role, new_perm):
     role_id = new_role()
     perm_id = new_perm()
@@ -125,13 +133,17 @@ def test_remove_perm_from_role(api, new_role, new_perm):
     removed_perm = api.delete(f'/roles/{role_id}/permissions/{perm_id}',
                               BASE_URL)
     assert removed_perm.status_code == 204
-    assert perm_id not in json.loads(get_role(api, role_id).json['permissions']).keys()
+    role = get_role(api, role_id).json
+    permissions_on_role = json.loads(role['permissions']).keys()
+    assert perm_id not in permissions_on_role
+
 
 def test_remove_perm_from_role_role_dne(api, missing_id, new_perm):
     perm_id = new_perm()
     removed_perm = api.delete(f'/roles/{missing_id}/permissions/{perm_id}',
                               BASE_URL)
     assert removed_perm.status_code == 404
+
 
 def test_remove_perm_from_role_perm_dne(api, new_role, missing_id):
     # test that perms aren't modified even though a 204 is returned

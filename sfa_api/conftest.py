@@ -154,8 +154,7 @@ def sql_app(mocker):
 def sql_app_no_commit(mocker):
     with _make_sql_app() as app:
         with _make_nocommit_cursor(mocker):
-                yield app
-
+            yield app
 
 
 @pytest.fixture()

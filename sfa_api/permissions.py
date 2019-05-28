@@ -111,6 +111,7 @@ class PermissionView(MethodView):
         storage.delete_permission(permission_id)
         return '', 204
 
+
 class PermissionObjectManagementView(MethodView):
     def post(self, permission_id, uuid):
         """
@@ -147,6 +148,7 @@ class PermissionObjectManagementView(MethodView):
         storage = get_storage()
         storage.remove_object_from_permission(permission_id, uuid)
         return '', 204
+
 
 permission_blp = Blueprint(
     'permissions', 'permissions', url_prefix='/permissions',

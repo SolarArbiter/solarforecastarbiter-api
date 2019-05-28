@@ -1,7 +1,4 @@
 import json
-import pytest
-
-
 from sfa_api.conftest import BASE_URL
 
 
@@ -34,6 +31,7 @@ def test_list_users(api, user_id):
     assert len(user_list) > 0
     assert user_id in [user['user_id'] for user in user_list]
 
+
 def test_list_users_no_perm(api, remove_perms):
     remove_perms('read', 'users')
     get_users = api.get('/users/', BASE_URL)
@@ -49,16 +47,18 @@ def test_add_role_to_user(api, user_id, new_role):
     user = get_user.json
     roles_on_user = json.loads(user['roles']).keys()
     assert role_id in roles_on_user
-    
+
 
 def test_add_role_to_user_user_dne(api, missing_id, new_role):
     role_id = new_role()
     add_role = api.post(f'/users/{missing_id}/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
 
+
 def test_add_role_to_user_role_dne(api, user_id, missing_id):
     add_role = api.post(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
     assert add_role.status_code == 404
+
 
 def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
     role_id = new_role()
@@ -69,6 +69,7 @@ def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
     user = get_user.json
     roles_on_user = json.loads(user['roles']).keys()
     assert role_id not in roles_on_user
+
 
 def test_remove_role_from_user(api, user_id, new_role):
     role_id = new_role()
@@ -101,6 +102,7 @@ def test_remove_role_from_user_role_dne(api, user_id, missing_id):
     user = get_user.json
     new_roles_on_user = json.loads(user['roles']).keys()
     assert roles_on_user == new_roles_on_user
+
 
 def test_remove_role_from_user_no_perms(api, user_id, new_role, remove_perms):
     role_id = new_role()
