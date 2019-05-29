@@ -29,7 +29,10 @@ VARIABLE_FIELD = ma.String(
     description="The variable being forecast",
     required=True,
     validate=validate.OneOf(VARIABLES))
-
+ORGANIZATION_ID = ma.UUID(
+    title="Organization ID",
+    description="UUID of the Organization the Object belongs to."
+)
 CREATED_AT = ma.DateTime(
     title="Creation time",
     description="ISO 8601 Datetime when object was created",
@@ -524,5 +527,100 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     forecast_id = ma.UUID()
     provider = ma.String()
     constant_values = ma.Nested(CDFForecastSingleSchema, many=True)
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+
+
+@spec.define_schema('UserPostSchema')
+class UserPostSchema(ma.Schema):
+    auth0_id = ma.String(
+        title="Auth0 ID",
+        description="The User's unique Auth0 identifier.",
+    )
+    organization_id = ma.UUID(
+        title="Organization ID",
+        description="UUID of the Organization the User belongs to."
+    )
+
+
+@spec.define_schema('UserSchema')
+class UserSchema(ma.Schema):
+    user_id = ma.UUID(
+        title="User ID",
+        description="Unique UUID of the User.",
+    )
+    organization = ma.String(title='Organization')
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+    roles = ma.Dict()
+
+
+@spec.define_schema('PermissionPostSchema')
+class PermissionPostSchema(ma.Schema):
+    description = ma.String(
+        title='Desctription',
+        required=True,
+        description="Description of the purpose of a permission.",
+    )
+    action = ma.String(
+        title='Action',
+        description="The action that the permission allows.",
+        required=True,
+        validate=validate.OneOf(['create', 'read', 'update',
+                                 'delete', 'read_values', 'write_values',
+                                 'delete_values']),
+    )
+    object_type = ma.String(
+        title="Object Type",
+        description="The type of object this permission will act on.",
+        required=True,
+        validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
+                                 'observations', 'users', 'roles',
+                                 'permissions', 'cdf_forecasts']),
+    )
+    applies_to_all = ma.Boolean(
+        title="Applies to all",
+        default=False,
+        description=("Whether or not the permission applied to all objects "
+                     "of object_type."),
+    )
+
+
+@spec.define_schema('PermissionSchema')
+class PermissionSchema(PermissionPostSchema):
+    permission_id = ma.UUID(
+        title="Permission ID",
+        description="UUID of the Permission",
+    )
+    organization = ma.String(title="Organization")
+    objects = ma.Dict()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+
+
+@spec.define_schema('RolePostSchema')
+class RolePostSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description="Name of the Role",
+        required=True,
+        validate=UserstringValidator()
+    )
+    # Perhaps this needs some validation?
+    description = ma.String(
+        title='Description',
+        description="A description of the responsibility of the role.",
+        required=True,
+    )
+
+
+@spec.define_schema('RoleSchema')
+class RoleSchema(RolePostSchema):
+    role_id = ma.UUID(
+        title='Role ID',
+        description="UUID of the role",
+    )
+    organization = ma.String(title="Organization")
+    permissions = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT

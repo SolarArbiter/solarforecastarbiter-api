@@ -793,3 +793,331 @@ def list_cdf_forecast_groups(site_id=None):
                  for fx in _call_procedure('list_cdf_forecasts_groups')
                  if site_id is None or fx['site_id'] == site_id]
     return forecasts
+
+
+def list_users():
+    """List all users that calling user has access to.
+
+    Returns
+    -------
+        List of dictionaries of user information.
+    """
+    users = _call_procedure('list_users')
+    for user in users:
+        user['roles'] = json.loads(user['roles'])
+    return users
+
+
+def read_user(user_id):
+    """Read user information.
+
+    Parameters
+    ----------
+    user_id : str
+        The UUID of the user to read.
+
+    Returns
+    -------
+    user : dict
+        Dictionary of user information.
+    """
+    user = _call_procedure('read_user', user_id)[0]
+    user['roles'] = json.loads(user['roles'])
+    return user
+
+
+def remove_role_from_user(user_id, role_id):
+    """
+    Parameters
+    ----------
+    user_id : str
+        UUID of the user to remove role from.
+    role_id : str
+        UUID of role to remove from user
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user or role does not exist
+        - If the calling user does not have
+          permissions to read role and user.
+        - If the calling user does not have
+          permission to update the user.
+    """
+    _call_procedure('remove_role_from_user',
+                    role_id, user_id)
+
+
+def add_role_to_user(user_id, role_id):
+    """
+    Parameters
+    ----------
+    user_id : str
+        UUID of the user to remove role from.
+    role_id : str
+        UUID of role to remove from user
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user or role does not exist
+        - If the calling user does not have
+          permissions to read role and user.
+        - If the calling user does not have
+          permission to update the user.
+    """
+    _call_procedure('add_role_to_user',
+                    user_id, role_id)
+
+
+def list_roles():
+    """List all roles a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of Role information.
+    """
+    roles = _call_procedure('list_roles')
+    for role in roles:
+        role['permissions'] = json.loads(role['permissions'])
+    return roles
+
+
+def store_role(role):
+    """Create a new role.
+
+    Parameters
+    ----------
+    role : dict
+        A Dictionary containing the role's name and description.
+
+    Returns
+    -------
+    string
+        The UUID of the new Role.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to create roles.
+    """
+    role_id = generate_uuid()
+    name = role['name']
+    description = role['description']
+    role = _call_procedure('create_role', role_id, name, description)
+    return role_id
+
+
+def read_role(role_id):
+    """Read role information.
+
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the role to read.
+
+    Returns
+    -------
+    dict
+        Dictionary of role information.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the role or
+        the role does not exist.
+    """
+    role = _call_procedure('read_role', role_id)[0]
+    role['permissions'] = json.loads(role['permissions'])
+    return role
+
+
+def delete_role(role_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the role to delete.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the role or
+        the role does not exist.
+
+    """
+    _call_procedure('delete_role', role_id)
+
+
+def add_permission_to_role(role_id, permission_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the Role to add a permission to.
+    permission_id : str
+        The UUID of the permission to add.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to update the role.
+        - If the role or permission does not exist.
+        - If the iser does not have permission to read the role and
+          permission.
+    """
+    _call_procedure('add_permission_to_role', role_id, permission_id)
+
+
+def remove_permission_from_role(role_id, permission_id):
+    """
+    Parameters
+    ----------
+    role_id : str
+        The UUID of the Role to remove a permission from.
+    permission_id : str
+        The UUID of the permission to remove.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to update the role.
+        - If the role or permission does not exist.
+        - If the iser does not have permission to read the role and
+          permission.
+    """
+    _call_procedure('remove_permission_from_role', permission_id, role_id)
+
+
+def read_permission(permission_id):
+    """
+    Parameters
+    ----------
+    permission_id : str
+        The UUID of the Permission to read.
+
+    Returns
+    -------
+    dict
+        Dict of permission information.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the permission
+        or the permission does not exist.
+
+    """
+    permission = _call_procedure('read_permission', permission_id)[0]
+    permission['objects'] = json.loads(permission['objects'])
+    return permission
+
+
+def delete_permission(permission_id):
+    """
+    Parameters
+    ----------
+    permission_id : str
+        The UUID of the Permission to delete.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the permission,
+        or the permission does not exist.
+    """
+    _call_procedure('delete_permission', permission_id)
+
+
+def list_permissions():
+    """List all permissions readable by the user.
+
+    Returns
+    -------
+    list of dicts
+        A list of dicts of Permissions information
+
+    Raises
+    ------
+    StorageAuthError
+        If the User does not have permission to list permissions.
+    """
+    permissions = _call_procedure('list_permissions')
+    for permission in permissions:
+        permission['objects'] = json.loads(permission['objects'])
+    return permissions
+
+
+def store_permission(permission):
+    """Create a new permission.
+
+    Parameters
+    ----------
+    permission : dict
+        Dictionary of permission data.
+
+    Returns
+    -------
+    str
+        UUID of the newly created permission.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to create new
+        permissions.
+    """
+    uuid = generate_uuid()
+    _call_procedure(
+        'create_permission',
+        uuid,
+        permission['description'],
+        permission['action'],
+        permission['object_type'],
+        permission['applies_to_all']
+    )
+    return uuid
+
+
+def add_object_to_permission(permission_id, uuid):
+    """
+    Parameters
+    ----------
+    permission_id: str
+        The UUID of the permission to add the object to.
+    uuid: str
+        UUID of the object to add.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the object or permission does not exist.
+        - If user does not have permissions to read
+          both permission and object.
+        - If the user does not have permission to update
+          the permission.
+    """
+    _call_procedure('add_object_to_permission',
+                    permission_id, uuid)
+
+
+def remove_object_from_permission(permission_id, uuid):
+    """
+    Parameters
+    ----------
+    permission_id: str
+        The UUID of the permission to remove the object from.
+    uuid: str
+        UUID of the object to remove.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the object or permission does not exist.
+        - If user does not have permissions to read
+          both permission and object.
+        - If the user does not have permission to update
+          the permission.
+    """
+    _call_procedure('remove_object_from_permission',
+                    uuid, permission_id)

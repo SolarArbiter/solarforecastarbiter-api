@@ -113,6 +113,10 @@ FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id 
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_roles_delete AFTER DELETE ON arbiter_data.roles
 FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
 
+-- add trigger for deletion from permissions table
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_perm_on_perm_delete AFTER DELETE ON arbiter_data.permissions
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
 
 -- add trigger for deletion from sites table
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_sites_delete AFTER DELETE ON arbiter_data.sites

@@ -3,9 +3,10 @@ SET @orgid = (SELECT UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1));
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
     'Organization 1', @orgid, TRUE);
 
-SET @userid = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @userid = (SELECT UUID_TO_BIN('0c90950a-7cca-11e9-a81f-54bf64606445', 1));
 INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
        @userid, 'auth0|5be343df7025406237820b85', @orgid);
+
 
 SET @roleid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
@@ -54,6 +55,18 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
     'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
     'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
+
+INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
+    'Read Roles', @orgid, 'read', 'roles', TRUE), (
+    'Read Users', @orgid, 'read', 'users', TRUE), (
+    'Read Permissions', @orgid, 'read', 'permissions', TRUE), (
+    'Create Roles', @orgid, 'create', 'roles', TRUE), (
+    'Create Permissions', @orgid, 'create', 'permissions', TRUE), (
+    'Update Roles', @orgid, 'update', 'roles', TRUE), (
+    'Update User', @orgid, 'update', 'users', TRUE), (
+    'Update Permissions', @orgid, 'update', 'permissions', TRUE), (
+    'Delete Roles', @orgid, 'delete', 'roles', TRUE), (
+    'Delete Permissions', @orgid, 'delete', 'permissions', TRUE);
 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @roleid, id FROM arbiter_data.permissions WHERE organization_id = @orgid;
 
@@ -198,3 +211,25 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_observations TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_forecasts TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'apiuser'@'%';
+
+-- User/ Role / Permissions procedures
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_user TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_users TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'apiuser'@'%';
+
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_roles TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_role TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_permission_from_role TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'apiuser'@'%';
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_permissions TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_permission TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_permission TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_permission TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_object_to_permission TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'apiuser'@'%';
+

@@ -294,7 +294,14 @@ spec = APISpec(
                         'API to be determined in March/April 2019.'},
         {'name': 'Trials',
          'description': 'Access information about forecast trials. '
-                        'API to be determined in March/April 2019.'}
+                        'API to be determined in March/April 2019.'},
+        {'name': 'Users',
+         'description': 'Access and update information about users '
+                        'in your Organization.'},
+        {'name': 'Roles',
+         'description': 'Access and update Roles in your organization.'},
+        {'name': 'Permissions',
+         'description': 'Access and update Permissions in your organization.'},
     ],
     servers=[
         {'url': '//dev-api.solarforecastarbiter.org/',
