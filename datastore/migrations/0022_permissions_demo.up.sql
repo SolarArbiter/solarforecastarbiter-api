@@ -36,7 +36,7 @@ INSERT INTO arbiter_data.sites (
 ) VALUES (
     @plant_id, 
     @utilxorgid, 
-    'Power Plant X', 43.73403, -96.62328, 786.0, 'Etc/GMT+6', '', 0.015, 0.015, 
+    'Power Plant X', 43.73403, -96.62328, 786.0, 'Etc/GMT+6', '', 10.0, 12.0, 
     -0.002, 'fixed', 45.0, 180, 0, 0, 
     TIMESTAMP('2019-05-29 11:44:46'), TIMESTAMP('2019-05-29 11:44:46') 
 );
