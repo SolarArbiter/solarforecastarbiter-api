@@ -32,3 +32,9 @@ class DevConfig(BaseConfig):
     SFA_API_URL = 'https://dev-api.solarforecastarbiter.org'
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+
+class ProdConfig(BaseConfig):
+    SFA_API_URL = 'https://api.solarforecastarbiter.org'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

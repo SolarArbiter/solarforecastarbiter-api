@@ -15,6 +15,7 @@ setup(
         'flask-dance',
         'sqlalchemy',
         'flask-sqlalchemy',
+        'pymysql',
         'flask-seasurf',
         'python-jose',
         'cryptography',
