@@ -14,3 +14,6 @@ cryptography
 bokeh
 git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
 tables==3.5.1
+prometheus_flask_exporter
+sentry_sdk
+blinker

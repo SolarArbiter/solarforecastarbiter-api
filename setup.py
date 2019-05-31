@@ -20,6 +20,9 @@ setup(
         'cryptography',
         'blinker',
         'bokeh',
-        'solarforecastarbiter'
+        'solarforecastarbiter',
+        'sentry_sdk',
+        'blinker',
+        'prometheus-flask-exporter'
     ]
 )
