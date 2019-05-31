@@ -1,22 +1,15 @@
-variable_mapping = {
-    'ghi': ('GHI', '(W/m^2)'),
-    'dni': ('DNI', '(W/m^2)'),
-    'dhi': ('DHI', '(W/m^2)'),
-    'air_temperature': ('Air Temperature', '(&deg;C)'),
-    'wind_speed': ('Wind Speed', '(m/s)'),
-    'poa_global': ('Plane of Array Irradiance', '(W/m^2)'),
-    'ac_power': ('AC Power', '(MW)'),
-    'dc_power': ('DC Power', '(MW)'),
-    'relative_humidity': ('Relative Humidity', '(%)'),
-}
+from solarforecastarbiter.datamodel import ALLOWED_VARIABLES, COMMON_NAMES
+
+
+variable_mapping = COMMON_NAMES
 
 
 def api_to_dash_varname(api_varname):
-    return variable_mapping[api_varname][0]
+    return COMMON_NAMES[api_varname]
 
 
 def api_varname_to_units(api_varname):
-    return variable_mapping[api_varname][1]
+    return ALLOWED_VARIABLES[api_varname]
 
 
 def display_timedelta(minutes):

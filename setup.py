@@ -19,6 +19,7 @@ setup(
         'python-jose',
         'cryptography',
         'blinker',
-        'bokeh'
+        'bokeh',
+        'solarforecastarbiter'
     ]
 )

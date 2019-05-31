@@ -1,5 +1,5 @@
 {% macro li(label, attribute, unit='') %}
 {% if (attribute is not none) and (attribute != 'null') %}
-<li class="metadata-field"><span class="data-metadata-label">{{ label }}: </span>{{ attribute | string | replace("_", " ")}} {% if unit != '' %} {{ unit }} {% endif %}</li>
+<li class="metadata-field"><span class="data-metadata-label">{{ label }}: </span>{{ attribute | string | replace("_", " ")}} {% if unit != '' %} ({{ unit }}) {% endif %}</li>
 {% endif %}
 {% endmacro %}

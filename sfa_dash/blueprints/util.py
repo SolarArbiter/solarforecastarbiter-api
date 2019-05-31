@@ -1,8 +1,16 @@
 """ Utility classes/functions. Mostly for handling api data.
 """
+from copy import deepcopy
+
+
+from flask import render_template, url_for
+from solarforecastarbiter import datamodel
+from solarforecastarbiter.io import utils as io_utils
+from solarforecastarbiter.plotting import timeseries
+
+
 from sfa_dash.api_interface import (sites, forecasts, observations,
                                     cdf_forecast_groups)
-from flask import render_template, url_for
 
 
 class DataTables(object):
@@ -206,3 +214,20 @@ class DataTables(object):
             table_row['link'] = url_for(link_view, uuid=data['site_id'])
             table_rows.append(table_row)
         return table_rows
+
+
+def timeseries_adapter(type_, metadata, json_value_response):
+    metadata = deepcopy(metadata)
+    # ignores any modeling parameters as they aren't need for this
+    site = datamodel.Site.from_dict(metadata['site'], raise_on_extra=False)
+    metadata['site'] = site
+    if type_ == 'forecast':
+        obj = datamodel.Forecast.from_dict(metadata)
+        data = io_utils.json_payload_to_forecast_series(json_value_response)
+        return timeseries.generate_forecast_figure(
+            obj, data, return_components=True)
+    else:
+        obj = datamodel.Observation.from_dict(metadata)
+        data = io_utils.json_payload_to_observation_df(json_value_response)
+        return timeseries.generate_observation_figure(
+            obj, data, return_components=True)
