@@ -21,7 +21,7 @@ INSERT INTO arbiter_data.sites (
 ) VALUES (
     UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1),
     @orgid,
-    'Ashland OR', 42.19, -122.7, 595.0, 'Etc/GMT+8',
+    'Weather Station', 42.19, -122.7, 595.0, 'Etc/GMT+8',
     '{"network_api_abbreviation": "AS","network": "University of Oregon SRML","network_api_id": "94040"}',
     TIMESTAMP('2019-03-01 11:44:38'), TIMESTAMP('2019-03-01 11:44:38')
 ), (

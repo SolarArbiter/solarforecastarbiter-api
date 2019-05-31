@@ -24,7 +24,7 @@ static_sites = {
             "temperature_coefficient": None,
             "tracking_type": None
         },
-        "name": "Ashland OR",
+        "name": "Weather Station",
         "provider": "Organization 1",
         "timezone": "Etc/GMT+8",
         "site_id": '123e4567-e89b-12d3-a456-426655440001',

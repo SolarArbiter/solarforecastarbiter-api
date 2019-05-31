@@ -59,7 +59,7 @@ VALID_FORECAST_JSON = {
 
 VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
-    "name": "Ashland OR, ghi",
+    "name": "Weather Station, ghi",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
     "interval_label": "beginning",

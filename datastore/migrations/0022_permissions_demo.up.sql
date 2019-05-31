@@ -176,7 +176,7 @@ INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT
 INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (@utilxid, @fxb_read_role);
 
 
--- Create forecasts at the Ashland, OR site that other users can't see
+-- Create forecasts at the Weather Station site that other users can't see
 INSERT INTO arbiter_data.forecasts (
     id, organization_id, site_id, name, variable, issue_time_of_day, lead_time_to_start,
     interval_label, interval_length, run_length, interval_value_type, extra_parameters,
@@ -300,33 +300,33 @@ INSERT INTO arbiter_data.permissions(description, organization_id, action, objec
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) SELECT @utilx_org_role, id from arbiter_data.permissions WHERE organization_id = @utilxorgid;
 
 
-SET @ashland_role = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @weather_station_role = (SELECT UUID_TO_BIN(UUID(), 1));
 SET @orgid = (SELECT UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1));
-SET @ashland_id = (SELECT UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1));
-SET @read_ashland = (SELECT UUID_TO_BIN(UUID(), 1));
-SET @read_ashland_obs = (SELECT UUID_TO_BIN(UUID(), 1));
-SET @read_ashland_obs_values = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @weather_station_id = (SELECT UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1));
+SET @read_weather_station = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @read_weather_station_obs = (SELECT UUID_TO_BIN(UUID(), 1));
+SET @read_weather_station_obs_values = (SELECT UUID_TO_BIN(UUID(), 1));
 
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
-    'Read Ashland Site', 'Allows User to read Site and Observation data', @ashland_role, @orgid);
+    'Read Weather Station', 'Allows User to read Site and Observation data', @weather_station_role, @orgid);
 INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
-    @read_ashland, 'Read Ashland OR Site', @orgid, 'read', 'sites', FALSE), (
-    @read_ashland_obs, 'Read Ashland OR Observations', @orgid, 'read', 'observations', FALSE), (
-    @read_ashland_obs_values, 'Read Ashland OR Observation values', @orgid, 'read_values', 'observations', FALSE);
+    @read_weather_station, 'Read Ashland OR Site', @orgid, 'read', 'sites', FALSE), (
+    @read_weather_station_obs, 'Read Ashland OR Observations', @orgid, 'read', 'observations', FALSE), (
+    @read_weather_station_obs_values, 'Read Ashland OR Observation values', @orgid, 'read_values', 'observations', FALSE);
 
 INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) VALUES (
-    @read_ashland, @ashland_id); 
-INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) SELECT @read_ashland_obs, id FROM arbiter_data.observations WHERE site_id = @ashland_id;
-INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) SELECT @read_ashland_obs_Values, id FROM arbiter_data.observations WHERE site_id = @ashland_id;
+    @read_weather_station, @weather_station_id); 
+INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) SELECT @read_weather_station_obs, id FROM arbiter_data.observations WHERE site_id = @weather_station_id;
+INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) SELECT @read_weather_station_obs_Values, id FROM arbiter_data.observations WHERE site_id = @weather_station_id;
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
-    @ashland_role, @read_ashland), (
-    @ashland_role, @read_ashland_obs), (
-    @ashland_role, @read_ashland_obs_values);
+    @weather_station_role, @read_weather_station), (
+    @weather_station_role, @read_weather_station_obs), (
+    @weather_station_role, @read_weather_station_obs_values);
   
 INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
-    @fxaid, @ashland_role), (
-    @fxbid, @ashland_role), (
-    @utilxid, @ashland_role);
+    @fxaid, @weather_station_role), (
+    @fxbid, @weather_station_role), (
+    @utilxid, @weather_station_role);
 
 SET @reference_reader = (SELECT id FROM arbiter_data.roles where name = 'Read Reference Data');
 -- Add read reference data to everyone
