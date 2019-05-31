@@ -326,3 +326,10 @@ INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES
 INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
     @fxaid, @ashland_role), (
     @fxbid, @ashland_role);
+
+SET @reference_reader = (SELECT id FROM arbiter_data.roles where name = 'Read Reference Data');
+-- Add read reference data to everyone
+INSERT INTO arbiter_data.user_role_mapping(user_id, role_id) VALUES(
+    @utilxid, @reference_reader), (
+    @fxaid, @reference_reader), (
+    @fxbid, @reference_reader);
