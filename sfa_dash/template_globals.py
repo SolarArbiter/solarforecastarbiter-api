@@ -11,9 +11,8 @@ TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
 
 
-# dictionaries of python_name: human readable name
-VARIABLE_OPTIONS = {key: ' '.join(value) for key, value
-                    in filters.variable_mapping.items()}
+VARIABLE_OPTIONS = {key: f'{value} ({filters.api_varname_to_units(key)})'
+                    for key, value in filters.variable_mapping.items()}
 
 TIMEZONE_OPTIONS = {tz: tz.replace('_', ' ') for tz in TIMEZONES}
 

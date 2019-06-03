@@ -27,7 +27,7 @@ class SingleObservationView(DataDashView):
             text=self.metadata['site']['name'])
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.observations',
-                        site_id=self.metadata['site_id']),
+                        uuid=self.metadata['site_id']),
             text='Observations')
         breadcrumb += breadcrumb_format.format(
             url=url_for('data_dashboard.observation_view',

@@ -49,7 +49,7 @@ class DataListingView(BaseView):
                 url=url_for('data_dashboard.site_view', uuid=site_id),
                 text=site_metadata['name'])
         breadcrumb += breadcrumb_format.format(
-            url=url_for(f'data_dashboard.{self.data_type}s', site_id=site_id),
+            url=url_for(f'data_dashboard.{self.data_type}s', uuid=site_id),
             text=type_label)
         return breadcrumb
 
