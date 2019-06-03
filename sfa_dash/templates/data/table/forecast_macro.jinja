@@ -2,7 +2,7 @@
 <tr>
   <td><a href="{{ row['link'] }}">{{ row['name'] }}</a></td>
   <td>{{ row['variable'] | convert_varname }}</td>
-  <td>{{ row['provider'] }}</td>
+  <td class="provider-column">{{ row['provider'] }}</td>
   <td>{{ row['site'] }}</td>
 </tr>
 {% endmacro %}

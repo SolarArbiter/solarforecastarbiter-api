@@ -236,3 +236,24 @@ a.help-button{
     width: calc(100% - 29px);
     display: inline-flex;
 }
+
+/* Organization filters */
+#org-filters {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: .5rem;
+}
+.org-filter-options{
+    list-style: none;
+}
+#provider-header{
+    padding: 0;
+}
+.btn-th{
+    color: #333;
+    background-color: #fff;
+    font-weight: bold;
+    padding: .75rem;
+}
