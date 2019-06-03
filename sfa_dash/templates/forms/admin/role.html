@@ -1,0 +1,44 @@
+{% extends "dash/data.html" %}
+{% set page_title = 'Roles' %}
+{% block content %}
+{% if role is not none %}
+<div class="data-metadata border mt-2">
+    <h3>Role Data</h3>
+    <div class="row">
+        <ul class="data-metadata-fields col-md-6 col-xs-12">
+            <li><b>Name:</b> {{ role['name'] }}</li>
+            <li><b>Description:</b> {{ role['description'] }}</li>
+            <li><b>Organization:</b> {{ role['organization'] }} </li>
+        </ul>
+        <ul class="data-metadata-fields col-md-6 col-xs-12">
+            <li><b>Created:</b> {{ role['created_at'] }}</li>
+            <li><b>Last Modified:</b> {{ role['modified_at'] }}</li>
+        </ul>
+    </div>
+</div>
+<h3>Permissions</h3>
+<div class="tools {{ table_type }}-tools mt-1">
+   {% block tools %}
+   <input type="text" placeholder="Search" class="search">
+   {% endblock %}
+</div>
+<table class="role-permissions-table table results">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Date Added to Role</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for perm_id, perm in role['permissions'].items() %}
+      <tr>
+          <td><a href="{{ url_for('admin.permission_view', uuid=perm_id) }}">{{ perm['description'] }}</a></td>
+          <td>{{ perm['added_to_role'] }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>404 Not Found</p>
+{% endif %}
+{% endblock %}

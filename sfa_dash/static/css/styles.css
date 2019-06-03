@@ -1,7 +1,17 @@
 /* Bootstrap overrides */
+
 table.table th{
 	border-top: unset;
 }
+table.table{
+    table-layout: fixed;
+}
+@media (min-width: 992px){
+    table.results thead tr :first-child {
+        width: 40%;
+    }
+}
+
 
 /* General css */
 
@@ -256,4 +266,8 @@ a.help-button{
     background-color: #fff;
     font-weight: bold;
     padding: .75rem;
+}
+.scrollbox{
+    height: 400px;
+    overflow: scroll;
 }

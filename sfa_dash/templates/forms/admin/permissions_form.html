@@ -1,0 +1,73 @@
+{% extends "forms/base/base_form.html" %}
+{% import "forms/admin/permission_macros.jinja" as table_macros %}
+{% set page_title = 'Create New Permission' %}
+{% if data_type is not defined %}
+  {% set data_type="observation" %}
+{% endif %}
+{% if table_data is not defined %}
+  {% set table_data={} %}
+{% endif %}
+{% if data_type == 'site' %}
+  {% set row_macro = table_macros.site_row %}
+{% else %}
+{% set row_macro = table_macros.data_row %}
+{% endif %}
+{% block fields %}
+<p>Creating a new permission for data of type '{{ data_type | convert_data_type}}'.</p>
+<div class="form-element full-width">
+  <label>Description</label><br/>
+  <input type="text" class="form-control" name="description">
+</div>
+<div class="form-element full-width">
+  <label>Action</label><br/>
+  <p>Select the action this permission will allow.</p>
+  <input type="radio" name="action" value="create" required>Create
+  <input type="radio" name="action" value="read">Read
+  {# <input type="radio" name="action" value="update">Update #}
+  <input type="radio" name="action" value="delete">Delete
+  {% if data_type != "site" %}
+  <input type="radio" name="action" value="read_values">Read Values
+  <input type="radio" name="action" value="write_values">Write Values
+  <input type="radio" name="action" value="delete_values">Delete Values
+  {% endif %}
+</div>
+<div class="form-element full-width">
+  <label>Applies to all</label>
+  <input type="checkbox" name="applies-to-all" data-toggle="collapse" data-target="#object-selector">
+  <p>Check to allow the action on all {{ data_type }} in your organization.</p>
+</div>
+<div class="form-element full-width collapse show" id="object-selector">
+  <div class="permissions-object-table">
+    <label>{{ data_type | convert_data_type }}s</label>
+    <p>Select the {{ data_type | convert_data_type}}s to allow the action on.</p>
+    <div class="tools permissions-objects-table mt-1">
+      <input type="text" placeholder="Search" class="search">
+      <button type='button' class="btn-sm btn-primary mt-1" id='check-button'>Check All</button>
+      <button type='button' class="btn-sm btn-primary mt-1" id='uncheck-button'>Uncheck All</button>
+    </div>
+    <div class="scrollbox">
+      <table class="table results" id='permission-table'>
+        <thead>
+          <th scope="col"></th>
+          <th scope="col">Name</th>
+          {% if data_type != 'site' %}
+          <th scope="col">Variable</th>
+          {% endif %}
+          <th scope="col">UUID</th>
+        </thead>
+        <tbody>
+          <tr class="warning no-result">
+            <td collspan="3">
+              <i class="fa fa-warning"></i>
+              No Result
+            </td>
+          </tr> 
+          {% for row in table_data %}
+          {{ row_macro(data_type, row) }}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

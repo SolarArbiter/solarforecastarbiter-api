@@ -27,6 +27,7 @@
             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
               {% if user is not none %}
               <div class= "dropdown-item"><b>Logged in as:</b><br/> {{ user['name'] }}</div>
+              <a class="dropdown-item" href="{{ url_for('admin.admin') }}">User Administration</a>
               <a class="dropdown-item" href="{{ url_for('logout') }}">Log out</a>
               {% else %}
               <a class="dropdown-item" href="{{ url_for('auth0.login') }}">Log in</a>

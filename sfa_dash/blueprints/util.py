@@ -42,7 +42,7 @@ class DataTables(object):
             site_link = f'<a href={site_href}>{site_name}</a>'
             table_row['name'] = data['name']
             table_row['variable'] = data['variable']
-            table_row['provider'] = data.get('provider', 'Test User')
+            table_row['provider'] = data.get('provider', '')
             table_row['site'] = site_link
             if id_key == 'forecast_id':
                 table_row['link'] = url_for('data_dashboard.forecast_view',
@@ -145,7 +145,7 @@ class DataTables(object):
             site_link = f'<a href={site_href}>{site_name}</a>'
             table_row['name'] = data['name']
             table_row['variable'] = data['variable']
-            table_row['provider'] = data.get('provider', 'Test User')
+            table_row['provider'] = data.get('provider', '')
             table_row['site'] = site_link
             table_row['link'] = url_for(
                 'data_dashboard.cdf_forecast_group_view',
@@ -208,7 +208,7 @@ class DataTables(object):
         for data in data_list:
             table_row = {}
             table_row['name'] = data['name']
-            table_row['provider'] = data['provider']
+            table_row['provider'] = data.get('provider', '')
             table_row['latitude'] = data['latitude']
             table_row['longitude'] = data['longitude']
             table_row['link'] = url_for(link_view, uuid=data['site_id'])

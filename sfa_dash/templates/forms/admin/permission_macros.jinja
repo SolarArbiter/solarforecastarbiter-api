@@ -1,0 +1,22 @@
+{% macro data_row(data_type, row_values) %}
+{% if data_type == 'observation' %}
+  {% set uuid = row_values['observation_id'] %}
+{% else %}
+  {% set uuid = row_values['forecast_id'] %}
+{% endif %}
+<tr visible="true">
+  <td><input type="checkbox" name="objects-list" value="{{ uuid }}"></td>
+  <td>{{ row_values['name'] }}</td>
+  <td>{{ row_values['variable'] | convert_varname }}</td>
+  <td>{{ uuid }}</td>
+</tr> 
+{% endmacro %}
+
+{% macro site_row(data_type, row_values) %}
+{% set uuid = row_values['site_id'] %}
+<tr visible="true">
+  <td><input type="checkbox" name="objects-list" value="{{ uuid }}"></td>
+  <td>{{ row_values['name'] }}</td>
+  <td>{{ uuid }}</td>
+</tr>
+{% endmacro %}

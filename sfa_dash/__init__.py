@@ -83,8 +83,9 @@ def create_app(config=None):
 
     from sfa_dash.blueprints.main import data_dash_blp
     from sfa_dash.blueprints.form import forms_blp
+    from sfa_dash.blueprints.admin import admin_blp
 
-    for blp in (data_dash_blp, forms_blp):
+    for blp in (data_dash_blp, forms_blp, admin_blp):
         blp.before_request(protect_endpoint)
         app.register_blueprint(blp)
     return app

@@ -1,0 +1,49 @@
+{% extends "dash/data.html" %}
+{% set page_title = 'Permissions' %}
+{% block content %}
+{% if permission is not none %}
+<div class="data-metadata border mt-2">
+    <h3>Permission Data</h3>
+    <div class="row">
+        <ul class="data-metadata-fields col-md-6 col-xs-12">
+            <li><b>Description:</b> {{ permission['description'] }}</li>
+            <li><b>Action:</b> {{ permission['action'] }}</li>
+            <li><b>Object Type:</b> {{ permission['object_type'] }}</li>
+            <li><b>Organization:</b> {{ permission['organization'] }} </li>
+        </ul>
+        <ul class="data-metadata-fields col-md-6 col-xs-12">
+            <li><b>Created:</b> {{ permission['created_at'] }}</li>
+        </ul>
+    </div>
+</div>
+<h3>{{ permission['object_type'] | title }}</h3>
+<div class="tools {{ table_type }}-tools mt-1">
+   {% block tools %}
+   <input type="text" placeholder="Search" class="search">
+   {% endblock %}
+</div>
+<table class="object-table table results">
+  <thead>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">Date Added to Permission</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for uuid, obj in permission['objects'].items() %}
+      <tr>
+        {% if dashboard_type in ['role', 'permission', 'user']%}
+        <td><a href="{{ url_for('admin.'+dashboard_type+'_view', uuid=uuid) }}">{% if dashboard_type == 'permission' %}{{ obj['description'] }}{% elif dashboard_type == 'user'%}{{ obj['user_id'] }}{% else %}{{ obj['name'] }}{% endif %} </a></td>
+        {% else %}
+        <td><a href="{{ url_for('data_dashboard.'+dashboard_type+'_view', uuid=uuid) }}">{{ obj['name'] }}</a></td>
+        {% endif %}
+        <td>{{ obj['added_to_permission'] }} </td>
+      </tr>
+
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>404 Not Found</p>
+{% endif %}
+{% endblock %}

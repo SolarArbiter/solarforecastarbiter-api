@@ -1,0 +1,13 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{% include "sections/notifications.html" %}
+<form action="" method="post" enctype="application/json" id="the-form-id">
+  <div class="form-group">
+    {% block fields %}
+    {% endblock %}
+    {{ form.token() }}
+  </div>
+</form>
+<button type="submit" form="the-form-id" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}

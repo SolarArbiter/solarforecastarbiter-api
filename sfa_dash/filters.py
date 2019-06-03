@@ -3,6 +3,14 @@ from solarforecastarbiter.datamodel import ALLOWED_VARIABLES, COMMON_NAMES
 
 variable_mapping = COMMON_NAMES
 
+data_type_mapping = {
+    'site': 'Site',
+    'observation': 'Observation',
+    'forecast': 'Forecast',
+    'cdf_forecast': 'Probabilistic Forecast',
+    'cdf_forecast_group': 'Probabilistic Forecast Group',
+}
+
 
 def api_to_dash_varname(api_varname):
     return COMMON_NAMES[api_varname]
@@ -10,6 +18,10 @@ def api_to_dash_varname(api_varname):
 
 def api_varname_to_units(api_varname):
     return ALLOWED_VARIABLES[api_varname]
+
+
+def human_friendly_datatype(data_type):
+    return data_type_mapping[data_type]
 
 
 def display_timedelta(minutes):
@@ -54,3 +66,4 @@ def register_jinja_filters(app):
     app.jinja_env.filters['convert_varname'] = api_to_dash_varname
     app.jinja_env.filters['var_to_units'] = api_varname_to_units
     app.jinja_env.filters['display_timedelta'] = display_timedelta
+    app.jinja_env.filters['convert_data_type'] = human_friendly_datatype
