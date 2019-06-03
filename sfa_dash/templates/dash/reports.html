@@ -1,0 +1,28 @@
+{% extends "dash/data.html" %}
+{% block content %}
+<div class="tools {{ table_type }}-tools mt-1">
+  <input type="text" placeholder="Search" class="search">
+  <a role="button" class="btn btn-primary btn-sm" href="/reports/create">Create new Report</a>
+</div> 
+<table class="reports-table table results">
+  <thead>
+    <tr>
+	  <th scope="col">Name</th>
+	  <th scope="col">Created</th>
+      <th scope="col">Status</th>
+	</tr>
+  </thead>
+  <tbody>
+    <tr>
+	  <td>DOE SF2 Benchmark</td>
+	  <td>20189-05-23 21:30:00</td>
+      <td>Pending...</td>
+	</tr>
+    <tr>
+        <td><a href="{{ url_for('data_dashboard.report_view', uuid='fake_uuid') }}">Albuquerque GHI Forecast Analysis</a></td>
+	  <td>2019-05-24 18:56:53</td>
+      <td>Complete</td>
+	</tr>
+  </tbody>
+</table>
+{% endblock %}

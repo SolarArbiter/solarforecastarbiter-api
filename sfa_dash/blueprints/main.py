@@ -2,13 +2,14 @@ from flask import (Blueprint, render_template,
                    url_for, abort)
 
 
-from sfa_dash.blueprints.dash import DataDashView
-from sfa_dash.blueprints.data_listing import DataListingView
-from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
-from sfa_dash.blueprints.delete import DeleteConfirmation
-from sfa_dash.blueprints.util import timeseries_adapter
 from sfa_dash.api_interface import (observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
+from sfa_dash.blueprints.dash import DataDashView
+from sfa_dash.blueprints.data_listing import DataListingView
+from sfa_dash.blueprints.delete import DeleteConfirmation
+from sfa_dash.blueprints.reports import ReportsView, ReportView
+from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
+from sfa_dash.blueprints.util import timeseries_adapter
 
 
 class SingleObservationView(DataDashView):
@@ -244,10 +245,6 @@ class AccessView(DataDashView):
     template = 'data/access.html'
 
 
-class ReportsView(DataDashView):
-    template = 'data/reports.html'
-
-
 class TrialsView(DataDashView):
     template = 'data/trials.html'
 
@@ -307,3 +304,9 @@ data_dash_blp.add_url_rule(
     '/forecasts/cdf/<uuid>/delete',
     view_func=DeleteConfirmation.as_view(
         'delete_cdf_forecast_group', data_type='cdf_forecast_group'))
+data_dash_blp.add_url_rule(
+    '/reports/',
+    view_func=ReportsView.as_view('reports'))
+data_dash_blp.add_url_rule(
+    '/reports/<uuid>',
+    view_func=ReportView.as_view('report_view'))

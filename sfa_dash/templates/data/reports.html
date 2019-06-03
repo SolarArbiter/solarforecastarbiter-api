@@ -1,28 +1,27 @@
 {% extends "dash/data.html" %}
 {% block content %}
-<table class="table">
+<div class="tools {{ table_type }}-tools mt-1">
+  <input type="text" placeholder="Search" class="search">
+  <a role="button" class="btn btn-primary btn-sm" href="/reports/create">Create new Report</a>
+</div> 
+<table class="reports-table table results">
   <thead>
     <tr>
-	  <th>Name</th>
-	  <th>Date</th>
+	  <th scope="col">Name</th>
+	  <th scope="col">Created</th>
+      <th scope="col">Status</th>
 	</tr>
   </thead>
   <tbody>
     <tr>
 	  <td>DOE SF2 Benchmark</td>
 	  <td>2018/10/12 06:30:00</td>
+      <td>Pending...</td>
 	</tr>
     <tr>
-	  <td>Commercial Trial</td>
+      <td><a href="">Albuquerque GHI Forecast Analysis</a></td>
 	  <td>2018/10/12 06:30:00</td>
-	</tr>
-    <tr>
-	  <td>Trial Report N</td>
-	  <td>2018/10/12 06:30:00</td>
-	</tr>
-    <tr>
-	  <td>Trial Report X</td>
-	  <td>2018/10/12 06:30:00</td>
+      <td>Complete</td>
 	</tr>
   </tbody>
 </table>

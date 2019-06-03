@@ -6,6 +6,7 @@ import pandas as pd
 from sfa_dash.api_interface import (sites, observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
 from sfa_dash.blueprints.base import BaseView
+from sfa_dash.blueprints.reports import ReportForm
 
 
 class MetadataForm(BaseView):
@@ -425,3 +426,6 @@ forms_blp.add_url_rule('/forecasts/cdf/<uuid>/download',
                        view_func=DownloadForm.as_view(
                            'download_cdf_forecast_data',
                            data_type='cdf_forecast'))
+forms_blp.add_url_rule('/reports/create',
+                       view_func=ReportForm.as_view(
+                           'create_report'))

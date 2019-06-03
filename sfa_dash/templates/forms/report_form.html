@@ -1,0 +1,66 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+{% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+<form action="{{ url_for('data_dashboard.reports') }}" method="get" id="report-form">
+  <div class="form-group">
+     {% set form_data = {} %}
+     <div class="form-element full-width">
+       {{ form.input('Name', 'text', 'name', 'Name of the Report.', form_data=form_data) }}
+     </div>
+	 <div class="form-element full-width border" style="border-radius:10px;margin:.5em 1em;">
+       <div class="form-element">
+         {{ form.input('Forecast', 'text', 'forecast',
+                       'Forecast to compare.',
+                        form_data=form_data) }}
+       </div>
+       <div class="form-element">
+         {{ form.input('Observation', 'text', 'observation',
+                       'Observation to compare Forecast against.',
+                       form_data=form_data) }}
+       </div>
+	   <a href="#" style="padding-left: 1em">Add a Forecast, Observation pair</a>
+	 </div>
+     <div class="form-element">
+       <label>Filters</label><br>
+       <input type="checkbox" data-toggle="collapse" data-target=".quality-flag-options" name="quality-flag" value="Quality Flag"> Quality Flag<br>
+	     <div class="quality-flag-options collapse ml-3">
+           <p>Checked items are included in the analysis. Unchecked items are excluded from the analysis.</p>
+           <input type="checkbox"checked>NIGHTTIME<br/>
+           <input type="checkbox"checked>CLOUDY<br/>
+           <input type="checkbox"checked>SHADED<br/>
+           <input type="checkbox">UNEVEN FREQUENCY<br/>
+           <input type="checkbox">LIMITS EXCEEDED<br/>
+           <input type="checkbox">CLEARSKY EXCEEDED<br/>
+           <input type="checkbox">STALE VALUES<br/>
+           <input type="checkbox">INTERPOLATED VALUES<br/>
+           <input type="checkbox">CLIPPED VALUES<br/>
+           <input type="checkbox">INCONSISTENT IRRADIANCE COMPONENTS<br/>
+         </div>
+       <input type="checkbox" name="time-of-day" data-toggle="collapse" data-target=".time-of-day-options" value="Time of Day"> Time Of Day<br>
+         <div class="time-of-day-options ml-3 collapse">
+           start: <input type="time"> end: <input type="time">
+           <label>Subdivision</label><br>
+           <input type="checkbox" name="total" value="Total" disabled checked> Total<br>
+           <input type="checkbox" name="monthly" value="Monthly"> Monthly<br>
+           <input type="checkbox" name="daily" value="Daily"> Daily<br>
+           <input type="checkbox" name="hourly" value="Hourly"> Hourly<br>
+         </div>
+       <input type="checkbox" name="value-range" value="Value Range" data-toggle="collapse" data-target=".value-range-options"> Value Range<br>
+         <div class="value-range-options ml-3 collapse">
+             <input type="text" class='value-range-number' name="value-min" placeholder="min"> <span class='bigtext'>&le; </span><input type="text" class='value-range-observation' name="value-obs" placeholder="observation"> <span class='bigtext'>&le;</span> <input type="text" class='value-range-number' name="value-max" placeholder="max"><br>
+         </div>
+     </div>
+     <div class="form-element">
+     <label>Metrics</label><br>
+       <input type="checkbox" name="mae" value="MAE">MAE<br>
+       <input type="checkbox" name="rmse" value="RMSE">RMSE<br>
+       <input type="checkbox" name="skill" value="Skill over">Skill over <input type='text' class="form-control" style="width:inherit"/><br>
+     </div>
+    {{ form.token() }}
+  </div>
+</form>
+<button type="submit" form="report-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}

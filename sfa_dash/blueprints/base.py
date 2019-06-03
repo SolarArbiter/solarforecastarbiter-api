@@ -38,9 +38,13 @@ class BaseView(MethodView):
             breadcrumb += f'/<a href="{href}">{link_text}</a>'
         return breadcrumb
 
+    def template_args():
+        return {}
+
     def get(self, **kwargs):
         if hasattr(self, 'subnav') and self.subnav is not None:
             subnav = self.subnav
         else:
             subnav = {}
-        return render_template(self.template, subnav=subnav)
+        return render_template(self.template, subnav=subnav,
+                               **self.template_args())

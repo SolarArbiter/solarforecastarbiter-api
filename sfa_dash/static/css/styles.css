@@ -1,48 +1,43 @@
 /* Bootstrap overrides */
 
 table.table th{
-	border-top: unset;
+  border-top: unset;
 }
 table.table{
     table-layout: fixed;
 }
 @media (min-width: 992px){
-    table.results thead tr :first-child {
+    table.results thead tr th:first-child {
         width: 40%;
     }
 }
-
 
 /* General css */
 
 /* Always display scrollbar to stop jumping*/
 html{
-	overflow-y: scroll;
-}
-*{
-	margin: 0;
-	padding: 0;
+  overflow-y: scroll;
 }
 body{
- 	color: #333;
+  color: #333;
 }
 main{
-	margin-top: 7rem;
-	margin-bottom: 2rem;
+  margin-top: 7rem;
+  margin-bottom: 2rem;
 }
 .menu-list{
   list-style: none;
 }
-.menu-list li{
-
+ul.sidebar-menu{
+  padding-left: 0; 
 }
 .logo-wrap{
-	width: 200px;
+  width: 200px;
 }
 .logo-wrap h1{
-	font-size: 1.8rem;
-	text-transform: uppercase;
-	line-height: .85;
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  line-height: .85;
 }
 .logo-wrap a{
 	color: #555;
@@ -91,17 +86,17 @@ header nav{
 .sub-nav{
 }
 .sub-nav-list{
-	list-style: none;
-	padding-inline-start: unset;
-	margin-bottom: 0;
+  list-style: none;
+  padding-inline-start: unset;
+  margin-bottom: 0;
 }
 .sub-nav-item{
-	display: inline-block;
+  display: inline-block;
 }
 .sub-nav-link{
-	padding: .5em 1em .5em 0;
-	display: inline-block;
-	border-bottom: 2px solid transparent;
+  padding: .5em 1em .5em 0;
+  display: inline-block;
+  border-bottom: 2px solid transparent;
 }
 .sub-nav-link:hover, .sub-nav-link.active{
 	text-decoration: none;
@@ -109,14 +104,14 @@ header nav{
 }
 /* Footer */
 .footer{
-	padding-top: 2rem;
-	padding-bottom: 1rem;
-	box-shadow: 0 -1px 3px #DDD;
-}
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  box-shadow: 0 -1px 3px #DDD;
+  }
 .footer-link{
-	display: inline-block;
-	vertical-align: middle;
-	float: right;
+  display: inline-block;
+  vertical-align: middle;
+  float: right;
 }
 
 /* Data/Data */
@@ -227,24 +222,33 @@ li.alert p{
   margin-bottom: 0;
 }
 pre.example-text{
-    overflow: scroll;
-    max-width: 761px;
+  overflow: scroll;
+  max-width: 761px;
 }
 a.help-button{
-    color: white;
-    font-weight: bolder;
-    background-color: #6c757d;
-    border-radius: 12px;
-    width: 24px;
-    display: inline-block;
-    text-align: center;
+  color: white;
+  font-weight: bolder;
+  background-color: #6c757d;
+  border-radius: 12px;
+  width: 24px;
+  display: inline-block;
+  text-align: center;
 }
 .form-control{
-    display: inline-block;
+  display: inline-block;
 }
 .input-wrapper{
-    width: calc(100% - 29px);
-    display: inline-flex;
+  width: calc(100% - 29px);
+  display: inline-flex;
+}
+.bigtext{
+  font-size: 2rem;
+}
+.value-range-number{
+  width: 5rem;
+}
+.value-range-observation{
+  width: 40%;
 }
 
 /* Organization filters */
