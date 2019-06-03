@@ -310,9 +310,9 @@ SET @read_weather_station_obs_values = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
     'Read Weather Station', 'Allows User to read Site and Observation data', @weather_station_role, @orgid);
 INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
-    @read_weather_station, 'Read Ashland OR Site', @orgid, 'read', 'sites', FALSE), (
-    @read_weather_station_obs, 'Read Ashland OR Observations', @orgid, 'read', 'observations', FALSE), (
-    @read_weather_station_obs_values, 'Read Ashland OR Observation values', @orgid, 'read_values', 'observations', FALSE);
+    @read_weather_station, 'Read Weather Station Site', @orgid, 'read', 'sites', FALSE), (
+    @read_weather_station_obs, 'Read Weather Station Observations', @orgid, 'read', 'observations', FALSE), (
+    @read_weather_station_obs_values, 'Read Weather Station Observation values', @orgid, 'read_values', 'observations', FALSE);
 
 INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id) VALUES (
     @read_weather_station, @weather_station_id); 
