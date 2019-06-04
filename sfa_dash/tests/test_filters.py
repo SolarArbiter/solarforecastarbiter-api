@@ -14,12 +14,13 @@ from sfa_dash import filters
     (60, '1 hour'),
     (30, '30 minutes'),
     (1, '1 minute'),
+    (0, '0 minutes')
 ])
 def test_display_timedelta(minutes, expected):
     assert filters.display_timedelta(minutes) == expected
 
 
-@pytest.mark.paramtrize('minutes', [-1, 0])
-def test_display_timedelta_failure():
+@pytest.mark.parametrize('minutes', [-1, -2])
+def test_display_timedelta_failure(minutes):
     with pytest.raises(ValueError):
-        filters.display_timedelta(0)
+        filters.display_timedelta(minutes)

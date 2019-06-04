@@ -25,7 +25,7 @@ def human_friendly_datatype(data_type):
 
 
 def display_timedelta(minutes):
-    """Converts timedelta in seconds to human friendly format.
+    """Converts timedelta in minutes to human friendly format.
 
     Parameters
     ----------
@@ -39,14 +39,14 @@ def display_timedelta(minutes):
     Raises
     ------
     ValueError
-        If the timedelta is negative or evaluates to 0.
+        If the timedelta is negative.
     """
     def plural(num):
-        if num > 1:
+        if num != 1:
             return 's'
         else:
             return ''
-    if minutes <= 0:
+    if minutes < 0:
         raise ValueError
     days = minutes // 1440
     hours = minutes // 60 % 24
@@ -56,7 +56,7 @@ def display_timedelta(minutes):
         time_elements.append(f'{days} day{plural(days)}')
     if hours > 0:
         time_elements.append(f'{hours} hour{plural(hours)}')
-    if minutes > 0:
+    if minutes > 0 or (days == 0 and hours == 0):
         time_elements.append(f'{minutes} minute{plural(minutes)}')
     time_string = ' '.join(time_elements)
     return time_string
