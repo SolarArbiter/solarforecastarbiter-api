@@ -6,7 +6,26 @@
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
 <form action="{{ url_for('forms.download_' + data_type + '_data', uuid=uuid) }}" method="post"  id="{{ data_type }}-download">
   <div class="form-group">
-    {% block fields %}
+    <div class="form-element">
+      <label for="start">Start (UTC):</label>
+      <input type="date" id="start-date" name="period-start-date" {% if form_data is defined %}value="{{form_data['period-start-date']}}"{% endif %}required>
+      <input type="time" id="start-time" name="period-start-time" {% if form_data is defined %}value="{{form_data['period-start-time']}}"{% else %} value="00:00"{% endif %} required>
+    </div>
+    <div class="form-element">
+      <label for="end">End (UTC):</label>
+      <input type="date" id="end-date" name="period-end-date" {% if form_data is defined %}value="{{form_data['period-end-date']}}"{% endif %}required>
+      <input type="time" id="end-time" name="period-end-time" {% if form_data is defined %}value="{{form_data['period-end-time']}}"{% else %} value="00:00"{% endif %} required>
+    </div>
+    <div class="form-element full-width">
+      <label for="format">Format</label><br/>
+      <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="text/csv" checked>CSV</input>
+      <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="application/json">JSON</input>
+    </div>
+    {% block example %}
+	  {# block should contain the following divs to be collapsed by the radio buttons above #}
+	  <div class="form-element full-width">
+  		<div class="download-example csv show"></div>
+		<div class="download=example json collapse"></div>
     {% endblock %}
     {{ form.token() }}
   </div>

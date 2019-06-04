@@ -349,47 +349,62 @@ class DownloadForm(BaseView):
             Query parameters start and end, both formatted in iso8601 and
             localized to the provided timezone.
         """
-        start_time = pd.Timestamp(form_data['period-start'], tz='utc')
-        end_time = pd.Timestamp(form_data['period-end'], tz='utc')
+        start_date = form_data["period-start-date"]
+        start_time = form_data["period-start-time"]
+        start_dt = pd.Timestamp(f'{start_date} {start_time}', tz='utc')
+        end_date = form_data["period-end-date"]
+        end_time = form_data["period-end-time"]
+        end_dt = pd.Timestamp(f'{end_date} {end_time}', tz='utc')
         params = {
-            'start': start_time.isoformat(),
-            'end': end_time.isoformat(),
+            'start': start_dt.isoformat(),
+            'end': end_dt.isoformat(),
         }
         headers = {'Accept': form_data['format']}
         return headers, params
 
-    def get(self, uuid):
+    def template_args(self, uuid):
         metadata_request = self.api_handle.get_metadata(uuid)
         if metadata_request.status_code != 200:
             abort(404)
         metadata_dict = metadata_request.json()
         metadata_dict['site_link'] = self.generate_site_link(metadata_dict)
         metadata = render_template(self.metadata_template, **metadata_dict)
-        return render_template(self.template, metadata=metadata, uuid=uuid)
+        return {'metadata': metadata, 'uuid': uuid}
+
+    def get(self, uuid):
+        return render_template(self.template, **self.template_args(uuid))
 
     def post(self, uuid):
         form_data = request.form
-        headers, params = self.format_params(form_data)
-        data_request = self.api_handle.get_values(uuid,
-                                                  headers=headers,
-                                                  params=params)
-        if data_request.status_code != 200:
-            abort(404)
-        elif form_data['format'] == 'application/json':
-            data = data_request.json()
-            response = make_response(json.dumps(data))
-            response.headers.set('Content-Type', 'application/json')
-            response.headers.set(
-                'Content-Disposition', 'attachment', filename='data.json')
-        elif form_data['format'] == 'text/csv':
-            csv_data = data_request.text
-            response = make_response(csv_data)
-            response.headers.set('Content-Type', 'text/csv')
-            response.headers.set(
-                'Content-Disposition', 'attachment', filename='data.csv')
+        try:
+            headers, params = self.format_params(form_data)
+        except ValueError:
+            errors = {'start-end': ['Invalid datetime']}
+            response = make_response(render_template(
+                self.template, form_data=form_data,
+                errors=errors, **self.template_args(uuid)), 400)
+            return response
         else:
-            raise ValueError('Invalid Format.')
-        return response
+            data_request = self.api_handle.get_values(uuid,
+                                                      headers=headers,
+                                                      params=params)
+            if data_request.status_code != 200:
+                abort(404)
+            elif form_data['format'] == 'application/json':
+                data = data_request.json()
+                response = make_response(json.dumps(data))
+                response.headers.set('Content-Type', 'application/json')
+                response.headers.set(
+                    'Content-Disposition', 'attachment', filename='data.json')
+            elif form_data['format'] == 'text/csv':
+                csv_data = data_request.text
+                response = make_response(csv_data)
+                response.headers.set('Content-Type', 'text/csv')
+                response.headers.set(
+                    'Content-Disposition', 'attachment', filename='data.csv')
+            else:
+                raise ValueError('Invalid Format.')
+            return response
 
 
 forms_blp = Blueprint('forms', 'forms')

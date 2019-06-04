@@ -1,20 +1,7 @@
 {% extends "forms/base/download_form.html" %}
 {% set page_title = 'Download Observation data' %}
 {% set data_type = 'observation' %}
-{% block fields %}
-<div class="form-element">
-  <label for="start">Start time:</label>
-  <input type="datetime-local" id="start" name="period-start">
-</div>
-<div class="form-element">
-  <label for="end">End time:</label>
-  <input type="datetime-local" id="end" name="period-end">
-</div>
-<div class="form-element full-width">
-  <label for="format">Format</label><br/>
-  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="text/csv" checked>CSV</input>
-  <input type="radio" data-toggle="collapse" data-target=".download-example" name="format" value="application/json">JSON</input>
-</div>
+{% block example %}
 <div class="form-element full-width">
   <div class="download-example csv show">
   <p>CSV downloads will have the following format.</p>

@@ -215,6 +215,7 @@ span.help-text::before {
 ul.error-list, ul.message-list{
   list-style: none;
   margin-top: .5rem;
+  padding-left: 0;
 }
 li.alert{
   margin-bottom: .5rem;
