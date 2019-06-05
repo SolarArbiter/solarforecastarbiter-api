@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
-import pandas as pd
 from solarforecastarbiter.io.utils import HiddenToken
 from solarforecastarbiter.validation import tasks
 
@@ -249,7 +248,6 @@ class ObservationValuesView(MethodView):
         observation_df = validate_observation_values(
             validate_parsable_values(), qf_range)
         observation_df = observation_df.set_index('timestamp')
-        observation_df.replace({pd.np.nan: None}, inplace=True)
         storage = get_storage()
         stored = storage.store_observation_values(
             observation_id, observation_df)
