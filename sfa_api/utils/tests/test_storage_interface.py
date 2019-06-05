@@ -673,3 +673,16 @@ def test_delete_cdf_forecast_group_does_not_exist(
         sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_cdf_forecast_group(str(uuid.uuid1()))
+
+
+def test_store_missing_values(
+        sql_app, user, nocommit_cursor):
+    observation = list(demo_observations.values())[0]
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    obs_vals = values.static_observation_values()
+    missing_indices = range(0, obs_vals.index.size, 3)
+    obs_vals['value'].iloc[missing_indices] = pd.np.nan
+    storage_interface.store_observation_values(new_id, obs_vals)
+    stored = storage_interface.read_observation_values(new_id)
+    pdt.assert_frame_equal(stored, obs_vals)

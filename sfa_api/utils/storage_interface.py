@@ -6,6 +6,7 @@ storage.
 """
 from contextlib import contextmanager
 from functools import partial
+import math
 import random
 import uuid
 
@@ -33,6 +34,13 @@ def generate_uuid():
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
 
 
+def escape_float_with_nan(value, mapping=None):
+    if math.isnan(value):
+        return 'NULL'
+    else:
+        return ('%.15g' % value)
+
+
 def _make_sql_connection_partial():
     config = current_app.config
     conv = converters.conversions.copy()
@@ -40,6 +48,7 @@ def _make_sql_connection_partial():
     conv[converters.FIELD_TYPE.DECIMAL] = float
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
     conv[pd.Timestamp] = converters.escape_datetime
+    conv[float] = escape_float_with_nan
     connect_kwargs = {
         'host': config['MYSQL_HOST'],
         'port': int(config['MYSQL_PORT']),
