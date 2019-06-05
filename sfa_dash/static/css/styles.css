@@ -1,5 +1,20 @@
 /* Bootstrap overrides */
-
+@media (min-width: 768px){
+  .fixed-top{
+    position: fixed;
+  }
+}
+@media (max-width: 767px){
+  .fixed-top{
+    position: relative;
+  }
+}
+.fixed-top{
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1030;
+}
 table.table th{
   border-top: unset;
 }
@@ -21,13 +36,26 @@ html{
 body{
   color: #333;
 }
-main{
-  margin-top: 11rem;
-  // margin-top: 7rem;
+main { 
   margin-bottom: 2rem;
+}
+@media (min-width: 768px){
+  main{
+    margin-top: 11rem;
+  }
+}
+@media (max-width: 767px){
+  main{
+    margin-top: 0;
+  }
 }
 .menu-list{
   list-style: none;
+}
+@media (min-width: 768px){
+  div.sidebar-wrapper {
+    border-right: 1px solid #dee2e6!important;
+  }
 }
 ul.sidebar-menu{
   padding-left: 0; 
@@ -146,6 +174,7 @@ ul.data-metadata-fields{
 
 /* Forms */
 .form-group{
+  width: 100%;
   float: left;
 }
 .form-element label{
@@ -170,7 +199,6 @@ ul.data-metadata-fields{
   width: 100%;
 }
 .time-field{
-  width: unset;
   display: inline-block;
 }
 .form-element .well-known-text-field{
@@ -260,6 +288,23 @@ a.help-button{
     border: 1px solid #000;
     border-radius: 5px;
     padding: .5rem;
+}
+#org-filter-collapse{
+    font-family: monospace;
+    color: #000;
+    border: 1px solid black;
+    border-radius: 3px;
+    margin-left: 1rem;
+    padding: .1rem 0.3rem;
+}
+#org-filter-collapse:hover{
+    text-decoration: none;
+    background-color: #ddd;
+    transition: background-color .2s;
+}
+#org-filter-collapse:after{
+    content: "\00d7";
+    font-size: 1rem;
 }
 .org-filter-options{
     list-style: none;

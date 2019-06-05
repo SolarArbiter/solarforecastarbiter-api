@@ -4,7 +4,7 @@
 {% set data_type = 'Forecast' %}
 {% endif %}
 {% block extra_fields %}
-{{ macro.li('Issue time of day', issue_time_of_day) }}
+{{ macro.li('Issue time of day', issue_time_of_day+'Z') }}
 {{ macro.li('Run length / Issue frequency', run_length | display_timedelta) }}
 {{ macro.li('Lead time to start', lead_time_to_start | display_timedelta) }}
 {# 

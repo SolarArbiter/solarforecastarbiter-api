@@ -7,12 +7,12 @@
 <form action="{{ url_for('forms.download_' + data_type + '_data', uuid=uuid) }}" method="post"  id="{{ data_type }}-download">
   <div class="form-group">
     <div class="form-element">
-      <label for="start">Start (UTC):</label>
+      <label for="start">Start (UTC):</label><br/>
       <input type="date" id="start-date" name="period-start-date" {% if form_data is defined %}value="{{form_data['period-start-date']}}"{% endif %}required>
       <input type="time" id="start-time" name="period-start-time" {% if form_data is defined %}value="{{form_data['period-start-time']}}"{% else %} value="00:00"{% endif %} required>
     </div>
     <div class="form-element">
-      <label for="end">End (UTC):</label>
+      <label for="end">End (UTC)</label><br/>
       <input type="date" id="end-date" name="period-end-date" {% if form_data is defined %}value="{{form_data['period-end-date']}}"{% endif %}required>
       <input type="time" id="end-time" name="period-end-time" {% if form_data is defined %}value="{{form_data['period-end-time']}}"{% else %} value="00:00"{% endif %} required>
     </div>
