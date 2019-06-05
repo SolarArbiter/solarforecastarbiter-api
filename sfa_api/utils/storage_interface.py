@@ -40,6 +40,7 @@ def escape_float_with_nan(value, mapping=None):
     else:
         return ('%.15g' % value)
 
+
 def _make_sql_connection_partial():
     config = current_app.config
     conv = converters.conversions.copy()
