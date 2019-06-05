@@ -33,7 +33,7 @@ CREATE TABLE arbiter_data.cdf_forecasts_singles (
 CREATE TABLE arbiter_data.cdf_forecasts_values (
     id BINARY(16) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
-    value FLOAT NOT NULL,
+    value FLOAT,
 
     PRIMARY KEY (id, timestamp),
     FOREIGN KEY (id)

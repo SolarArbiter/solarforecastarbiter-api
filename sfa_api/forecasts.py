@@ -272,6 +272,7 @@ class ForecastValuesView(MethodView):
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
+        forecast_df.replace({pd.np.nan: None}, inplace=True)
         storage = get_storage()
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         if stored is None:
@@ -557,6 +558,7 @@ class CDFForecastValues(MethodView):
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
+        forecast_df.replace({pd.np.nan: None}, inplace=True)
         storage = get_storage()
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
         if stored is None:

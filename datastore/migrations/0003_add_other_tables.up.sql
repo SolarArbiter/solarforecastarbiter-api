@@ -61,7 +61,7 @@ CREATE TABLE arbiter_data.observations (
 CREATE TABLE arbiter_data.observations_values (
     id BINARY(16) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
-    value FLOAT NOT NULL,
+    value FLOAT,
     quality_flag SMALLINT UNSIGNED NOT NULL,
 
     PRIMARY KEY (id, timestamp),
@@ -103,7 +103,7 @@ CREATE TABLE arbiter_data.forecasts(
 CREATE TABLE arbiter_data.forecasts_values (
     id BINARY(16) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
-    value FLOAT NOT NULL,
+    value FLOAT,
 
     PRIMARY KEY (id, timestamp),
     FOREIGN KEY (id)
