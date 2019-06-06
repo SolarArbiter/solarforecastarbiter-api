@@ -12,7 +12,8 @@ def base_error_handler(error):
 def delete_restriction_handler(error):
     return jsonify({
         'errors': {
-            'site': ['Referenceced by existing forecasts or observations.'],
+            'site': ['Cannot delete site because it is referenced by existing '
+                     'forecasts or observations.'],
         }
     }), 400
 
