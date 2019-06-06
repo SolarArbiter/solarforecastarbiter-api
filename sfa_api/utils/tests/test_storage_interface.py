@@ -53,6 +53,8 @@ def test_escape_float_with_nan():
 
 def test_escape_timestamp():
     assert storage_interface.escape_timestamp(
+        pd.Timestamp('2019-04-08T030423')) == "'2019-04-08 03:04:23'"
+    assert storage_interface.escape_timestamp(
         pd.Timestamp('2019-04-08T030423Z')) == "'2019-04-08 03:04:23'"
     assert storage_interface.escape_timestamp(
         pd.Timestamp('2019-04-08T030423-0300')) == "'2019-04-08 06:04:23'"
