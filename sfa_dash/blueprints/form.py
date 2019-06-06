@@ -296,7 +296,10 @@ class UploadForm(BaseView):
         posted_file = request.files[f'{self.data_type}-data']
         if posted_file.filename == '':
             return 'no filename'
-        if posted_file.mimetype == 'text/csv':
+        if (
+                posted_file.mimetype == 'text/csv' or
+                posted_file.mimetype == 'application/vnd.ms-excel'
+        ):
             posted_data = posted_file.read()
             post_request = self.api_handle.post_values(
                 uuid,
@@ -305,6 +308,11 @@ class UploadForm(BaseView):
         elif posted_file.mimetype == 'application/json':
             posted_data = json.load(posted_file)
             post_request = self.api_handle.post_values(uuid, posted_data)
+        else:
+            errors = {
+                'mime-type': [f'Unsupported file type {posted_file.mimetype}.']
+            }
+            return render_template(self.template, uuid=uuid, errors=errors)
         if post_request.status_code != 201:
             errors = post_request.json()['errors']
             return render_template(self.template, uuid=uuid, errors=errors)
