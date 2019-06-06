@@ -5,6 +5,7 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+import datetime as dt
 from functools import partial
 import math
 import random
@@ -27,6 +28,9 @@ from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
 # min and max timestamps storable in mysql
 MINTIMESTAMP = pd.Timestamp('19700101T000001Z')
 MAXTIMESTAMP = pd.Timestamp('20380119T031407Z')
+# microseconds dropped on purpose, must quote
+# this is faster than using strftime
+TIMEFORMAT = "'{0.year:04}-{0.month:02}-{0.day:02} {0.hour:02}:{0.minute:02}:{0.second:02}'"  # NOQA
 
 
 def generate_uuid():
@@ -41,13 +45,28 @@ def escape_float_with_nan(value, mapping=None):
         return ('%.15g' % value)
 
 
+def escape_timestamp(value, mapping=None):
+    if value.tzinfo is not None:
+        return TIMEFORMAT.format(value.tz_convert('UTC'))
+    else:
+        return TIMEFORMAT.format(value)
+
+
+def escape_datetime(value, mapping=None):
+    if value.tzinfo is not None:
+        return TIMEFORMAT.format(value.astimezone(dt.timezone.utc))
+    else:
+        return TIMEFORMAT.format(value)
+
+
 def _make_sql_connection_partial():
     config = current_app.config
     conv = converters.conversions.copy()
     # either convert decimals to floats, or add decimals to schema
     conv[converters.FIELD_TYPE.DECIMAL] = float
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
-    conv[pd.Timestamp] = converters.escape_datetime
+    conv[pd.Timestamp] = escape_timestamp
+    conv[dt.datetime] = escape_datetime
     conv[float] = escape_float_with_nan
     connect_kwargs = {
         'host': config['MYSQL_HOST'],

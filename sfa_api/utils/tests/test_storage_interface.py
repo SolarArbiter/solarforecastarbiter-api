@@ -1,6 +1,9 @@
+import datetime as dt
+import math
 import uuid
 
 
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
@@ -22,7 +25,7 @@ TESTINDICES = {
 }
 
 
-@pytest.fixture(params=[0, 1, 2, 3])
+@pytest.fixture(params=[0, 1, 2, 3, 4])
 def startend(request):
     if request.param == 0:
         start = None
@@ -33,10 +36,37 @@ def startend(request):
     elif request.param == 2:
         start = None
         end = pd.Timestamp('20190414T1215Z')
-    else:
+    elif request.param == 3:
         start = pd.Timestamp('20190414T1205Z')
         end = pd.Timestamp('20190414T1215Z')
+    else:
+        start = pd.Timestamp('20190414T0505-0700')
+        end = pd.Timestamp('20190414T1015-0200')
     return start, end
+
+
+def test_escape_float_with_nan():
+    assert storage_interface.escape_float_with_nan(math.nan) == 'NULL'
+    assert storage_interface.escape_float_with_nan(np.nan) == 'NULL'
+    assert storage_interface.escape_float_with_nan(0.9) == '0.9'
+
+
+def test_escape_timestamp():
+    assert storage_interface.escape_timestamp(
+        pd.Timestamp('2019-04-08T030423')) == "'2019-04-08 03:04:23'"
+    assert storage_interface.escape_timestamp(
+        pd.Timestamp('2019-04-08T030423Z')) == "'2019-04-08 03:04:23'"
+    assert storage_interface.escape_timestamp(
+        pd.Timestamp('2019-04-08T030423-0300')) == "'2019-04-08 06:04:23'"
+
+
+def test_escape_datetime():
+    assert storage_interface.escape_datetime(
+        dt.datetime(2019, 5, 1, 23, 33, 12)) == "'2019-05-01 23:33:12'"
+    assert (storage_interface.escape_datetime(
+        dt.datetime(2019, 5, 1, 23, 33, 12,
+                    tzinfo=dt.timezone(dt.timedelta(hours=-5)))) ==
+            "'2019-05-02 04:33:12'")
 
 
 def test_try_query_raises():
@@ -185,6 +215,17 @@ def test_store_observation_values(sql_app, user, nocommit_cursor,
     pdt.assert_frame_equal(stored, obs_vals)
 
 
+def test_store_observation_values_tz(sql_app, user, nocommit_cursor):
+    observation = list(demo_observations.values())[0]
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    obs_vals = values.static_observation_values()
+    storage_interface.store_observation_values(
+        new_id, obs_vals.tz_convert('MST'))
+    stored = storage_interface.read_observation_values(new_id)
+    pdt.assert_frame_equal(stored, obs_vals)
+
+
 def test_store_observation_values_no_observation(
         sql_app, user, nocommit_cursor):
     new_id = str(uuid.uuid1())
@@ -302,6 +343,16 @@ def test_store_forecast_values(sql_app, user, nocommit_cursor,
     new_id = storage_interface.store_forecast(forecast)
     fx_vals = values.static_forecast_values()
     storage_interface.store_forecast_values(new_id, fx_vals)
+    stored = storage_interface.read_forecast_values(new_id)
+    pdt.assert_frame_equal(stored, fx_vals)
+
+
+def test_store_forecast_values_tz(sql_app, user, nocommit_cursor):
+    forecast = list(demo_forecasts.values())[0]
+    forecast['name'] = 'new_forecast'
+    new_id = storage_interface.store_forecast(forecast)
+    fx_vals = values.static_forecast_values()
+    storage_interface.store_forecast_values(new_id, fx_vals.tz_convert('MST'))
     stored = storage_interface.read_forecast_values(new_id)
     pdt.assert_frame_equal(stored, fx_vals)
 
