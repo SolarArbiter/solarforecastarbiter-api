@@ -11,8 +11,8 @@
             <li><b>Organization:</b> {{ role['organization'] }} </li>
         </ul>
         <ul class="data-metadata-fields col-md-6 col-xs-12">
-            <li><b>Created:</b> {{ role['created_at'] }}</li>
-            <li><b>Last Modified:</b> {{ role['modified_at'] }}</li>
+            <li><b>Created:</b> {{ role['created_at'] | format_datetime}}</li>
+            <li><b>Last Modified:</b> {{ role['modified_at'] |format_datetime }}</li>
         </ul>
     </div>
 </div>
@@ -33,7 +33,7 @@
     {% for perm_id, perm in role['permissions'].items() %}
       <tr>
           <td><a href="{{ url_for('admin.permission_view', uuid=perm_id) }}">{{ perm['description'] }}</a></td>
-          <td>{{ perm['added_to_role'] }}</td>
+          <td>{{ perm['added_to_role'] | format_datetime}}</td>
       </tr>
     {% endfor %}
   </tbody>

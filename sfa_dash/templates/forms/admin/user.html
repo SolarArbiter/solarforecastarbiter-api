@@ -11,8 +11,8 @@
             <li ><b>Organization:</b> {{ user['organization'] }} </li>
         </ul>
         <ul class="data-metadata-fields col-md-6 col-xs-12">
-            <li><b>Created:</b> {{user['created_at']}}</li>
-            <li><b>Last Modified:</b> {{user['modified_at']}}</li>
+            <li><b>Created:</b> {{user['created_at'] | format_datetime }}</li>
+            <li><b>Last Modified:</b> {{user['modified_at'] | format_datetime }}</li>
         </ul>
     </div>
 </div>
@@ -37,7 +37,7 @@
       <tr>
           <td><a href="{{ url_for('admin.role_view', uuid=role_id) }}">{{ role['name'] }}</a></td>
           <td>{{ role['organization'] }}</td>
-          <td>{{ role['added_to_user'] }}</td>
+          <td>{{ role['added_to_user'] | format_datetime }}</td>
       </tr>
     {% endfor %}
   </tbody>

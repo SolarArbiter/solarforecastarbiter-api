@@ -12,7 +12,7 @@
             <li><b>Organization:</b> {{ permission['organization'] }} </li>
         </ul>
         <ul class="data-metadata-fields col-md-6 col-xs-12">
-            <li><b>Created:</b> {{ permission['created_at'] }}</li>
+            <li><b>Created:</b> {{ permission['created_at'] | format_datetime }}</li>
         </ul>
     </div>
 </div>
@@ -37,7 +37,7 @@
         {% else %}
         <td><a href="{{ url_for('data_dashboard.'+dashboard_type+'_view', uuid=uuid) }}">{{ obj['name'] }}</a></td>
         {% endif %}
-        <td>{{ obj['added_to_permission'] }} </td>
+        <td>{{ obj['added_to_permission'] | format_datetime}} </td>
       </tr>
 
     {% endfor %}

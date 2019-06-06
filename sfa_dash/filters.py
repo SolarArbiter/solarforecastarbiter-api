@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 from solarforecastarbiter.datamodel import ALLOWED_VARIABLES, COMMON_NAMES
 
 
@@ -22,6 +25,12 @@ def api_varname_to_units(api_varname):
 
 def human_friendly_datatype(data_type):
     return data_type_mapping[data_type]
+
+
+def format_datetime(dt_string):
+    """Temporary solution to formatting datetime strings returned by API
+    """
+    return pd.Timestamp(dt_string).strftime('%Y-%m-%d %H:%M:%SZ')
 
 
 def display_timedelta(minutes):
@@ -67,3 +76,4 @@ def register_jinja_filters(app):
     app.jinja_env.filters['var_to_units'] = api_varname_to_units
     app.jinja_env.filters['display_timedelta'] = display_timedelta
     app.jinja_env.filters['convert_data_type'] = human_friendly_datatype
+    app.jinja_env.filters['format_datetime'] = format_datetime
