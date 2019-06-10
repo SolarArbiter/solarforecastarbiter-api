@@ -619,8 +619,67 @@ class RoleSchema(RolePostSchema):
     role_id = ma.UUID(
         title='Role ID',
         description="UUID of the role",
+        required=True,
+        validate=UserstringValidator()
     )
     organization = ma.String(title="Organization")
     permissions = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+
+
+# Currently, the marshmallow API Spec
+@spec.define_schema('ReportMetadata')
+class ReportPostSchema(ma.Schema):
+    name = ma.String(
+        title="Name",
+        required=True,
+        validate=UserstringValidator()
+    )
+    start = ma.DateTime(
+        title="Start",
+        description=("The beginning of the analysis period as an ISO 8601"
+                     "datetime."),
+        format='iso'
+    )
+    end = ma.DateTime(
+        title="End",
+        description="The end of the analysis period as an ISO 8601 datetime.",
+        format='iso'
+    )
+    # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't
+    # been added to apispec, so this will not render correctly right now
+    # Issue: https://github.com/marshmallow-code/apispec/issues/399
+    object_pairs = ma.Tuple(
+        (ma.UUID(title="Observation UUID"), ma.UUID(title="Forecast UUID")),
+        many=True)
+    filters = ma.List(
+        ma.String(),
+        title="Filters",
+        description="List of Filters Applied to the data in the report"
+    )
+    metrics = ma.List(
+        ma.String(
+            validate=validate.OneOf(['MAE', 'RMSE'])
+        ),
+        title='Metrics',
+        description=('The metrics to include in the report.'),
+        required=True
+    )
+
+
+@spec.define_schema('ReportSchema')
+class ReportSchema(ReportPostSchema):
+    class Meta:
+        string = True
+        ordered = True
+    report_id = ma.UUID()
+
+
+@spec.define_schema('ReportValuesSchema')
+class ReportValuesSchema(ma.Schema):
+    report_id = ma.UUID(title="The report's unique id.")
+    # Not sure how this dict should be structured. Nested
+    # Forecast/ObservationValueSchema?
+    # we definitely want the uuid:values mapping
+    values = ma.Dict(keys=ma.UUID(), values=ma.String())

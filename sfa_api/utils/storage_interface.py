@@ -1149,3 +1149,90 @@ def remove_object_from_permission(permission_id, uuid):
     """
     _call_procedure('remove_object_from_permission',
                     uuid, permission_id)
+
+
+def store_report(report):
+    """Store a report's metadata
+
+    Parameters
+    ----------
+    report: dict
+        Dictionary of report metadata
+
+    Returns
+    -------
+    str
+        UUID of newly created report.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to create a report
+        - If any of the objects in object_pairs does not exist,
+          or the user lacks permissions to read the data.
+    """
+    return generate_uuid()
+
+
+def read_report(report_id):
+    """
+    Parameters
+    ----------
+    report_id
+        UUID of the report to read.
+
+    Returns
+    -------
+    dict
+        A dictionary of Report metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the report does not exist, or the the user does not have
+        permission to read the report.
+    """
+    pass
+
+
+def store_processed_values(report_id, object_id, value_df):
+    """
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+    object_id: str
+        UUID of the original object
+    value_df: pandas.DataFrame
+        Dataframe of processed values to store
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to store values for the
+          report.
+        - If the user does not have permission to read the original object
+        - If the user does not have access to the report.
+    """
+    pass
+
+
+def read_procressed_values(report_id, object_id):
+    """
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+    object_id: str
+        UUID of the original object
+
+    Returns
+    -------
+    pandas.DataFrame
+        The processed values used in the report for the original object.
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to the report or the original object.
+    """
+    pass
