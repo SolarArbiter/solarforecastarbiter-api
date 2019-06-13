@@ -7,6 +7,8 @@ CREATE TABLE arbiter_data.reports(
     name VARCHAR(64) NOT NULL,
     report_parameters JSON NOT NULL,
     metrics JSON NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     FOREIGN KEY (organization_id)
@@ -29,8 +31,8 @@ CREATE TABLE arbiter_data.report_values(
 -- Report READ PROCEDURES
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_reports (IN auth0id VARCHAR(32))
 READS SQL DATA SQL SECURITY DEFINER
-SELECT BIN_TO_UUID(id, 1) as report_id,
-       get_organization_name(orgnization_id) as provider
+SELECT BIN_TO_UUID(id, 1) as report_id, get_organization_name(organization_id) as provider,
+       name, report_parameters, metrics
        FROM arbiter_data.reports WHERE id in (
        SELECT object_id from user_objects where auth0_id = auth0id AND object_type = 'reports');
 
@@ -45,7 +47,8 @@ BEGIN
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as report_id, get_organization_name(organization_id) as provider
+        SELECT BIN_TO_UUID(id, 1) as report_id, get_organization_name(organization_id) as provider,
+        name, report_parameters, metrics
         FROM arbiter_data.reports where id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read report"',
@@ -92,8 +95,8 @@ BEGIN
     DECLARE create_allowed BOOLEAN DEFAULT FALSE;
     SET bin_report_id = (SELECT UUID_TO_BIN(str_report_id, 1));
     SET bin_object_id = (SELECT UUID_TO_BIN(str_object_id, 1));
-    SET read_allowed = (SELECT can_user_perform_action(auth0id, bin_report_id, 'reports'));
-    SET create_allowed = (SELECT user_can_create(auth0id, bin_object_id, 'reports'));
+    SET read_allowed = (SELECT can_user_perform_action(auth0id, bin_report_id, 'write_values'));
+    SET create_allowed = (SELECT user_can_create(auth0id, 'reports'));
     IF read_allowed and create_allowed THEN
         INSERT INTO arbiter_data.report_values (
             report_id, object_id, processed_values) VALUES (
@@ -109,6 +112,7 @@ GRANT INSERT ON arbiter_data.report_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_values TO 'insert_objects'@'localhost';
 
+-- Report delete procedure
 CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_report (
     IN auth0id VARCHAR(31), IN strid CHAR(36))
 COMMENT 'Delete report'
@@ -116,15 +120,52 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
-    SET binid = (UUID_TO_BIN(binid, 1));
-    SET allowed = (SELECT UUID_TO_BIN(binid, 1));
+    SET binid = (UUID_TO_BIN(strid, 1));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'delete'));
     IF allowed THEN
-        DELETE FROM arbiter_data.reports WHERE report_id = binid;
+        DELETE FROM arbiter_data.reports WHERE id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete report"',
         MYSQL_ERRNO = 1142;
     END IF;
 END;
 
-GRANT DELETE on arbiter_data.reports TO 'delete_objects'@'localhost';
+GRANT DELETE, SELECT(id) on arbiter_data.reports TO 'delete_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_report TO 'delete_objects'@'localhost';
+
+-- add permission triggers for reports
+GRANT SELECT, TRIGGER ON arbiter_data.reports TO 'permission_trig'@'localhost';
+GRANT TRIGGER ON arbiter_data.report_values TO 'permission_trig'@'localhost';
+
+-- add permissions triggers for reports
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER add_object_perm_on_report_permissions_insert AFTER INSERT ON arbiter_data.permissions
+FOR EACH ROW PRECEDES add_object_perm_on_permissions_insert
+BEGIN
+    IF NEW.applies_to_all AND NEW.action != 'create' THEN
+        IF NEW.object_type = 'reports' THEN
+            INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
+                SELECT NEW.id, id FROM arbiter_data.reports where organization_id = NEW.organization_id;
+        END IF;
+    END IF;
+END;
+
+
+-- add new reports to 'applies_to_all' reports permissions
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER add_object_perm_on_reports_insert AFTER INSERT ON arbiter_data.reports
+FOR EACH ROW INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
+    SELECT id, NEW.id FROM arbiter_data.permissions WHERE action != 'create' AND applies_to_all AND organization_id = NEW.organization_id AND object_type = 'reports';
+
+
+-- remove any object permission mappings after report deletion
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_object_perm_on_report_delete AFTER DELETE ON arbiter_data.reports
+FOR EACH ROW DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = OLD.id;
+
+
+-- restrict fields that may be updated
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER limit_reports_update BEFORE UPDATE ON arbiter_data.reports
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot modify organization_id of report object';
+    END IF;
+END;

@@ -6,3 +6,4 @@ DROP PROCEDURE read_report;
 DROP PROCEDURE store_report;
 DROP PROCEDURE store_report_values;
 DROP PROCEDURE delete_report;
+DROP TRIGGER add_object_perm_on_report_permissions_insert;

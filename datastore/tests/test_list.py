@@ -9,7 +9,8 @@ from conftest import bin_to_uuid
 
 @pytest.fixture()
 def readall(cursor, new_organization, new_user, new_role, new_permission,
-            new_site, new_forecast, new_observation, new_cdf_forecast):
+            new_site, new_forecast, new_observation, new_cdf_forecast,
+            new_report):
     # remove test data
     cursor.execute('DELETE FROM organizations')
 
@@ -22,7 +23,7 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             (user['id'], role['id']))
         items = ['users', 'roles', 'permissions',
                  'forecasts', 'observations', 'sites',
-                 'cdf_forecasts']
+                 'cdf_forecasts', 'reports']
         shuffle(items)
         perms = [new_permission('read', obj, True, org=org)
                  for obj in items]
@@ -34,15 +35,16 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
-        return user, role, perms, sites, fx, obs, cdf
+        reports = [new_report(org, ob, [f for f in fx if f['site_id'] == ob['site_id']]) for ob in obs]
+        return user, role, perms, sites, fx, obs, cdf, reports
     return make
 
 
 @pytest.fixture()
 def twosets(readall):
-    user, role, perms, sites, fx, obs, cdf = readall()
+    user, role, perms, sites, fx, obs, cdf, reports = readall()
     dummy = readall()
-    return user, role, perms, sites, fx, obs, cdf, dummy
+    return user, role, perms, sites, fx, obs, cdf, reports, dummy
 
 
 @pytest.mark.parametrize('type_', ['permissions', 'sites', 'forecasts',
@@ -174,3 +176,16 @@ def test_list_cdf_forecast_singles(dictcursor, twosets):
              'constant_value', 'parent'))
         == set(cdf[0].keys()) - set(('organization_id', 'id',
                                      'constant_values')))
+
+
+def test_list_reports(dictcursor, twosets):
+    authid = twosets[0]['auth0_id']
+    reports = twosets[7]
+    dictcursor.callproc('list_reports', (authid,))
+    res = dictcursor.fetchall()
+    assert ([str(bin_to_uuid(rep['id'])) for rep in reports] ==
+            [r['report_id'] for r in res])
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'report_id'))
+        == set(reports[0].keys()) - set(('organization_id', 'id')))

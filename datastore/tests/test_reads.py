@@ -1,3 +1,4 @@
+import pdb
 import datetime as dt
 import json
 import random
@@ -19,16 +20,17 @@ def insertuser(cursor, new_permission, valueset, new_user):
     fx = valueset[5][0]
     obs = valueset[6][0]
     cdf = valueset[7][0]
+    report = valueset[8][0]
     for thing in (user, site, fx, obs, cdf):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         "DELETE FROM permissions WHERE action = 'read'")
-    return user, site, fx, obs, org, role, cdf
+    return user, site, fx, obs, org, role, cdf, report
 
 
 @pytest.fixture()
 def allow_read_sites(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'sites', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -37,7 +39,7 @@ def allow_read_sites(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_observations(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'observations', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -46,7 +48,7 @@ def allow_read_observations(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_observation_values(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read_values', 'observations', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -55,7 +57,7 @@ def allow_read_observation_values(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_forecasts(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -64,7 +66,7 @@ def allow_read_forecasts(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_forecast_values(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read_values', 'forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -73,7 +75,7 @@ def allow_read_forecast_values(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_cdf_forecasts(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'cdf_forecasts', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -82,8 +84,17 @@ def allow_read_cdf_forecasts(cursor, new_permission, insertuser):
 
 @pytest.fixture()
 def allow_read_cdf_forecast_values(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read_values', 'cdf_forecasts', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_read_reports(cursor, new_report, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf, report = insertuser
+    perm = new_permission('read', 'reports', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
@@ -427,7 +438,7 @@ def test_read_cdf_forecast_values_denied_can_read_meta(
 
 @pytest.fixture()
 def allow_read_users(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'users', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -480,7 +491,7 @@ def test_read_user_denied(dictcursor, new_user,
 
 @pytest.fixture()
 def allow_read_roles(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'roles', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -536,7 +547,7 @@ def test_read_role_denied(dictcursor, new_role,
 
 @pytest.fixture()
 def allow_read_permissions(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf = insertuser
+    user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read', 'permissions', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
@@ -587,4 +598,22 @@ def test_read_permission_denied(dictcursor, new_permission,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('read_permission', (user['auth0_id'],
                                                 str(bin_to_uuid(perm['id']))))
+    assert e.value.args[0] == 1142
+
+def test_read_report(dictcursor, valueset, new_report, allow_read_reports, insertuser):
+    org = insertuser[4]
+    user = insertuser[0]
+    report = insertuser[7]
+    dictcursor.callproc('read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
+    res = dictcursor.fetchall()[0]
+    assert res['name'] == report['name']
+    assert res['provider'] == org['name']
+    assert json.loads(res['report_parameters']) == json.loads(report['report_parameters'])
+    assert res['metrics'] == '{}'
+
+def test_read_report_denied(dictcursor, new_report, valueset, insertuser):
+    user = insertuser[0]
+    report = new_report()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+       dictcursor.callproc('read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
     assert e.value.args[0] == 1142

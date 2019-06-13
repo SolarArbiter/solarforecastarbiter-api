@@ -34,6 +34,14 @@ def cdf_obj(site_obj, new_cdf_forecast):
     cdf = new_cdf_forecast(site=site)
     return auth0id, str(bin_to_uuid(cdf['id'])), cdf
 
+@pytest.fixture()
+def report_obj(site_obj, valueset, new_report, new_observation, new_forecast):
+    auth0_id, _, site = site_obj
+    obs = new_observation(site=site)
+    fx = new_forecast(site=site)
+    report = new_report(valueset[0][0], obs, [fx])
+    return auth0_id, str(bin_to_uuid(report['id'])), report
+
 
 @pytest.fixture()
 def allow_delete(cursor, new_permission, valueset):
@@ -65,6 +73,11 @@ def allow_delete_forecast(allow_delete):
 @pytest.fixture()
 def allow_delete_cdf_group(allow_delete):
     allow_delete('cdf_forecasts')
+
+
+@pytest.fixture()
+def allow_delete_report(allow_delete):
+    allow_delete('reports')
 
 
 @pytest.fixture()
@@ -503,3 +516,15 @@ def test_remove_object_from_permission_denied(cursor, permission_object_obj):
         cursor.callproc('remove_object_from_permission',
                         (auth0id, objid, permid))
     assert e.value.args[0] == 1142
+
+def test_delete_report(cursor, report_obj, allow_delete_report):
+    auth0id, report_id, _ = report_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.reports WHERE id = UUID_TO_BIN(%s, 1)',
+        report_id)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_report', (auth0id, report_id))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.reports WHERE id = UUID_TO_BIN(%s, 1)',
+        report_id)
+    assert cursor.fetchone()[0] == 0

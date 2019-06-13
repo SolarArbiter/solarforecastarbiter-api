@@ -1,5 +1,7 @@
+import pdb
 from collections import OrderedDict
 import datetime as dt
+import json
 import os
 from uuid import uuid1, UUID
 
@@ -58,6 +60,36 @@ def new_organization(cursor):
 
 
 @pytest.fixture()
+def new_report(cursor, new_organization, new_observation, new_forecast):
+    def fcn(org=None, observation=None, forecasts=None):
+        if org is None:
+            org = new_organization()
+        if observation is None:
+            obs = new_observation()
+        else:
+            obs = observation
+        if not forecasts:
+            fx1 = new_forecast()
+            fx2 = new_forecast()
+            fx_list = [fx1, fx2]
+        else:
+            fx_list = forecasts
+        report_parameters = {
+            'object_pairs': [(str(bin_to_uuid(obs['id'])), str(bin_to_uuid(fx['id']))) for fx in fx_list],
+            'start': (dt.datetime.now() - dt.timedelta(weeks=1)).isoformat(),
+            'end': dt.datetime.now().isoformat(),
+            'metrics': ['MAE', 'RMSE'],
+        }
+        params_json = json.dumps(report_parameters)
+        out = OrderedDict(id=newuuid(), organization_id=org['id'],
+                          name=f'report{str(uuid1())[:10]}',
+                          report_parameters=params_json, metrics="{}")
+        insert_dict(cursor, 'reports', out)
+        return out
+    return fcn
+
+
+@pytest.fixture()
 def new_user(cursor, new_organization):
     def fcn(org=None):
         if org is None:
@@ -105,9 +137,9 @@ def new_permission(cursor, new_organization):
 
 def insert_dict(cursor, table, thedict):
     cursor.execute(
-            f'INSERT INTO {table} ({",".join(thedict.keys())}) VALUES'
-            f' ({",".join(["%s" for _ in range(len(thedict.keys()))])})',
-            list(thedict.values()))
+        f'INSERT INTO {table} ({",".join(thedict.keys())}) VALUES'
+        f' ({",".join(["%s" for _ in range(len(thedict.keys()))])})',
+        list(thedict.values()))
 
 
 @pytest.fixture()
@@ -225,7 +257,8 @@ def getfcn(request, new_site, new_user, new_role, new_forecast,
 
 @pytest.fixture()
 def valueset(cursor, new_organization, new_user, new_role, new_permission,
-             new_site, new_forecast, new_observation, new_cdf_forecast):
+             new_site, new_forecast, new_observation, new_cdf_forecast,
+             new_report):
     org0 = new_organization()
     org1 = new_organization()
     user0 = new_user(org=org0)
@@ -242,6 +275,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     perm0 = new_permission('read', 'forecasts', False, org=org0)
     perm1 = new_permission('read', 'forecasts', False, org=org0)
     perm2 = new_permission('read', 'forecasts', True, org=org1)
+    perm3 = new_permission('read', 'reports', False, org=org0)
+    perm4 = new_permission('read', 'reports', True, org=org1)
     crossperm = new_permission('read', 'forecasts', False, org=org0)
     createperm = new_permission('create', 'forecasts', True, org=org0)
     forecasts0 = [new_forecast(site=site0) for _ in range(4)]
@@ -252,24 +287,28 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     obs2 = new_observation(site=site1)
     cdf0 = new_cdf_forecast(site=site0)
     cdf1 = new_cdf_forecast(site=site1)
+    rep0 = new_report(org0, obs0, forecasts0)
+    rep1 = new_report(org1, obs2, forecasts1)
     cursor.executemany(
         "INSERT INTO role_permission_mapping (role_id, permission_id) "
         "VALUES (%s, %s)",
         [(role0['id'], perm0['id']), (role0['id'], perm1['id']),
          (role1['id'], perm2['id']), (role2['id'], crossperm['id']),
-         (role0['id'], createperm['id']), (role1['id'], createperm['id'])])
+         (role0['id'], createperm['id']), (role1['id'], createperm['id']),
+         (role0['id'], perm3['id'])])
     cursor.executemany(
         "INSERT INTO permission_object_mapping (permission_id, object_id) "
         "VALUES (%s, %s)", [(perm0['id'], forecasts0[0]['id']),
                             (perm0['id'], forecasts0[1]['id']),
                             (perm1['id'], forecasts0[2]['id']),
                             (perm1['id'], forecasts0[3]['id']),
-                            (crossperm['id'], forecasts2['id'])])
+                            (crossperm['id'], forecasts2['id']),
+                            (perm3['id'], rep0['id'])])
     return ((org0, org1), (user0, user1), (role0, role1, role2),
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
             forecasts0 + forecasts1 + [forecasts2],
-            (obs0, obs1, obs2), (cdf0, cdf1))
+            (obs0, obs1, obs2), (cdf0, cdf1), (rep0, rep1))
 
 
 @pytest.fixture(params=[0, 1])
@@ -305,3 +344,7 @@ def valueset_forecast(valueset, request):
 @pytest.fixture(params=list(range(3)))
 def valueset_observation(valueset, request):
     return valueset[6][request.param]
+
+@pytest.fixture(params=[0,1])
+def valueset_reports(valueset, request):
+    return valueset[8][request.param]
