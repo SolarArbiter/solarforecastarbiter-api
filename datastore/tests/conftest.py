@@ -1,4 +1,3 @@
-import pdb
 from collections import OrderedDict
 import datetime as dt
 import json
@@ -85,6 +84,11 @@ def new_report(cursor, new_organization, new_observation, new_forecast):
                           name=f'report{str(uuid1())[:10]}',
                           report_parameters=params_json, metrics="{}")
         insert_dict(cursor, 'reports', out)
+        for obj in fx_list + [obs]:
+            cursor.execute(
+                'INSERT INTO report_values (report_id, object_id, processed_values) '
+                'VALUES (%s, %s, BINARY(RAND()))',
+                (out['id'], obj['id'] ))
         return out
     return fcn
 
@@ -346,5 +350,5 @@ def valueset_observation(valueset, request):
     return valueset[6][request.param]
 
 @pytest.fixture(params=[0,1])
-def valueset_reports(valueset, request):
+def valueset_report(valueset, request):
     return valueset[8][request.param]
