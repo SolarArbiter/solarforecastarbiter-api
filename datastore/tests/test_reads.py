@@ -431,7 +431,8 @@ def test_read_cdf_forecast_values_denied_can_read_meta(
         cursor, cdf_fx_values, allow_read_cdf_forecasts):
     auth0id, fxid, vals, start, end = cdf_fx_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('read_cdf_forecast_values', (auth0id, fxid, start, end))
+        cursor.callproc('read_cdf_forecast_values',
+                        (auth0id, fxid, start, end))
     assert e.value.args[0] == 1142
 
 
@@ -589,8 +590,8 @@ def test_read_permission_no_obj(dictcursor, new_permission,
         assert res[key] == perm[key]
 
 
-def test_read_permission_denied(dictcursor, new_permission,
-                                valueset, insertuser):
+def test_read_permission_denied(
+        dictcursor, new_permission, valueset, insertuser):
     org = insertuser[4]
     user = insertuser[0]
     perm = new_permission('read', 'observations', False, org=org)
@@ -599,20 +600,57 @@ def test_read_permission_denied(dictcursor, new_permission,
                                                 str(bin_to_uuid(perm['id']))))
     assert e.value.args[0] == 1142
 
-def test_read_report(dictcursor, valueset, new_report, allow_read_reports, insertuser):
+
+def test_read_report(
+        dictcursor, valueset, new_report, allow_read_reports, insertuser):
     org = insertuser[4]
     user = insertuser[0]
     report = insertuser[7]
-    dictcursor.callproc('read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
+    dictcursor.callproc(
+        'read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
     res = dictcursor.fetchall()[0]
     assert res['name'] == report['name']
     assert res['provider'] == org['name']
-    assert json.loads(res['report_parameters']) == json.loads(report['report_parameters'])
+    res_params = json.loads(res['report_parameters'])
+    orig_params = json.loads(report['report_parameters'])
+    assert res_params == orig_params
     assert res['metrics'] == '{}'
+
 
 def test_read_report_denied(dictcursor, new_report, valueset, insertuser):
     user = insertuser[0]
     report = new_report()
     with pytest.raises(pymysql.err.OperationalError) as e:
-       dictcursor.callproc('read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
+        dictcursor.callproc(
+            'read_report', (user['auth0_id'], str(bin_to_uuid(report['id']))))
     assert e.value.args[0] == 1142
+
+
+def test_read_report_values(
+        dictcursor, valueset, new_report, allow_read_reports,
+        allow_read_observations, allow_read_forecasts, insertuser):
+    user = insertuser[0]
+    report = insertuser[7]
+    object_pairs = json.loads(report['report_parameters'])['object_pairs']
+    dictcursor.callproc(
+        'read_report_values',
+        (user['auth0_id'], str(bin_to_uuid(report['id'])))
+    )
+    res = dictcursor.fetchall()
+    res_objects = [r['object_id'] for r in res]
+    for (obs, fx) in object_pairs:
+        assert obs in res_objects
+        assert fx in res_objects
+
+
+def test_read_report_values_denied(
+        dictcursor, valueset, new_report, allow_read_reports,
+        allow_read_observations, allow_read_forecasts, insertuser):
+    user = insertuser[0]
+    report = new_report()
+    dictcursor.callproc(
+        'read_report_values',
+        (user['auth0_id'], str(bin_to_uuid(report['id'])))
+    )
+    res = dictcursor.fetchall()
+    assert res == ()

@@ -223,6 +223,7 @@ def test_drop_observation_values(cursor, valueset_observation):
                    observation)
     assert cursor.fetchone()[0] == 0
 
+
 def test_drop_report_values(cursor, valueset_report):
     report = valueset_report['id']
     cursor.execute('SELECT COUNT(*) FROM report_values WHERE report_id = %s',

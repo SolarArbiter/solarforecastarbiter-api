@@ -74,7 +74,9 @@ def new_report(cursor, new_organization, new_observation, new_forecast):
         else:
             fx_list = forecasts
         report_parameters = {
-            'object_pairs': [(str(bin_to_uuid(obs['id'])), str(bin_to_uuid(fx['id']))) for fx in fx_list],
+            'object_pairs': [(str(bin_to_uuid(obs['id'])),
+                              str(bin_to_uuid(fx['id'])))
+                             for fx in fx_list],
             'start': (dt.datetime.now() - dt.timedelta(weeks=1)).isoformat(),
             'end': dt.datetime.now().isoformat(),
             'metrics': ['MAE', 'RMSE'],
@@ -86,9 +88,9 @@ def new_report(cursor, new_organization, new_observation, new_forecast):
         insert_dict(cursor, 'reports', out)
         for obj in fx_list + [obs]:
             cursor.execute(
-                'INSERT INTO report_values (report_id, object_id, processed_values) '
-                'VALUES (%s, %s, BINARY(RAND()))',
-                (out['id'], obj['id'] ))
+                'INSERT INTO report_values (report_id, object_id, '
+                'processed_values) VALUES (%s, %s, BINARY(RAND()))',
+                (out['id'], obj['id']))
         return out
     return fcn
 
@@ -280,7 +282,6 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     perm1 = new_permission('read', 'forecasts', False, org=org0)
     perm2 = new_permission('read', 'forecasts', True, org=org1)
     perm3 = new_permission('read', 'reports', False, org=org0)
-    perm4 = new_permission('read', 'reports', True, org=org1)
     crossperm = new_permission('read', 'forecasts', False, org=org0)
     createperm = new_permission('create', 'forecasts', True, org=org0)
     forecasts0 = [new_forecast(site=site0) for _ in range(4)]
@@ -349,6 +350,7 @@ def valueset_forecast(valueset, request):
 def valueset_observation(valueset, request):
     return valueset[6][request.param]
 
-@pytest.fixture(params=[0,1])
+
+@pytest.fixture(params=[0, 1])
 def valueset_report(valueset, request):
     return valueset[8][request.param]

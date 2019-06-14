@@ -631,8 +631,9 @@ def test_add_object_to_permission_denied_no_read(
     assert e.value.args[0] == 1142
 
 
-def test_add_object_to_permission_no_perm(cursor, new_site, new_permission,
-                                          allow_update_permissions, insertuser):
+def test_add_object_to_permission_no_perm(
+        cursor, new_site, new_permission, allow_update_permissions,
+        insertuser):
     user, _, _, _, org, role, _ = insertuser
     objid = new_site(org=org)['id']
     with pytest.raises(pymysql.err.OperationalError) as e:

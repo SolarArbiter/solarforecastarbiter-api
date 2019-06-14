@@ -7,6 +7,7 @@ CREATE TABLE arbiter_data.reports(
     name VARCHAR(64) NOT NULL,
     report_parameters JSON NOT NULL,
     metrics JSON NOT NULL,
+    status ENUM('pending', 'complete', 'failed') NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -55,10 +56,28 @@ BEGIN
         MYSQL_ERRNO = 1142;
     END IF;
 END;
-               
+
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_report_values (
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read processed report values of a single object'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed boolean DEFAULT FALSE;
+    SET binid = (SELECT UUID_TO_BIN(strid, 1));
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+        SELECT BIN_TO_UUID(object_id,1) as object_id, processed_values
+        FROM arbiter_data.report_values WHERE object_id in (
+        SELECT object_id from user_objects where auth0_id = auth0id
+        AND object_type in ('observations', 'forecasts', 'cdf_forecasts'));
+    END IF;
+END;
+
 GRANT SELECT ON arbiter_data.reports TO 'select_objects'@'localhost';
 GRANT SELECT ON arbiter_data.report_values TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_report TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_report_values TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'select_objects'@'localhost';
 
 -- Report STORE PROCEDURES
@@ -95,8 +114,8 @@ BEGIN
     DECLARE create_allowed BOOLEAN DEFAULT FALSE;
     SET bin_report_id = (SELECT UUID_TO_BIN(str_report_id, 1));
     SET bin_object_id = (SELECT UUID_TO_BIN(str_object_id, 1));
-    SET read_allowed = (SELECT can_user_perform_action(auth0id, bin_report_id, 'write_values'));
-    SET create_allowed = (SELECT user_can_create(auth0id, 'reports'));
+    SET read_allowed = (SELECT can_user_perform_action(auth0id, bin_object_id, 'read_values'));
+    SET create_allowed = (SELECT user_can_perform_action(auth0id, bin_report_id, 'write_values'));
     IF read_allowed and create_allowed THEN
         INSERT INTO arbiter_data.report_values (
             report_id, object_id, processed_values) VALUES (

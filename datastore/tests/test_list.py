@@ -35,7 +35,9 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
-        reports = [new_report(org, ob, [f for f in fx if f['site_id'] == ob['site_id']]) for ob in obs]
+        reports = [new_report(org, ob,
+                              [f for f in fx if f['site_id'] == ob['site_id']])
+                   for ob in obs]
         return user, role, perms, sites, fx, obs, cdf, reports
     return make
 

@@ -3,6 +3,7 @@ DROP TABLE report_values;
 DROP TABLE reports;
 DROP PROCEDURE list_reports;
 DROP PROCEDURE read_report;
+DROP PROCEDURE read_report_values;
 DROP PROCEDURE store_report;
 DROP PROCEDURE store_report_values;
 DROP PROCEDURE delete_report;
