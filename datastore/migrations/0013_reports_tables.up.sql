@@ -6,7 +6,7 @@ CREATE TABLE arbiter_data.reports(
     organization_id BINARY(16) NOT NULL,
     name VARCHAR(64) NOT NULL,
     report_parameters JSON NOT NULL,
-    metrics JSON NOT NULL,
+    metrics JSON,
     status ENUM('pending', 'complete', 'failed') NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -23,7 +23,7 @@ CREATE TABLE arbiter_data.report_values(
     object_id BINARY(16) NOT NULL,
     processed_values BLOB NOT NULL,
     
-    KEY (report_id, object_id),
+    PRIMARY KEY (report_id, object_id),
     FOREIGN KEY (report_id)
         REFERENCES arbiter_data.reports(id)
         ON DELETE CASCADE ON UPDATE RESTRICT
@@ -68,9 +68,11 @@ BEGIN
     SET allowed = can_user_perform_action(auth0id, binid, 'read');
     IF allowed THEN
         SELECT BIN_TO_UUID(object_id,1) as object_id, processed_values
-        FROM arbiter_data.report_values WHERE object_id in (
-        SELECT object_id from user_objects where auth0_id = auth0id
-        AND object_type in ('observations', 'forecasts', 'cdf_forecasts'));
+        FROM arbiter_data.report_values WHERE report_id = binid AND (
+            SELECT can_user_perform_action(auth0id, object_id, 'read_values'));
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read report values"',
+        MYSQL_ERRNO = 1142;
     END IF;
 END;
 
@@ -83,7 +85,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'select_objects'@'localh
 -- Report STORE PROCEDURES
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
-    IN report_parameters JSON, IN metrics JSON)
+    IN report_parameters JSON)
 MODIFIES SQL DATA SQL SECURITY DEFINER
 COMMENT 'Store report metadata'
 BEGIN
@@ -93,11 +95,11 @@ BEGIN
     IF allowed THEN
         SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.reports (
-            id, organization_id, name, report_parameters, metrics
+            id, organization_id, name, report_parameters
         ) VALUES (
-            UUID_TO_BIN(strid, 1), orgid, name, report_parameters, metrics);
+            UUID_TO_BIN(strid, 1), orgid, name, report_parameters);
     ELSE
-        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create cdf forecasts"',
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create reports"',
         MYSQL_ERRNO = 1142;
     END IF;
 END;
@@ -115,21 +117,26 @@ BEGIN
     SET bin_report_id = (SELECT UUID_TO_BIN(str_report_id, 1));
     SET bin_object_id = (SELECT UUID_TO_BIN(str_object_id, 1));
     SET read_allowed = (SELECT can_user_perform_action(auth0id, bin_object_id, 'read_values'));
-    SET create_allowed = (SELECT user_can_perform_action(auth0id, bin_report_id, 'write_values'));
+    SET create_allowed = (SELECT can_user_perform_action(auth0id, bin_report_id, 'write_values'));
     IF read_allowed and create_allowed THEN
         INSERT INTO arbiter_data.report_values (
             report_id, object_id, processed_values) VALUES (
-            bin_report_id, bin_object_id, processed_values);
+            bin_report_id, bin_object_id, processedvalues)
+        ON DUPLICATE KEY UPDATE processed_values = processedvalues;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "store report values"',
         MYSQL_ERRNO = 1142;
     END IF;
 END;
 
-GRANT INSERT ON arbiter_data.reports TO 'insert_objects'@'localhost';
-GRANT INSERT ON arbiter_data.report_values TO 'insert_objects'@'localhost';
+GRANT INSERT, UPDATE ON arbiter_data.reports TO 'insert_objects'@'localhost';
+GRANT INSERT, UPDATE ON arbiter_data.report_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_values TO 'insert_objects'@'localhost';
+
+-- Store report metrics
+
+-- Update report status
 
 -- Report delete procedure
 CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_report (
