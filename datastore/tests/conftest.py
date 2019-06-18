@@ -88,9 +88,9 @@ def new_report(cursor, new_organization, new_observation, new_forecast):
         insert_dict(cursor, 'reports', out)
         for obj in fx_list + [obs]:
             cursor.execute(
-                'INSERT INTO report_values (report_id, object_id, '
-                'processed_values) VALUES (%s, %s, BINARY(RAND()))',
-                (out['id'], obj['id']))
+                'INSERT INTO report_values (id, report_id, object_id, '
+                'processed_values) VALUES (%s, %s, %s, BINARY(RAND()))',
+                (newuuid(), out['id'], obj['id']))
         return out
     return fcn
 

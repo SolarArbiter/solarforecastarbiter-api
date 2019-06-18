@@ -190,4 +190,5 @@ def test_list_reports(dictcursor, twosets):
     assert (
         set(res[0].keys()) - set(
             ('created_at', 'modified_at', 'provider', 'report_id'))
-        == set(reports[0].keys()) - set(('organization_id', 'id')))
+        == ((set(reports[0].keys()) | set(('status',))) -
+            set(('organization_id', 'id'))))

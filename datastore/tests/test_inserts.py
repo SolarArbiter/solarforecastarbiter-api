@@ -40,6 +40,15 @@ def allow_read_sites(cursor, new_permission, insertuser):
 
 
 @pytest.fixture()
+def allow_read_reports(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf, report = insertuser
+    perm = new_permission('read', 'reports', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
 def allow_create(insertuser, new_permission, cursor):
     user, site, fx, obs, org, role, cdf, report = insertuser
     perms = [new_permission('create', obj, True, org=org)
@@ -115,6 +124,15 @@ def allow_update_roles(cursor, new_permission, insertuser):
 def allow_update_users(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('update', 'users', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
+        '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_update_reports(cursor, new_permission, insertuser):
+    user, site, fx, obs, org, role, cdf, report = insertuser
+    perm = new_permission('update', 'reports', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
@@ -761,9 +779,16 @@ def test_store_report_values(
         allow_read_observation_values):
     user, _, _, obs, org, role, _, report = insertuser
     value = b'\x00\x0F\xFF'
+    dictcursor.execute(
+        'SELECT id FROM arbiter_data.report_values WHERE report_id = %s '
+        'AND object_id = %s',
+        (report['id'], obs['id'],)
+    )
+    value_id = dictcursor.fetchall()[0]['id']
     dictcursor.callproc(
         'store_report_values',
         (user['auth0_id'],
+         str(bin_to_uuid(value_id)),
          str(bin_to_uuid(report['id'])),
          str(bin_to_uuid(obs['id'])),
          value)
@@ -776,31 +801,90 @@ def test_store_report_values(
     assert res[0]['processed_values'] == value
 
 
-def test_store_report_values_no_read_obs(
-        dictcursor, insertuser, allow_write_values):
-    user, _, _, obs, org, role, _, report = insertuser
-    value = b'\x00\x0F\xFF'
-    with pytest.raises(pymysql.err.OperationalError) as e:
-        dictcursor.callproc(
-            'store_report_values',
-            (user['auth0_id'],
-             str(bin_to_uuid(report['id'])),
-             str(bin_to_uuid(obs['id'])),
-             value)
-        )
-    e.value.args[0] == 1142
-
-
 def test_store_report_values_no_write_report(
         dictcursor, insertuser, allow_read_observation_values):
     user, _, _, obs, org, role, _, report = insertuser
     value = b'\x00\x0F\xFF'
+    dictcursor.execute(
+        'SELECT id FROM arbiter_data.report_values WHERE report_id = %s '
+        'AND object_id = %s',
+        (report['id'], obs['id'],)
+    )
+    value_id = dictcursor.fetchall()[0]['id']
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'store_report_values',
             (user['auth0_id'],
+             str(bin_to_uuid(value_id)),
              str(bin_to_uuid(report['id'])),
              str(bin_to_uuid(obs['id'])),
              value)
         )
     e.value.args[0] == 1142
+
+
+def test_set_report_metrics(
+        dictcursor, insertuser, allow_read_reports,
+        allow_update_reports):
+    user, _, _, obs, org, role, _, report = insertuser
+    metrics = {"a": "b", "c": "d"}
+    dictcursor.callproc(
+        'set_report_metrics',
+        (user['auth0_id'],
+         str(bin_to_uuid(report['id'])),
+         json.dumps(metrics))
+    )
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.reports WHERE id = %s',
+        (report['id'],))
+    res = dictcursor.fetchall()[0]
+    assert json.loads(res['metrics']) == metrics
+
+
+def test_set_report_metrics_no_update(
+        dictcursor, insertuser, allow_read_reports):
+    user, _, _, obs, org, role, _, report = insertuser
+    metrics = {"a": "b", "c": "d"}
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'set_report_metrics',
+            (user['auth0_id'],
+             str(bin_to_uuid(report['id'])),
+             json.dumps(metrics))
+        )
+    assert e.value.args[0] == 1142
+
+
+@pytest.mark.parametrize('new_status', [
+    'complete', 'failed'])
+def test_set_report_status(
+        dictcursor, insertuser, allow_read_reports,
+        allow_update_reports, new_status):
+    user, _, _, obs, org, role, _, report = insertuser
+    dictcursor.callproc(
+        'set_report_status',
+        (user['auth0_id'],
+         str(bin_to_uuid(report['id'])),
+         new_status)
+    )
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.reports WHERE id = %s',
+        (report['id'],))
+    res = dictcursor.fetchall()[0]
+    assert res['status'] == new_status
+
+
+@pytest.mark.parametrize('new_status', [
+    'complete', 'failed'])
+def test_set_report_status_denied(
+        dictcursor, insertuser, allow_read_reports,
+        new_status):
+    user, _, _, obs, org, role, _, report = insertuser
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'set_report_status',
+            (user['auth0_id'],
+             str(bin_to_uuid(report['id'])),
+             new_status)
+        )
+    assert e.value.args[0] == 1142
