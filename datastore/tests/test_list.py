@@ -35,9 +35,7 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
-        reports = [new_report(org, ob,
-                              [f for f in fx if f['site_id'] == ob['site_id']])
-                   for ob in obs]
+        reports = [new_report(org, obs[i], [fx[i]], [cdf[i]]) for i in range(2)]
         return user, role, perms, sites, fx, obs, cdf, reports
     return make
 
@@ -50,7 +48,7 @@ def twosets(readall):
 
 
 @pytest.mark.parametrize('type_', ['permissions', 'sites', 'forecasts',
-                                   'observations'])
+                                   'observations', 'reports'])
 def test_items_present(cursor, twosets, type_):
     cursor.execute(f'SELECT DISTINCT(organization_id) FROM {type_}')
     assert len(cursor.fetchall()) == 2

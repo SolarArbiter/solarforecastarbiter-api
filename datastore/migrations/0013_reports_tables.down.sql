@@ -12,7 +12,7 @@ DROP PROCEDURE set_report_metrics;
 DROP TRIGGER add_object_perm_on_report_permissions_insert;
 DROP TRIGGER remove_report_values_on_observation_delete;
 DROP TRIGGER remove_report_values_on_forecast_delete;
-DROP TRIGGER remove_report_values_on_cdf_forecast_delete;
+DROP TRIGGER remove_report_values_on_cdf_forecast_group_delete;
 DROP FUNCTION get_nonrbac_object_organization;
 DROP FUNCTION get_object_organization;
 

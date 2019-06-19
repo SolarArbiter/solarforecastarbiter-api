@@ -59,8 +59,10 @@ def new_organization(cursor):
 
 
 @pytest.fixture()
-def new_report(cursor, new_organization, new_observation, new_forecast):
-    def fcn(org=None, observation=None, forecasts=None):
+def new_report(
+        cursor, new_organization, new_observation,
+        new_forecast, new_cdf_forecast):
+    def fcn(org=None, observation=None, forecasts=None, cdf_forecasts=None):
         if org is None:
             org = new_organization()
         if observation is None:
@@ -72,7 +74,13 @@ def new_report(cursor, new_organization, new_observation, new_forecast):
             fx2 = new_forecast()
             fx_list = [fx1, fx2]
         else:
-            fx_list = forecasts
+            fx_list = forecasts.copy()
+        if cdf_forecasts is None:
+            cdf_forecast = new_cdf_forecast()
+            cdf_fx = [cdf_forecast]
+        else:
+            cdf_fx = cdf_forecasts.copy()
+        fx_list.extend(cdf_fx)
         report_parameters = {
             'object_pairs': [(str(bin_to_uuid(obs['id'])),
                               str(bin_to_uuid(fx['id'])))
@@ -244,9 +252,9 @@ def new_observation(cursor, new_site):
 
 
 @pytest.fixture(params=['sites', 'users', 'roles', 'forecasts',
-                        'observations', 'cdf_forecasts'])
+                        'observations', 'cdf_forecasts', 'reports'])
 def getfcn(request, new_site, new_user, new_role, new_forecast,
-           new_observation, new_cdf_forecast):
+           new_observation, new_cdf_forecast, new_report):
     if request.param == 'sites':
         return new_site, 'sites'
     elif request.param == 'users':
@@ -259,6 +267,8 @@ def getfcn(request, new_site, new_user, new_role, new_forecast,
         return new_observation, 'observations'
     elif request.param == 'cdf_forecasts':
         return new_cdf_forecast, 'cdf_forecasts'
+    elif request.param == 'reports':
+        return new_report, 'reports'
 
 
 @pytest.fixture()
@@ -292,8 +302,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     obs2 = new_observation(site=site1)
     cdf0 = new_cdf_forecast(site=site0)
     cdf1 = new_cdf_forecast(site=site1)
-    rep0 = new_report(org0, obs0, forecasts0)
-    rep1 = new_report(org1, obs2, forecasts1)
+    rep0 = new_report(org0, obs0, forecasts0, [cdf0])
+    rep1 = new_report(org1, obs2, forecasts1, [cdf1])
     cursor.executemany(
         "INSERT INTO role_permission_mapping (role_id, permission_id) "
         "VALUES (%s, %s)",

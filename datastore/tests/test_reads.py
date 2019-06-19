@@ -638,6 +638,7 @@ def test_read_report_values(
         dictcursor, valueset, new_report, allow_read_reports,
         allow_read_observations, allow_read_observation_values,
         allow_read_forecasts, allow_read_forecast_values,
+        allow_read_cdf_forecast_values, allow_read_cdf_forecasts,
         insertuser):
     user = insertuser[0]
     report = insertuser[7]
@@ -660,12 +661,16 @@ def test_read_report_values_partial_access(
     report = insertuser[7]
     object_pairs = json.loads(report['report_parameters'])['object_pairs']
     obs_id = object_pairs[0][0]
+    fx_ids = [obj[1] for obj in object_pairs]
     dictcursor.callproc(
         'read_report_values',
         (user['auth0_id'], str(bin_to_uuid(report['id'])))
     )
     res = dictcursor.fetchall()
-    assert obs_id in [r['object_id'] for r in res]
+    res_objects = [r['object_id'] for r in res]
+    assert obs_id in res_objects
+    for fx_id in fx_ids:
+        assert fx_id not in res_objects
 
 
 def test_read_report_values_no_data_access(

@@ -108,7 +108,7 @@ BEGIN
 END;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_values (
-    IN auth0id VARCHAR(32), IN strid CHAR(36),IN str_report_id CHAR(36), IN str_object_id CHAR(36),
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN str_report_id CHAR(36), IN str_object_id CHAR(36),
     IN processedvalues BLOB)
 MODIFIES SQL DATA SQL SECURITY DEFINER
 COMMENT 'Store processed values for a report'
@@ -131,6 +131,18 @@ BEGIN
         MYSQL_ERRNO = 1142;
     END IF;
 END;
+
+-- trigger to throw error when inserting cdf_forecast_single
+
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER validate_object_id_on_report_value_insert BEFORE INSERT ON report_values
+FOR EACH ROW
+BEGIN
+    IF (SELECT COUNT(*) FROM cdf_forecasts_singles WHERE id = New.object_id) > 0 THEN
+        SIGNAL SQLSTATE 'HY000' SET MESSAGE_TEXT = 'Report value object_id must identify observation, forecast or cdf forecast group',
+        MYSQL_ERRNO = 1210;
+    END IF;
+END;
+GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE set_report_metrics(
     IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON)
@@ -230,6 +242,7 @@ BEGIN
 END;
 
 GRANT SELECT, DELETE ON arbiter_data.report_values TO 'permission_trig'@'localhost';
+
 -- remove processed data when the orginal obs/fx/cdf is deleted
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_report_values_on_observation_delete AFTER DELETE ON arbiter_data.observations
 FOR EACH ROW DELETE FROM arbiter_data.report_values WHERE object_id = OLD.id;
@@ -237,7 +250,7 @@ FOR EACH ROW DELETE FROM arbiter_data.report_values WHERE object_id = OLD.id;
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_report_values_on_forecast_delete AFTER DELETE ON arbiter_data.forecasts
 FOR EACH ROW DELETE FROM arbiter_data.report_values WHERE object_id = OLD.id;
 
-CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_report_values_on_cdf_forecast_delete AFTER DELETE ON arbiter_data.cdf_forecasts_groups
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER remove_report_values_on_cdf_forecast_group_delete AFTER DELETE ON arbiter_data.cdf_forecasts_groups
 FOR EACH ROW DELETE FROM arbiter_data.report_values WHERE object_id = OLD.id;
 
 -- Redefine permissions functions to add reports

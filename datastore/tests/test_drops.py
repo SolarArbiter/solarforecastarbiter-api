@@ -2,8 +2,12 @@
 Test that mysql references between tables are properly set to cascade delete
 or restrict
 """
+import json
 import pytest
 import pymysql
+from uuid import UUID
+
+from conftest import uuid_to_bin
 
 
 def check_table_for_org(cursor, oid, table):
@@ -232,4 +236,48 @@ def test_drop_report_values(cursor, valueset_report):
     cursor.execute('DELETE FROM reports WHERE id = %s', report)
     cursor.execute('SELECT COUNT(*) FROM report_values WHERE report_id = %s',
                    report)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_drop_report_values_on_observation_drop(cursor, valueset_report):
+    report_params = json.loads(valueset_report['report_parameters'])
+    object_pairs = report_params['object_pairs']
+    observation = uuid_to_bin(UUID(object_pairs[0][0]))
+    cursor.execute('SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+                   observation)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute('DELETE FROM observations where id = %s', observation)
+    cursor.execute('SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+                   observation)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_drop_report_values_on_forecast_drop(cursor, valueset_report):
+    report_params = json.loads(valueset_report['report_parameters'])
+    object_pairs = report_params['object_pairs']
+    forecast = uuid_to_bin(UUID(object_pairs[0][1]))
+    cursor.execute('SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+                   forecast)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute('DELETE FROM forecasts where id = %s', forecast)
+    cursor.execute('SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+                   forecast)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_drop_report_values_on_cdf_forecast_drop(
+        cursor, valueset_report):
+    report_params = json.loads(valueset_report['report_parameters'])
+    object_pairs = report_params['object_pairs']
+    cdf_group = uuid_to_bin(UUID(object_pairs[-1][1]))
+    cursor.execute(
+        'SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+        cdf_group)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'DELETE FROM cdf_forecasts_groups where id = %s',
+        cdf_group)
+    cursor.execute(
+        'SELECT COUNT(*) FROM report_values WHERE object_id = %s',
+        cdf_group)
     assert cursor.fetchone()[0] == 0
