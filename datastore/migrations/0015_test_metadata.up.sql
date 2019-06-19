@@ -37,23 +37,29 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Read all forecasts', @orgid, 'read', 'forecasts', TRUE), (
     'Read all cdf forecasts', @orgid, 'read', 'cdf_forecasts', TRUE), (
     'Read all observations', @orgid, 'read', 'observations', TRUE), (
+    'Read all reports', @orgid, 'read', 'reports', TRUE), (
     'Read all forecast values', @orgid, 'read_values', 'forecasts', TRUE), (
     'Read all cdf forecast values', @orgid, 'read_values', 'cdf_forecasts', TRUE), (
     'Read all observation values', @orgid, 'read_values', 'observations', TRUE), (
+    'Read all report values', @orgid, 'read_values', 'reports', TRUE), (
     'Create all sites', @orgid, 'create', 'sites', TRUE), (
     'Create all forecasts', @orgid, 'create', 'forecasts', TRUE), (
     'Create all cdf forecasts', @orgid, 'create', 'cdf_forecasts', TRUE), (
     'Create all observations', @orgid, 'create', 'observations', TRUE), (
+    'Create all reports', @orgid, 'create', 'reports', TRUE), (
     'Delete all sites', @orgid, 'delete', 'sites', TRUE), (
     'Delete all forecasts', @orgid, 'delete', 'forecasts', TRUE), (
     'Delete all cdf forecasts', @orgid, 'delete', 'cdf_forecasts', TRUE), (
     'Delete all observations', @orgid, 'delete', 'observations', TRUE), (
+    'Delete all reports', @orgid, 'delete', 'reports', TRUE), (
     'Delete all forecast values', @orgid, 'delete_values', 'forecasts', TRUE), (
     'Delete all cdf forecast values', @orgid, 'delete_values', 'cdf_forecasts', TRUE), (
     'Delete all observation values', @orgid, 'delete_values', 'observations', TRUE), (
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
     'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
     'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
+    'Write report values', @orgid, 'write_values', 'observations', TRUE), (
+    'update reports', @orgid, 'update', 'reports', TRUE), (
     'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
 
 INSERT INTO arbiter_data.permissions (description, organization_id, action, object_type, applies_to_all) VALUES (
@@ -213,9 +219,9 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'apiuser'@'
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_report TO 'apiuser'@'%';
-GRANT EXECUTE ON PROCEDURE arbuter_data.read_report_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_report_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report TO 'apiuser'@'%';
-GRANT EXECUTE ON PROCEDURE arbuter_data.store_report_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_metrics TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_status TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_report TO 'apiuser'@'%';
