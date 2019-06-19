@@ -211,6 +211,15 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_observations TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_forecasts TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_groups TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_cdf_forecasts_singles TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_report TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbuter_data.read_report_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbuter_data.store_report_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_metrics TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_status TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_report TO 'apiuser'@'%';
+
 
 -- User/ Role / Permissions procedures
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_user TO 'apiuser'@'%';
