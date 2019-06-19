@@ -842,13 +842,13 @@ def test_store_report_values_no_write_report(
     assert e.value.args[0] == 1142
 
 
-def test_set_report_metrics(
+def test_store_report_metrics(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
     dictcursor.callproc(
-        'set_report_metrics',
+        'store_report_metrics',
         (user['auth0_id'],
          str(bin_to_uuid(report['id'])),
          json.dumps(metrics))
@@ -860,13 +860,13 @@ def test_set_report_metrics(
     assert json.loads(res['metrics']) == metrics
 
 
-def test_set_report_metrics_no_update(
+def test_store_report_metrics_no_update(
         dictcursor, insertuser, allow_read_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
-            'set_report_metrics',
+            'store_report_metrics',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
              json.dumps(metrics))
@@ -876,12 +876,12 @@ def test_set_report_metrics_no_update(
 
 @pytest.mark.parametrize('new_status', [
     'complete', 'failed'])
-def test_set_report_status(
+def test_store_report_status(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports, new_status):
     user, _, _, obs, org, role, _, report = insertuser
     dictcursor.callproc(
-        'set_report_status',
+        'store_report_status',
         (user['auth0_id'],
          str(bin_to_uuid(report['id'])),
          new_status)
@@ -895,13 +895,13 @@ def test_set_report_status(
 
 @pytest.mark.parametrize('new_status', [
     'complete', 'failed'])
-def test_set_report_status_denied(
+def test_store_report_status_denied(
         dictcursor, insertuser, allow_read_reports,
         new_status):
     user, _, _, obs, org, role, _, report = insertuser
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
-            'set_report_status',
+            'store_report_status',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
              new_status)

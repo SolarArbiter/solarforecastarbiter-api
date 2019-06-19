@@ -144,7 +144,7 @@ BEGIN
 END;
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
 
-CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE set_report_metrics(
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_metrics(
     IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON)
 COMMENT 'Update metrics field with json'
 BEGIN
@@ -160,7 +160,7 @@ BEGIN
     END IF;
 END;
 
-CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE set_report_status(
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_status(
     IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_status VARCHAR(16))
 COMMENT 'Set the status of the report'
 BEGIN
@@ -181,8 +181,8 @@ GRANT INSERT, SELECT, UPDATE ON arbiter_data.reports TO 'insert_objects'@'localh
 GRANT INSERT, UPDATE ON arbiter_data.report_values TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_values TO 'insert_objects'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.set_report_metrics TO 'insert_objects'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.set_report_status TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_metrics TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_report_status TO 'insert_objects'@'localhost';
 
 
 
