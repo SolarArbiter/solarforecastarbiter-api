@@ -1,13 +1,17 @@
-from flask import Blueprint, request, make_response, url_for
+import pdb
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 
 
 from sfa_api import spec
 from sfa_api.utils.errors import BadAPIRequest, NotFoundException
-from sfa_api.utils import storage_interface
-from sfa_api.schema import ReportPostSchema
+from sfa_api.utils.storage import get_storage
+from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
+                            ReportSchema, SingleReportSchema)
 
+
+REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
 
 class AllReportsView(MethodView):
     def get(self):
@@ -28,7 +32,9 @@ class AllReportsView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        pass
+        storage = get_storage()
+        reports = storage.list_reports()
+        return jsonify(ReportSchema(many=True).dump(reports))
 
     def post(self):
         """
@@ -59,7 +65,8 @@ class AllReportsView(MethodView):
             report = ReportPostSchema().load(data)
         except ValidationError as err:
             raise BadAPIRequest(err.messages)
-        report_id = storage_interface.store_report(report)
+        storage = get_storage()
+        report_id = storage.store_report(report)
         if report_id is None:
             raise NotFoundException()
         response = make_response(report_id, 201)
@@ -83,13 +90,17 @@ class ReportView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ReportMetadata'
+                  $ref: '#/components/schemas/SingleReportSchema'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#components/responses/404-NotFound'
         """
-        pass
+        storage = get_storage()
+        report = storage.read_report(report_id)
+        if report is None:
+            raise NotFoundException('Report does not exist')
+        return jsonify(SingleReportSchema().dump(report))
 
     def delete(self, report_id):
         """
@@ -99,7 +110,6 @@ class ReportView(MethodView):
           - Reports
         parameters:
         - $ref: '#/components/parameters/report_id'
-
         responses:
           204:
             description: Deleted report successfully.
@@ -109,11 +119,53 @@ class ReportView(MethodView):
             $ref: '#components/responses/404-NotFound'
 
         """
-        pass
+        storage = get_storage()
+        storage.delete_report(report_id)
+        return '', 204
+
+
+class ReportStatusView(MethodView):
+    def post(self, report_id, status):
+        """
+        ---
+        summary: Update the report status
+        tags:
+          - Reports
+        parameters:
+          - $ref: '#/components/parameters/report_id'
+          - status:
+              name: Status
+              in: path
+              description: The new status of the report.
+        """
+        if status not in REPORT_STATUS_OPTIONS:
+            raise BadAPIRequest(
+               {'status': f'Must be one of {",".join(REPORT_STATUS_OPTIONS)}.'})
+        storage = get_storage()
+        storage.store_report_status(report_id, status)
+        return '', 204
+
+
+class ReportMetricsView(MethodView):
+    def post(self, report_id):
+        """
+        ---
+        summary: Store Report metrics
+        tags:
+          - Reports
+        parameters:
+          - $ref: '#/components/parameters/report_id'
+        """
+        raw_metrics = request.get_json()
+        # TODO: Validate metrics w/schema
+        storage = get_storage()
+        storage.store_report_metrics(report_id, raw_metrics)
+        return '', 204
+
 
 
 class ReportValuesView(MethodView):
-    def get(self, report_id, object_id):
+    def get(self, report_id):
         """
         ---
         summary: Get the processed values used in a report
@@ -123,7 +175,7 @@ class ReportValuesView(MethodView):
         - $ref: '#/components/parameters/report_id'
         responses:
           200:
-            description: Successfulyl retrieved
+            description: Successfully retrieved
             content:
               application/json:
                 schema:
@@ -131,9 +183,13 @@ class ReportValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        pass
+        # Maybe this shouldn't exist since we're packing the values
+        # into the single report
+        storage = get_storage()
+        values = storage.read_report_values()
+        return jsonify(values)
 
-    def post(self, report_id, object_id):
+    def post(self, report_id):
         """
         ---
         summary: Store processed values used in the report.
@@ -149,18 +205,29 @@ class ReportValuesView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportValuesSchema'
+                $ref: '#/components/schemas/ReportValuesPostSchema'
         responses:
-          204:
-            description: Values stores successfully.
+          201:
+            description: UUID of the stored values.
           400:
             $ref: '#/components/responses/400-BadRequest'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # Should there be any other validation here? Do we need to
-        # look up the original object and validate the processed data?
-        pass
+        # while developing, just read data as string and then
+        # storage will convert to bytes for the blob column
+        raw_values = request.get_json()
+        try:
+            report_values = ReportValuesPostSchema().load(raw_values)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        value_id = storage.store_report_values(
+            report_id,
+            report_values['object_id'],
+            report_values['processed_values']
+        )
+        return value_id, 201
 
 
 spec.components.parameter(
@@ -182,9 +249,17 @@ reports_blp.add_url_rule(
 )
 reports_blp.add_url_rule(
     '/<report_id>',
-    view_func=ReportView.as_view('metadata')
+    view_func=ReportView.as_view('single')
 )
 reports_blp.add_url_rule(
-    '/<report_id>/values/<object_id>',
+    '/<report_id>/status/<status>',
+    view_func=ReportStatusView.as_view('status')
+)
+reports_blp.add_url_rule(
+    '/<report_id>/metrics',
+    view_func=ReportMetricsView.as_view('metrics')
+)
+reports_blp.add_url_rule(
+    '/<report_id>/values',
     view_func=ReportValuesView.as_view('values')
 )
