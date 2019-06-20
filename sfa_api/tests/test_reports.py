@@ -66,10 +66,12 @@ def test_set_status(api, new_report, status, code):
     assert res.status_code == code
 
 
-@pytest.mark.parametrize('values', [
-    "['replace', 'with', 'real', 'data']"
+REPORT_VALUESET = [
+    "['replace', 'with', 'real', 'data']",
+]
 
-])
+
+@pytest.mark.parametrize('values', REPORT_VALUESET)
 def test_post_report_values(api, new_report, values):
     report_id = new_report()
     # TODO: fix with final format
@@ -88,6 +90,22 @@ def test_post_report_values(api, new_report, values):
         base_url=BASE_URL)
     report_with_values = values_res.get_json()
     assert report_with_values['values'][0]['id'] == value_id
+
+
+@pytest.mark.parametrize('values', REPORT_VALUESET[:1])
+def test_post_report_values_bad_uuid(api, new_report, values):
+    report_id = new_report()
+    obj_id = 'bad_uuid'
+    report_values = {
+        'object_id': obj_id,
+        'processed_values': values,
+    }
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=report_values)
+    assert res.status_code == 400
+    expected = '{"errors":{"object_id":["Not a valid UUID."]}}\n'
+    assert res.get_data(as_text=True) == expected
 
 
 def test_post_metrics(api, new_report):
