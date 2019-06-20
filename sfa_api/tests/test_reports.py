@@ -73,7 +73,7 @@ def test_set_status(api, new_report, status, code):
 def test_post_report_values(api, new_report, values):
     report_id = new_report()
     # TODO: fix with final format
-    obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0],
+    obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0]
     report_values = {
         'object_id': obj_id,
         'processed_values': values,
