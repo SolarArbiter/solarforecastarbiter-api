@@ -58,7 +58,7 @@ INSERT INTO arbiter_data.permissions (description, organization_id, action, obje
     'Write forecast values', @orgid, 'write_values', 'forecasts', TRUE), (
     'Write cdf forecast values', @orgid, 'write_values', 'cdf_forecasts', TRUE), (
     'Write observation values', @orgid, 'write_values', 'observations', TRUE), (
-    'Write report values', @orgid, 'write_values', 'observations', TRUE), (
+    'Write report values', @orgid, 'write_values', 'reports', TRUE), (
     'update reports', @orgid, 'update', 'reports', TRUE), (
     'update cdf group', @orgid, 'update', 'cdf_forecasts', TRUE);
 
