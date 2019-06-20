@@ -659,7 +659,7 @@ class ReportParameters(ma.Schema):
         title='Metrics',
         description=('The metrics to include in the report.'),
         required=True
-    )   
+    )
 
 
 @spec.define_schema('ReportValuesPostSchema')
@@ -670,6 +670,7 @@ class ReportValuesPostSchema(ma.Schema):
     )
     # maybe custom field for binary data?
     processed_values = ma.String()
+
 
 @spec.define_schema('ReportValuesSchema')
 class ReportValuesSchema(ReportValuesPostSchema):
@@ -684,7 +685,7 @@ class ReportValuesSchema(ReportValuesPostSchema):
         title="Report ID",
         description="UUID of the associated report"
     )
-    
+
 
 # Currently, the marshmallow API Spec
 @spec.define_schema('ReportMetadata')
@@ -697,7 +698,7 @@ class ReportPostSchema(ma.Schema):
     report_parameters = ma.Nested(ReportParameters,
                                   required=True)
 
-    
+
 @spec.define_schema('ReportSchema')
 class ReportSchema(ReportPostSchema):
     """For serializing a list or reports.
@@ -709,8 +710,10 @@ class ReportSchema(ReportPostSchema):
     organization = ma.String(title="Organization")
     metrics = ma.Dict(
         title='Calculated Metrics',
-        description='Metrics calculated over the analysis period of the report.') 
-    status = ma.String(validate=validate.OneOf(['pending', 'complete', 'failed']))
+        description='Metrics calculated over the '
+                    'analysis period of the report.')
+    status = ma.String(validate=validate.OneOf(
+        ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 

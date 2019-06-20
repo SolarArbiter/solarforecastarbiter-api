@@ -1,17 +1,17 @@
-import pdb
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 
 
 from sfa_api import spec
-from sfa_api.utils.errors import BadAPIRequest, NotFoundException
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
                             ReportSchema, SingleReportSchema)
 
 
 REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
+
 
 class AllReportsView(MethodView):
     def get(self):
@@ -67,8 +67,6 @@ class AllReportsView(MethodView):
             raise BadAPIRequest(err.messages)
         storage = get_storage()
         report_id = storage.store_report(report)
-        if report_id is None:
-            raise NotFoundException()
         response = make_response(report_id, 201)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)
@@ -98,8 +96,6 @@ class ReportView(MethodView):
         """
         storage = get_storage()
         report = storage.read_report(report_id)
-        if report is None:
-            raise NotFoundException('Report does not exist')
         return jsonify(SingleReportSchema().dump(report))
 
     def delete(self, report_id):
@@ -140,7 +136,8 @@ class ReportStatusView(MethodView):
         """
         if status not in REPORT_STATUS_OPTIONS:
             raise BadAPIRequest(
-               {'status': f'Must be one of {",".join(REPORT_STATUS_OPTIONS)}.'})
+                {'status': 'Must be one of '
+                           '{",".join(REPORT_STATUS_OPTIONS)}.'})
         storage = get_storage()
         storage.store_report_status(report_id, status)
         return '', 204
@@ -161,7 +158,6 @@ class ReportMetricsView(MethodView):
         storage = get_storage()
         storage.store_report_metrics(report_id, raw_metrics)
         return '', 204
-
 
 
 class ReportValuesView(MethodView):

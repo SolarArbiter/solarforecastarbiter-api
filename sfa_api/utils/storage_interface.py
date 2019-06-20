@@ -1183,8 +1183,10 @@ def store_report(report):
           or the user lacks permissions to read the data.
     """
     report_id = generate_uuid()
-    report['report_parameters']['start'] = report['report_parameters']['start'].isoformat()
-    report['report_parameters']['end'] = report['report_parameters']['end'].isoformat()
+    iso_start = report['report_parameters']['start'].isoformat()
+    iso_end = report['report_parameters']['end'].isoformat()
+    report['report_parameters']['start'] = iso_start
+    report['report_parameters']['end'] = iso_end
     _call_procedure(
         'store_report',
         report_id,
@@ -1214,8 +1216,10 @@ def read_report(report_id):
     """
     report = _call_procedure('read_report', report_id)[0]
     report['report_parameters'] = json.loads(report['report_parameters'])
-    report['report_parameters']['start'] = pd.Timestamp(report['report_parameters']['start'])
-    report['report_parameters']['end'] = pd.Timestamp(report['report_parameters']['end'])
+    dt_start = pd.Timestamp(report['report_parameters']['start'])
+    dt_end = pd.Timestamp(report['report_parameters']['end'])
+    report['report_parameters']['start'] = dt_start
+    report['report_parameters']['end'] = dt_end
     report_values = read_report_values(report_id)
     report['values'] = report_values
     return report
@@ -1247,7 +1251,7 @@ def store_report_values(report_id, object_id, values):
         UUID of the original object
     values: str
         Temporary string values field
-    
+
     Returns
     -------
     uuid: str
@@ -1322,7 +1326,7 @@ def store_report_status(report_id, status):
     ----------
     report_id: str
         UUID of the report associated with the data.
-    
+
     status: str
         The new status of the report
 
