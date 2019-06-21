@@ -624,7 +624,7 @@ def test_read_report(
     orig_params = json.loads(report['report_parameters'])
     assert res_params == orig_params
     assert res['metrics'] == '{}'
-    assert res['prereport'] is None
+    assert res['raw_report'] is None
 
 
 def test_read_report_denied(dictcursor, new_report, valueset, insertuser):

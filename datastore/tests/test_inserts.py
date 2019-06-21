@@ -873,13 +873,13 @@ def test_store_report_metrics(
         allow_update_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
-    prereport = b'\x00\x0F\xFF'
+    raw_report = b'\x00\x0F\xFF'
     dictcursor.callproc(
         'store_report_metrics',
         (user['auth0_id'],
          str(bin_to_uuid(report['id'])),
          json.dumps(metrics),
-         prereport)
+         raw_report)
     )
     dictcursor.execute(
         'SELECT * FROM arbiter_data.reports WHERE id = %s',
@@ -892,14 +892,14 @@ def test_store_report_metrics_no_update(
         dictcursor, insertuser, allow_read_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
-    prereport = b'\x00\x0F\xFF'
+    raw_report = b'\x00\x0F\xFF'
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'store_report_metrics',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
              json.dumps(metrics),
-             prereport)
+             raw_report)
         )
     assert e.value.args[0] == 1142
 

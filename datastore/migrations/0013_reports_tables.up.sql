@@ -7,7 +7,7 @@ CREATE TABLE arbiter_data.reports(
     name VARCHAR(64) NOT NULL,
     report_parameters JSON NOT NULL,
     metrics JSON,
-    prereport LONGBLOB,
+    raw_report LONGBLOB,
     status ENUM('pending', 'complete', 'failed') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -52,7 +52,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
         SELECT BIN_TO_UUID(id, 1) as report_id, get_organization_name(organization_id) as provider,
-        name, report_parameters, metrics, prereport, status, created_at, modified_at
+        name, report_parameters, metrics, raw_report, status, created_at, modified_at
         FROM arbiter_data.reports where id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read report"',
@@ -146,15 +146,15 @@ END;
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_metrics(
-    IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON, IN new_prereport LONGBLOB)
-COMMENT 'Update metrics field with json and prereport with binary data'
+    IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON, IN new_raw_report LONGBLOB)
+COMMENT 'Update metrics field with json and raw_report with binary data'
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = (UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'update'));
     IF allowed THEN
-        UPDATE arbiter_data.reports SET metrics = new_metrics, prereport = new_prereport
+        UPDATE arbiter_data.reports SET metrics = new_metrics, raw_report = new_raw_report
         WHERE id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "set report metrics"',
