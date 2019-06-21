@@ -197,7 +197,7 @@ class ReportValuesView(MethodView):
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        values = storage.read_report_values()
+        values = storage.read_report_values(report_id)[0]
         return jsonify(values)
 
     def post(self, report_id):

@@ -74,7 +74,6 @@ REPORT_VALUESET = [
 @pytest.mark.parametrize('values', REPORT_VALUESET)
 def test_post_report_values(api, new_report, values):
     report_id = new_report()
-    # TODO: fix with final format
     obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0]
     report_values = {
         'object_id': obj_id,
@@ -108,9 +107,29 @@ def test_post_report_values_bad_uuid(api, new_report, values):
     assert res.get_data(as_text=True) == expected
 
 
+@pytest.mark.parametrize('values', REPORT_VALUESET)
+def test_read_report_values(api, new_report, values):
+    report_id = new_report()
+    obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0]
+    report_values = {
+        'object_id': obj_id,
+        'processed_values': values,
+    }
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=report_values)
+    assert res.status_code == 201
+    value_id = res.data.decode()
+    values_res = api.get(
+        f'/reports/{report_id}/values',
+        base_url=BASE_URL)
+    report_values = values_res.get_json()
+    assert report_values['id'] == value_id
+    assert report_values['processed_values'] == values
+
+
 def test_post_metrics(api, new_report):
     report_id = new_report()
-    # TODO: fix with final format
     payload = {
         'metrics': {'MAE': 'data', 'RMSE': 'data'},
         'raw_report': '<p>hello</p>',
