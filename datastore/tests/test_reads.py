@@ -99,6 +99,7 @@ def allow_read_reports(cursor, new_permission, insertuser):
         '(%s, %s)', (role['id'], perm['id']))
 
 
+@pytest.fixture()
 def allow_read_report_values(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('read_values', 'reports', True, org=org)
@@ -623,6 +624,7 @@ def test_read_report(
     orig_params = json.loads(report['report_parameters'])
     assert res_params == orig_params
     assert res['metrics'] == '{}'
+    assert res['prereport'] is None
 
 
 def test_read_report_denied(dictcursor, new_report, valueset, insertuser):
@@ -639,7 +641,7 @@ def test_read_report_values(
         allow_read_observations, allow_read_observation_values,
         allow_read_forecasts, allow_read_forecast_values,
         allow_read_cdf_forecast_values, allow_read_cdf_forecasts,
-        insertuser):
+        allow_read_report_values, insertuser):
     user = insertuser[0]
     report = insertuser[7]
     object_pairs = json.loads(report['report_parameters'])['object_pairs']
@@ -656,7 +658,8 @@ def test_read_report_values(
 
 def test_read_report_values_partial_access(
         dictcursor, valueset, new_report, allow_read_reports,
-        allow_read_observation_values, insertuser, new_permission):
+        allow_read_observation_values, allow_read_report_values,
+        insertuser, new_permission):
     user = insertuser[0]
     report = insertuser[7]
     object_pairs = json.loads(report['report_parameters'])['object_pairs']
@@ -674,7 +677,8 @@ def test_read_report_values_partial_access(
 
 
 def test_read_report_values_no_data_access(
-        dictcursor, valueset, new_report, allow_read_reports, insertuser):
+        dictcursor, valueset, new_report, allow_read_reports,
+        insertuser, allow_read_report_values):
     user = insertuser[0]
     report = insertuser[7]
     dictcursor.callproc(
@@ -686,7 +690,7 @@ def test_read_report_values_no_data_access(
 
 
 def test_read_report_values_denied(
-        dictcursor, valueset, new_report,
+        dictcursor, valueset, new_report, allow_read_report_values,
         allow_read_observations, allow_read_observation_values,
         allow_read_forecasts, allow_read_forecast_values,
         insertuser):

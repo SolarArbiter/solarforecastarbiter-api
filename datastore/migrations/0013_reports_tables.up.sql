@@ -7,7 +7,8 @@ CREATE TABLE arbiter_data.reports(
     name VARCHAR(64) NOT NULL,
     report_parameters JSON NOT NULL,
     metrics JSON,
-    status ENUM('pending', 'complete', 'failed') NOT NULL,
+    prereport LONGBLOB,
+    status ENUM('pending', 'complete', 'failed') NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -22,7 +23,7 @@ CREATE TABLE arbiter_data.report_values(
     id BINARY(16) NOT NULL DEFAULT (UUID_TO_BIN(UUID(), 1)),
     report_id BINARY(16) NOT NULL,
     object_id BINARY(16) NOT NULL,
-    processed_values BLOB NOT NULL,
+    processed_values LONGBLOB NOT NULL,
     
     PRIMARY KEY (report_id, id),
     KEY (object_id),
@@ -51,7 +52,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
         SELECT BIN_TO_UUID(id, 1) as report_id, get_organization_name(organization_id) as provider,
-        name, report_parameters, metrics, status, created_at, modified_at
+        name, report_parameters, metrics, prereport, status, created_at, modified_at
         FROM arbiter_data.reports where id = binid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read report"',
@@ -67,7 +68,7 @@ BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed boolean DEFAULT FALSE;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    SET allowed = can_user_perform_action(auth0id, binid, 'read_values');
     IF allowed THEN
         SELECT BIN_TO_UUID(id,1) as id, BIN_TO_UUID(report_id, 1) as report_id,
         BIN_TO_UUID(object_id, 1) as object_id, processed_values
@@ -109,7 +110,7 @@ END;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_values (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN str_report_id CHAR(36), IN str_object_id CHAR(36),
-    IN processedvalues BLOB)
+    IN processedvalues LONGBLOB)
 MODIFIES SQL DATA SQL SECURITY DEFINER
 COMMENT 'Store processed values for a report'
 BEGIN
@@ -137,7 +138,7 @@ END;
 CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER validate_object_id_on_report_value_insert BEFORE INSERT ON report_values
 FOR EACH ROW
 BEGIN
-    IF (SELECT COUNT(*) FROM cdf_forecasts_singles WHERE id = New.object_id) > 0 THEN
+    IF EXISTS (SELECT * FROM cdf_forecasts_singles WHERE id = New.object_id) THEN
         SIGNAL SQLSTATE 'HY000' SET MESSAGE_TEXT = 'Report value object_id must identify observation, forecast or cdf forecast group',
         MYSQL_ERRNO = 1210;
     END IF;
@@ -145,17 +146,18 @@ END;
 GRANT SELECT ON arbiter_data.cdf_forecasts_singles TO 'permission_trig'@'localhost';
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_metrics(
-    IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON)
-COMMENT 'Update metrics field with json'
+    IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON, IN new_prereport LONGBLOB)
+COMMENT 'Update metrics field with json and prereport with binary data'
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = (UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'update'));
     IF allowed THEN
-        UPDATE arbiter_data.reports SET metrics = new_metrics WHERE id = binid;
+        UPDATE arbiter_data.reports SET metrics = new_metrics, prereport = new_prereport
+        WHERE id = binid;
     ELSE
-        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "set report status"',
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "set report metrics"',
         MYSQL_ERRNO = 1142;
     END IF;
 END;

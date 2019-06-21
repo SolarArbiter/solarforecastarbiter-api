@@ -533,3 +533,10 @@ def test_delete_report(cursor, report_obj, allow_delete_report):
         'WHERE id = UUID_TO_BIN(%s, 1)',
         report_id)
     assert cursor.fetchone()[0] == 0
+
+
+def test_delete_report_denied(cursor, report_obj):
+    auth0id, report_id, _ = report_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('delete_report', (auth0id, report_id))
+    assert e.value.args[0] == 1142

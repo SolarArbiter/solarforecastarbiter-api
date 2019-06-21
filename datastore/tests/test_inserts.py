@@ -9,7 +9,7 @@ import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid
+from conftest import bin_to_uuid, newuuid
 
 
 @pytest.fixture()
@@ -776,6 +776,30 @@ def test_store_report_denied(dictcursor, report_callargs, insertuser):
 
 def test_store_report_values(
         dictcursor, insertuser, allow_write_values,
+        allow_read_observation_values, new_observation):
+    user, _, _, obs, org, role, _, report = insertuser
+    value = b'\x00\x0F\xFF'
+    value_id = newuuid()
+    dictcursor.callproc(
+        'store_report_values',
+        (user['auth0_id'],
+         str(bin_to_uuid(value_id)),
+         str(bin_to_uuid(report['id'])),
+         str(bin_to_uuid(obs['id'])),
+         value)
+    )
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.report_values WHERE id = %s',
+        (value_id))
+    res = dictcursor.fetchall()
+    assert res[0]['id'] == value_id
+    assert res[0]['processed_values'] == value
+    assert res[0]['object_id'] == obs['id']
+    assert res[0]['report_id'] == report['id']
+
+
+def test_update_report_values(
+        dictcursor, insertuser, allow_write_values,
         allow_read_observation_values):
     user, _, _, obs, org, role, _, report = insertuser
     value = b'\x00\x0F\xFF'
@@ -794,11 +818,13 @@ def test_store_report_values(
          value)
     )
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.report_values WHERE report_id = %s AND '
-        'object_id = %s',
-        (report['id'], obs['id'],))
+        'SELECT * FROM arbiter_data.report_values WHERE id = %s',
+        (value_id))
     res = dictcursor.fetchall()
+    assert res[0]['id'] == value_id
     assert res[0]['processed_values'] == value
+    assert res[0]['object_id'] == obs['id']
+    assert res[0]['report_id'] == report['id']
 
 
 def test_store_report_values_wrong_type(
@@ -847,11 +873,13 @@ def test_store_report_metrics(
         allow_update_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
+    prereport = b'\x00\x0F\xFF'
     dictcursor.callproc(
         'store_report_metrics',
         (user['auth0_id'],
          str(bin_to_uuid(report['id'])),
-         json.dumps(metrics))
+         json.dumps(metrics),
+         prereport)
     )
     dictcursor.execute(
         'SELECT * FROM arbiter_data.reports WHERE id = %s',
@@ -864,18 +892,20 @@ def test_store_report_metrics_no_update(
         dictcursor, insertuser, allow_read_reports):
     user, _, _, obs, org, role, _, report = insertuser
     metrics = {"a": "b", "c": "d"}
+    prereport = b'\x00\x0F\xFF'
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'store_report_metrics',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
-             json.dumps(metrics))
+             json.dumps(metrics),
+             prereport)
         )
     assert e.value.args[0] == 1142
 
 
 @pytest.mark.parametrize('new_status', [
-    'complete', 'failed'])
+    'pending', 'complete', 'failed'])
 def test_store_report_status(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports, new_status):

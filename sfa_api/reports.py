@@ -113,7 +113,6 @@ class ReportView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#components/responses/404-NotFound'
-
         """
         storage = get_storage()
         storage.delete_report(report_id)
@@ -133,6 +132,13 @@ class ReportStatusView(MethodView):
               name: Status
               in: path
               description: The new status of the report.
+        responses:
+          204:
+            description: Deleted report successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#components/responses/404-NotFound'
         """
         if status not in REPORT_STATUS_OPTIONS:
             raise BadAPIRequest(

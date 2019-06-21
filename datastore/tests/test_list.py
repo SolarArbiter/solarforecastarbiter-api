@@ -35,7 +35,8 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
-        reports = [new_report(org, obs[i], [fx[i]], [cdf[i]]) for i in range(2)]
+        reports = [new_report(org, obs[i], [fx[i]], [cdf[i]])
+                   for i in range(2)]
         return user, role, perms, sites, fx, obs, cdf, reports
     return make
 
