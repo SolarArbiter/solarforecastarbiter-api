@@ -111,8 +111,8 @@ def test_post_report_values_bad_uuid(api, new_report, values):
 def test_post_metrics(api, new_report):
     report_id = new_report()
     # TODO: fix with final format
-    payload = { 
-        'metrics' : {'MAE': 'data', 'RMSE': 'data'},
+    payload = {
+        'metrics': {'MAE': 'data', 'RMSE': 'data'},
         'raw_report': '<p>hello</p>',
     }
     res = api.post(f'/reports/{report_id}/metrics',
