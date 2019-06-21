@@ -1149,3 +1149,193 @@ def remove_object_from_permission(permission_id, uuid):
     """
     _call_procedure('remove_object_from_permission',
                     uuid, permission_id)
+
+
+def list_reports():
+    """
+    Returns
+    -------
+    list of dicts
+        List of dictionaries of report metadata.
+    """
+    reports = _call_procedure('list_reports')
+    return reports
+
+
+def store_report(report):
+    """Store a report's metadata
+
+    Parameters
+    ----------
+    report: dict
+        Dictionary of report metadata
+
+    Returns
+    -------
+    str
+        UUID of newly created report.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to create a report
+        - If any of the objects in object_pairs does not exist,
+          or the user lacks permissions to read the data.
+    """
+    report_id = generate_uuid()
+    iso_start = report['report_parameters']['start'].isoformat()
+    iso_end = report['report_parameters']['end'].isoformat()
+    report['report_parameters']['start'] = iso_start
+    report['report_parameters']['end'] = iso_end
+    _call_procedure(
+        'store_report',
+        report_id,
+        report['name'],
+        json.dumps(report['report_parameters']),
+    )
+    return report_id
+
+
+def read_report(report_id):
+    """
+    Parameters
+    ----------
+    report_id
+        UUID of the report to read.
+
+    Returns
+    -------
+    dict
+        A dictionary of Report metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the report does not exist, or the the user does not have
+        permission to read the report.
+    """
+    report = _call_procedure('read_report', report_id)[0]
+    report['report_parameters'] = json.loads(report['report_parameters'])
+    dt_start = pd.Timestamp(report['report_parameters']['start'])
+    dt_end = pd.Timestamp(report['report_parameters']['end'])
+    report['report_parameters']['start'] = dt_start
+    report['report_parameters']['end'] = dt_end
+    report_values = read_report_values(report_id)
+    report['values'] = report_values
+    return report
+
+
+def delete_report(report_id):
+    """
+    Parameters
+    ----------
+    report_id
+        UUID of the report to read.
+
+    Raises
+    ------
+    StorageAuthError
+        If the report does not exist, or the user does not have permission
+        to delete the report.
+    """
+    _call_procedure('delete_report', report_id)
+
+
+def store_report_values(report_id, object_id, values):
+    """
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+    object_id: str
+        UUID of the original object
+    values: str
+        Temporary string values field
+
+    Returns
+    -------
+    uuid: str
+        UUID of the inserted processed data.
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have permission to store values for the
+          report.
+        - If the user does not have permission to read the original object
+        - If the user does not have access to the report.
+    """
+    uuid = generate_uuid()
+    # encode values? Should values be a dataframe?
+    # temporary dump to json and encode so we can pack this in a blob
+    values_bytes = values.encode()
+    _call_procedure('store_report_values', uuid, str(report_id),
+                    str(object_id), values_bytes)
+    return uuid
+
+
+def read_report_values(report_id):
+    """Returns all of the processed values in the report that the user has
+    access too.
+
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+
+    Returns
+    -------
+    list
+        List of processed data dicts containing a unique id, report_id,
+        original object_id and values in some serialized form.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to the report.
+    """
+    values = _call_procedure('read_report_values', report_id)
+    # decode values?
+    # temporary decode from bytes
+    for row in values:
+        row['processed_values'] = row['processed_values'].decode()
+    return values
+
+
+def store_report_metrics(report_id, metrics, raw_report):
+    """
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+    metrics: dict
+        A dict containing the metrics and metadata
+    raw_report: bytes
+        byte representation of the rereport template.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to update the report
+    """
+    json_metrics = json.dumps(metrics)
+    _call_procedure('store_report_metrics', report_id,
+                    json_metrics, raw_report)
+
+
+def store_report_status(report_id, status):
+    """
+    Parameters
+    ----------
+    report_id: str
+        UUID of the report associated with the data.
+
+    status: str
+        The new status of the report
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not haveupdate permission on the report
+    """
+    _call_procedure('store_report_status', report_id, status)

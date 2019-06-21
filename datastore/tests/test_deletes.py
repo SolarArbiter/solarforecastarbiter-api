@@ -36,6 +36,15 @@ def cdf_obj(site_obj, new_cdf_forecast):
 
 
 @pytest.fixture()
+def report_obj(site_obj, valueset, new_report, new_observation, new_forecast):
+    auth0_id, _, site = site_obj
+    obs = new_observation(site=site)
+    fx = new_forecast(site=site)
+    report = new_report(valueset[0][0], obs, [fx])
+    return auth0_id, str(bin_to_uuid(report['id'])), report
+
+
+@pytest.fixture()
 def allow_delete(cursor, new_permission, valueset):
     def do(what):
         org = valueset[0][0]
@@ -65,6 +74,11 @@ def allow_delete_forecast(allow_delete):
 @pytest.fixture()
 def allow_delete_cdf_group(allow_delete):
     allow_delete('cdf_forecasts')
+
+
+@pytest.fixture()
+def allow_delete_report(allow_delete):
+    allow_delete('reports')
 
 
 @pytest.fixture()
@@ -452,8 +466,9 @@ def test_remove_object_from_permission(cursor, permission_object_obj,
                                        allow_update_permission):
     auth0id, permid, objid = permission_object_obj
     cursor.execute(
-        'SELECT BIN_TO_UUID(object_id, 1) FROM arbiter_data.permission_object_mapping'
-        ' WHERE permission_id = UUID_TO_BIN(%s, 1)', permid)
+        'SELECT BIN_TO_UUID(object_id, 1) FROM '
+        'arbiter_data.permission_object_mapping '
+        'WHERE permission_id = UUID_TO_BIN(%s, 1)', permid)
     count = cursor.fetchall()[0]
     assert len(count) == 1
     assert count[0] == objid
@@ -502,4 +517,26 @@ def test_remove_object_from_permission_denied(cursor, permission_object_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_object_from_permission',
                         (auth0id, objid, permid))
+    assert e.value.args[0] == 1142
+
+
+def test_delete_report(cursor, report_obj, allow_delete_report):
+    auth0id, report_id, _ = report_obj
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.reports '
+        'WHERE id = UUID_TO_BIN(%s, 1)',
+        report_id)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_report', (auth0id, report_id))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.reports '
+        'WHERE id = UUID_TO_BIN(%s, 1)',
+        report_id)
+    assert cursor.fetchone()[0] == 0
+
+
+def test_delete_report_denied(cursor, report_obj):
+    auth0id, report_id, _ = report_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('delete_report', (auth0id, report_id))
     assert e.value.args[0] == 1142

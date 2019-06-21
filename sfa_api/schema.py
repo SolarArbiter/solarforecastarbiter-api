@@ -619,8 +619,128 @@ class RoleSchema(RolePostSchema):
     role_id = ma.UUID(
         title='Role ID',
         description="UUID of the role",
+        required=True,
+        validate=UserstringValidator()
     )
     organization = ma.String(title="Organization")
     permissions = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+
+
+@spec.define_schema('ReportParameters')
+class ReportParameters(ma.Schema):
+    start = ma.DateTime(
+        title="Start",
+        description=("The beginning of the analysis period as an ISO 8601"
+                     "datetime."),
+        format='iso'
+    )
+    end = ma.DateTime(
+        title="End",
+        description="The end of the analysis period as an ISO 8601 datetime.",
+        format='iso'
+    )
+    # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't
+    # been added to apispec, so this will not render correctly right now
+    # Issue: https://github.com/marshmallow-code/apispec/issues/399
+    object_pairs = ma.List(ma.Tuple(
+        (ma.UUID(title="Observation UUID"), ma.UUID(title="Forecast UUID")),
+        many=True))
+    filters = ma.List(
+        ma.String(),
+        title="Filters",
+        description="List of Filters Applied to the data in the report"
+    )
+    metrics = ma.List(
+        ma.String(
+            validate=validate.OneOf(['MAE', 'MBE', 'RMSE'])
+        ),
+        title='Metrics',
+        description=('The metrics to include in the report.'),
+        required=True
+    )
+
+
+@spec.define_schema('ReportValuesPostSchema')
+class ReportValuesPostSchema(ma.Schema):
+    object_id = ma.UUID(
+        title="Object ID",
+        description="UUID of the original object"
+    )
+    # maybe custom field for binary data?
+    processed_values = ma.String()
+
+
+@spec.define_schema('ReportValuesSchema')
+class ReportValuesSchema(ReportValuesPostSchema):
+    # Not sure how this dict should be structured. Nested
+    # Forecast/ObservationValueSchema?
+    # we definitely want the uuid:values mapping
+    id = ma.UUID(
+        title="Report Value ID",
+        description="UUID for this set of processed values",
+    )
+    report_id = ma.UUID(
+        title="Report ID",
+        description="UUID of the associated report"
+    )
+
+
+# Currently, the marshmallow API Spec
+@spec.define_schema('ReportMetadata')
+class ReportPostSchema(ma.Schema):
+    name = ma.String(
+        title="Name",
+        required=True,
+        validate=UserstringValidator()
+    )
+    report_parameters = ma.Nested(ReportParameters,
+                                  required=True)
+
+
+@spec.define_schema('ReportSchema')
+class ReportSchema(ReportPostSchema):
+    """For serializing a list or reports.
+    """
+    class Meta:
+        string = True
+        ordered = True
+    report_id = ma.UUID()
+    organization = ma.String(title="Organization")
+    metrics = ma.Dict(
+        title='Calculated Metrics',
+        description='Metrics calculated over the '
+                    'analysis period of the report.')
+    raw_report = ma.String(
+        title="Raw Report",
+        description="A Markdown template with rendered metrics, and a block "
+                    "for inserting timeseries plots")
+    status = ma.String(validate=validate.OneOf(
+        ['pending', 'complete', 'failed']))
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+
+
+@spec.define_schema('SingleReportSchema')
+class SingleReportSchema(ReportSchema):
+    """For serializing a report with values
+    """
+    values = ma.List(ma.Nested(ReportValuesSchema()),
+                     many=True)
+
+
+@spec.define_schema('ReportMetricsSchema')
+class ReportMetricsSchema(ma.Schema):
+    """Parses metrics and raw_report out of a single object.
+    """
+    metrics = ma.Dict(
+        title="Calculated Metrics",
+        Description="calculated metrics of the field",
+        required=True)
+    raw_report = ma.String(
+        title="Raw Report",
+        description=("A Markdown template with rendered metrics, and a block "
+                     "for inserting timeseries plots"),
+        required=True
+    )
