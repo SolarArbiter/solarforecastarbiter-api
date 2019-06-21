@@ -111,15 +111,19 @@ def test_post_report_values_bad_uuid(api, new_report, values):
 def test_post_metrics(api, new_report):
     report_id = new_report()
     # TODO: fix with final format
-    metrics = {'MAE': 'data', 'RMSE': 'data'}
+    payload = { 
+        'metrics' : {'MAE': 'data', 'RMSE': 'data'},
+        'raw_report': '<p>hello</p>',
+    }
     res = api.post(f'/reports/{report_id}/metrics',
                    base_url=BASE_URL,
-                   json=metrics)
+                   json=payload)
     assert res.status_code == 204
     metrics_res = api.get(f'/reports/{report_id}',
                           base_url=BASE_URL)
     report_with_metrics = metrics_res.get_json()
-    assert json.loads(report_with_metrics['metrics']) == metrics
+    assert json.loads(report_with_metrics['metrics']) == payload['metrics']
+    assert report_with_metrics['raw_report'] == payload['raw_report']
 
 
 def test_delete_report(api, new_report):

@@ -712,6 +712,10 @@ class ReportSchema(ReportPostSchema):
         title='Calculated Metrics',
         description='Metrics calculated over the '
                     'analysis period of the report.')
+    raw_report = ma.String(
+        title="Raw Report",
+        description="A Markdown template with rendered metrics, and a block "
+                    "for inserting timeseries plots")
     status = ma.String(validate=validate.OneOf(
         ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
@@ -724,3 +728,19 @@ class SingleReportSchema(ReportSchema):
     """
     values = ma.List(ma.Nested(ReportValuesSchema()),
                      many=True)
+
+
+@spec.define_schema('ReportMetricsSchema')
+class ReportMetricsSchema(ma.Schema):
+    """Parses metrics and raw_report out of a single object.
+    """
+    metrics = ma.Dict(
+        title="Calculated Metrics",
+        Description="calculated metrics of the field",
+        required=True)
+    raw_report = ma.String(
+        title="Raw Report",
+        description=("A Markdown template with rendered metrics, and a block "
+                     "for inserting timeseries plots"),
+        required=True
+    )

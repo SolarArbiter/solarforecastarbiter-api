@@ -7,7 +7,8 @@ from sfa_api import spec
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
-                            ReportSchema, SingleReportSchema)
+                            ReportSchema, SingleReportSchema,
+                            ReportMetricsSchema)
 
 
 REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
@@ -156,13 +157,23 @@ class ReportMetricsView(MethodView):
         summary: Store Report metrics
         tags:
           - Reports
+        requestBody:
+          description: JSON object containing metrics and raw report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMetricsSchema'
         parameters:
           - $ref: '#/components/parameters/report_id'
         """
-        raw_metrics = request.get_json()
-        # TODO: Validate metrics w/schema
+        raw_metrics_report = request.get_json()
+        metrics_report = ReportMetricsSchema().load(raw_metrics_report)
+        # dump metrics back to a JSON object, and keep the raw report
+        # template as a string
+        raw_metrics = metrics_report['metrics']
+        raw_report = metrics_report['raw_report']
         storage = get_storage()
-        storage.store_report_metrics(report_id, raw_metrics)
+        storage.store_report_metrics(report_id, raw_metrics, raw_report)
         return '', 204
 
 
@@ -185,8 +196,6 @@ class ReportValuesView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # Maybe this shouldn't exist since we're packing the values
-        # into the single report
         storage = get_storage()
         values = storage.read_report_values()
         return jsonify(values)

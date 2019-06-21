@@ -1302,7 +1302,7 @@ def read_report_values(report_id):
     return values
 
 
-def store_report_metrics(report_id, metrics):
+def store_report_metrics(report_id, metrics, raw_report):
     """
     Parameters
     ----------
@@ -1310,6 +1310,8 @@ def store_report_metrics(report_id, metrics):
         UUID of the report associated with the data.
     metrics: dict
         A dict containing the metrics and metadata
+    raw_report: bytes
+        byte representation of the rereport template.
 
     Raises
     ------
@@ -1317,7 +1319,8 @@ def store_report_metrics(report_id, metrics):
         If the user does not have permission to update the report
     """
     json_metrics = json.dumps(metrics)
-    _call_procedure('store_report_metrics', report_id, json_metrics)
+    _call_procedure('store_report_metrics', report_id,
+                    json_metrics, raw_report)
 
 
 def store_report_status(report_id, status):
