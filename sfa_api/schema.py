@@ -654,7 +654,7 @@ class ReportParameters(ma.Schema):
     )
     metrics = ma.List(
         ma.String(
-            validate=validate.OneOf(['MAE', 'MBE', 'RMSE'])
+            validate=lambda x: x.upper() in ['MAE', 'MBE', 'RMSE']
         ),
         title='Metrics',
         description=('The metrics to include in the report.'),
