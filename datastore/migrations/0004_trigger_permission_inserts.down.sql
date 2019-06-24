@@ -12,4 +12,5 @@ DROP TRIGGER remove_object_perm_on_aggregates_delete;
 DROP TRIGGER remove_object_perm_on_users_delete;
 DROP TRIGGER remove_object_perm_on_roles_delete;
 DROP TRIGGER remove_object_perm_on_sites_delete;
+DROP TRIGGER remove_perm_on_perm_delete;
 DROP USER 'permission_trig'@'localhost';
