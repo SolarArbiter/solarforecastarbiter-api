@@ -1151,6 +1151,15 @@ def remove_object_from_permission(permission_id, uuid):
                     uuid, permission_id)
 
 
+def _decode_report_parameters(report):
+    report['report_parameters'] = json.loads(report['report_parameters'])
+    dt_start = pd.Timestamp(report['report_parameters']['start'])
+    dt_end = pd.Timestamp(report['report_parameters']['end'])
+    report['report_parameters']['start'] = dt_start
+    report['report_parameters']['end'] = dt_end
+    return report
+
+
 def list_reports():
     """
     Returns
@@ -1159,7 +1168,7 @@ def list_reports():
         List of dictionaries of report metadata.
     """
     reports = _call_procedure('list_reports')
-    return reports
+    return [_decode_report_parameters(r) for r in reports]
 
 
 def store_report(report):
@@ -1214,12 +1223,8 @@ def read_report(report_id):
         If the report does not exist, or the the user does not have
         permission to read the report.
     """
-    report = _call_procedure('read_report', report_id)[0]
-    report['report_parameters'] = json.loads(report['report_parameters'])
-    dt_start = pd.Timestamp(report['report_parameters']['start'])
-    dt_end = pd.Timestamp(report['report_parameters']['end'])
-    report['report_parameters']['start'] = dt_start
-    report['report_parameters']['end'] = dt_end
+    report = _decode_report_parameters(
+        _call_procedure('read_report', report_id)[0])
     report_values = read_report_values(report_id)
     report['values'] = report_values
     return report
