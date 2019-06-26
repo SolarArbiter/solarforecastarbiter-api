@@ -1,10 +1,14 @@
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
+from solarforecastarbiter.io.utils import HiddenToken
+from solarforecastarbiter.reports.main import compute_report
 
 
 from sfa_api import spec
+from sfa_api.utils.auth import current_access_token
 from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.queuing import get_queue
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
                             ReportSchema, SingleReportSchema,
@@ -71,6 +75,12 @@ class AllReportsView(MethodView):
         response = make_response(report_id, 201)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)
+        q = get_queue()
+        q.enqueue(
+            compute_report,
+            HiddenToken(current_access_token),
+            report_id,
+            base_url=request.url_root.rstrip('/'))
         return response
 
 
