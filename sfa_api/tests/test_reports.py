@@ -23,7 +23,7 @@ def report_json():
 
 
 @pytest.fixture()
-def new_report(api, report_json):
+def new_report(api, report_json, mocked_queing):
     def fn():
         res = api.post('/reports/',
                        base_url=BASE_URL,
@@ -32,7 +32,7 @@ def new_report(api, report_json):
     return fn
 
 
-def test_post_report(api, report_json):
+def test_post_report(api, report_json, mocked_queing):
     res = api.post('/reports/',
                    base_url=BASE_URL,
                    json=REPORT_POST_JSON)
@@ -124,8 +124,9 @@ def test_read_report_values(api, new_report, values):
         f'/reports/{report_id}/values',
         base_url=BASE_URL)
     report_values = values_res.get_json()
-    assert report_values['id'] == value_id
-    assert report_values['processed_values'] == values
+    assert isinstance(report_values, list)
+    assert report_values[0]['id'] == value_id
+    assert report_values[0]['processed_values'] == values
 
 
 def test_post_metrics(api, new_report):
@@ -177,7 +178,7 @@ def test_list_reports(api, new_report):
     ('filters', 'not a list',
      '["Not a valid list."]'),
     ('metrics', ["bad"],
-     '{"0":["Must be one of: MAE, MBE, RMSE."]}'),
+     '{"0":["Invalid Value."]}'),
 ])
 def test_post_report_invalid_report_params(
         api, key, value, error, report_json):

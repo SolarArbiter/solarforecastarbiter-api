@@ -655,6 +655,7 @@ class ReportParameters(ma.Schema):
     metrics = ma.List(
         ma.String(
             validate=lambda x: x.upper() in ['MAE', 'MBE', 'RMSE']
+            # TODO: return informative error and use params from core
         ),
         title='Metrics',
         description=('The metrics to include in the report.'),

@@ -301,7 +301,7 @@ def site_id_plant():
 
 
 @pytest.fixture()
-def mocked_validation(mocker):
+def mocked_queing(mocker):
     mocked = mocker.patch('rq.Queue.enqueue')
     yield
     assert mocked.called
