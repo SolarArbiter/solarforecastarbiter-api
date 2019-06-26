@@ -75,7 +75,7 @@ class AllReportsView(MethodView):
         response = make_response(report_id, 201)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)
-        q = get_queue()
+        q = get_queue('reports')
         q.enqueue(
             compute_report,
             HiddenToken(current_access_token),

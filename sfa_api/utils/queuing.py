@@ -22,14 +22,17 @@ def make_redis_connection(config):
     return r
 
 
-def get_queue():
-    """Return the background task queue"""
-    if not hasattr(current_app, 'background_queue'):
+def get_queue(qname='default'):
+    """Return the requested task queue"""
+    # start with queue_ so they are grouped together on app
+    # for debugging later
+    app_qname = f'queue_{qname}'
+    if not hasattr(current_app, app_qname):
         if current_app.config.get('USE_FAKE_REDIS', False):
             from fakeredis import FakeStrictRedis
-            current_app.background_queue = Queue(
-                is_async=False, connection=FakeStrictRedis())
+            q = Queue(is_async=False, connection=FakeStrictRedis())
         else:
             redis_conn = make_redis_connection(current_app.config)
-            current_app.background_queue = Queue(connection=redis_conn)
-    return current_app.background_queue
+            q = Queue(qname, connection=redis_conn)
+        setattr(current_app, app_qname, q)
+    return getattr(current_app, app_qname)
