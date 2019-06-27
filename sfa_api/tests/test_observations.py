@@ -95,7 +95,7 @@ NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,
 
 
 def test_post_observation_values_valid_json(api, observation_id,
-                                            mocked_validation):
+                                            mocked_queuing):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  json=VALID_OBS_VALUE_JSON)
@@ -103,7 +103,7 @@ def test_post_observation_values_valid_json(api, observation_id,
 
 
 def test_post_json_storage_call(api, observation_id, mocker,
-                                mocked_validation):
+                                mocked_queuing):
     storage = mocker.MagicMock()
     mocker.patch('sfa_api.utils.storage_interface.store_observation_values',
                  new=storage)
@@ -146,7 +146,7 @@ def test_post_observation_values_invalid_csv(api, payload, observation_id):
 
 
 def test_post_observation_values_valid_csv(api, observation_id,
-                                           mocked_validation):
+                                           mocked_queuing):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -186,7 +186,7 @@ def test_get_observation_values_200(api, start, end, mimetype, observation_id):
     assert r.mimetype == mimetype
 
 
-def test_post_and_get_values_json(api, observation_id, mocked_validation):
+def test_post_and_get_values_json(api, observation_id, mocked_queuing):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  json=VALID_OBS_VALUE_JSON)
@@ -201,7 +201,7 @@ def test_post_and_get_values_json(api, observation_id, mocked_validation):
     assert VALID_OBS_VALUE_JSON['values'] == posted_data['values']
 
 
-def test_post_and_get_values_csv(api, observation_id, mocked_validation):
+def test_post_and_get_values_csv(api, observation_id, mocked_queuing):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
