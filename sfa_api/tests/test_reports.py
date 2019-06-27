@@ -23,7 +23,7 @@ def report_json():
 
 
 @pytest.fixture()
-def new_report(api, report_json, mocked_queing):
+def new_report(api, report_json, mocked_queuing):
     def fn():
         res = api.post('/reports/',
                        base_url=BASE_URL,
@@ -32,7 +32,7 @@ def new_report(api, report_json, mocked_queing):
     return fn
 
 
-def test_post_report(api, report_json, mocked_queing):
+def test_post_report(api, report_json, mocked_queuing):
     res = api.post('/reports/',
                    base_url=BASE_URL,
                    json=REPORT_POST_JSON)

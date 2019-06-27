@@ -30,7 +30,7 @@ def get_queue(qname='default'):
     if not hasattr(current_app, app_qname):
         if current_app.config.get('USE_FAKE_REDIS', False):
             from fakeredis import FakeStrictRedis
-            q = Queue(is_async=False, connection=FakeStrictRedis())
+            q = Queue(qname, is_async=False, connection=FakeStrictRedis())
         else:
             redis_conn = make_redis_connection(current_app.config)
             q = Queue(qname, connection=redis_conn)
