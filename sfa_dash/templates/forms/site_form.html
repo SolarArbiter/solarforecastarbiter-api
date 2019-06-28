@@ -12,17 +12,17 @@
 <div class="form-element">
 {{ form.input('Latitude', 'number', 'latitude',
               'Latitude in decimal degrees North of the equator.',
-              required=True, form_data=form_data) }}
-</div>
+              required=True, form_data=form_data,
+              units='&deg;N') }}</div>
 <div class="form-element">
 {{ form.input('Longitude', 'number', 'longitude',
               'Longitude in decimal degrees East of the prime meridian.',
-              required=True, form_data=form_data) }}
+              required=True, form_data=form_data, units='&deg;E') }}
 </div>
 <div class="form-element">
 {{ form.input('Elevation', 'number', 'elevation',
               'Elevation in meters above sea level.',
-              required=True, form_data=form_data)}}
+              required=True, form_data=form_data, units='m')}}
 </div>
 <div class="form-element">
     {{ form.select('Timezone', 'timezone',
@@ -41,29 +41,29 @@
     <div class="form-element">
     {{ form.input('AC Capacity', 'number', 'ac_capacity',
                   'Nameplate AC power rating in megawatts.',
-                  form_data=form_data) }}
+                  form_data=form_data, units='MW') }}
     </div>
     <div class="form-element">
     {{ form.input('DC Capacity', 'number', 'dc_capacity',
                   'Nameplate DC power rating in megawatts.',
-                  form_data=form_data) }}
+                  form_data=form_data, units='MW') }}
     </div>
     <div class="form-element">
     {{ form.input('AC Loss Factor', 'number', 'ac_loss_factor',
                   'Loss factor applied to AC current in &percnt;.',
                   form_data=form_data,
-                  default=0)}}
+                  default=0, units='&percnt;')}}
     </div>
     <div class="form-element">
     {{ form.input('DC Loss Factor', 'number', 'dc_loss_factor',
                   'Loss factor applied to DC current in &percnt;.',
                   form_data=form_data,
-                  default=0)}}
+                  default=0, units='&percnt;')}}
     </div>
     <div class="form-element">
     {{ form.input('Temperature Coefficient', 'number', 'temperature_coefficient',
                   'Temperature coefficient of DC power in units of 1/C.',
-                  form_data=form_data) }}
+                  form_data=form_data, units='1/C') }}
     </div>
     <div class="form-element full-width">
       <label>Tracking Type</label>
@@ -74,31 +74,37 @@
     <div class="fixed tracking_type_fields collapse{% if tracking_type == "fixed" or tracking_type is none%} show{% endif %}">
         <div class="form-element">
         {{ form.input('Surface Tilt', 'number' ,'surface_tilt',
-                      help_text='Tilt from horizontal of a fixed tilt system.', form_data=form_data) }}
+                      help_text='Tilt from horizontal of a fixed tilt system.', form_data=form_data,
+                      units='&deg;') }}
       </div>
       <div class="form-element">
         {{ form.input('Surface Azimuth', 'number', 'surface_azimuth',
-                      help_text='Azimuth angle of a fixed tilt system.', form_data=form_data) }}
+                      help_text='Azimuth angle of a fixed tilt system.', form_data=form_data,
+                      units='&deg;') }}
       </div>
     </div>
     <div class="single_axis tracking_type_fields collapse {% if tracking_type == "single_axis"%} show{% endif %}">
       <div class="form-element">
         {{ form.input('Axis Tilt', 'number', 'axis_tilt',
                       help_text='Tilt from horizontal of the tracker axis, degrees.',
-                      form_data=form_data, default=0) }}
+                      form_data=form_data, default=0,
+                      units='&deg;') }}
       </div>
       <div class="form-element">
         {{ form.input('Axis Azimuth', 'number', 'axis_azimuth',
                       help_text='Azimuth angle of the tracker axis, degrees East of North.',
-                      form_data=form_data, default=0)}}
+                      form_data=form_data, default=0,
+                      units='&deg;')}}
       </div>
       <div class="form-element">
         {{ form.input('Ground Coverage Ratio', 'number', 'ground_coverage_ratio',
-                      help_text='Azimuth angle of the tracker axis, degrees East of North.', form_data=form_data) }}
+                      help_text='Azimuth angle of the tracker axis, degrees East of North.', form_data=form_data,
+                      units='&deg;') }}
       </div>
       <div class="form-element">
         {{ form.input('Maximum Rotation Angle', 'number', 'max_rotation_angle',
-                      help_text='Maximum rotation from horizontal of a single axis tracker, degrees.', form_data=form_data) }}
+                      help_text='Maximum rotation from horizontal of a single axis tracker, degrees.', form_data=form_data,
+                      units='&deg;') }}
       </div>
       <div class="form-element">
         <label>Backtrack</label>

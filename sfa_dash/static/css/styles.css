@@ -284,6 +284,7 @@ a.help-button{
 .input-wrapper{
   width: calc(100% - 29px);
   display: inline-flex;
+  font-size: 1.2rem;
 }
 .bigtext{
   font-size: 2rem;

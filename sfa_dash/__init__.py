@@ -1,22 +1,28 @@
-import os
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 
-from flask import Flask, redirect, url_for, render_template, session, request
-from flask_seasurf import SeaSurf
-import sentry_sdk
-from sentry_sdk.integrations.flask import FlaskIntegration
+import os  # NOQA
 
 
-from sfa_dash.blueprints.auth0 import (make_auth0_blueprint,
-                                       oauth_request_session)
-from sfa_dash.database import db, session_storage
-from sfa_dash.filters import register_jinja_filters
-from sfa_dash.template_globals import template_variables
-from sfa_dash import error_handlers
+from flask import Flask, redirect, url_for, render_template, session, request  # NOQA
+from flask_seasurf import SeaSurf  # NOQA
+import sentry_sdk  # NOQA
+from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
+
+
+from sfa_dash.blueprints.auth0 import (make_auth0_blueprint,  # NOQA
+                                       oauth_request_session)  # NOQA
+from sfa_dash.database import db, session_storage  # NOQA
+from sfa_dash.filters import register_jinja_filters  # NOQA
+from sfa_dash.template_globals import template_variables  # NOQA
+from sfa_dash import error_handlers  # NOQA
 
 
 def create_app(config=None):
     sentry_sdk.init(send_default_pii=False,
+                    release=f'sfa-dash@{__version__}',
                     integrations=[FlaskIntegration()])
 
     app = Flask(__name__)

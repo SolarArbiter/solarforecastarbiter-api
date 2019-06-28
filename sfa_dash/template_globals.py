@@ -4,7 +4,7 @@
 
 import pytz
 
-
+import sfa_dash
 from sfa_dash import filters
 
 TIMEZONES = pytz.country_timezones('US') + list(
@@ -19,6 +19,7 @@ TIMEZONE_OPTIONS = {tz: tz.replace('_', ' ') for tz in TIMEZONES}
 
 def template_variables():
     return {
+        'dashboard_version': sfa_dash.__version__,
         'variable_options': VARIABLE_OPTIONS,
         'timezone_options': TIMEZONE_OPTIONS,
     }

@@ -24,7 +24,7 @@
 <div class="form-element">
   {{ form.input('Uncertainty', 'number', 'uncertainty',
                 'A measure of uncertainty of Observation values.',
-                form_data=form_data) }}
+                form_data=form_data, units='&percnt;') }}
 </div>
 <div class="form-element">
   {{ form.timedelta('Interval length', 'interval_length',

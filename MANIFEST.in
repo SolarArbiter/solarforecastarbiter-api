@@ -1,0 +1,2 @@
+include versioneer.py
+include sfa_dash/_version.py
