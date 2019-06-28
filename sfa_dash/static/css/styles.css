@@ -173,6 +173,19 @@ ul.data-metadata-fields{
 }
 
 /* Forms */
+li.object-pair {
+  list-style: none;
+  padding-right: 1em;
+  position: relative;
+}
+ul.object-pair-list{
+  padding-left: 0;
+}
+a.object-pair-delete-button{
+    position: absolute;
+    top: 50%;
+    color: #A00 !important;
+}
 .form-group{
   width: 100%;
   float: left;
@@ -182,7 +195,7 @@ ul.data-metadata-fields{
 }
 @media (min-width: 769px) {
   .form-element{
-    width: 50%;
+    width: 49%;
   }
 }
 @media (max-width: 768px){
@@ -191,7 +204,8 @@ ul.data-metadata-fields{
   }
 }
 .form-element{
-  float: left;
+  display: inline-block;
+  box-sizing: border-box;
   padding: .5em 1em;
   position: relative;
 }
@@ -337,4 +351,8 @@ a.help-button{
 }
 #site-banner p{
     margin-bottom: 0;
+}
+
+[role="button"]{
+    cursor: pointer;
 }

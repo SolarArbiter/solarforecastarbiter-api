@@ -4,25 +4,40 @@
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
-<form action="{{ url_for('data_dashboard.reports') }}" method="get" id="report-form">
+<form action="{{ url_for('forms.create_report') }}" method="post" id="report-form">
   <div class="form-group">
-     {% set form_data = {} %}
+      {% if form_data is not defined %} {% set form_data = {} %}{% endif %}
      <div class="form-element full-width">
        {{ form.input('Name', 'text', 'name', 'Name of the Report.', form_data=form_data) }}
      </div>
+	 <div class="form-element">
+       <label for="start">Start (UTC):</label><br/>
+       <div class="input-wrapper">
+         <input type="text" name="period-start" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data is defined %}value="{{form_data['period-start']}}"{% endif %}></input>
+       </div>
+       {{ form.help_button('period-start') }}
+       <span class="period-start-help-text form-text text-muted help-text collapse" aria-hidden>
+           The start of the analysis period as an ISO 8601 datetime.
+       </span>
+     </div>
+     <div class="form-element">
+       <label for="end">End (UTC)</label><br/>
+       <div class="input-wrapper">
+         <input type="text" name="period-end" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data is defined %}value="{{form_data['period-end']}}"{% endif %}></input>
+       </div>
+       {{ form.help_button('period-end') }}
+       <span class="period-end-help-text form-text text-muted help-text collapse" aria-hidden>
+           The end of the analysis period as an ISO 8601 datetime.
+       </span>
+     </div>
+     {# The following empty list is a target for the javascript found in report-handling.js
+        list items are added dynamically on page load #}
 	 <div class="form-element full-width border" style="border-radius:10px;margin:.5em 1em;">
-       <div class="form-element">
-         {{ form.input('Forecast', 'text', 'forecast',
-                       'Forecast to compare.',
-                        form_data=form_data) }}
-       </div>
-       <div class="form-element">
-         {{ form.input('Observation', 'text', 'observation',
-                       'Observation to compare Forecast against.',
-                       form_data=form_data) }}
-       </div>
-	   <a href="#" style="padding-left: 1em">Add a Forecast, Observation pair</a>
+       <ul class="object-pair-list">
+       </ul>
+       <a href="#" class="btn btn-primary" id="add-object-pair" style="padding-left: 1em">Add a Forecast, Observation pair</a>
 	 </div>
+    {#
      <div class="form-element">
        <label>Filters</label><br>
        <input type="checkbox" data-toggle="collapse" data-target=".quality-flag-options" name="quality-flag" value="Quality Flag"> Quality Flag<br>
@@ -53,11 +68,13 @@
              <input type="text" class='value-range-number' name="value-min" placeholder="min"> <span class='bigtext'>&le; </span><input type="text" class='value-range-observation' name="value-obs" placeholder="observation"> <span class='bigtext'>&le;</span> <input type="text" class='value-range-number' name="value-max" placeholder="max"><br>
          </div>
      </div>
+     #}
      <div class="form-element">
      <label>Metrics</label><br>
-       <input type="checkbox" name="mae" value="MAE">MAE<br>
-       <input type="checkbox" name="rmse" value="RMSE">RMSE<br>
-       <input type="checkbox" name="skill" value="Skill over">Skill over <input type='text' class="form-control" style="width:inherit"/><br>
+       <input type="checkbox" name="MAE" value="metrics">MAE<br>
+       <input type="checkbox" name="RMSE" value="metrics">RMSE<br>
+       <input type="checkbox" name="MBE" value="metrics">MBE<br>
+       {#<input type="checkbox" name="metrics" value="Skill over">Skill over <input type='text' class="form-control" style="width:inherit"/><br>#}
      </div>
     {{ form.token() }}
   </div>

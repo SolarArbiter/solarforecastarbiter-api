@@ -4,25 +4,34 @@
   <input type="text" placeholder="Search" class="search">
   <a role="button" class="btn btn-primary btn-sm" href="/reports/create">Create new Report</a>
 </div> 
+{% include "sections/notifications.html" %}
 <table class="reports-table table results">
   <thead>
     <tr>
 	  <th scope="col">Name</th>
 	  <th scope="col">Created</th>
       <th scope="col">Status</th>
+      <th scope="col"></td>
 	</tr>
   </thead>
   <tbody>
-    <tr>
-	  <td>DOE SF2 Benchmark</td>
-	  <td>2019-05-23 21:30:00Z</td>
-      <td>Pending...</td>
-	</tr>
-    <tr>
-        <td><a href="{{ url_for('data_dashboard.report_view', uuid='fake_uuid') }}">NREL MIDC OASIS GHI Forecast Analysis</a></td>
-	  <td>2019-06-06 18:30:53Z</td>
-      <td>Complete</td>
-	</tr>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td> 
+    </tr>
+  {% for report in reports %}
+    <tr class="reports-table-row">
+        <td class="reports-table-name-column">
+          {% if report['status'] == 'complete' %}
+          <a href="{{ url_for('data_dashboard.report_view', uuid=report['report_id']) }}">{{ report['name'] }}</a>
+          {% else %}
+           {{ report['name'] }}
+           {% endif %}
+        </td>
+        <td class="reports-table-created-column">{{ report['created_at'] | format_datetime }}</td>
+        <td class="reports-table-status-column">{{report['status'] }}</td>
+        <td><a role="button" class="btn btn-danger btn-sm" href="{{ url_for('data_dashboard.delete_report', uuid=report['report_id']) }}">Delete</a>
+    </tr>
+  {% endfor %}
   </tbody>
 </table>
 {% endblock %}

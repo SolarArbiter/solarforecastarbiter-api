@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="Solar Forecasting 2 project site.">
 <meta name="author" content="">
-<link rel="icon" href="../images/favicon.ico">
+<link rel="icon" href="/static/images/favicon.ico">
 
 <title>Solar Forecast Arbiter</title>
 
@@ -34,3 +34,11 @@
 
 <script src="/static/js/table-search.js"></script>
 <script src="/static/js/table-checkall.js"></script>
+<script src="/static/js/report-handling.js"></script>
+
+
+{% if page_data is defined %}
+<script>
+    var page_data = JSON.parse('{{ page_data | tojson }}');
+</script>
+{% endif %}

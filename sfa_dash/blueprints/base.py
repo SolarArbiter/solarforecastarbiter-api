@@ -47,4 +47,4 @@ class BaseView(MethodView):
         else:
             subnav = {}
         return render_template(self.template, subnav=subnav,
-                               **self.template_args())
+                               **self.template_args(), **kwargs)
