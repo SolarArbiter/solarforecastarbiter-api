@@ -1,9 +1,10 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
 {% block content %}
+<script src="/static/js/report-handling.js"></script>
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
-{% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+<h3>Create New Report</h3>
 <form action="{{ url_for('forms.create_report') }}" method="post" id="report-form">
   <div class="form-group">
       {% if form_data is not defined %} {% set form_data = {} %}{% endif %}
@@ -32,10 +33,15 @@
      </div>
      {# The following empty list is a target for the javascript found in report-handling.js
         list items are added dynamically on page load #}
+
+     <h5>Observation, Forecast pairs</h5>
 	 <div class="form-element full-width border" style="border-radius:10px;margin:.5em 1em;">
-       <ul class="object-pair-list">
-       </ul>
-       <a href="#" class="btn btn-primary" id="add-object-pair" style="padding-left: 1em">Add a Forecast, Observation pair</a>
+       <div class="form-element">Observations</div><div class="form-element">Forecasts</div>
+       <div class="object-pair-list">
+         <div class="empty-reports-list alert alert-warning">No Pairs Selected</div>
+       </div>
+       <div class="object-pair-control">
+       </div>
 	 </div>
     {#
      <div class="form-element">

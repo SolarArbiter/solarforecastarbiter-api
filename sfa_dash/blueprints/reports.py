@@ -41,7 +41,6 @@ class ReportForm(BaseView):
 
     def template_args(self):
         return {
-            "form_title": "Create new Report",
             "page_data": self.get_pairable_objects(),
         }
 
@@ -58,8 +57,8 @@ class ReportForm(BaseView):
         (forecast-n, observation-n) input elements inserted by
         report-handling.js
         """
-        fx = self.field_values('forecast-', form_data)
-        obs = self.field_values('observation-', form_data)
+        fx = self.field_values('forecast-id-', form_data)
+        obs = self.field_values('observation-id-', form_data)
         pairs = list(zip(fx, obs))
         return pairs
 

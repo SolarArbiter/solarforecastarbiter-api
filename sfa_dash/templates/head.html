@@ -34,9 +34,9 @@
 
 <script src="/static/js/table-search.js"></script>
 <script src="/static/js/table-checkall.js"></script>
-<script src="/static/js/report-handling.js"></script>
 
 
+{# inject the page_data json variable if provided by jinja #}
 {% if page_data is defined %}
 <script>
     var page_data = JSON.parse('{{ page_data | tojson }}');
