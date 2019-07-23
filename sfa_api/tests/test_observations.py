@@ -226,14 +226,17 @@ def dummy_file():
     return req_file
 
 
-@pytest.mark.parametrize('filename,str_content,content_type', [
-    ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv'),
-    ('data.csv', VALID_OBS_VALUE_CSV, 'application/vnd.ms-excel'),
-    ('data.json', json.dumps(VALID_OBS_VALUE_JSON), 'application/json'),
+@pytest.mark.parametrize('filename,str_content,content_type,start,end', [
+    ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv',
+     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+    ('data.csv', VALID_OBS_VALUE_CSV, 'application/vnd.ms-excel',
+     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+    ('data.json', json.dumps(VALID_OBS_VALUE_JSON), 'application/json',
+     '2019-01-22T17:54:00+00:00', "2019-01-22T17:56:00+00:00"),
 ])
 def test_posting_files(
         api, dummy_file, filename, str_content, content_type,
-        observation_id, mocked_queuing):
+        observation_id, mocked_queuing, start, end):
     content = BytesIO(bytes(str_content, 'utf-8'))
     the_file = dummy_file(filename, content, content_type)
     file_post = api.post(
@@ -242,18 +245,27 @@ def test_posting_files(
         content_type='multipart/form-data',
         data=the_file)
     assert file_post.status_code == 201
-    start = '2019-01-22T12:04:00+00:00'
-    end = '2019-01-22T12:07:00+00:00'
+    if content_type == 'application/json':
+        accept = 'application/json'
+    else:
+        accept = 'text/csv'
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
-                headers={'Accept': 'text/csv'},
+                headers={'Accept': accept},
                 query_string={'start': start, 'end': end})
     posted_data = r.data
-    assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')
+    decoded_response = posted_data.decode('utf-8')
+
+    if content_type == 'application/json':
+        expected = VALID_OBS_VALUE_JSON['values']
+        assert expected == json.loads(decoded_response)['values']
+    else:
+        expected = VALID_OBS_VALUE_CSV
+        assert expected == decoded_response
 
 
 def test_post_file_invalid_utf(api, dummy_file, observation_id):
-    content = BytesIO(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+    content = BytesIO(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00')
     the_file = dummy_file('broken.xls', content, 'application/vnd.ms-excel')
     file_post = api.post(
         f'/observations/{observation_id}/values',
@@ -261,7 +273,8 @@ def test_post_file_invalid_utf(api, dummy_file, observation_id):
         content_type='multipart/form-data',
         data=the_file)
     assert file_post.status_code == 400
-    assert file_post.get_data(as_text=True) == '{"errors":["File could not be decoded as UTF-8."]}}\n'
+    expected = '{"errors":["File could not be decoded as UTF-8."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
 
 
 def test_post_file_no_file(api, observation_id):
@@ -271,15 +284,19 @@ def test_post_file_no_file(api, observation_id):
         content_type='multipart/form-data',
         data={})
     assert file_post.status_code == 400
-    assert file_post.get_data(as_text=True) == '{"errors":{"error":["Missing file in request body."]}}\n'
+    expected = '{"errors":{"error":["Missing file in request body."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
 
 
 def test_post_file_invalid_json(api, observation_id):
-    incorrect_file_payload = {'data.csv': (BytesIO(b'hooray'), 'data.xls', 'application/json')}
+    incorrect_file_payload = {
+        'data.csv': (BytesIO(b'hooray'), 'data.xls', 'application/json')
+    }
     file_post = api.post(
         f'/observations/{observation_id}/values',
         base_url=BASE_URL,
         content_type='multipart/form-data',
         data=incorrect_file_payload)
     assert file_post.status_code == 400
-    assert file_post.get_data(as_text=True) == '{"errors":{"error":["Malformed JSON."]}}\n'
+    expected = '{"errors":{"error":["Malformed JSON."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
