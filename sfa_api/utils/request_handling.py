@@ -1,5 +1,6 @@
 from collections import defaultdict
 from io import StringIO
+import json
 
 
 from flask import request
@@ -76,6 +77,63 @@ def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
     return observation_df
 
 
+def parse_csv(csv_string):
+    """Parse a csv into a dataframe and raise appropriate errors
+
+    Parameters
+    ----------
+    csv_string: str
+        String representation of csv to read into a dataframe
+
+    Returns
+    -------
+    pandas.DataFrame
+
+    Raises
+    ------
+    BadAPIRequestError
+        If the string cannot be parsed.
+    """
+    raw_data = StringIO(csv_string)
+    try:
+        value_df = pd.read_csv(raw_data,
+                               na_values=[-999.0, -9999.0],
+                               keep_default_na=True,
+                               comment='#')
+    except pd.errors.EmptyDataError:
+        raise BadAPIRequest({'error': 'Malformed CSV'})
+    return value_df
+
+
+def parse_json(json_dict):
+    """Parse a dictionary representing POSTed JSON into a DataFrame
+
+    Parameters
+    ----------
+    json_dict: dict
+
+    Returns
+    -------
+    pandas.DataFrame
+
+    Raises
+    ------
+    BadAPIRequestError
+        If the 'values' key is missing, or if the contents of the
+        values key cannot be parsed into a DataFrame.
+    """
+    try:
+        raw_values = json_dict['values']
+    except (TypeError, KeyError):
+        error = 'Supplied JSON does not contain "values" field.'
+        raise BadAPIRequest(error=error)
+    try:
+        value_df = pd.DataFrame(raw_values)
+    except ValueError:
+        raise BadAPIRequest({'error': 'Malformed JSON'})
+    return value_df
+
+
 def validate_parsable_values():
     """Can be called from a POST view/endpoint to examine posted
     data for mimetype and attempt to parse to a DataFrame.
@@ -85,28 +143,44 @@ def validate_parsable_values():
     BadAPIRequest
         If the data cannot be parsed.
     """
-    if request.content_type == 'application/json':
-        raw_data = request.get_json()
+    if request.mimetype == 'multipart/form-data':
+        # handle single file uploads
         try:
-            raw_values = raw_data['values']
-        except (TypeError, KeyError):
-            error = 'Supplied JSON does not contain "values" field.'
+            posted_filename = list(request.files.keys())[0]
+            posted_file = request.files[posted_filename]
+        except IndexError:
+            error = "Missing file in request body."
             raise BadAPIRequest(error=error)
-        try:
-            value_df = pd.DataFrame(raw_values)
-        except ValueError:
-            raise BadAPIRequest({'error': 'Malformed JSON'})
-    elif request.content_type == 'text/csv':
-        raw_data = StringIO(request.get_data(as_text=True))
-        try:
-            value_df = pd.read_csv(raw_data,
-                                   na_values=[-999.0, -9999.0],
-                                   keep_default_na=True,
-                                   comment='#')
-        except pd.errors.EmptyDataError:
-            raise BadAPIRequest({'error': 'Malformed CSV'})
-        finally:
-            raw_data.close()
+        if (
+                posted_file.mimetype == 'text/csv' or
+                posted_file.mimetype == 'application/vnd.ms-excel' or
+                posted_file.mimetype == 'application/json'
+        ):
+            posted_data = posted_file.read()
+            try:
+                decoded_data = posted_data.decode('utf-8')
+            except UnicodeDecodeError:
+                error = 'File could not be decoded as UTF-8.'
+                raise BadAPIRequest(error=error)
+        else:
+            error = "Uploaded file has invalid mimetype."
+            raise BadAPIRequest(error=error)
+        if posted_file.mimetype == 'application/json':
+            try:
+                json_dict = json.loads(decoded_data)
+            except json.decoder.JSONDecodeError:
+                raise BadAPIRequest(error='Malformed JSON.')
+            value_df = parse_json(json_dict)
+        else:
+            value_df = parse_csv(decoded_data)
+    elif request.mimetype == 'application/json':
+        # handle json in request body
+        raw_data = request.get_json()
+        value_df = parse_json(raw_data)
+    elif request.mimetype == 'text/csv':
+        # handle a csv in request body
+        csv_string = request.get_data(as_text=True)
+        value_df = parse_csv(csv_string)
     else:
         error = 'Invalid Content-type.'
         raise BadAPIRequest({'error': error})

@@ -1,3 +1,5 @@
+from io import BytesIO
+import json
 import pytest
 
 
@@ -215,3 +217,69 @@ def test_post_and_get_values_csv(api, observation_id, mocked_queuing):
                 query_string={'start': start, 'end': end})
     posted_data = r.data
     assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')
+
+
+@pytest.fixture()
+def dummy_file():
+    def req_file(filename, contents, content_type):
+        return {filename: (contents, filename, content_type)}
+    return req_file
+
+
+@pytest.mark.parametrize('filename,str_content,content_type', [
+    ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv'),
+    ('data.csv', VALID_OBS_VALUE_CSV, 'application/vnd.ms-excel'),
+    ('data.json', json.dumps(VALID_OBS_VALUE_JSON), 'application/json'),
+])
+def test_posting_files(
+        api, dummy_file, filename, str_content, content_type,
+        observation_id, mocked_queuing):
+    content = BytesIO(bytes(str_content, 'utf-8'))
+    the_file = dummy_file(filename, content, content_type)
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=the_file)
+    assert file_post.status_code == 201
+    start = '2019-01-22T12:04:00+00:00'
+    end = '2019-01-22T12:07:00+00:00'
+    r = api.get(f'/observations/{observation_id}/values',
+                base_url=BASE_URL,
+                headers={'Accept': 'text/csv'},
+                query_string={'start': start, 'end': end})
+    posted_data = r.data
+    assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')
+
+
+def test_post_file_invalid_utf(api, dummy_file, observation_id):
+    content = BytesIO(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+    the_file = dummy_file('broken.xls', content, 'application/vnd.ms-excel')
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=the_file)
+    assert file_post.status_code == 400
+    assert file_post.get_data(as_text=True) == '{"errors":["File could not be decoded as UTF-8."]}}\n'
+
+
+def test_post_file_no_file(api, observation_id):
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data={})
+    assert file_post.status_code == 400
+    assert file_post.get_data(as_text=True) == '{"errors":{"error":["Missing file in request body."]}}\n'
+
+
+def test_post_file_invalid_json(api, observation_id):
+    incorrect_file_payload = {'data.csv': (BytesIO(b'hooray'), 'data.xls', 'application/json')}
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=incorrect_file_payload)
+    assert file_post.status_code == 400
+    assert file_post.get_data(as_text=True) == '{"errors":{"error":["Malformed JSON."]}}\n'
