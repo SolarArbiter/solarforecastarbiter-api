@@ -8,7 +8,8 @@ from sfa_api.utils.errors import BadAPIRequest
 
 
 @pytest.mark.parametrize('start,end', [
-    ('invalid', 'invalid')
+    ('invalid', 'invalid'),
+    ('NaT', 'NaT')
 ])
 def test_validate_start_end_fail(app, forecast_id, start, end):
     url = f'/forecasts/single/{forecast_id}/values?start={start}&end={end}'

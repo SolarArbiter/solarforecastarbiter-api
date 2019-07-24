@@ -228,6 +228,28 @@ def validate_parsable_values():
     return value_df
 
 
+def parse_to_timestamp(dt_string):
+    """Attempts to parse to Timestamp.
+
+    Parameters
+    ----------
+    dt_string: str
+
+    Returns
+    -------
+    pandas.Timestamp
+
+    Raises
+    ------
+    ValueError
+        If the string cannot be parsed to timestamp, or parses to null
+    """
+    timestamp = pd.Timestamp(dt_string)
+    if pd.isnull(timestamp):
+        raise ValueError
+    return timestamp
+
+
 def validate_start_end():
     """Parses start and end query parameters into pandas
     Timestamps.
@@ -247,12 +269,12 @@ def validate_start_end():
     end = request.args.get('end', None)
     if start is not None:
         try:
-            start = pd.Timestamp(start)
+            start = parse_to_timestamp(start)
         except ValueError:
             errors.update({'start': ['Invalid start date format']})
     if end is not None:
         try:
-            end = pd.Timestamp(end)
+            end = parse_to_timestamp(end)
         except ValueError:
             errors.update({'end': ['Invalid end date format']})
     if errors:
