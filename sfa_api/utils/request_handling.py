@@ -105,12 +105,12 @@ def parse_csv(csv_string):
     return value_df
 
 
-def parse_json(json_dict):
-    """Parse a dictionary representing POSTed JSON into a DataFrame
+def parse_json(json_str):
+    """Parse a string of json values into a DataFrame
 
     Parameters
     ----------
-    json_dict: dict
+    json_str: str
 
     Returns
     -------
@@ -123,6 +123,10 @@ def parse_json(json_dict):
         values key cannot be parsed into a DataFrame.
     """
     try:
+        json_dict = json.loads(json_str)
+    except json.decoder.JSONDecodeError:
+        raise BadAPIRequest(error='Malformed JSON.')
+    try:
         raw_values = json_dict['values']
     except (TypeError, KeyError):
         error = 'Supplied JSON does not contain "values" field.'
@@ -132,6 +136,78 @@ def parse_json(json_dict):
     except ValueError:
         raise BadAPIRequest({'error': 'Malformed JSON'})
     return value_df
+
+
+def parse_values(decoded_data, mimetype):
+    """Attempts to parse a string of data into a DataFrame based on MIME type.
+
+    Parameters
+    ----------
+    decoded_data: str
+        A string of data to parse.
+    mimetype: str
+        The MIME type of the data.
+
+    Returns
+    -------
+    pandas.DataFrame
+
+    Raises
+    ------
+    BadAPIRequest
+        - If the MIME type is not one of 'text/csv', 'application/json',
+          or 'application/vnd.ms-excel'
+        - If parsing fails, see parse_json or parse_csv for conditions.
+    """
+    if mimetype == 'text/csv' or mimetype == 'application/vnd.ms-excel':
+        values = parse_csv(decoded_data)
+    elif mimetype == 'application/json':
+        values = parse_json(decoded_data)
+    else:
+        error = "Unsupported Content-Type or MIME type."
+        raise BadAPIRequest(error=error)
+    return values
+
+
+def decode_file_in_request_body():
+    """Decode the data from a utf-8 encoded file into a string and
+    return the contents and the file's mimetype.
+
+    Returns
+    -------
+    decoded_data: str
+        The posted utf-8 data as a string.
+    posted_file.mimetype: str
+        MIME type of the file in the request body.
+
+    Raises
+    ------
+    BadAPIRequest
+        - There is more than one file in the request.
+        - If the request does not contain a file.
+        - The file does not contain valid utf-8.
+    """
+    posted_files = list(request.files.keys())
+    if len(posted_files) > 1:
+        error = "Multiple files found. Please upload one file at a time."
+        raise BadAPIRequest(error=error)
+
+    try:
+        posted_filename = list(request.files.keys())[0]
+        posted_file = request.files[posted_filename]
+    except IndexError:
+        error = "Missing file in request body."
+        raise BadAPIRequest(error=error)
+
+    posted_data = posted_file.read()
+
+    try:
+        decoded_data = posted_data.decode('utf-8')
+    except UnicodeDecodeError:
+        error = 'File could not be decoded as UTF-8.'
+        raise BadAPIRequest(error=error)
+
+    return decoded_data, posted_file.mimetype
 
 
 def validate_parsable_values():
@@ -144,46 +220,11 @@ def validate_parsable_values():
         If the data cannot be parsed.
     """
     if request.mimetype == 'multipart/form-data':
-        # handle single file uploads
-        try:
-            posted_filename = list(request.files.keys())[0]
-            posted_file = request.files[posted_filename]
-        except IndexError:
-            error = "Missing file in request body."
-            raise BadAPIRequest(error=error)
-        if (
-                posted_file.mimetype == 'text/csv' or
-                posted_file.mimetype == 'application/vnd.ms-excel' or
-                posted_file.mimetype == 'application/json'
-        ):
-            posted_data = posted_file.read()
-            try:
-                decoded_data = posted_data.decode('utf-8')
-            except UnicodeDecodeError:
-                error = 'File could not be decoded as UTF-8.'
-                raise BadAPIRequest(error=error)
-        else:
-            error = "Uploaded file has invalid mimetype."
-            raise BadAPIRequest(error=error)
-        if posted_file.mimetype == 'application/json':
-            try:
-                json_dict = json.loads(decoded_data)
-            except json.decoder.JSONDecodeError:
-                raise BadAPIRequest(error='Malformed JSON.')
-            value_df = parse_json(json_dict)
-        else:
-            value_df = parse_csv(decoded_data)
-    elif request.mimetype == 'application/json':
-        # handle json in request body
-        raw_data = request.get_json()
-        value_df = parse_json(raw_data)
-    elif request.mimetype == 'text/csv':
-        # handle a csv in request body
-        csv_string = request.get_data(as_text=True)
-        value_df = parse_csv(csv_string)
+        decoded_data, mimetype = decode_file_in_request_body()
     else:
-        error = 'Invalid Content-type.'
-        raise BadAPIRequest({'error': error})
+        decoded_data = request.get_data(as_text=True)
+        mimetype = request.mimetype
+    value_df = parse_values(decoded_data, mimetype)
     return value_df
 
 

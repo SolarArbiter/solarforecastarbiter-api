@@ -119,3 +119,11 @@ def test_validate_observation_values_no_quality():
     with pytest.raises(BadAPIRequest) as e:
         request_handling.validate_observation_values(df)
     assert 'quality_flag' in e.value.errors
+
+
+def test_parse_csv():
+    pass
+
+
+def test_parse_json():
+    pass

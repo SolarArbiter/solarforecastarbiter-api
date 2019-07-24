@@ -312,5 +312,5 @@ def test_post_file_invalid_mimetype(api, observation_id):
         content_type='multipart/form-data',
         data=incorrect_file_payload)
     assert file_post.status_code == 400
-    expected = '{"errors":{"error":["Uploaded file has invalid mimetype."]}}\n'
+    expected = '{"errors":{"error":["Unsupported Content-Type or MIME type."]}}\n' # noqa
     assert file_post.get_data(as_text=True) == expected
