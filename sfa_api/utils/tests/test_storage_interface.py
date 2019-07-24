@@ -45,6 +45,18 @@ def startend(request):
     return start, end
 
 
+def convert_startend(start, end):
+    if start is not None:
+        utc_start = start.tz_convert('utc')
+    else:
+        utc_start = None
+    if end is not None:
+        utc_end = end.tz_convert('utc')
+    else:
+        utc_end = None
+    return utc_start, utc_end
+
+
 def test_escape_float_with_nan():
     assert storage_interface.escape_float_with_nan(math.nan) == 'NULL'
     assert storage_interface.escape_float_with_nan(np.nan) == 'NULL'
@@ -166,7 +178,8 @@ def test_read_observation_values(sql_app, user, observation_id, startend):
     observation_values = storage_interface.read_observation_values(
         observation_id, start, end)
     obs_index = observation_values.index
-    assert (obs_index == TESTINDICES[idx_step].loc[start:end].index).all() # NOQA
+    utc_start, utc_end = convert_startend(start, end)
+    assert (obs_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all() # NOQA
     assert (observation_values.columns == ['value', 'quality_flag']).all()
 
 
@@ -300,7 +313,8 @@ def test_read_forecast_values(sql_app, user, forecast_id, startend):
     forecast_values = storage_interface.read_forecast_values(
         forecast_id, start, end)
     fx_index = forecast_values.index
-    assert (fx_index == TESTINDICES[idx_step].loc[start:end].index).all()
+    utc_start, utc_end = convert_startend(start, end)
+    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 
@@ -473,7 +487,8 @@ def test_read_cdf_forecast_values(sql_app, user, forecast_id, startend):
     forecast_values = storage_interface.read_cdf_forecast_values(
         forecast_id, start, end)
     fx_index = forecast_values.index
-    assert (fx_index == TESTINDICES[idx_step].loc[start:end].index).all()
+    utc_start, utc_end = convert_startend(start, end)
+    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all()
     assert (forecast_values.columns == ['value']).all()
 
 
