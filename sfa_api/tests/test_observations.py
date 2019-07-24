@@ -273,7 +273,7 @@ def test_post_file_invalid_utf(api, dummy_file, observation_id):
         content_type='multipart/form-data',
         data=the_file)
     assert file_post.status_code == 400
-    expected = '{"errors":["File could not be decoded as UTF-8."]}}\n'
+    expected = '{"errors":{"error":["File could not be decoded as UTF-8."]}}\n'
     assert file_post.get_data(as_text=True) == expected
 
 
@@ -290,7 +290,7 @@ def test_post_file_no_file(api, observation_id):
 
 def test_post_file_invalid_json(api, observation_id):
     incorrect_file_payload = {
-        'data.csv': (BytesIO(b'hooray'), 'data.xls', 'application/json')
+        'data.json': (BytesIO(b'invalid'), 'data.json', 'application/json')
     }
     file_post = api.post(
         f'/observations/{observation_id}/values',
@@ -299,4 +299,18 @@ def test_post_file_invalid_json(api, observation_id):
         data=incorrect_file_payload)
     assert file_post.status_code == 400
     expected = '{"errors":{"error":["Malformed JSON."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_file_invalid_mimetype(api, observation_id):
+    incorrect_file_payload = {
+        'data.csv': (BytesIO(b'invalid'), 'data.xls', 'application/videogame')
+    }
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=incorrect_file_payload)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Uploaded file has invalid mimetype."]}}\n'
     assert file_post.get_data(as_text=True) == expected
