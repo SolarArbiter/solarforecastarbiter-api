@@ -314,7 +314,7 @@ def test_read_forecast_values(sql_app, user, forecast_id, startend):
         forecast_id, start, end)
     fx_index = forecast_values.index
     utc_start, utc_end = convert_startend(start, end)
-    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all()
+    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all() # NOQA
     assert (forecast_values.columns == ['value']).all()
 
 
@@ -488,7 +488,7 @@ def test_read_cdf_forecast_values(sql_app, user, forecast_id, startend):
         forecast_id, start, end)
     fx_index = forecast_values.index
     utc_start, utc_end = convert_startend(start, end)
-    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all()
+    assert (fx_index == TESTINDICES[idx_step].loc[utc_start:utc_end].index).all() # NOQA
     assert (forecast_values.columns == ['value']).all()
 
 
