@@ -128,7 +128,7 @@ REPORT_POST_JSON = {
     'report_parameters': {
         'start': '2019-04-01T07:00:00Z',
         'end': '2019-06-01T06:59:00Z',
-        'metrics': ['MAE', 'RMSE'],
+        'metrics': ['mae', 'rmse'],
         'filters': [],
         'object_pairs': [('123e4567-e89b-12d3-a456-426655440000',
                           '11c20780-76ae-4b11-bef1-7a75bdc784e3')],
