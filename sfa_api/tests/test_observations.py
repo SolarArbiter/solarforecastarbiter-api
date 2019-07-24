@@ -277,6 +277,23 @@ def test_post_file_invalid_utf(api, dummy_file, observation_id):
     assert file_post.get_data(as_text=True) == expected
 
 
+def test_post_multiple_files(api, dummy_file, observation_id):
+    content1 = BytesIO(bytes('valid_string'.encode('utf-8')))
+    content2 = BytesIO(bytes('{"a":"B"}'.encode('utf-8')))
+
+    file1 = dummy_file('file1.csv', content1, 'text/csv')
+    file2 = dummy_file('file2.json', content2, 'application/json')
+    file1.update(file2)
+    file_post = api.post(
+        f'/observations/{observation_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=file1)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Multiple files found. Please upload one file at a time."]}}\n' # NOQA
+    assert file_post.get_data(as_text=True) == expected
+
+
 def test_post_file_no_file(api, observation_id):
     file_post = api.post(
         f'/observations/{observation_id}/values',

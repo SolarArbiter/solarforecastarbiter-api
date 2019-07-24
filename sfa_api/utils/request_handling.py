@@ -100,7 +100,7 @@ def parse_csv(csv_string):
                                na_values=[-999.0, -9999.0],
                                keep_default_na=True,
                                comment='#')
-    except pd.errors.EmptyDataError:
+    except (pd.errors.EmptyDataError, pd.errors.ParserError):
         raise BadAPIRequest({'error': 'Malformed CSV'})
     return value_df
 
