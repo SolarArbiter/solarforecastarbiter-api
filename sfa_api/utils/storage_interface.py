@@ -157,7 +157,6 @@ def _call_procedure_for_single(procedure_name, *args, cursor_type='dict'):
     return result
 
 
-
 def _set_modeling_parameters(site_dict):
     out = {}
     modeling_parameters = {}

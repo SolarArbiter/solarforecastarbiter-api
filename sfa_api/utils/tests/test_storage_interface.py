@@ -757,4 +757,4 @@ def test_store_missing_values(
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
 def test_read_wrong_type(sql_app, user, forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        observation = storage_interface.read_observation(forecast_id)
+        storage_interface.read_observation(forecast_id)
