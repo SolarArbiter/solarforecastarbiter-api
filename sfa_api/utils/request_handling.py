@@ -193,7 +193,7 @@ def decode_file_in_request_body():
         raise BadAPIRequest(error=error)
 
     try:
-        posted_filename = list(request.files.keys())[0]
+        posted_filename = posted_files[0]
         posted_file = request.files[posted_filename]
     except IndexError:
         error = "Missing file in request body."
