@@ -752,3 +752,9 @@ def test_store_missing_values(
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
     pdt.assert_frame_equal(stored, obs_vals)
+
+
+@pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
+def test_read_wrong_type(sql_app, user, forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        observation = storage_interface.read_observation(forecast_id)
