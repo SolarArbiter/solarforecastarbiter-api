@@ -1,4 +1,5 @@
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 
 
@@ -119,3 +120,58 @@ def test_validate_observation_values_no_quality():
     with pytest.raises(BadAPIRequest) as e:
         request_handling.validate_observation_values(df)
     assert 'quality_flag' in e.value.errors
+
+
+expected_parsed_df = pd.DataFrame({
+    'a': [1, 2, 3, 4],
+    'b': [4, 5, 6, 7],
+})
+csv_string = "a,b\n1,4\n2,5\n3,6\n4,7\n"
+json_string = '{"values":{"a":[1,2,3,4],"b":[4,5,6,7]}}'
+
+
+def test_parse_csv_success():
+    test_df = request_handling.parse_csv(csv_string)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
+@pytest.mark.parametrize('csv_input', [
+    '',
+    "a,b\n1,4\n2.56,2.45\n1,2,3\n"
+])
+def test_parse_csv_failure(csv_input):
+    with pytest.raises(request_handling.BadAPIRequest):
+        request_handling.parse_csv(csv_input)
+
+
+def test_parse_json_success():
+    test_df = request_handling.parse_json(json_string)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
+@pytest.mark.parametrize('json_input', [
+    '',
+    "{'a':[1,2,3]}"
+])
+def test_parse_json_failure(json_input):
+    with pytest.raises(request_handling.BadAPIRequest):
+        request_handling.parse_json(json_input)
+
+
+@pytest.mark.parametrize('data,mimetype', [
+    (csv_string, 'text/csv'),
+    (csv_string, 'application/vnd.ms-excel'),
+    (json_string, 'application/json')
+])
+def test_parse_values_success(data, mimetype):
+    test_df = request_handling.parse_values(data, mimetype)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
+@pytest.mark.parametrize('data,mimetype', [
+    (csv_string, 'application/fail'),
+    (json_string, 'image/bmp'),
+])
+def test_parse_values_failure(data, mimetype):
+    with pytest.raises(request_handling.BadAPIRequest):
+        request_handling.parse_values(data, mimetype)
