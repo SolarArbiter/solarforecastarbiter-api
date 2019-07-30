@@ -280,6 +280,11 @@ a.help-button{
 .form-control{
   display: inline-block;
 }
+.form-control.half-width{
+  margin-left: 1em;
+  min-width: 250px;
+  width: 46%;
+}
 .input-wrapper{
   width: calc(100% - 29px);
   display: inline-flex;
@@ -378,4 +383,7 @@ a:not([href]).object-pair-button:hover{
 }
 .object-pair-button.collapsed::after{
     transform: rotate(180deg);
+}
+.report-field-filters{
+    display: inline-block;
 }

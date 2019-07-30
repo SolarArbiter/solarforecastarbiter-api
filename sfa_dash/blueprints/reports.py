@@ -4,7 +4,7 @@ from flask import request, redirect, url_for, abort, render_template
 from requests.exceptions import HTTPError
 
 from solarforecastarbiter.reports.main import report_to_html_body
-from sfa_dash.api_interface import observations, forecasts, reports
+from sfa_dash.api_interface import observations, forecasts, sites, reports
 from sfa_dash.blueprints.base import BaseView
 
 
@@ -28,15 +28,20 @@ class ReportForm(BaseView):
         """
         observation_request = observations.list_metadata()
         forecast_request = forecasts.list_metadata()
+        site_request = sites.list_metadata()
         observation_list = observation_request.json()
         for obs in observation_list:
             del obs['extra_parameters']
         forecast_list = forecast_request.json()
         for fx in forecast_list:
             del fx['extra_parameters']
+        site_list = site_request.json()
+        for site in site_list:
+            del site['extra_parameters']
         return {
             'observations': observation_list,
             'forecasts': forecast_list,
+            'sites': site_list
         }
 
     def template_args(self):
