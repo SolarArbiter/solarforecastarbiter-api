@@ -147,6 +147,16 @@ def _call_procedure(procedure_name, *args, cursor_type='dict'):
         return cursor.fetchall()
 
 
+def _call_procedure_for_single(procedure_name, *args, cursor_type='dict'):
+    """Wrapper handling try/except logic when a single value is expected
+    """
+    try:
+        result = _call_procedure(procedure_name, *args, cursor_type='dict')[0]
+    except IndexError:
+        raise StorageAuthError()
+    return result
+
+
 def _set_modeling_parameters(site_dict):
     out = {}
     modeling_parameters = {}
@@ -283,7 +293,7 @@ def read_observation(observation_id):
         does not exist.
     """
     observation = _set_observation_parameters(
-        _call_procedure('read_observation', observation_id)[0])
+        _call_procedure_for_single('read_observation', observation_id))
     return observation
 
 
@@ -442,7 +452,7 @@ def read_forecast(forecast_id):
         does not exist.
     """
     forecast = _set_forecast_parameters(
-        _call_procedure('read_forecast', forecast_id)[0])
+        _call_procedure_for_single('read_forecast', forecast_id))
     return forecast
 
 
@@ -503,7 +513,7 @@ def read_site(site_id):
         If the user does not have access to the site_id or it doesn't exist
     """
     site = _set_modeling_parameters(
-        _call_procedure('read_site', site_id)[0])
+        _call_procedure_for_single('read_site', site_id))
     return site
 
 
@@ -668,7 +678,7 @@ def read_cdf_forecast(forecast_id):
         does not exist.
     """
     forecast = _set_cdf_forecast_parameters(
-        _call_procedure('read_cdf_forecasts_single', forecast_id)[0])
+        _call_procedure_for_single('read_cdf_forecasts_single', forecast_id))
     return forecast
 
 
@@ -780,7 +790,7 @@ def read_cdf_forecast_group(forecast_id):
         does not exist.
     """
     forecast = _set_cdf_group_forecast_parameters(
-        _call_procedure('read_cdf_forecasts_group', forecast_id)[0])
+        _call_procedure_for_single('read_cdf_forecasts_group', forecast_id))
     return forecast
 
 
@@ -849,7 +859,7 @@ def read_user(user_id):
     user : dict
         Dictionary of user information.
     """
-    user = _call_procedure('read_user', user_id)[0]
+    user = _call_procedure_for_single('read_user', user_id)
     user['roles'] = json.loads(user['roles'])
     return user
 
@@ -955,7 +965,7 @@ def read_role(role_id):
         If the user does not have permission to read the role or
         the role does not exist.
     """
-    role = _call_procedure('read_role', role_id)[0]
+    role = _call_procedure_for_single('read_role', role_id)
     role['permissions'] = json.loads(role['permissions'])
     return role
 
@@ -1036,7 +1046,7 @@ def read_permission(permission_id):
         or the permission does not exist.
 
     """
-    permission = _call_procedure('read_permission', permission_id)[0]
+    permission = _call_procedure_for_single('read_permission', permission_id)
     permission['objects'] = json.loads(permission['objects'])
     return permission
 
@@ -1224,7 +1234,7 @@ def read_report(report_id):
         permission to read the report.
     """
     report = _decode_report_parameters(
-        _call_procedure('read_report', report_id)[0])
+        _call_procedure_for_single('read_report', report_id))
     report_values = read_report_values(report_id)
     report['values'] = report_values
     return report

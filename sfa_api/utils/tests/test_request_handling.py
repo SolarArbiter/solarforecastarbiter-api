@@ -8,7 +8,8 @@ from sfa_api.utils.errors import BadAPIRequest
 
 
 @pytest.mark.parametrize('start,end', [
-    ('invalid', 'invalid')
+    ('invalid', 'invalid'),
+    ('NaT', 'NaT')
 ])
 def test_validate_start_end_fail(app, forecast_id, start, end):
     url = f'/forecasts/single/{forecast_id}/values?start={start}&end={end}'
@@ -175,3 +176,24 @@ def test_parse_values_success(data, mimetype):
 def test_parse_values_failure(data, mimetype):
     with pytest.raises(request_handling.BadAPIRequest):
         request_handling.parse_values(data, mimetype)
+
+
+@pytest.mark.parametrize('dt_string,expected', [
+    ('20190101T1200Z', pd.Timestamp('20190101T1200Z')),
+    ('20190101T1200', pd.Timestamp('20190101T1200')),
+    ('20190101T1200+0700', pd.Timestamp('20190101T0500Z'))
+])
+def test_parse_to_timestamp(dt_string, expected):
+    parsed_dt = request_handling.parse_to_timestamp(dt_string)
+    assert parsed_dt == expected
+
+
+@pytest.mark.parametrize('dt_string', [
+    'invalid datetime',
+    '21454543251345234',
+    '20190101T2500Z',
+    'NaT',
+])
+def test_parse_to_timestamp_error(dt_string):
+    with pytest.raises(ValueError):
+        request_handling.parse_to_timestamp(dt_string)

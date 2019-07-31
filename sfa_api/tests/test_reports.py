@@ -178,7 +178,7 @@ def test_list_reports(api, new_report):
     ('filters', 'not a list',
      '["Not a valid list."]'),
     ('metrics', ["bad"],
-     '{"0":["Invalid value."]}'),
+        '{"0":["Must be one of: mae, mbe, rmse."]}'),
 ])
 def test_post_report_invalid_report_params(
         api, key, value, error, report_json):

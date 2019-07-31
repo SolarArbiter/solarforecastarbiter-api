@@ -11,6 +11,7 @@ from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
 # variable: units we just want the variable names here
 VARIABLES = ALLOWED_VARIABLES.keys()
 
+ALLOWED_METRICS = ['mae', 'mbe', 'rmse']
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
@@ -654,8 +655,7 @@ class ReportParameters(ma.Schema):
     )
     metrics = ma.List(
         ma.String(
-            validate=lambda x: x.upper() in ['MAE', 'MBE', 'RMSE']
-            # TODO: return informative error and use params from core
+            validate=validate.OneOf(ALLOWED_METRICS)
         ),
         title='Metrics',
         description=('The metrics to include in the report.'),
