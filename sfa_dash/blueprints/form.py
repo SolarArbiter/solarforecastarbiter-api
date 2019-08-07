@@ -301,10 +301,21 @@ class UploadForm(BaseView):
                 posted_file.mimetype == 'application/vnd.ms-excel'
         ):
             posted_data = posted_file.read()
-            post_request = self.api_handle.post_values(
-                uuid,
-                posted_data.decode('utf-8'),
-                json=False)
+            try:
+                decoded_data = posted_data.decode('utf-8')
+            except UnicodeDecodeError:
+                errors = {
+                    'file-type': [
+                        'Failed to decode file. Please ensure file is a CSV '
+                        'with UTF-8 encoding. This error can sometimes occur '
+                        'when a csv is improperly exported from excel.'],
+                }
+                return render_template(self.template, uuid=uuid, errors=errors)
+            else:
+                post_request = self.api_handle.post_values(
+                    uuid,
+                    decoded_data,
+                    json=False)
         elif posted_file.mimetype == 'application/json':
             posted_data = json.load(posted_file)
             post_request = self.api_handle.post_values(uuid, posted_data)
