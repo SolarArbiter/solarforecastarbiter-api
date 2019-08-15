@@ -1,5 +1,4 @@
-"""Currently just method stubs.
-"""
+import pdb
 from flask import Blueprint, jsonify
 from flask.views import MethodView
 
@@ -146,6 +145,25 @@ class UserRolesManagementView(MethodView):
         return '', 204
 
 
+class PrivelegedUserView(MethodView):
+    def get(self):
+        """List user data for all users that have roles in the
+	current users organization.
+	"""
+        storage = get_storage()
+        user_list = storage.list_priveleged_users()
+        return jsonify(user_list), 200 
+
+
+class CurrentUserView(MethodView):
+    def get(self):
+        """Get info about the current user.
+        """
+        storage = get_storage()
+        user_info = storage.get_current_user_info()
+        return jsonify(user_info), 200
+
+
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
@@ -155,3 +173,5 @@ user_blp.add_url_rule(
     '/<user_id>/roles/<role_id>',
     view_func=UserRolesManagementView.as_view('user_roles_management')
 )
+user_blp.add_url_rule('/current', view_func=CurrentUserView.as_view('current_user'))
+user_blp.add_url_rule('/priveleged', view_func=PrivelegedUserView.as_view('list_priveleged'))

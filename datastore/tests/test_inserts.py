@@ -54,7 +54,7 @@ def allow_create(insertuser, new_permission, cursor):
     perms = [new_permission('create', obj, True, org=org)
              for obj in ('sites', 'forecasts', 'observations',
                          'cdf_forecasts', 'roles', 'permissions',
-                         'reports')]
+                         'reports', 'role_grants')]
     cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
@@ -723,7 +723,7 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     assert e.value.args[0] == 1142
 
 
-def test_add_role_to_user(cursor, new_role, allow_update_users,
+def test_add_role_to_user(cursor, new_role, allow_create,
                           insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
@@ -735,10 +735,58 @@ def test_add_role_to_user(cursor, new_role, allow_update_users,
     assert cursor.fetchall()[0][0]
 
 
-def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
-                                       allow_update_users):
+def test_add_role_to_user_outside_org(
+        cursor, new_role, allow_create,
+        new_user, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
-    role = new_role()
+    role = new_role(org=org)
+    share_user = new_user()
+    cursor.callproc('add_role_to_user', (
+        user['auth0_id'], str(bin_to_uuid(share_user['id'])),
+        str(bin_to_uuid(role['id']))))
+    cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
+                   'role_id = %s', (share_user['id'], role['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_admin_role(
+        cursor, new_role, allow_create,
+        new_permission, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
+    perm = new_permission('create', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        f'VALUES(%s, %s)', (role['id'], perm['id']))
+    cursor.callproc('add_role_to_user', (
+        user['auth0_id'], str(bin_to_uuid(user['id'])),
+        str(bin_to_uuid(role['id']))))
+    cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
+                   'role_id = %s', (user['id'], role['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_admin_role_outside_org(
+        allow_create, cursor, new_role,
+        new_user, new_permission, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    share_user = new_user()
+    role = new_role(org=org)
+    perm = new_permission('create', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        f'VALUES(%s, %s)', (role['id'], perm['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(share_user['id'])),
+            str(bin_to_uuid(role['id']))))
+    assert e.value.args[0] == 1142
+
+
+def test_add_role_to_user_missing_perm(
+        cursor, new_role, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(user['id'])),
@@ -746,12 +794,13 @@ def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
     assert e.value.args[0] == 1142
 
 
-def test_add_role_to_user_denied(cursor, new_role, insertuser):
+def test_add_role_to_user_user_dne(
+        cursor, allow_create, new_role, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
-            user['auth0_id'], str(bin_to_uuid(user['id'])),
+            user['auth0_id'], str(bin_to_uuid(newuuid())),
             str(bin_to_uuid(role['id']))))
     assert e.value.args[0] == 1142
 

@@ -53,9 +53,8 @@ CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
 COMMENT 'Add a role to a user'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
-    DECLARE grant_allowed BOOLEAN DEFAULT FALSE;
-    DECLARE same_user_org BOOLEAN DEFAULT FALSE;
-    DECLARE same_role_org BOOLEAN DEFAULT FALSE;
+    
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE roleid BINARY(16);
     DECLARE userid BINARY(16);
     DECLARE role_org BINARY(16);
@@ -67,17 +66,11 @@ BEGIN
     SET caller_org = get_user_organization(auth0id);
     SET userid = UUID_TO_BIN(user_id, 1);
     SET grantee_org = (SELECT organization_id FROM arbiter_data.users WHERE id = userid);
-    SET same_user_org = (caller_org = grantee_org);
-    SET same_role_org = (caller_org = role_org);
-    SET grant_allowed = user_can_create(auth0id, 'role_grants');
-    -- require create role_grants permission and caller and role have same organization
-    SELECT same_user_org;
-    SELECT caller_org;
-    SELECT grantee_org;
-    SELECT role_org;
-    SELECT grant_allowed;
-    IF grant_allowed AND same_role_org THEN
-        IF same_user_org THEN
+    SET allowed = user_can_create(auth0id, 'role_grants') AND
+          caller_org = role_org AND
+          (SELECT id IS NOT NULL FROM users WHERE id = userid);
+    IF allowed THEN
+        IF caller_org = grantee_org THEN
             -- If caller and grantee have same org, add the role to the user
             INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
                 userid, roleid);
@@ -113,19 +106,20 @@ CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_role_from_user (
     IN auth0id VARCHAR(32), IN user_strid VARCHAR(36), IN role_strid VARCHAR(36))
 COMMENT 'Remove a role from a user'
 BEGIN
-    DECLARE grant_allowed BOOLEAN DEFAULT FALSE;
-    DECLARE same_org BOOLEAN DEFAULT FALSE;
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE roleid BINARY(16);
+    DECLARE role_org BINARY(16);
     DECLARE userid BINARY(16);
     DECLARE caller_org BINARY(16);
     SET caller_org = get_user_organization(auth0id);
     SET roleid = UUID_TO_BIN(role_strid, 1);
+    SET role_org = get_object_organization(roleid, 'roles');
     SET userid = UUID_TO_BIN(user_strid, 1);
     -- calling user must have create role_grants
     -- calling user and role must be in the same organization
-    SET grant_allowed = user_can_create(auth0id, 'role_grants');
-    SET same_org = (caller_org = get_rbac_object_organization(roleid, 'roles'));
-    IF grant_allowed AND same_org THEN
+    SET allowed = user_can_create(auth0id, 'role_grants') AND
+         (caller_org = role_org);
+    IF allowed THEN
         DELETE FROM arbiter_data.user_role_mapping WHERE user_id = userid AND role_id = roleid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove role from user"',
@@ -135,7 +129,7 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'apiuser'@'%';
-GRANT EXECUTE ON FUNCTION arbiter_data.get_rbac_object_organization TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'delete_rbac'@'localhost';
 /*
  * Define the Unaffiliated Organization and the basic user role to read
  * reference data.
@@ -170,7 +164,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'apiuser'@'
 /*
  * Procedure to get current user metadata (auth0id, organization name and id)
  */
-CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE get_current_user_info (
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE get_current_user_info (
     IN auth0id VARCHAR(32))
 COMMENT 'Read the identifying information for the current user.'
 BEGIN
@@ -179,7 +173,8 @@ BEGIN
         BIN_TO_UUID(id, 1) as user_id, auth0_id
     FROM arbiter_data.users WHERE auth0_id = auth0id;
 END;
-GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_name TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'apiuser'@'%';
 
 /*
@@ -194,7 +189,7 @@ BEGIN
     SET allowed = user_can_create(auth0id, 'role_grants');
     IF allowed THEN
         SET orgid = get_user_organization(auth0id);
-        SELECT BIN_TO_UUID(id, 1) as user_id, get_organization_name(organization_id) as organization, BIN_TO_UUID(organization_id), auth0_id
+        SELECT BIN_TO_UUID(id, 1) as user_id, get_organization_name(organization_id) as organization, BIN_TO_UUID(organization_id) as organization_id, auth0_id
         FROM arbiter_data.users
         WHERE id IN (
             SELECT DISTINCT user_id
@@ -211,4 +206,3 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_priveleged_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_priveleged_users TO 'apiuser'@'%';
-

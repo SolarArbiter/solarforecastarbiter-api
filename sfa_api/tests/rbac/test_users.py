@@ -61,7 +61,7 @@ def test_add_role_to_user_role_dne(api, user_id, missing_id):
 
 def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
     role_id = new_role()
-    remove_perms('update', 'users')
+    remove_perms('create', 'role_grants')
     add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
     get_user = api.get(f'/users/{user_id}', BASE_URL)
@@ -84,8 +84,8 @@ def test_remove_role_from_user(api, user_id, new_role):
 
 def test_remove_role_from_user_user_dne(api, missing_id, new_role):
     role_id = new_role()
-    add_role = api.post(f'/users/{missing_id}/roles/{role_id}', BASE_URL)
-    assert add_role.status_code == 404
+    add_role = api.delete(f'/users/{missing_id}/roles/{role_id}', BASE_URL)
+    assert add_role.status_code == 204
 
 
 def test_remove_role_from_user_role_dne(api, user_id, missing_id):
@@ -95,18 +95,13 @@ def test_remove_role_from_user_role_dne(api, user_id, missing_id):
     roles_on_user = user['roles'].keys()
 
     add_role = api.delete(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
-    assert add_role.status_code == 204
-
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
-    user = get_user.json
-    new_roles_on_user = user['roles'].keys()
-    assert roles_on_user == new_roles_on_user
+    assert add_role.status_code == 404
 
 
 def test_remove_role_from_user_no_perms(api, user_id, new_role, remove_perms):
     role_id = new_role()
     add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
-    remove_perms('update', 'users')
+    remove_perms('create', 'role_grants')
     remove_role = api.delete(f'/users/{user_id}/roles/{role_id}', BASE_URL)
     assert remove_role.status_code == 404
