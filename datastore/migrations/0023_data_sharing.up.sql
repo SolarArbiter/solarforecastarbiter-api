@@ -160,6 +160,10 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'apiuser'@'%';
+GRANT SELECT ON arbiter_data.users TO 'insert_rbac'@'localhost';
+GRANT SELECT ON arbiter_data.organizations TO 'insert_rbac'@'localhost';
+GRANT SELECT ON arbiter_data.roles TO 'insert_rbac'@'localhost';
+
 
 /*
  * Procedure to get current user metadata (auth0id, organization name and id)
