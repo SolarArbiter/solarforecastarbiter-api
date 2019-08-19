@@ -713,6 +713,26 @@ def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
     assert e.value.args[0] == 1142
 
 
+@pytest.mark.parametrize('object_type', [
+    'roles', 'permissions', 'users', 'role_grants']
+)
+def test_add_permission_to_role_rbac_on_external_role(
+        cursor, new_permission, new_user, new_role,
+        insertuser, object_type):
+    user, _, _, _, org, _, _, _ = insertuser
+    perm = new_permission('create', object_type, False, org=org)
+    share_user = new_user()
+    role = new_role(org=org)
+    cursor.execute('INSERT INTO arbiter_data.user_role_mapping '
+                   '(user_id, role_id) VALUES (%s, %s)',
+                   (share_user['id'], role['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_permission_to_role', (
+            user['auth0_id'], str(bin_to_uuid(role['id'])),
+            str(bin_to_uuid(perm['id']))))
+        assert e.value.args[0] == 1142
+
+
 def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     user, _, _, _, org, role, _, _ = insertuser
     perm = new_permission('read', 'sites', False, org=org)

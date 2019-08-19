@@ -25,6 +25,12 @@ def user_id():
     return '0c90950a-7cca-11e9-a81f-54bf64606445'
 
 
+# User id of a permission-less unaffiliated user.
+@pytest.fixture()
+def external_userid():
+    return 'ef026b76-c049-11e9-9c7e-0242ac120002'
+
+
 @pytest.fixture()
 def api(sql_app_no_commit, mocker):
     def add_user():
@@ -38,8 +44,10 @@ def api(sql_app_no_commit, mocker):
 
 @pytest.fixture
 def new_role(api):
-    def fn():
-        role = api.post(f'/roles/', BASE_URL, json=ROLE)
+    def fn(**kwargs):
+        role_json = ROLE.copy()
+        role_json.update(kwargs)
+        role = api.post(f'/roles/', BASE_URL, json=role_json)
         role_id = role.data.decode('utf-8')
         return role_id
     return fn
@@ -56,8 +64,10 @@ def new_observation(api):
 
 @pytest.fixture
 def new_perm(api):
-    def fn():
-        perm = api.post(f'/permissions/', BASE_URL, json=PERMISSION)
+    def fn(**kwargs):
+        perm_json = PERMISSION.copy()
+        perm_json.update(kwargs)
+        perm = api.post(f'/permissions/', BASE_URL, json=perm_json)
         perm_id = perm.data.decode('utf-8')
         return perm_id
     return fn

@@ -1,4 +1,3 @@
-import pdb
 from flask import Blueprint, jsonify
 from flask.views import MethodView
 

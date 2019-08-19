@@ -577,7 +577,7 @@ class PermissionPostSchema(ma.Schema):
         required=True,
         validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
                                  'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts']),
+                                 'permissions', 'cdf_forecasts', 'role_grants']),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",

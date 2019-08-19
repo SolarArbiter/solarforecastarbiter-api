@@ -123,6 +123,23 @@ def test_add_perm_to_role_perm_dne(api, missing_id, new_role):
     assert perm_dne.status_code == 404
 
 
+@pytest.mark.parametrize('object_type', [
+    'roles', 'permissions', 'role_grants', 'users']
+)
+def test_add_perm_to_role_external_role_admin_perm(
+        api, new_role, new_perm, external_userid, object_type):
+    role_id = new_role()
+    permission_id = new_perm(object_type=object_type)
+    add_role_to_user = api.post(
+        f'/users/{external_userid}/roles/{role_id}',
+        BASE_URL)
+    assert add_role_to_user.status_code == 204
+    add_perm_to_role = api.post(
+        f'/roles/{role_id}/permissions/{permission_id}',
+        BASE_URL)
+    assert add_perm_to_role.status_code == 404
+
+
 def test_remove_perm_from_role(api, new_role, new_perm):
     role_id = new_role()
     perm_id = new_perm()

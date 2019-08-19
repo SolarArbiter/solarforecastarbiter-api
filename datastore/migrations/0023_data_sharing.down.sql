@@ -2,12 +2,14 @@ ALTER TABLE arbiter_data.permissions CHANGE COLUMN object_type object_type ENUM(
 
 DELETE FROM arbiter_data.organizations WHERE name = 'Unaffiliated';
 DROP PROCEDURE add_role_to_user;
-DROP FUNCTION role_contains_admin_permissions;
+DROP FUNCTION rbac_permissions_check;
+DROP FUNCTION role_contains_rbac_permissions;
 DROP FUNCTION role_granted_to_external_users;
 DROP PROCEDURE remove_role_from_user;
 DROP PROCEDURE create_user_if_not_exists;
 DROP PROCEDURE get_current_user_info;
 DROP PROCEDURE list_priveleged_users;
+DROP PROCEDURE user_exists;
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
     IN auth0id VARCHAR(32), IN user_id CHAR(36), IN role_id CHAR(36))
@@ -63,3 +65,37 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'apiuser'@'%';
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'apiuser'@'%';
+
+-- Redefine original add_permission_to_role state
+DROP PROCEDURE add_permission_to_role;
+
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_permission_to_role (
+    IN auth0id VARCHAR(32), IN role_id CHAR(36), IN permission_id CHAR(36))
+COMMENT 'Add an permission to the role permission mapping table'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE roleid BINARY(16);
+    DECLARE permid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
+    SET roleid = UUID_TO_BIN(role_id, 1); 
+    SET permid = UUID_TO_BIN(permission_id, 1); 
+    -- Check if user has update permission on the role and that
+    -- user, role, and permission have same organization
+    SET allowed = can_user_perform_action(auth0id, roleid, 'update') AND 
+        userorg = get_object_organization(permid, 'permissions') AND 
+        userorg = get_object_organization(roleid, 'roles');
+    IF allowed IS NOT NULL AND allowed THEN
+        INSERT INTO arbiter_data.role_permission_mapping (
+            role_id, permission_id) VALUES (roleid, permid);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add permission to role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'apiuser'@'%';
+
+DELETE FROM arbiter_data.users WHERE auth0_id = 'auth0|test_public';

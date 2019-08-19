@@ -93,6 +93,7 @@ def test_remove_role_from_user_role_dne(api, user_id, missing_id):
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
+    assert missing_id not in roles_on_user
 
     add_role = api.delete(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
     assert add_role.status_code == 404

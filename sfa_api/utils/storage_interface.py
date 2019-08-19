@@ -1364,3 +1364,12 @@ def get_current_user_info():
 def list_priveleged_users():
     users = _call_procedure('list_priveleged_users')
     return users
+
+
+def create_new_user():
+    _call_procedure('create_user_if_not_exists')
+
+
+def user_exists():
+    return len(_call_procedure('user_exists')) == 1
+

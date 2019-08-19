@@ -6,11 +6,13 @@ ALTER TABLE arbiter_data.permissions CHANGE COLUMN object_type object_type ENUM(
 /*
  * RBAC helper functions to limit sharing of roles outside the organization.
  */
-CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION role_granted_to_external_users(orgid BINARY(16), roleid BINARY(16))
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION role_granted_to_external_users(roleid BINARY(16))
 RETURNS BOOLEAN
 COMMENT 'Determines if a role has been granted to a user outside the organizaiton'
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
+    DECLARE orgid BINARY(16);
+    SET orgid = get_object_organization(roleid, 'roles');
     RETURN (SELECT EXISTS(
         SELECT 1 FROM arbiter_data.user_role_mapping
             WHERE role_id = roleid
@@ -24,8 +26,22 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'insert_rbac'@'localhost';
 
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION rbac_permissions_check(permid BINARY(16))
+RETURNS BOOLEAN
+COMMENT 'Determines if the permission controls actions on rbac objects'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    RETURN (SELECT EXISTS (
+        SELECT 1 FROM arbiter_data.permissions
+            WHERE id = permid AND object_type IN ('roles', 'permissions', 'role_grants', 'users')
+        )
+    );
+END;
+GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'insert_rbac'@'localhost';
 
-CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION role_contains_admin_permissions(roleid BINARY(16))
+
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION role_contains_rbac_permissions(roleid BINARY(16))
 RETURNS BOOLEAN
 COMMENT 'Determines if a role contains rbac object permissions'
 READS SQL DATA SQL SECURITY DEFINER
@@ -33,15 +49,12 @@ BEGIN
     RETURN (SELECT EXISTS (
         SELECT 1 FROM arbiter_data.role_permission_mapping
             WHERE role_id = roleid
-            AND permission_id IN (
-                SELECT id FROM arbiter_data.permissions
-                WHERE object_type IN ('roles', 'permissions', 'role_grants', 'users')
-            )
+            AND rbac_permissions_check(permission_id)
         )
     );
 END;
-GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_admin_permissions TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_admin_permissions TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'insert_rbac'@'localhost';
 
 /*
  * Drop and redefine add_role_to_user dependent on role_grants permission.
@@ -75,9 +88,9 @@ BEGIN
             INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
                 userid, roleid);
         ELSE
-            IF role_contains_admin_permissions(roleid) THEN
+            IF role_contains_rbac_permissions(roleid) THEN
                 /* If caller and grantee do not have same org, and the role contains
-                 * administrative permissions, return an error.
+                 * rbac permissions, return an error.
                  */
                 SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Cannot share administrative role outside organization',
                 MYSQL_ERRNO = 1142;
@@ -132,11 +145,14 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'apiuser'@'%';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'delete_rbac'@'localhost';
 /*
  * Define the Unaffiliated Organization and the basic user role to read
- * reference data.
+ * reference data. Add a test user for external shares.
  */
 SET @orgid = (SELECT UUID_TO_BIN(UUID(), 1));
 INSERT INTO arbiter_data.organizations (name, id, accepted_tou) VALUES (
         'Unaffiliated', @orgid, FALSE);
+
+INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES(
+    UUID_TO_BIN('ef026b76-c049-11e9-9c7e-0242ac120002', 1), 'auth0|test_public', @orgid);
 
 /*
  * If the calling user does not exist, create a new user and add them to the
@@ -210,3 +226,64 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_priveleged_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_priveleged_users TO 'apiuser'@'%';
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE user_exists (
+    IN auth0id VARCHAR(32))
+COMMENT 'Detect if a User exists'
+BEGIN
+     SELECT 1 FROM arbiter_data.users WHERE auth0_id = auth0id;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'apiuser'@'%';
+
+
+/*
+ * Drop and redefine add_permission_to_role to limit ability to add
+ * rbac permissions to roles assigned to external users
+ */
+DROP PROCEDURE add_permission_to_role;
+
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_permission_to_role (
+    IN auth0id VARCHAR(32), IN role_id CHAR(36), IN permission_id CHAR(36))
+COMMENT 'Add an permission to the role permission mapping table'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE roleid BINARY(16);
+    DECLARE permid BINARY(16);
+    DECLARE userorg BINARY(16);
+    SET userorg = get_user_organization(auth0id);
+    SET roleid = UUID_TO_BIN(role_id, 1); 
+    SET permid = UUID_TO_BIN(permission_id, 1); 
+    -- Check if user has update permission on the role and that
+    -- user, role, and permission have same organization
+    SET allowed = can_user_perform_action(auth0id, roleid, 'update') AND 
+        userorg = get_object_organization(permid, 'permissions') AND 
+        userorg = get_object_organization(roleid, 'roles') AND
+        NOT role_granted_to_external_users(roleid);
+    IF allowed IS NOT NULL AND allowed THEN
+        -- Don't insert an rbac permission when a role is granted externally 
+        IF rbac_permissions_check(permid) AND role_granted_to_external_users(roleid) THEN
+            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Cannot add administrative permissions to role of external users',
+            MYSQL_ERRNO = 1142;
+        ELSE
+            INSERT INTO arbiter_data.role_permission_mapping (
+                role_id, permission_id) VALUES (roleid, permid);
+        END IF;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add permission to role"',
+        MYSQL_ERRNO = 1142;
+    END IF; 
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'apiuser'@'%';
+
+/*
+ * Add user to org procedure
+ */
+
+/*
+ * Remove user from org procedure
+ */
