@@ -702,3 +702,71 @@ def test_read_report_values_denied(
             (user['auth0_id'], str(bin_to_uuid(report['id'])))
         )
     assert e.value.args[0] == 1142
+
+
+@pytest.mark.parametrize('org,expected', [
+    (True, 1), (False, 0),
+])
+def test_role_granted_to_external_users(
+        cursor, valueset, new_role, insertuser, new_organization,
+        new_user, allow_grant_revoke_roles, org, expected):
+    organization = insertuser[4]
+    if org:
+        external_user = new_user(org=new_organization())
+    else:
+        external_user = new_user(org=organization)
+    role_to_share = new_role(org=organization)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES '
+        '(%s, %s)', (external_user['id'], role_to_share['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_granted_to_external_users(%s)',
+        role_to_share['id'])
+    granted = cursor.fetchone()
+    assert granted[0] == expected
+
+
+@pytest.mark.parametrize('object_type,expected', [
+    ('roles', 1), ('users', 1), ('permissions', 1),
+    ('forecasts', 0), ('observations', 0), ('cdf_forecasts', 0),
+    ('aggregates', 0), ('sites', 0)
+])
+def test_role_contains_rbac_permissions(
+        cursor, valueset, new_role, insertuser,
+        new_permission, object_type, expected):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    perm = new_permission('read', object_type, True, org=organization)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        'VALUES (%s, %s)', (role['id'], perm['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
+        role['id'])
+    granted = cursor.fetchone()[0]
+    assert granted == expected
+
+
+def test_get_user_organization_by_user_id(cursor, new_user):
+    user = new_user()
+    cursor.execute('SELECT get_user_organization_by_user_id(%s)',
+                   user['id'])
+    org = cursor.fetchone()[0]
+    assert org == user['organization_id']
+
+
+def test_get_organization_id_by_name(cursor, new_organization):
+    org = new_organization()
+    cursor.execute('SELECT get_organization_id_by_name(%s)', org['name'])
+    orgid = cursor.fetchone()[0]
+    assert orgid == org['id']
+
+
+def test_get_reference_role_id(dictcursor):
+    dictcursor.execute('SELECT get_reference_role_id()')
+    roleid = dictcursor.fetchone()['get_reference_role_id()']
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.roles WHERE id = %s',
+        roleid)
+    role = dictcursor.fetchone()
+    assert role['name'] == 'Read Reference Data'

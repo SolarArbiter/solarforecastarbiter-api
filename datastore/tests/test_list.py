@@ -192,5 +192,6 @@ def test_list_reports(dictcursor, twosets):
         == ((set(reports[0].keys()) | set(('status',))) -
             set(('organization_id', 'id'))))
 
+
 def test_lift_priveleged(dictcursor, twosets):
     pass

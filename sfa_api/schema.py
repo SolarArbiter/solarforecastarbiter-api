@@ -569,7 +569,7 @@ class PermissionPostSchema(ma.Schema):
         required=True,
         validate=validate.OneOf(['create', 'read', 'update',
                                  'delete', 'read_values', 'write_values',
-                                 'delete_values']),
+                                 'delete_values', 'grant', 'revoke']),
     )
     object_type = ma.String(
         title="Object Type",
@@ -577,7 +577,7 @@ class PermissionPostSchema(ma.Schema):
         required=True,
         validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
                                  'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts', 'role_grants']),
+                                 'permissions', 'cdf_forecasts']),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",

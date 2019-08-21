@@ -1361,8 +1361,8 @@ def get_current_user_info():
     return user_info
 
 
-def list_priveleged_users():
-    users = _call_procedure('list_priveleged_users')
+def list_privileged_users():
+    users = _call_procedure('list_privileged_users')
     return users
 
 
@@ -1371,5 +1371,5 @@ def create_new_user():
 
 
 def user_exists():
-    return len(_call_procedure('user_exists')) == 1
-
+    exists = _call_procedure_for_single('user_exists')
+    return exists['does_user_exist(auth0id)'] == 1

@@ -124,7 +124,7 @@ def test_add_perm_to_role_perm_dne(api, missing_id, new_role):
 
 
 @pytest.mark.parametrize('object_type', [
-    'roles', 'permissions', 'role_grants', 'users']
+    'roles', 'permissions', 'users']
 )
 def test_add_perm_to_role_external_role_admin_perm(
         api, new_role, new_perm, external_userid, object_type):

@@ -5,11 +5,16 @@ DROP PROCEDURE add_role_to_user;
 DROP FUNCTION rbac_permissions_check;
 DROP FUNCTION role_contains_rbac_permissions;
 DROP FUNCTION role_granted_to_external_users;
+DROP FUNCTION get_user_organization_by_user_id;
+DROP FUNCTION get_organization_id_by_name;
+DROP FUNCTION get_reference_role_id;
+DROP FUNCTION does_user_exist;
 DROP PROCEDURE remove_role_from_user;
 DROP PROCEDURE create_user_if_not_exists;
 DROP PROCEDURE get_current_user_info;
-DROP PROCEDURE list_priveleged_users;
+DROP PROCEDURE list_privileged_users;
 DROP PROCEDURE user_exists;
+
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
     IN auth0id VARCHAR(32), IN user_id CHAR(36), IN role_id CHAR(36))

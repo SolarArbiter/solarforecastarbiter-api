@@ -54,7 +54,7 @@ def allow_create(insertuser, new_permission, cursor):
     perms = [new_permission('create', obj, True, org=org)
              for obj in ('sites', 'forecasts', 'observations',
                          'cdf_forecasts', 'roles', 'permissions',
-                         'reports', 'role_grants')]
+                         'reports')]
     cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
@@ -118,6 +118,18 @@ def allow_update_roles(cursor, new_permission, insertuser):
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_grant_revoke_roles(cursor, new_permission, valueset):
+    org = valueset[0][0]
+    role = valueset[2][0]
+    perms = [new_permission('grant', 'roles', True, org=org),
+             new_permission('revoke', 'roles', True, org=org)]
+    for perm in perms:
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id)'
+            ' VALUES (%s, %s)', (role['id'], perm['id']))
 
 
 @pytest.fixture()
@@ -714,7 +726,7 @@ def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
 
 
 @pytest.mark.parametrize('object_type', [
-    'roles', 'permissions', 'users', 'role_grants']
+    'roles', 'permissions', 'users']
 )
 def test_add_permission_to_role_rbac_on_external_role(
         cursor, new_permission, new_user, new_role,
@@ -743,8 +755,9 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     assert e.value.args[0] == 1142
 
 
-def test_add_role_to_user(cursor, new_role, allow_create,
-                          insertuser):
+def test_add_role_to_user(
+        cursor, new_role, allow_create,
+        allow_grant_revoke_roles, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     cursor.callproc('add_role_to_user', (
@@ -756,7 +769,7 @@ def test_add_role_to_user(cursor, new_role, allow_create,
 
 
 def test_add_role_to_user_outside_org(
-        cursor, new_role, allow_create,
+        cursor, new_role, allow_create, allow_grant_revoke_roles,
         new_user, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
@@ -770,7 +783,7 @@ def test_add_role_to_user_outside_org(
 
 
 def test_add_role_to_user_admin_role(
-        cursor, new_role, allow_create,
+        cursor, new_role, allow_create, allow_grant_revoke_roles,
         new_permission, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
@@ -787,7 +800,7 @@ def test_add_role_to_user_admin_role(
 
 
 def test_add_role_to_user_admin_role_outside_org(
-        allow_create, cursor, new_role,
+        allow_create, cursor, new_role, allow_grant_revoke_roles,
         new_user, new_permission, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     share_user = new_user()
@@ -815,7 +828,8 @@ def test_add_role_to_user_missing_perm(
 
 
 def test_add_role_to_user_user_dne(
-        cursor, allow_create, new_role, insertuser):
+        cursor, allow_create, new_role, allow_grant_revoke_roles,
+        insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:

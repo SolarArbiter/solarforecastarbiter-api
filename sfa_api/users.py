@@ -144,14 +144,14 @@ class UserRolesManagementView(MethodView):
         return '', 204
 
 
-class PrivelegedUserView(MethodView):
+class PrivilegedUserView(MethodView):
     def get(self):
         """List user data for all users that have roles in the
-	current users organization.
-	"""
+        current users organization.
+        """
         storage = get_storage()
-        user_list = storage.list_priveleged_users()
-        return jsonify(user_list), 200 
+        user_list = storage.list_privileged_users()
+        return jsonify(user_list), 200
 
 
 class CurrentUserView(MethodView):
@@ -172,5 +172,9 @@ user_blp.add_url_rule(
     '/<user_id>/roles/<role_id>',
     view_func=UserRolesManagementView.as_view('user_roles_management')
 )
-user_blp.add_url_rule('/current', view_func=CurrentUserView.as_view('current_user'))
-user_blp.add_url_rule('/priveleged', view_func=PrivelegedUserView.as_view('list_priveleged'))
+user_blp.add_url_rule(
+    '/current',
+    view_func=CurrentUserView.as_view('current_user'))
+user_blp.add_url_rule(
+    '/priveleged',
+    view_func=PrivilegedUserView.as_view('list_priveleged'))

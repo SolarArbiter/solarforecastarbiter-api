@@ -5,10 +5,10 @@ flask-jwt-extended because we only need to verify valid tokens
 and not issue any. We use python-jose instead of pyjwt because
 it is better documented and is not missing any JWT features.
 """
-from json.decoder import JSONDecodeError       
+from json.decoder import JSONDecodeError
 from functools import wraps
 import requests
-        
+
 
 from flask import (request, Response, current_app, render_template,
                    _request_ctx_stack)
@@ -54,7 +54,7 @@ def verify_access_token():
 def request_user_info():
     """Makes a user info request to check if the user exists
     and is verified.
-    Returns 
+    Returns
     -------
     unser_info: dict
         Dict of user information provided by auth0 or None on failure
