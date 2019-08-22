@@ -330,18 +330,6 @@ def allow_update_users(allow_update):
     allow_update('users')
 
 
-@pytest.fixture()
-def allow_grant_revoke_roles(cursor, new_permission, valueset):
-    org = valueset[0][0]
-    role = valueset[2][0]
-    perms = [new_permission('grant', 'roles', True, org=org),
-             new_permission('revoke', 'roles', True, org=org)]
-    for perm in perms:
-        cursor.execute(
-            'INSERT INTO role_permission_mapping (role_id, permission_id)'
-            ' VALUES (%s, %s)', (role['id'], perm['id']))
-
-
 @pytest.mark.parametrize('userorg,roleorg', [
     (False, True),
     (True, True),

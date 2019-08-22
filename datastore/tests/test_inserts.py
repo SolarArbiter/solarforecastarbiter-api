@@ -121,18 +121,6 @@ def allow_update_roles(cursor, new_permission, insertuser):
 
 
 @pytest.fixture()
-def allow_grant_revoke_roles(cursor, new_permission, valueset):
-    org = valueset[0][0]
-    role = valueset[2][0]
-    perms = [new_permission('grant', 'roles', True, org=org),
-             new_permission('revoke', 'roles', True, org=org)]
-    for perm in perms:
-        cursor.execute(
-            'INSERT INTO role_permission_mapping (role_id, permission_id)'
-            ' VALUES (%s, %s)', (role['id'], perm['id']))
-
-
-@pytest.fixture()
 def allow_update_users(cursor, new_permission, insertuser):
     user, site, fx, obs, org, role, cdf, report = insertuser
     perm = new_permission('update', 'users', True, org=org)
