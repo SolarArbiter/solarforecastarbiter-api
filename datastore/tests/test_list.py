@@ -12,6 +12,10 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             new_site, new_forecast, new_observation, new_cdf_forecast,
             new_report):
     # remove test data
+    # temporarily remove fx, obs and cdf to avoid foreign key constraint
+    cursor.execute('DELETE FROM forecasts')
+    cursor.execute('DELETE FROM observations')
+    cursor.execute('DELETE FROM cdf_forecasts_groups')
     cursor.execute('DELETE FROM organizations')
 
     def make():

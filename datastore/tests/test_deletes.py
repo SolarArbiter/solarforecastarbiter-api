@@ -351,12 +351,7 @@ def test_remove_role_from_user(
         new_user, new_permission, roleorg, userorg):
     org = valueset[0][0]
     user = valueset[1][0]
-    role = valueset[2][0]
     auth0id = user['auth0_id']
-    permission = new_permission('update', 'users', False, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)', (role['id'], permission['id']))
     if roleorg:
         newrole = new_role(org=org)
     else:
@@ -365,9 +360,6 @@ def test_remove_role_from_user(
         newuser = new_user(org=org)
     else:
         newuser = new_user()
-    cursor.execute(
-        'INSERT INTO permission_object_mapping (permission_id, object_id) '
-        'VALUES (%s, %s)', (permission['id'], newuser['id']))
     cursor.execute(
         'INSERT INTO user_role_mapping (user_id, role_id) '
         'VALUES (%s, %s)', (newuser['id'], newrole['id']))
