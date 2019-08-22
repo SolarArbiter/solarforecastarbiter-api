@@ -770,3 +770,16 @@ def test_get_reference_role_id(dictcursor):
         roleid)
     role = dictcursor.fetchone()
     assert role['name'] == 'Read Reference Data'
+
+
+def test_get_current_user_info(dictcursor, insertuser):
+    user = insertuser[0]
+    org = insertuser[4]
+    auth0id = user['auth0_id']
+    dictcursor.callproc('get_current_user_info', (auth0id,))
+    user_info = dictcursor.fetchone()
+    assert user_info['user_id'] == str(bin_to_uuid(user['id']))
+    assert user_info['organization_id'] == str(bin_to_uuid(user['organization_id']))
+    assert user_info['organization'] == org['name']
+    assert user_info['auth0_id'] == user['auth0_id']
+    
