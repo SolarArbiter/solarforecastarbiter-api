@@ -5,13 +5,20 @@ from sfa_api.utils import auth
 
 
 @pytest.fixture()
+def existing_user(mocker):
+    user_check = mocker.patch('sfa_api.utils.auth.validate_user_existence')
+    user_check.return_value = True
+    return user_check
+
+
+@pytest.fixture()
 def valid_auth(app, auth_token):
     with app.test_request_context(
             headers={'Authorization': f'Bearer {auth_token}'}):
         yield
 
 
-def test_verify_access_token(valid_auth, auth_token):
+def test_verify_access_token(valid_auth, auth_token, existing_user):
     assert auth.verify_access_token()
     assert auth.current_user == 'auth0|5be343df7025406237820b85'
 
@@ -50,7 +57,7 @@ def test_verify_access_token_bad_key(app, valid_auth):
     assert not auth.verify_access_token()
 
 
-def test_requires_auth(valid_auth):
+def test_requires_auth(valid_auth, existing_user):
     @auth.requires_auth
     def func():
         return 'GOOD'
@@ -66,3 +73,42 @@ def test_requires_auth_no_auth(app):
         resp = func()
         assert resp.status_code == 401
         assert 'WWW-Authenticate' in resp.headers
+
+
+@pytest.fixture()
+def mocked_user_exists_storage(mocker):
+    def fn(user_exists=True, verified=False):
+        mock_storage = mocker.patch('sfa_api.utils.storage.get_storage')
+        mock_storage.user_exists = mocker.Mock(return_value=user_exists)
+        mock_storage.create_new_user = mocker.Mock()
+        mock_storage.return_value = mock_storage
+
+        user_info = mocker.patch('sfa_api.utils.auth.request_user_info')
+        user_info.return_value = {'email_verified': verified}
+        return (mock_storage.user_exists, user_info,
+                mock_storage.create_new_user)
+    return fn
+
+
+@pytest.mark.parametrize('user_exists,verified', [
+    (True, False),
+    (False, True),
+    (False, False),
+])
+def test_validate_user_existence(app, mocked_user_exists_storage,
+                                 user_exists, verified):
+    exists, user_info, create_user = mocked_user_exists_storage(
+        user_exists=user_exists, verified=verified)
+    with app.test_request_context():
+        existence = auth.validate_user_existence()
+        if not user_exists:
+            user_info.assert_called()
+            if verified:
+                create_user.assert_called()
+                assert existence is True
+            else:
+                create_user.assert_not_called()
+                assert existence is False
+        else:
+            assert existence is True
+            exists.assert_called()
