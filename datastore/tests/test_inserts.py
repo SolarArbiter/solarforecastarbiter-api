@@ -745,7 +745,7 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
 
 def test_add_role_to_user(
         cursor, new_role, allow_create,
-        allow_grant_revoke_roles, insertuser):
+        allow_grant_roles, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     cursor.callproc('add_role_to_user', (
@@ -757,7 +757,7 @@ def test_add_role_to_user(
 
 
 def test_add_role_to_user_outside_org(
-        cursor, new_role, allow_create, allow_grant_revoke_roles,
+        cursor, new_role, allow_create, allow_grant_roles,
         new_user, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
@@ -771,7 +771,7 @@ def test_add_role_to_user_outside_org(
 
 
 def test_add_role_to_user_admin_role(
-        cursor, new_role, allow_create, allow_grant_revoke_roles,
+        cursor, new_role, allow_create, allow_grant_roles,
         new_permission, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
@@ -788,7 +788,7 @@ def test_add_role_to_user_admin_role(
 
 
 def test_add_role_to_user_admin_role_outside_org(
-        allow_create, cursor, new_role, allow_grant_revoke_roles,
+        allow_create, cursor, new_role, allow_grant_roles,
         new_user, new_permission, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     share_user = new_user()
@@ -816,7 +816,7 @@ def test_add_role_to_user_missing_perm(
 
 
 def test_add_role_to_user_user_dne(
-        cursor, allow_create, new_role, allow_grant_revoke_roles,
+        cursor, allow_create, new_role, allow_grant_roles,
         insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)

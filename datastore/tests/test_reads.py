@@ -507,18 +507,24 @@ def allow_read_roles(cursor, new_permission, insertuser):
         '(%s, %s)', (role['id'], perm['id']))
 
 
-def test_read_role(dictcursor, new_role, allow_read_roles,
-                   new_permission, insertuser):
+def test_read_role(dictcursor, new_role, new_user,
+                   allow_read_roles, new_permission, insertuser):
     org = insertuser[4]
     user = insertuser[0]
+    users_with_role = [new_user(org=org) for _ in range(3)]
     perms = [new_permission('read', 'observations', False, org=org)
              for _ in range(3)]
     role = new_role(org=org)
     dictcursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', [(role['id'], p['id']) for p in perms])
+    for grantee in users_with_role:
+        dictcursor.execute(
+            'INSERT INTO arbiter_data.user_role_mapping(user_id, role_id) '
+            ' VALUES (%s, %s)',
+            (grantee['id'], role['id']))
     dictcursor.callproc('read_role', (user['auth0_id'],
-                                      str(bin_to_uuid(role['id']))))
+                        str(bin_to_uuid(role['id']))))
     res = dictcursor.fetchall()[0]
     res_perms = set(json.loads(res['permissions']).keys())
     for tstr in json.loads(res['permissions']).values():
@@ -527,6 +533,10 @@ def test_read_role(dictcursor, new_role, allow_read_roles,
     assert res['role_id'] == str(bin_to_uuid(role['id']))
     assert res['name'] == role['name']
     assert res['description'] == role['description']
+    user_dict = json.loads(res['users'])
+    assert len(users_with_role) == len(list(user_dict.keys()))
+    for grantee in users_with_role:
+        assert str(bin_to_uuid(grantee['id'])) in user_dict
 
 
 def test_read_role_no_perm(dictcursor, new_role, allow_read_roles,
@@ -709,7 +719,7 @@ def test_read_report_values_denied(
 ])
 def test_role_granted_to_external_users(
         cursor, valueset, new_role, insertuser, new_organization,
-        new_user, allow_grant_revoke_roles, org, expected):
+        new_user, allow_grant_roles, org, expected):
     organization = insertuser[4]
     if org:
         external_user = new_user(org=new_organization())
@@ -745,21 +755,6 @@ def test_role_contains_rbac_permissions(
         role['id'])
     granted = cursor.fetchone()[0]
     assert granted == expected
-
-
-def test_get_user_organization_by_user_id(cursor, new_user):
-    user = new_user()
-    cursor.execute('SELECT get_user_organization_by_user_id(%s)',
-                   user['id'])
-    org = cursor.fetchone()[0]
-    assert org == user['organization_id']
-
-
-def test_get_organization_id_by_name(cursor, new_organization):
-    org = new_organization()
-    cursor.execute('SELECT get_organization_id_by_name(%s)', org['name'])
-    orgid = cursor.fetchone()[0]
-    assert orgid == org['id']
 
 
 def test_get_reference_role_id(dictcursor):

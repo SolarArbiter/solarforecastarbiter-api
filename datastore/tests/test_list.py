@@ -1,12 +1,10 @@
-import json
-from uuid import UUID
 from random import shuffle
 
 
 import pytest
 
 
-from conftest import bin_to_uuid, uuid_to_bin
+from conftest import bin_to_uuid
 
 
 @pytest.fixture()
@@ -197,27 +195,3 @@ def test_list_reports(dictcursor, twosets):
             ('created_at', 'modified_at', 'provider', 'report_id'))
         == ((set(reports[0].keys()) | set(('status',))) -
             set(('organization_id', 'id'))))
-
-
-def test_list_priveleged_users(
-        dictcursor, valueset, new_role, new_user, twosets):
-    user, role, perms, sites, fx, obs, cdf, reports, org, dummy = twosets
-    auth0id = user['auth0_id']
-    users = [new_user()['id'] for _ in range(5)]
-    roles = [new_role(org=org)['id'] for _ in range(5)]
-    users_roles = [(users[i], roles[i]) for i in range(5)]
-    for pair in users_roles:
-        dictcursor.execute(
-            'INSERT INTO arbiter_data.user_role_mapping(user_id, role_id) '
-            'VALUES (%s, %s)', pair)
-    dictcursor.callproc('list_privileged_users', (auth0id,))
-    priv_users = dictcursor.fetchall()
-    assert len(priv_users) == len(users) + 1
-    for privileged_user in priv_users:
-        user_id = uuid_to_bin(UUID(privileged_user['user_id']))
-        if user_id == user['id']:
-            continue
-        else:
-            assert user_id in users
-            for role, added in json.loads(privileged_user['roles']).items():
-                assert uuid_to_bin(UUID(role)) in roles

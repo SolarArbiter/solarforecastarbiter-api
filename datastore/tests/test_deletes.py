@@ -333,9 +333,11 @@ def allow_update_users(allow_update):
 @pytest.mark.parametrize('userorg,roleorg', [
     (False, True),
     (True, True),
+    pytest.param(True, False, marks=pytest.mark.xfail(strict=True)),
+    pytest.param(False, False, marks=pytest.mark.xfail(strict=True)),
 ])
 def test_remove_role_from_user(
-        cursor, valueset, new_role, allow_grant_revoke_roles,
+        cursor, valueset, new_role, allow_revoke_roles,
         new_user, new_permission, roleorg, userorg):
     org = valueset[0][0]
     user = valueset[1][0]
@@ -357,7 +359,7 @@ def test_remove_role_from_user(
         'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
         ' user_id = UUID_TO_BIN(%s, 1)', uid)
     assert cursor.fetchone()[0] > 0
-    cursor.callproc('remove_role_from_user', (auth0id, uid, rid))
+    cursor.callproc('remove_role_from_user', (auth0id, rid, uid))
     cursor.execute(
         'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
         ' user_id = UUID_TO_BIN(%s, 1)', uid)
@@ -366,10 +368,11 @@ def test_remove_role_from_user(
 
 @pytest.mark.parametrize('userorg,roleorg', [
     (False, False),
+    pytest.param(True, True, marks=pytest.mark.xfail(strict=True)),
     (True, False),
 ])
 def test_remove_role_from_user_bad_org(
-        cursor, valueset, new_role, allow_grant_revoke_roles,
+        cursor, valueset, new_role, allow_revoke_roles,
         new_user, new_permission, roleorg, userorg):
     org = valueset[0][0]
     user = valueset[1][0]
@@ -397,7 +400,7 @@ def test_remove_role_from_user_bad_org(
     rid = str(bin_to_uuid(newrole['id']))
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_role_from_user',
-                        (auth0id, uid, rid))
+                        (auth0id, rid, uid))
     assert e.value.args[0] == 1142
 
 
@@ -405,7 +408,7 @@ def test_remove_role_from_user_denied(cursor, role_user_obj):
     auth0id, userid, roleid = role_user_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('remove_permission_from_role',
-                        (auth0id, userid, roleid))
+                        (auth0id, roleid, userid))
     assert e.value.args[0] == 1142
 
 
