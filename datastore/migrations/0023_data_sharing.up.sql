@@ -26,6 +26,7 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'insert_rbac'@'localhost';
 
+
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION rbac_permissions_check(permid BINARY(16))
 RETURNS BOOLEAN
 COMMENT 'Determines if the permission controls actions on rbac objects'
@@ -40,6 +41,7 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'insert_rbac'@'localhost';
 
+
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION does_user_exist(auth0id VARCHAR(32))
 RETURNS BOOLEAN
 READS SQL DATA SQL SECURITY DEFINER
@@ -47,23 +49,6 @@ BEGIN
     RETURN (SELECT EXISTS(SELECT 1 from arbiter_data.users where auth0_id = auth0id));
 END;
 GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist to 'select_rbac'@'localhost';
-
-CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_user_organization_by_user_id(userid BINARY(16))
-RETURNS BINARY(16)
-READS SQL DATA SQL SECURITY DEFINER
-BEGIN
-    RETURN (SELECT organization_id FROM arbiter_data.users WHERE id = userid);
-END;
-GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization_by_user_id TO 'select_rbac'@'localhost';
-
-
-CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_organization_id_by_name(org_name VARCHAR(32))
-RETURNS BINARY(16)
-READS SQL DATA SQL SECURITY DEFINER
-BEGIN
-    RETURN (SELECT id FROM arbiter_data.organizations WHERE name = org_name);
-END;
-GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id_by_name TO 'select_rbac'@'localhost';
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_reference_role_id()
@@ -73,7 +58,7 @@ BEGIN
     RETURN (SELECT id
             FROM arbiter_data.roles
             WHERE name = 'Read Reference Data'
-                AND organization_id = get_organization_id_by_name('Reference'));
+                AND organization_id = get_organization_id('Reference'));
 END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_reference_role_id TO 'select_rbac'@'localhost';
 
@@ -93,13 +78,14 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'insert_rbac'@'localhost';
 
+
 /*
  * Drop and redefine add_role_to_user to depend on the 'grant' role action
  */
 DROP PROCEDURE arbiter_data.add_role_to_user;
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
-    IN auth0id VARCHAR(32), IN user_id VARCHAR(36), IN role_id VARCHAR(36))
+    IN auth0id VARCHAR(32), IN user_id CHAR(36), IN role_id CHAR(36))
 COMMENT 'Add a role to a user'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -115,10 +101,10 @@ BEGIN
     SET role_org = get_object_organization(roleid, 'roles');
     SET caller_org = get_user_organization(auth0id);
     SET userid = UUID_TO_BIN(user_id, 1);
-    SET grantee_org = get_user_organization_by_user_id(userid);
+    SET grantee_org = get_object_organization(userid, 'users');
     SET allowed = can_user_perform_action(auth0id, roleid, 'grant') AND
-          caller_org = role_org AND
-          grantee_org IS NOT NULL;
+        caller_org = role_org AND
+        grantee_org IS NOT NULL;
     IF allowed THEN
         IF caller_org = grantee_org THEN
             -- If caller and grantee have same org, add the role to the user
@@ -144,7 +130,6 @@ END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'apiuser'@'%';
-GRANT EXECUTE ON FUNCTION arbiter_data.get_user_organization_by_user_id TO 'insert_rbac'@'localhost';
 
 
 /*
@@ -154,7 +139,7 @@ DROP PROCEDURE remove_role_from_user;
 
 -- define delete role from user
 CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_role_from_user (
-    IN auth0id VARCHAR(32), IN user_strid VARCHAR(36), IN role_strid VARCHAR(36))
+    IN auth0id VARCHAR(32), IN role_strid CHAR(36), IN user_strid CHAR(36))
 COMMENT 'Remove a role from a user'
 BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
@@ -178,7 +163,6 @@ BEGIN
     END IF;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'delete_rbac'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.user_can_create TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_role_from_user TO 'apiuser'@'%';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'delete_rbac'@'localhost';
 
@@ -207,13 +191,12 @@ BEGIN
     SET userid = UUID_TO_BIN(UUID(), 1);
     IF NOT does_user_exist(auth0id) THEN
         INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
-            userid, auth0id, get_organization_id_by_name('Unaffiliated'));
+            userid, auth0id, get_organization_id('Unaffiliated'));
         INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
             userid, get_reference_role_id());
     END IF;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'insert_rbac'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id_by_name TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_reference_role_id TO 'insert_rbac'@'localhost';
 
@@ -237,29 +220,47 @@ GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_name TO 'select_rbac'@'l
 GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'apiuser'@'%';
 
 
-/*
- * List users with role in the organization.
- */
-CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_privileged_users (
-    IN auth0id VARCHAR(32))
-COMMENT 'List all users who are granted a role within the organization'
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_users_of_role(
+    roleid BINARY(16))
+RETURNS JSON
+READS SQL DATA SQL SECURITY DEFINER
 BEGIN
-    DECLARE orgid BINARY(16);
-    SET orgid = get_user_organization(auth0id);
-    SELECT BIN_TO_UUID(id, 1) as user_id, get_organization_name(organization_id) as organization, BIN_TO_UUID(organization_id) as organization_id, get_roles_of_user(id) as roles, auth0_id
-    FROM arbiter_data.users
-    WHERE id IN (
-        SELECT DISTINCT user_id
-        FROM arbiter_data.user_role_mapping
-        WHERE role_id IN (
-            SELECT id
-            FROM arbiter_data.roles
-            WHERE organization_id = orgid AND id IN (
-                SELECT object_id FROM user_objects
-                WHERE auth0_id = auth0id AND object_type = 'roles')));
+    DECLARE jsonout JSON;
+    SET jsonout = (SELECT JSON_OBJECTAGG(BIN_TO_UUID(user_id, 1), created_at)
+        FROM arbiter_data.user_role_mapping WHERE role_id = roleid
+        GROUP BY role_id);
+    IF jsonout IS NOT NULL THEN
+        RETURN jsonout;
+    ELSE
+        RETURN JSON_OBJECT();
+    END IF;
 END;
-GRANT EXECUTE ON PROCEDURE arbiter_data.list_privileged_users TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.list_privileged_users TO 'apiuser'@'%';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_users_of_role TO 'select_rbac'@'localhost';
+
+
+DROP PROCEDURE arbiter_data.read_role;
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_role(
+   IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read role metadata'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+       SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
+           get_organization_name(organization_id) as organization, created_at, modified_at,
+           get_permissions_of_role(id) as permissions,
+		   get_users_of_role(id) as users
+       FROM arbiter_data.roles WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'apiuser'@'%';
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE user_exists (
@@ -269,7 +270,6 @@ BEGIN
     SELECT does_user_exist(auth0id);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'apiuser'@'%';
 
 
@@ -280,7 +280,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'apiuser'@'%';
 DROP PROCEDURE add_permission_to_role;
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_permission_to_role (
-    IN auth0id VARCHAR(32), IN role_id VARCHAR(36), IN permission_id VARCHAR(36))
+    IN auth0id VARCHAR(32), IN role_id CHAR(36), IN permission_id CHAR(36))
 COMMENT 'Add an permission to the role permission mapping table'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -292,11 +292,10 @@ BEGIN
     SET roleid = UUID_TO_BIN(role_id, 1); 
     SET permid = UUID_TO_BIN(permission_id, 1); 
     -- Check if user has update permission on the role and that
-    -- user, role, and permission have same organization
+    -- role and permission have same organization
     SET allowed = can_user_perform_action(auth0id, roleid, 'update') AND 
         userorg = get_object_organization(permid, 'permissions') AND 
-        userorg = get_object_organization(roleid, 'roles') AND
-        NOT role_granted_to_external_users(roleid);
+        userorg = get_object_organization(roleid, 'roles');
     IF allowed IS NOT NULL AND allowed THEN
         -- Don't insert an rbac permission when a role is granted externally 
         IF rbac_permissions_check(permid) AND role_granted_to_external_users(roleid) THEN

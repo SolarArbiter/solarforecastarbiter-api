@@ -5,14 +5,13 @@ DROP PROCEDURE add_role_to_user;
 DROP FUNCTION rbac_permissions_check;
 DROP FUNCTION role_contains_rbac_permissions;
 DROP FUNCTION role_granted_to_external_users;
-DROP FUNCTION get_user_organization_by_user_id;
-DROP FUNCTION get_organization_id_by_name;
 DROP FUNCTION get_reference_role_id;
 DROP FUNCTION does_user_exist;
+DROP FUNCTION get_users_of_role;
 DROP PROCEDURE remove_role_from_user;
 DROP PROCEDURE create_user_if_not_exists;
 DROP PROCEDURE get_current_user_info;
-DROP PROCEDURE list_privileged_users;
+DROP PROCEDURE read_role;
 DROP PROCEDURE user_exists;
 
 
@@ -104,3 +103,24 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'insert_rbac'@
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_permission_to_role TO 'apiuser'@'%';
 
 DELETE FROM arbiter_data.users WHERE auth0_id = 'auth0|test_public';
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_role(
+   IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read role metadata'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(strid, 1);
+    SET allowed = can_user_perform_action(auth0id, binid, 'read');
+    IF allowed THEN
+       SELECT name, description, BIN_TO_UUID(id, 1) as role_id,
+           get_organization_name(organization_id) as organization, created_at, modified_at,
+           get_permissions_of_role(id) as permissions
+       FROM arbiter_data.roles WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read role"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
