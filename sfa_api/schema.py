@@ -625,6 +625,7 @@ class RoleSchema(RolePostSchema):
     )
     organization = ma.String(title="Organization")
     permissions = ma.Dict()
+    users = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 
