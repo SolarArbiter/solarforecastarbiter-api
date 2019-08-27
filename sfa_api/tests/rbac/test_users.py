@@ -106,3 +106,12 @@ def test_remove_role_from_user_no_perms(api, user_id, new_role, remove_perms):
     remove_perms('revoke', 'roles')
     remove_role = api.delete(f'/users/{user_id}/roles/{role_id}', BASE_URL)
     assert remove_role.status_code == 404
+
+
+def test_current_user(api):
+    user_req = api.get('/users/current', BASE_URL)
+    user = user_req.json
+    assert user['auth0_id'] == 'auth0|5be343df7025406237820b85'
+    assert user['organization'] == 'Organization 1'
+    assert user['organization_id'] == 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
+    assert user['user_id'] == '0c90950a-7cca-11e9-a81f-54bf64606445'

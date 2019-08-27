@@ -883,7 +883,7 @@ def remove_role_from_user(user_id, role_id):
           permission to update the user.
     """
     _call_procedure('remove_role_from_user',
-                    user_id, role_id)
+                    role_id, user_id)
 
 
 def add_role_to_user(user_id, role_id):
@@ -1359,11 +1359,6 @@ def store_report_status(report_id, status):
 def get_current_user_info():
     user_info = _call_procedure_for_single('get_current_user_info')
     return user_info
-
-
-def list_privileged_users():
-    users = _call_procedure('list_privileged_users')
-    return users
 
 
 def create_new_user():

@@ -1,4 +1,5 @@
 import pytest
+from json.decoder import JSONDecodeError
 
 
 from sfa_api.utils import auth
@@ -77,32 +78,39 @@ def test_requires_auth_no_auth(app):
 
 @pytest.fixture()
 def mocked_user_exists_storage(mocker):
-    def fn(user_exists=True, verified=False):
+    def fn(user_exists=True, verified=False, no_auth0=False):
         mock_storage = mocker.patch('sfa_api.utils.storage.get_storage')
         mock_storage.user_exists = mocker.Mock(return_value=user_exists)
         mock_storage.create_new_user = mocker.Mock()
         mock_storage.return_value = mock_storage
 
         user_info = mocker.patch('sfa_api.utils.auth.request_user_info')
-        user_info.return_value = {'email_verified': verified}
+        if no_auth0:
+            user_info.side_effect = JSONDecodeError('error', '{}', 1)
+        else:
+            user_info.return_value = {'email_verified': verified}
         return (mock_storage.user_exists, user_info,
                 mock_storage.create_new_user)
     return fn
 
 
-@pytest.mark.parametrize('user_exists,verified', [
-    (True, False),
-    (False, True),
-    (False, False),
+@pytest.mark.parametrize('user_exists,verified,no_auth0', [
+    (True, False, False),
+    (False, False, True),
+    (False, True, False),
+    (False, False, False),
 ])
 def test_validate_user_existence(app, mocked_user_exists_storage,
-                                 user_exists, verified):
+                                 user_exists, verified, no_auth0):
     exists, user_info, create_user = mocked_user_exists_storage(
-        user_exists=user_exists, verified=verified)
+        user_exists=user_exists, verified=verified, no_auth0=no_auth0)
     with app.test_request_context():
         existence = auth.validate_user_existence()
         if not user_exists:
             user_info.assert_called()
+            if no_auth0:
+                create_user.assert_not_called()
+                assert existence is False
             if verified:
                 create_user.assert_called()
                 assert existence is True
