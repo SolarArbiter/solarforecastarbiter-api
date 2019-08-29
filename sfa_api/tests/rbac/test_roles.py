@@ -26,11 +26,13 @@ def test_get_role(api, new_role):
     assert get_role.status_code == 200
 
 
-def test_list_roles_missing_perms(api, remove_perms):
+def test_list_roles_missing_perms(api, user_id, remove_perms):
     remove_perms('read', 'roles')
     roles = api.get('/roles/', BASE_URL)
     assert roles.status_code == 200
-    assert len(roles.json) == 0
+    user_roles = roles.json
+    assert len(user_roles) == 1
+    assert user_roles[0]['name'] == f'User role {user_id}'
 
 
 def test_create_delete_role(api):

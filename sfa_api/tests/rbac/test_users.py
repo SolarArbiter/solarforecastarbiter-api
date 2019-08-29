@@ -17,9 +17,9 @@ def test_get_user_dne(api, missing_id):
     assert get_user.status_code == 404
 
 
-def test_get_user_no_perms(api, user_id, remove_perms):
+def test_get_user_no_perms(api, user_id, external_userid, remove_perms):
     remove_perms('read', 'users')
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(f'/users/{external_userid}', BASE_URL)
     assert get_user.status_code == 404
 
 
@@ -31,11 +31,14 @@ def test_list_users(api, user_id):
     assert user_id in [user['user_id'] for user in user_list]
 
 
-def test_list_users_no_perm(api, remove_perms):
+def test_list_users_no_perm(api, remove_perms, user_id):
     remove_perms('read', 'users')
     get_users = api.get('/users/', BASE_URL)
     assert get_users.status_code == 200
-    assert get_users.json == []
+    only_self = get_users.json
+    assert len(only_self) == 1
+    the_user = only_self[0]
+    assert the_user['user_id'] == user_id
 
 
 def test_add_role_to_user(api, user_id, new_role):
@@ -89,7 +92,6 @@ def test_remove_role_from_user_user_dne(api, missing_id, new_role):
 
 
 def test_remove_role_from_user_role_dne(api, user_id, missing_id):
-    # test that no change is made, even though 204 is returned.
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
@@ -113,5 +115,4 @@ def test_current_user(api):
     user = user_req.json
     assert user['auth0_id'] == 'auth0|5be343df7025406237820b85'
     assert user['organization'] == 'Organization 1'
-    assert user['organization_id'] == 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
     assert user['user_id'] == '0c90950a-7cca-11e9-a81f-54bf64606445'
