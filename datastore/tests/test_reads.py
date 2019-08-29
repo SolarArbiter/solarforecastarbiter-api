@@ -736,6 +736,9 @@ def test_role_granted_to_external_users(
     assert granted[0] == expected
 
 
+@pytest.mark.parametrize('action', [
+    'read', 'create', 'delete', 'update', 'read_values',
+    'write_values', 'grant', 'revoke'])
 @pytest.mark.parametrize('object_type,expected', [
     ('roles', 1), ('users', 1), ('permissions', 1),
     ('forecasts', 0), ('observations', 0), ('cdf_forecasts', 0),
@@ -743,10 +746,10 @@ def test_role_granted_to_external_users(
 ])
 def test_role_contains_rbac_permissions(
         cursor, valueset, new_role, insertuser,
-        new_permission, object_type, expected):
+        new_permission, object_type, action, expected):
     organization = insertuser[4]
     role = new_role(org=organization)
-    perm = new_permission('read', object_type, True, org=organization)
+    perm = new_permission(action, object_type, True, org=organization)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)', (role['id'], perm['id']))
@@ -754,7 +757,10 @@ def test_role_contains_rbac_permissions(
         'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
         role['id'])
     granted = cursor.fetchone()[0]
-    assert granted == expected
+    if action == 'read':
+        assert granted == 0
+    else:
+        assert granted == expected
 
 
 def test_get_reference_role_id(dictcursor):

@@ -129,7 +129,7 @@ def test_add_perm_to_role_perm_dne(api, missing_id, new_role):
 def test_add_perm_to_role_external_role_admin_perm(
         api, new_role, new_perm, external_userid, object_type):
     role_id = new_role()
-    permission_id = new_perm(object_type=object_type)
+    permission_id = new_perm(object_type=object_type, action='create')
     add_role_to_user = api.post(
         f'/users/{external_userid}/roles/{role_id}',
         BASE_URL)

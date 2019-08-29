@@ -124,3 +124,26 @@ BEGIN
         MYSQL_ERRNO = 1142;
     END IF;
 END;
+
+DROP PROCEDURE create_role;
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_role (
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
+    IN description VARCHAR(255))
+COMMENT 'Create a role'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE orgid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET allowed = user_can_create(auth0id, 'roles');
+    IF allowed THEN
+        SELECT get_user_organization(auth0id) INTO orgid;
+        INSERT INTO arbiter_data.roles(
+            name, description, id, organization_id) VALUES (
+            name, description, UUID_TO_BIN(strid, 1), orgid);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create roles"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'apiuser'@'%';

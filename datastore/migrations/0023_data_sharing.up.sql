@@ -26,15 +26,18 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.role_granted_to_external_users TO 'insert_rbac'@'localhost';
 
-
+/*
+ * RBAC helper to determine if a permission controls access to rbac objects
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION rbac_permissions_check(permid BINARY(16))
 RETURNS BOOLEAN
-COMMENT 'Determines if the permission controls actions on rbac objects'
+COMMENT 'Determines if the permission controls modification actions on rbac objects'
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     RETURN (SELECT EXISTS (
         SELECT 1 FROM arbiter_data.permissions
-            WHERE id = permid AND object_type IN ('roles', 'permissions', 'users')
+            WHERE id = permid AND action != 'read'
+                AND object_type IN ('roles', 'permissions', 'users')
         )
     );
 END;
@@ -42,6 +45,9 @@ GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'select_rbac'@'
 GRANT EXECUTE ON FUNCTION arbiter_data.rbac_permissions_check TO 'insert_rbac'@'localhost';
 
 
+/*
+ * Check if a user exists by auth0id
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION does_user_exist(auth0id VARCHAR(32))
 RETURNS BOOLEAN
 READS SQL DATA SQL SECURITY DEFINER
@@ -51,6 +57,9 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist to 'select_rbac'@'localhost';
 
 
+/*
+ * Return the binary uuid of the 'Read Reference Data' role
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_reference_role_id()
 RETURNS BINARY(16)
 READS SQL DATA SQL SECURITY DEFINER
@@ -63,6 +72,9 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_reference_role_id TO 'select_rbac'@'localhost';
 
 
+/*
+ * Determine if a role contains rbac object based permissions
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION role_contains_rbac_permissions(roleid BINARY(16))
 RETURNS BOOLEAN
 COMMENT 'Determines if a role contains rbac object permissions'
@@ -77,6 +89,47 @@ BEGIN
 END;
 GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.role_contains_rbac_permissions TO 'insert_rbac'@'localhost';
+
+
+/*
+ * Drop and redefine create_role to include permission to read the role by default
+ */
+DROP PROCEDURE create_role;
+
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_role (
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
+    IN description VARCHAR(255))
+COMMENT 'Create a role'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE orgid BINARY(16);
+	DECLARE roleid BINARY(16);
+	DECLARE permid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET allowed = user_can_create(auth0id, 'roles');
+    IF allowed THEN
+        SELECT get_user_organization(auth0id) INTO orgid;
+		SET roleid = UUID_TO_BIN(strid, 1);
+        INSERT INTO arbiter_data.roles(
+            name, description, id, organization_id) VALUES (
+            name, description, roleid, orgid);
+		SET permid = UUID_TO_BIN(UUID(), 1);
+		INSERT INTO arbiter_data.permissions(
+			id, description, organization_id, action, object_type, applies_to_all
+		) VALUES (
+			permid, CONCAT('Read Role ', BIN_TO_UUID(roleid, 1)),
+			orgid, 'read', 'roles', FALSE);
+		INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
+		) VALUES (permid, roleid);
+        INSERT INTO arbiter_data.role_permission_mapping(role_id, permission_id
+        ) VALUES(roleid, permid);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create roles"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'apiuser'@'%';
 
 
 /*
@@ -188,12 +241,41 @@ COMMENT 'Inserts a new user and adds then to the Public org, and read reference 
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE userid BINARY(16);
-    SET userid = UUID_TO_BIN(UUID(), 1);
+    DECLARE roleid BINARY(16);
+    DECLARE rolename VARCHAR(64);
+    DECLARE orgid BINARY(16);
+    DECLARE userperm BINARY(16);
+    DECLARE roleperm BINARY(16);
     IF NOT does_user_exist(auth0id) THEN
+        SET userid = UUID_TO_BIN(UUID(), 1);
+        SET orgid = get_organization_id('Unaffiliated');
         INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
-            userid, auth0id, get_organization_id('Unaffiliated'));
+            userid, auth0id, orgid);
         INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (
             userid, get_reference_role_id());
+        -- Create the default role
+        SET roleid = UUID_TO_BIN(UUID(), 1);
+        SET rolename = CONCAT('User role ', BIN_TO_UUID(userid, 1));
+        SET userperm = UUID_TO_BIN(UUID(), 1);
+        SET roleperm = UUID_TO_BIN(UUID(), 1);
+        INSERT INTO arbiter_data.roles(name, description, id, organization_id
+        ) VALUES (rolename, 'Default role', roleid, orgid);
+        INSERT INTO arbiter_data.user_role_mapping(user_id, role_id
+        ) VALUES (userid, roleid);
+        INSERT INTO arbiter_data.permissions(id, description, organization_id, action, object_type
+        ) VALUES (
+        userperm, CONCAT('Read Self User ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'users');
+        INSERT INTO arbiter_data.role_permission_mapping(permission_id, role_id
+        ) VALUES (userperm, roleid);
+        INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
+        ) VALUES (userperm, userid);
+        INSERT INTO arbiter_data.permissions(id, description, organization_id, action, object_type
+        ) VALUES(
+        roleperm, CONCAT('Read User Role ', BIN_TO_UUID(roleid, 1)), orgid, 'read', 'roles');
+        INSERT INTO arbiter_data.role_permission_mapping(permission_id, role_id
+        ) VALUES (roleperm, roleid);
+        INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
+        ) VALUES (roleperm, roleid);
     END IF;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'insert_rbac'@'localhost';
@@ -220,6 +302,10 @@ GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_name TO 'select_rbac'@'l
 GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'apiuser'@'%';
 
 
+/*
+ * Return a json object of user_id: time_added to role for all
+ * users who have been granted this role
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_users_of_role(
     roleid BINARY(16))
 RETURNS JSON
@@ -238,6 +324,9 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_users_of_role TO 'select_rbac'@'localhost';
 
 
+/*
+ * Drop and redefine read role to incude granted users
+ */
 DROP PROCEDURE arbiter_data.read_role;
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_role(
    IN auth0id VARCHAR(32), IN strid CHAR(36))
@@ -263,6 +352,9 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'apiuser'@'%';
 
 
+/*
+ * Determine if user exists by auth0 id
+ */
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE user_exists (
     IN auth0id VARCHAR(32))
 COMMENT 'Detect if a User exists'

@@ -567,7 +567,7 @@ def test_create_user(dictcursor, valueset_org):
 
 def test_create_role(dictcursor, allow_create, insertuser):
     auth0id = insertuser[0]['auth0_id']
-    strid = str(uuid.uuid1())
+    strid = str(bin_to_uuid(newuuid()))
     dictcursor.callproc('create_role', (auth0id, strid, 'newrole',
                                         'A brandh new role!'))
     dictcursor.execute(
@@ -577,6 +577,41 @@ def test_create_role(dictcursor, allow_create, insertuser):
     assert res['name'] == 'newrole'
     assert res['description'] == 'A brandh new role!'
     assert res['organization_id'] == insertuser[-4]['id']
+
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.role_permission_mapping '
+        'WHERE role_id = UUID_TO_BIN(%s, 1)', (strid,))
+    mapping = dictcursor.fetchone()
+    read_perm_id = mapping['permission_id']
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permissions WHERE '
+        'id = %s', (read_perm_id,))
+    read_role_perm = dictcursor.fetchone()
+    assert read_role_perm['object_type'] == 'roles'
+    assert read_role_perm['organization_id'] == insertuser[-4]['id']
+    assert read_role_perm['description'] == f'Read Role {strid}'
+    assert read_role_perm['applies_to_all'] == 0
+    assert 'created_at' in read_role_perm
+
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', (read_perm_id,))
+    read_role_mapping = dictcursor.fetchone()
+    assert read_role_mapping['permission_id'] == read_perm_id
+    assert str(bin_to_uuid(read_role_mapping['object_id'])) == strid
+
+
+def test_create_and_share_role(
+        dictcursor, allow_create, allow_grant_roles, insertuser,
+        new_user):
+    auth0id = insertuser[0]['auth0_id']
+    user = new_user()
+    strid = str(bin_to_uuid(newuuid()))
+    dictcursor.callproc('create_role', (auth0id, strid, 'newrole',
+                                        'A brandh new role!'))
+    dictcursor.callproc('add_role_to_user', (auth0id,
+                                             str(bin_to_uuid(user['id'])),
+                                             strid))
 
 
 def test_create_role_fail(dictcursor, insertuser):
@@ -1008,3 +1043,76 @@ def test_store_report_status_denied(
              new_status)
         )
     assert e.value.args[0] == 1142
+
+
+def test_create_user_if_not_exist(dictcursor, valueset_org):
+    dictcursor.execute(
+        'SELECT id FROM arbiter_data.organizations '
+        'WHERE name = "Unaffiliated"')
+    unaffiliated_id = dictcursor.fetchone()['id']
+    auth0id = 'auth0|blahblah'
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.users WHERE auth0_id = %s',
+        (auth0id,))
+    assert len(dictcursor.fetchall()) == 0
+    dictcursor.callproc('create_user_if_not_exists', (auth0id,))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.users WHERE auth0_id = %s',
+        (auth0id,))
+    user = dictcursor.fetchone()
+    user_id = user['id']
+    assert user['auth0_id'] == auth0id
+    assert user['organization_id'] == unaffiliated_id
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.user_role_mapping WHERE '
+        'user_id = %s', (user_id,))
+    role_mappings = dictcursor.fetchall()
+    assert len(role_mappings) == 2
+
+    role_ids = [role['role_id'] for role in role_mappings]
+    for role_id in role_ids:
+        dictcursor.execute(
+            'SELECT * FROM arbiter_data.roles WHERE id = %s',
+            role_id)
+        role = dictcursor.fetchone()
+        if role['name'].startswith('User role'):
+            default_role = role
+        else:
+            reference_role = role
+    assert reference_role['name'] == 'Read Reference Data'
+    assert (reference_role['description'] ==
+            'Role to read reference sites, forecasts, and observations')
+    assert default_role['description'] == 'Default role'
+    assert default_role['organization_id'] == unaffiliated_id
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permissions WHERE id IN '
+        '(SELECT permission_id FROM arbiter_data.role_permission_mapping '
+        'WHERE role_id = %s)',
+        (default_role['id'],))
+    default_permissions = dictcursor.fetchall()
+    assert len(default_permissions) == 2
+
+    for p in default_permissions:
+        if (p['description'] ==
+                f'Read Self User {str(bin_to_uuid(user["id"]))}'):
+            read_self = p
+        if (p['description'] ==
+                f'Read User Role {str(bin_to_uuid(default_role["id"]))}'):
+            read_role = p
+    assert read_self['action'] == 'read'
+    assert read_self['object_type'] == 'users'
+    assert read_self['organization_id'] == unaffiliated_id
+    assert read_role['action'] == 'read'
+    assert read_role['object_type'] == 'roles'
+    assert read_role['organization_id'] == unaffiliated_id
+
+    dictcursor.execute(
+        'SELECT object_id FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', read_self['id'])
+    perm_user_id = dictcursor.fetchone()['object_id']
+    assert perm_user_id == user_id
+    dictcursor.execute(
+        'SELECT object_id FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', read_role['id'])
+    perm_role_id = dictcursor.fetchone()['object_id']
+    assert perm_role_id == default_role['id']
