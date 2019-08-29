@@ -749,10 +749,14 @@ def test_role_contains_rbac_permissions(
         new_permission, object_type, action, expected):
     organization = insertuser[4]
     role = new_role(org=organization)
-    perm = new_permission(action, object_type, True, org=organization)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)', (role['id'], perm['id']))
+    perms = [new_permission(action, object_type, True, org=organization)]
+    for obj_type in ['sites', 'observations', 'forecasts',
+                     'cdf_forecasts', 'aggregates']:
+        perms.append(new_permission(action, obj_type, True, org=organization))
+    for perm in perms:
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], perm['id']))
     cursor.execute(
         'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
         role['id'])
