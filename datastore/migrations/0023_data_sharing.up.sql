@@ -155,14 +155,14 @@ BEGIN
         INSERT INTO arbiter_data.roles(
             name, description, id, organization_id) VALUES (
             name, description, roleid, orgid);
-		SET permid = UUID_TO_BIN(UUID(), 1);
-		INSERT INTO arbiter_data.permissions(
-			id, description, organization_id, action, object_type, applies_to_all
-		) VALUES (
-			permid, CONCAT('Read Role ', BIN_TO_UUID(roleid, 1)),
-			orgid, 'read', 'roles', FALSE);
-		INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
-		) VALUES (permid, roleid);
+        SET permid = UUID_TO_BIN(UUID(), 1);
+        INSERT INTO arbiter_data.permissions(
+            id, description, organization_id, action, object_type, applies_to_all
+        ) VALUES (
+            permid, CONCAT('Read Role ', BIN_TO_UUID(roleid, 1)),
+            orgid, 'read', 'roles', FALSE);
+        INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
+        ) VALUES (permid, roleid);
         INSERT INTO arbiter_data.role_permission_mapping(role_id, permission_id
         ) VALUES(roleid, permid);
     ELSE
@@ -172,6 +172,17 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_role TO 'apiuser'@'%';
+
+
+CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION user_org_accepted_tou(userid BINARY(16))
+RETURNS BOOLEAN
+COMMENT "Checks if the user's organization has returned the terms of service"
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    RETURN (SELECT accepted_tou FROM arbiter_data.organizations
+            WHERE id = get_object_organization(userid, 'users'));
+END;
+GRANT EXECUTE ON FUNCTION user_org_accepted_tou TO 'select_rbac'@'localhost';
 
 
 /*
@@ -199,6 +210,7 @@ BEGIN
     SET grantee_org = get_object_organization(userid, 'users');
     SET allowed = can_user_perform_action(auth0id, roleid, 'grant') AND
         caller_org = role_org AND
+        user_org_accepted_tou(userid) AND
         grantee_org IS NOT NULL;
     IF allowed THEN
         IF caller_org = grantee_org THEN
@@ -225,6 +237,7 @@ END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_role_to_user TO 'apiuser'@'%';
+GRANT EXECUTE ON FUNCTION user_org_accepted_tou TO 'insert_rbac'@'localhost';
 
 
 /*
@@ -395,12 +408,6 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_name TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.get_current_user_info TO 'apiuser'@'%';
-/*
-    SELECT get_organization_name(organization_id) as organization,
-        BIN_TO_UUID(organization_id, 1) as organization_id,
-        BIN_TO_UUID(id, 1) as user_id, auth0_id
-    FROM arbiter_data.users WHERE auth0_id = auth0id;
-*/
 
 
 /*
@@ -451,16 +458,3 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_role TO 'apiuser'@'%';
-
-
-/*
- * Determine if user exists by auth0 id
- */
-CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE user_exists (
-    IN auth0id VARCHAR(32))
-COMMENT 'Detect if a User exists'
-BEGIN
-    SELECT does_user_exist(auth0id);
-END;
-GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.user_exists TO 'apiuser'@'%';

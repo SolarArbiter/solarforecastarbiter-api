@@ -8,6 +8,7 @@ DROP FUNCTION role_granted_to_external_users;
 DROP FUNCTION get_reference_role_id;
 DROP FUNCTION does_user_exist;
 DROP FUNCTION get_users_of_role;
+DROP FUNCTION user_org_accepted_tou;
 DROP PROCEDURE create_default_user_role;
 DROP PROCEDURE add_reference_role_to_user;
 DROP PROCEDURE remove_role_from_user;
