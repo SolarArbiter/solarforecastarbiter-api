@@ -786,3 +786,16 @@ def test_get_current_user_info(dictcursor, allow_read_users, insertuser):
     assert user_info['user_id'] == str(bin_to_uuid(user['id']))
     assert user_info['organization'] == org['name']
     assert user_info['auth0_id'] == user['auth0_id']
+
+
+@pytest.mark.parametrize('accepted', [True, False])
+def test_user_org_accepted_tou(
+        dictcursor, new_user, new_organization_no_tou, accepted):
+    if accepted:
+        user = new_user()
+    else:
+        user = new_user(org=new_organization_no_tou())
+    dictcursor.execute(
+        'SELECT user_org_accepted_tou(%s) as accepted',
+        user['id'])
+    assert (dictcursor.fetchone()['accepted'] == 1) is accepted

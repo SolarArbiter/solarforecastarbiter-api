@@ -9,7 +9,7 @@ import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid, newuuid
+from conftest import bin_to_uuid, uuid_to_bin, newuuid
 
 
 @pytest.fixture()
@@ -612,6 +612,12 @@ def test_create_and_share_role(
     dictcursor.callproc('add_role_to_user', (auth0id,
                                              str(bin_to_uuid(user['id'])),
                                              strid))
+    dictcursor.execute(
+        'SELECT * FROM user_role_mapping WHERE user_id = %s AND role_id = %s',
+        (user['id'], uuid_to_bin(uuid.UUID(strid))))
+    mappings = dictcursor.fetchall()
+    roles = [str(bin_to_uuid(mapping['role_id'])) for mapping in mappings]
+    assert strid in roles
 
 
 def test_create_role_fail(dictcursor, insertuser):
@@ -858,6 +864,19 @@ def test_add_role_to_user_user_dne(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(newuuid())),
+            str(bin_to_uuid(role['id']))))
+    assert e.value.args[0] == 1142
+
+
+def test_add_role_to_user_no_tou(
+        cursor, allow_create, new_role, allow_grant_roles,
+        insertuser, new_user, new_organization_no_tou):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
+    share_user = new_user(org=new_organization_no_tou())
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(share_user['id'])),
             str(bin_to_uuid(role['id']))))
     assert e.value.args[0] == 1142
 
@@ -1109,10 +1128,12 @@ def test_create_user_if_not_exist(dictcursor, valueset_org):
     dictcursor.execute(
         'SELECT object_id FROM arbiter_data.permission_object_mapping '
         'WHERE permission_id = %s', read_self['id'])
-    perm_user_id = dictcursor.fetchone()['object_id']
-    assert perm_user_id == user_id
+    perm_user_ids = dictcursor.fetchall()
+    assert len(perm_user_ids) == 1
+    assert perm_user_ids[0]['object_id'] == user_id
     dictcursor.execute(
         'SELECT object_id FROM arbiter_data.permission_object_mapping '
         'WHERE permission_id = %s', read_role['id'])
-    perm_role_id = dictcursor.fetchone()['object_id']
-    assert perm_role_id == default_role['id']
+    perm_role_ids = dictcursor.fetchall()
+    assert len(perm_role_ids) == 1
+    assert perm_role_ids[0]['object_id'] == default_role['id']

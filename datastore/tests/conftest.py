@@ -52,8 +52,10 @@ def newuuid():
 def new_organization(cursor):
     def fnc():
         out = OrderedDict(id=newuuid(), name=f'org{str(uuid1())[:10]}')
-        cursor.execute('INSERT INTO organizations (id, name) VALUES (%s, %s)',
-                       list(out.values()))
+        cursor.execute(
+            'INSERT INTO organizations (id, name, accepted_tou)'
+            'VALUES (%s, %s, TRUE)',
+            list(out.values()))
         return out
     return fnc
 
@@ -384,3 +386,15 @@ def allow_revoke_roles(cursor, new_permission, valueset):
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id)'
         ' VALUES (%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def new_organization_no_tou(cursor):
+    def fnc():
+        out = OrderedDict(id=newuuid(), name=f'org{str(uuid1())[:10]}')
+        cursor.execute(
+            'INSERT INTO organizations (id, name, accepted_tou)'
+            'VALUES (%s, %s, FALSE)',
+            list(out.values()))
+        return out
+    return fnc
