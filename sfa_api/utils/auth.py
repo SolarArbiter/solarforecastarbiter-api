@@ -81,10 +81,6 @@ def validate_user_existence():
     False
         If the user does not have a verified auth0 account or If
         the /userinfo endpoint fails. See notes for details.
-    Raises
-    ------
-    BadAPIRequest
-        If the users email is not verified.
     Notes
     -----
     Since a JWT hold it's own expiration, it is possible for a user
