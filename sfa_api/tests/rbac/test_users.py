@@ -73,6 +73,16 @@ def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
     assert role_id not in roles_on_user
 
 
+def test_add_role_to_user_no_tou(
+        api, unaffiliated_userid, new_role, remove_perms):
+    role_id = new_role()
+    remove_perms('grant', 'roles')
+    add_role = api.post(
+        f'/users/{unaffiliated_userid}/roles/{role_id}',
+        BASE_URL)
+    assert add_role.status_code == 404
+
+
 def test_remove_role_from_user(api, user_id, new_role):
     role_id = new_role()
     add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)

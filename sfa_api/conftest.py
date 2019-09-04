@@ -142,6 +142,21 @@ def copy_update(json, key, value):
     return new_json
 
 
+@pytest.fixture()
+def user_id():
+    return '0c90950a-7cca-11e9-a81f-54bf64606445'
+
+
+@pytest.fixture()
+def external_userid():
+    return '4b436bee-8245-11e9-a81f-54bf64606445'
+
+# User id of a permission-less unaffiliated user.
+@pytest.fixture()
+def unaffiliated_userid():
+    return 'ef026b76-c049-11e9-9c7e-0242ac120002'
+
+
 @contextmanager
 def _make_sql_app():
     app = create_app('TestingConfig')
@@ -169,8 +184,12 @@ def sql_app_no_commit(mocker):
 
 @pytest.fixture()
 def sql_api(sql_app, mocker):
-    api = sql_app.test_client()
-    return api
+    return sql_app.test_client()
+
+
+@pytest.fixture()
+def sql_api_unauthenticated(sql_app, mocker):
+    return sql_app.test_client()
 
 
 @contextmanager

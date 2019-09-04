@@ -1366,5 +1366,9 @@ def create_new_user():
 
 
 def user_exists():
-    exists = _call_procedure_for_single('user_exists')
-    return exists['does_user_exist(auth0id)'] == 1
+    with get_cursor('dict') as cursor:
+        query = f'SELECT does_user_exist(%s)'
+        query_cmd = partial(cursor.execute, query, (current_user))
+        try_query(query_cmd)
+        exists = cursor.fetchone()
+    return exists.get(f"does_user_exist('{current_user}')") == 1

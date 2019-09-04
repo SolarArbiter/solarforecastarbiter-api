@@ -54,7 +54,8 @@ READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     RETURN (SELECT EXISTS(SELECT 1 from arbiter_data.users where auth0_id = auth0id));
 END;
-GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist to 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.does_user_exist TO 'apiuser'@'%';
 
 
 /*

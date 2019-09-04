@@ -21,17 +21,6 @@ PERMISSION = {
 
 
 @pytest.fixture()
-def user_id():
-    return '0c90950a-7cca-11e9-a81f-54bf64606445'
-
-
-# User id of a permission-less unaffiliated user.
-@pytest.fixture()
-def external_userid():
-    return 'ef026b76-c049-11e9-9c7e-0242ac120002'
-
-
-@pytest.fixture()
 def api(sql_app_no_commit, mocker):
     def add_user():
         _request_ctx_stack.top.user = 'auth0|5be343df7025406237820b85'

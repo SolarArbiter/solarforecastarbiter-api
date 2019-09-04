@@ -15,7 +15,6 @@ DROP PROCEDURE remove_role_from_user;
 DROP PROCEDURE create_user_if_not_exists;
 DROP PROCEDURE get_current_user_info;
 DROP PROCEDURE read_role;
-DROP PROCEDURE user_exists;
 
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
