@@ -774,16 +774,9 @@ def fake_user(sql_app):
     ctx.pop()
 
 
-@pytest.fixture()
-def mock_create_user(mocker):
-    new_user = mocker.patch('sfa_api.utils.storage_interface.create_new_user')
-    new_user.side_effect = storage_interface.create_new_user()
-    return new_user
-
-
 @pytest.mark.parametrize('run', range(5))
-def test_create_new_user(sql_app, fake_user, run, mock_create_user):
-    mock_create_user.assert_called()
+def test_create_new_user(sql_app, fake_user, run):
+    storage_interface.create_new_user()
     new_user_roles = storage_interface.list_roles()
     new_user = storage_interface.get_current_user_info()
     assert len(new_user_roles) == 1
