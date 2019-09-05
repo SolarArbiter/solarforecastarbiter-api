@@ -12,6 +12,10 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             new_site, new_forecast, new_observation, new_cdf_forecast,
             new_report):
     # remove test data
+    # temporarily remove fx, obs and cdf to avoid foreign key constraint
+    cursor.execute('DELETE FROM forecasts')
+    cursor.execute('DELETE FROM observations')
+    cursor.execute('DELETE FROM cdf_forecasts_groups')
     cursor.execute('DELETE FROM organizations')
 
     def make():
@@ -37,15 +41,15 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
         reports = [new_report(org, obs[i], [fx[i]], [cdf[i]])
                    for i in range(2)]
-        return user, role, perms, sites, fx, obs, cdf, reports
+        return user, role, perms, sites, fx, obs, cdf, reports, org
     return make
 
 
 @pytest.fixture()
 def twosets(readall):
-    user, role, perms, sites, fx, obs, cdf, reports = readall()
+    user, role, perms, sites, fx, obs, cdf, reports, org = readall()
     dummy = readall()
-    return user, role, perms, sites, fx, obs, cdf, reports, dummy
+    return user, role, perms, sites, fx, obs, cdf, reports, org, dummy
 
 
 @pytest.mark.parametrize('type_', ['permissions', 'sites', 'forecasts',

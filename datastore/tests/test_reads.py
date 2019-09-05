@@ -507,18 +507,24 @@ def allow_read_roles(cursor, new_permission, insertuser):
         '(%s, %s)', (role['id'], perm['id']))
 
 
-def test_read_role(dictcursor, new_role, allow_read_roles,
-                   new_permission, insertuser):
+def test_read_role(dictcursor, new_role, new_user,
+                   allow_read_roles, new_permission, insertuser):
     org = insertuser[4]
     user = insertuser[0]
+    users_with_role = [new_user(org=org) for _ in range(3)]
     perms = [new_permission('read', 'observations', False, org=org)
              for _ in range(3)]
     role = new_role(org=org)
     dictcursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
         '(%s, %s)', [(role['id'], p['id']) for p in perms])
+    for grantee in users_with_role:
+        dictcursor.execute(
+            'INSERT INTO arbiter_data.user_role_mapping(user_id, role_id) '
+            ' VALUES (%s, %s)',
+            (grantee['id'], role['id']))
     dictcursor.callproc('read_role', (user['auth0_id'],
-                                      str(bin_to_uuid(role['id']))))
+                        str(bin_to_uuid(role['id']))))
     res = dictcursor.fetchall()[0]
     res_perms = set(json.loads(res['permissions']).keys())
     for tstr in json.loads(res['permissions']).values():
@@ -527,6 +533,10 @@ def test_read_role(dictcursor, new_role, allow_read_roles,
     assert res['role_id'] == str(bin_to_uuid(role['id']))
     assert res['name'] == role['name']
     assert res['description'] == role['description']
+    user_dict = json.loads(res['users'])
+    assert len(users_with_role) == len(list(user_dict.keys()))
+    for grantee in users_with_role:
+        assert str(bin_to_uuid(grantee['id'])) in user_dict
 
 
 def test_read_role_no_perm(dictcursor, new_role, allow_read_roles,
@@ -702,3 +712,132 @@ def test_read_report_values_denied(
             (user['auth0_id'], str(bin_to_uuid(report['id'])))
         )
     assert e.value.args[0] == 1142
+
+
+@pytest.mark.parametrize('org,expected', [
+    (True, 1), (False, 0),
+])
+def test_role_granted_to_external_users(
+        cursor, valueset, new_role, insertuser, new_organization,
+        new_user, allow_grant_roles, org, expected):
+    organization = insertuser[4]
+    if org:
+        external_user = new_user(org=new_organization())
+    else:
+        external_user = new_user(org=organization)
+    role_to_share = new_role(org=organization)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES '
+        '(%s, %s)', (external_user['id'], role_to_share['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_granted_to_external_users(%s)',
+        role_to_share['id'])
+    granted = cursor.fetchone()
+    assert granted[0] == expected
+
+
+def test_role_granted_to_external_users_multiple_users(
+        cursor, valueset, new_role, insertuser, new_organization,
+        new_user, allow_grant_roles):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    internal_users = [new_user(org=organization) for _ in range(4)]
+    external_users = [new_user() for _ in range(4)]
+    users = internal_users + external_users
+    for user in users:
+        cursor.execute(
+            'INSERT INTO user_role_mapping (user_id, role_id) VALUES '
+            '(%s, %s)', (user['id'], role['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_granted_to_external_users(%s)',
+        role['id'])
+    granted = cursor.fetchone()
+    assert granted[0] == 1
+
+
+@pytest.mark.parametrize('action', [
+    'read', 'create', 'delete', 'update', 'read_values',
+    'write_values', 'grant', 'revoke'])
+@pytest.mark.parametrize('object_type,expected', [
+    ('roles', 1), ('users', 1), ('permissions', 1),
+    ('forecasts', 0), ('observations', 0), ('cdf_forecasts', 0),
+    ('aggregates', 0), ('sites', 0)
+])
+def test_role_contains_rbac_permissions(
+        cursor, valueset, new_role, insertuser,
+        new_permission, object_type, action, expected):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    perms = [new_permission(action, object_type, True, org=organization)]
+    for obj_type in ['sites', 'observations', 'forecasts',
+                     'cdf_forecasts', 'aggregates']:
+        perms.append(new_permission(action, obj_type, True, org=organization))
+    for perm in perms:
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], perm['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
+        role['id'])
+    contains_rbac = cursor.fetchone()[0]
+    if action == 'read':
+        assert contains_rbac == 0
+    else:
+        assert contains_rbac == expected
+
+
+@pytest.mark.parametrize('action', [
+    'create', 'delete', 'update', 'read_values', 'write_values',
+    'grant', 'revoke'
+])
+def test_role_contains_rbac_permissions_multiple_rbac_perms(
+        cursor, valueset, new_role, insertuser,
+        new_permission, action):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    rbac_object_types = ['users', 'roles', 'permissions']
+    perms = [new_permission(action, object_type, True, org=organization)
+             for object_type in rbac_object_types]
+    for perm in perms:
+        cursor.execute(
+            'INSERT INTO role_permission_mapping(role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], perm['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
+        role['id'])
+    contains_rbac = cursor.fetchone()[0]
+    assert contains_rbac == 1
+
+
+def test_get_reference_role_id(dictcursor):
+    dictcursor.execute('SELECT get_reference_role_id()')
+    roleid = dictcursor.fetchone()['get_reference_role_id()']
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.roles WHERE id = %s',
+        roleid)
+    role = dictcursor.fetchone()
+    assert role['name'] == 'Read Reference Data'
+
+
+def test_get_current_user_info(dictcursor, allow_read_users, insertuser):
+    user = insertuser[0]
+    org = insertuser[4]
+    auth0id = user['auth0_id']
+    dictcursor.callproc('get_current_user_info', (auth0id,))
+    user_info = dictcursor.fetchone()
+    assert user_info['user_id'] == str(bin_to_uuid(user['id']))
+    assert user_info['organization'] == org['name']
+    assert user_info['auth0_id'] == user['auth0_id']
+
+
+@pytest.mark.parametrize('accepted', [True, False])
+def test_user_org_accepted_tou(
+        dictcursor, new_user, new_organization_no_tou, accepted):
+    if accepted:
+        user = new_user()
+    else:
+        user = new_user(org=new_organization_no_tou())
+    dictcursor.execute(
+        'SELECT user_org_accepted_tou(%s) as accepted',
+        user['id'])
+    assert (dictcursor.fetchone()['accepted'] == 1) is accepted

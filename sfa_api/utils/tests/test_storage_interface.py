@@ -25,6 +25,11 @@ TESTINDICES = {
 }
 
 
+def remove_reference(obj_list):
+    return [obj for obj in obj_list
+            if obj['provider'] != 'Reference']
+
+
 @pytest.fixture(params=[0, 1, 2, 3, 4])
 def startend(request):
     if request.param == 0:
@@ -135,7 +140,7 @@ def test_cursor_commit(sql_app, user):
 
 def test_list_observations(sql_app, user):
     observations = storage_interface.list_observations()
-    for obs in observations:
+    for obs in remove_reference(observations):
         assert obs == demo_observations[obs['observation_id']]
 
 
@@ -276,7 +281,7 @@ def test_delete_observation_does_not_exist(sql_app, user, nocommit_cursor):
 
 def test_list_forecasts(sql_app, user):
     forecasts = storage_interface.list_forecasts()
-    for fx in forecasts:
+    for fx in remove_reference(forecasts):
         assert fx == demo_forecasts[fx['forecast_id']]
 
 
@@ -422,7 +427,7 @@ def test_read_site_invalid_user(sql_app, invalid_user):
 
 def test_list_sites(sql_app, user):
     sites = storage_interface.list_sites()
-    for site in sites:
+    for site in remove_reference(sites):
         assert site == demo_sites[site['site_id']]
 
 
@@ -758,3 +763,25 @@ def test_store_missing_values(
 def test_read_wrong_type(sql_app, user, forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation(forecast_id)
+
+
+@pytest.fixture()
+def fake_user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'auth0|create_me'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.mark.parametrize('run', range(5))
+def test_create_new_user(sql_app, fake_user, run):
+    storage_interface.create_new_user()
+    new_user_roles = storage_interface.list_roles()
+    new_user = storage_interface.get_current_user_info()
+    assert len(new_user_roles) == 1
+    user_role = new_user_roles[0]
+    assert user_role['name'] == f'User role {new_user["user_id"]}'
+    assert len(user_role['permissions']) == 2
+    assert new_user['auth0_id'] == 'auth0|create_me'
+    assert new_user['organization'] == 'Unaffiliated'

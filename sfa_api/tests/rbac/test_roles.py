@@ -26,11 +26,13 @@ def test_get_role(api, new_role):
     assert get_role.status_code == 200
 
 
-def test_list_roles_missing_perms(api, remove_perms):
+def test_list_roles_missing_perms(api, user_id, remove_perms):
     remove_perms('read', 'roles')
     roles = api.get('/roles/', BASE_URL)
     assert roles.status_code == 200
-    assert len(roles.json) == 0
+    user_roles = roles.json
+    assert len(user_roles) == 1
+    assert user_roles[0]['name'] == f'User role {user_id}'
 
 
 def test_create_delete_role(api):
@@ -121,6 +123,23 @@ def test_add_perm_to_role_perm_dne(api, missing_id, new_role):
     perm_dne = api.post(f'/roles/{role_id}/permissions/{missing_id}',
                         BASE_URL)
     assert perm_dne.status_code == 404
+
+
+@pytest.mark.parametrize('object_type', [
+    'roles', 'permissions', 'users']
+)
+def test_add_perm_to_role_external_role_admin_perm(
+        api, new_role, new_perm, external_userid, object_type):
+    role_id = new_role()
+    permission_id = new_perm(object_type=object_type, action='create')
+    add_role_to_user = api.post(
+        f'/users/{external_userid}/roles/{role_id}',
+        BASE_URL)
+    assert add_role_to_user.status_code == 204
+    add_perm_to_role = api.post(
+        f'/roles/{role_id}/permissions/{permission_id}',
+        BASE_URL)
+    assert add_perm_to_role.status_code == 404
 
 
 def test_remove_perm_from_role(api, new_role, new_perm):

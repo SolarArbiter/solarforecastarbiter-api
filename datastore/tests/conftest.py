@@ -52,8 +52,10 @@ def newuuid():
 def new_organization(cursor):
     def fnc():
         out = OrderedDict(id=newuuid(), name=f'org{str(uuid1())[:10]}')
-        cursor.execute('INSERT INTO organizations (id, name) VALUES (%s, %s)',
-                       list(out.values()))
+        cursor.execute(
+            'INSERT INTO organizations (id, name, accepted_tou)'
+            'VALUES (%s, %s, TRUE)',
+            list(out.values()))
         return out
     return fnc
 
@@ -364,3 +366,35 @@ def valueset_observation(valueset, request):
 @pytest.fixture(params=[0, 1])
 def valueset_report(valueset, request):
     return valueset[8][request.param]
+
+
+@pytest.fixture()
+def allow_grant_roles(cursor, new_permission, valueset):
+    org = valueset[0][0]
+    role = valueset[2][0]
+    perm = new_permission('grant', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id)'
+        ' VALUES (%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def allow_revoke_roles(cursor, new_permission, valueset):
+    org = valueset[0][0]
+    role = valueset[2][0]
+    perm = new_permission('revoke', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id)'
+        ' VALUES (%s, %s)', (role['id'], perm['id']))
+
+
+@pytest.fixture()
+def new_organization_no_tou(cursor):
+    def fnc():
+        out = OrderedDict(id=newuuid(), name=f'org{str(uuid1())[:10]}')
+        cursor.execute(
+            'INSERT INTO organizations (id, name, accepted_tou)'
+            'VALUES (%s, %s, FALSE)',
+            list(out.values()))
+        return out
+    return fnc

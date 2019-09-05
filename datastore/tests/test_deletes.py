@@ -45,6 +45,18 @@ def report_obj(site_obj, valueset, new_report, new_observation, new_forecast):
 
 
 @pytest.fixture()
+def allow_create(cursor, new_permission, valueset):
+    def do(what):
+        org = valueset[0][0]
+        role = valueset[2][0]
+        perm = new_permission('create', what, False, org=org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id)'
+            ' VALUES (%s, %s)', (role['id'], perm['id']))
+    return do
+
+
+@pytest.fixture()
 def allow_delete(cursor, new_permission, valueset):
     def do(what):
         org = valueset[0][0]
@@ -318,28 +330,51 @@ def allow_update_users(allow_update):
     allow_update('users')
 
 
-def test_remove_role_from_user(cursor, role_user_obj, allow_update_users):
-    auth0id, userid, roleid = role_user_obj
+@pytest.mark.parametrize('userorg,roleorg', [
+    (False, True),
+    (True, True),
+    pytest.param(True, False, marks=pytest.mark.xfail(strict=True)),
+    pytest.param(False, False, marks=pytest.mark.xfail(strict=True)),
+])
+def test_remove_role_from_user(
+        cursor, valueset, new_role, allow_revoke_roles,
+        new_user, new_permission, roleorg, userorg):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    auth0id = user['auth0_id']
+    if roleorg:
+        newrole = new_role(org=org)
+    else:
+        newrole = new_role()
+    if userorg:
+        newuser = new_user(org=org)
+    else:
+        newuser = new_user()
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) '
+        'VALUES (%s, %s)', (newuser['id'], newrole['id']))
+    uid = str(bin_to_uuid(newuser['id']))
+    rid = str(bin_to_uuid(newrole['id']))
     cursor.execute(
         'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
-        ' user_id = UUID_TO_BIN(%s, 1)', userid)
+        ' user_id = UUID_TO_BIN(%s, 1)', uid)
     assert cursor.fetchone()[0] > 0
-    cursor.callproc('remove_role_from_user', (auth0id, roleid, userid))
+    cursor.callproc('remove_role_from_user', (auth0id, rid, uid))
     cursor.execute(
         'SELECT COUNT(role_id) FROM arbiter_data.user_role_mapping WHERE'
-        ' user_id = UUID_TO_BIN(%s, 1)', userid)
+        ' user_id = UUID_TO_BIN(%s, 1)', uid)
     assert cursor.fetchone()[0] == 0
 
 
 @pytest.mark.parametrize('userorg,roleorg', [
     (False, False),
-    (False, True),
-    pytest.param(True, False, marks=pytest.mark.xfail(strict=True)),
-    pytest.param(True, True, marks=pytest.mark.xfail(strict=True))
+    pytest.param(False, True, marks=pytest.mark.xfail(strict=True)),
+    pytest.param(True, True, marks=pytest.mark.xfail(strict=True)),
+    (True, False),
 ])
-def test_remove_role_from_user_bad_org(cursor, valueset, new_role,
-                                       new_user, new_permission,
-                                       roleorg, userorg):
+def test_remove_role_from_user_bad_org(
+        cursor, valueset, new_role, allow_revoke_roles,
+        new_user, new_permission, roleorg, userorg):
     org = valueset[0][0]
     user = valueset[1][0]
     role = valueset[2][0]

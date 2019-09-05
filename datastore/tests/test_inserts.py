@@ -9,7 +9,7 @@ import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid, newuuid
+from conftest import bin_to_uuid, uuid_to_bin, newuuid
 
 
 @pytest.fixture()
@@ -567,7 +567,7 @@ def test_create_user(dictcursor, valueset_org):
 
 def test_create_role(dictcursor, allow_create, insertuser):
     auth0id = insertuser[0]['auth0_id']
-    strid = str(uuid.uuid1())
+    strid = str(bin_to_uuid(newuuid()))
     dictcursor.callproc('create_role', (auth0id, strid, 'newrole',
                                         'A brandh new role!'))
     dictcursor.execute(
@@ -577,6 +577,47 @@ def test_create_role(dictcursor, allow_create, insertuser):
     assert res['name'] == 'newrole'
     assert res['description'] == 'A brandh new role!'
     assert res['organization_id'] == insertuser[-4]['id']
+
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.role_permission_mapping '
+        'WHERE role_id = UUID_TO_BIN(%s, 1)', (strid,))
+    mapping = dictcursor.fetchone()
+    read_perm_id = mapping['permission_id']
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permissions WHERE '
+        'id = %s', (read_perm_id,))
+    read_role_perm = dictcursor.fetchone()
+    assert read_role_perm['object_type'] == 'roles'
+    assert read_role_perm['organization_id'] == insertuser[-4]['id']
+    assert read_role_perm['description'] == f'Read Role {strid}'
+    assert read_role_perm['applies_to_all'] == 0
+    assert 'created_at' in read_role_perm
+
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', (read_perm_id,))
+    read_role_mapping = dictcursor.fetchone()
+    assert read_role_mapping['permission_id'] == read_perm_id
+    assert str(bin_to_uuid(read_role_mapping['object_id'])) == strid
+
+
+def test_create_and_share_role(
+        dictcursor, allow_create, allow_grant_roles, insertuser,
+        new_user):
+    auth0id = insertuser[0]['auth0_id']
+    user = new_user()
+    strid = str(bin_to_uuid(newuuid()))
+    dictcursor.callproc('create_role', (auth0id, strid, 'newrole',
+                                        'A brandh new role!'))
+    dictcursor.callproc('add_role_to_user', (auth0id,
+                                             str(bin_to_uuid(user['id'])),
+                                             strid))
+    dictcursor.execute(
+        'SELECT * FROM user_role_mapping WHERE user_id = %s AND role_id = %s',
+        (user['id'], uuid_to_bin(uuid.UUID(strid))))
+    mappings = dictcursor.fetchall()
+    roles = [str(bin_to_uuid(mapping['role_id'])) for mapping in mappings]
+    assert strid in roles
 
 
 def test_create_role_fail(dictcursor, insertuser):
@@ -713,6 +754,26 @@ def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
     assert e.value.args[0] == 1142
 
 
+@pytest.mark.parametrize('object_type', [
+    'roles', 'permissions', 'users']
+)
+def test_add_permission_to_role_rbac_on_external_role(
+        cursor, new_permission, new_user, new_role,
+        insertuser, object_type):
+    user, _, _, _, org, _, _, _ = insertuser
+    perm = new_permission('create', object_type, False, org=org)
+    share_user = new_user()
+    role = new_role(org=org)
+    cursor.execute('INSERT INTO arbiter_data.user_role_mapping '
+                   '(user_id, role_id) VALUES (%s, %s)',
+                   (share_user['id'], role['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_permission_to_role', (
+            user['auth0_id'], str(bin_to_uuid(role['id'])),
+            str(bin_to_uuid(perm['id']))))
+        assert e.value.args[0] == 1142
+
+
 def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     user, _, _, _, org, role, _, _ = insertuser
     perm = new_permission('read', 'sites', False, org=org)
@@ -723,8 +784,9 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
     assert e.value.args[0] == 1142
 
 
-def test_add_role_to_user(cursor, new_role, allow_update_users,
-                          insertuser):
+def test_add_role_to_user(
+        cursor, new_role, allow_create,
+        allow_grant_roles, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     cursor.callproc('add_role_to_user', (
@@ -735,10 +797,58 @@ def test_add_role_to_user(cursor, new_role, allow_update_users,
     assert cursor.fetchall()[0][0]
 
 
-def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
-                                       allow_update_users):
+def test_add_role_to_user_outside_org(
+        cursor, new_role, allow_create, allow_grant_roles,
+        new_user, insertuser):
     user, _, _, _, org, _, _, _ = insertuser
-    role = new_role()
+    role = new_role(org=org)
+    share_user = new_user()
+    cursor.callproc('add_role_to_user', (
+        user['auth0_id'], str(bin_to_uuid(share_user['id'])),
+        str(bin_to_uuid(role['id']))))
+    cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
+                   'role_id = %s', (share_user['id'], role['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_admin_role(
+        cursor, new_role, allow_create, allow_grant_roles,
+        new_permission, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
+    perm = new_permission('create', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        f'VALUES(%s, %s)', (role['id'], perm['id']))
+    cursor.callproc('add_role_to_user', (
+        user['auth0_id'], str(bin_to_uuid(user['id'])),
+        str(bin_to_uuid(role['id']))))
+    cursor.execute('SELECT 1 from user_role_mapping where user_id = %s and '
+                   'role_id = %s', (user['id'], role['id']))
+    assert cursor.fetchall()[0][0]
+
+
+def test_add_role_to_user_admin_role_outside_org(
+        allow_create, cursor, new_role, allow_grant_roles,
+        new_user, new_permission, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    share_user = new_user()
+    role = new_role(org=org)
+    perm = new_permission('create', 'roles', True, org=org)
+    cursor.execute(
+        'INSERT INTO role_permission_mapping (role_id, permission_id) '
+        f'VALUES(%s, %s)', (role['id'], perm['id']))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(share_user['id'])),
+            str(bin_to_uuid(role['id']))))
+    assert e.value.args[0] == 1142
+
+
+def test_add_role_to_user_missing_perm(
+        cursor, new_role, insertuser):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(user['id'])),
@@ -746,12 +856,27 @@ def test_add_role_to_user_not_same_org(cursor, new_role, insertuser,
     assert e.value.args[0] == 1142
 
 
-def test_add_role_to_user_denied(cursor, new_role, insertuser):
+def test_add_role_to_user_user_dne(
+        cursor, allow_create, new_role, allow_grant_roles,
+        insertuser):
     user, _, _, _, org, _, _, _ = insertuser
     role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
-            user['auth0_id'], str(bin_to_uuid(user['id'])),
+            user['auth0_id'], str(bin_to_uuid(newuuid())),
+            str(bin_to_uuid(role['id']))))
+    assert e.value.args[0] == 1142
+
+
+def test_add_role_to_user_no_tou(
+        cursor, allow_create, new_role, allow_grant_roles,
+        insertuser, new_user, new_organization_no_tou):
+    user, _, _, _, org, _, _, _ = insertuser
+    role = new_role(org=org)
+    share_user = new_user(org=new_organization_no_tou())
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('add_role_to_user', (
+            user['auth0_id'], str(bin_to_uuid(share_user['id'])),
             str(bin_to_uuid(role['id']))))
     assert e.value.args[0] == 1142
 
@@ -937,3 +1062,78 @@ def test_store_report_status_denied(
              new_status)
         )
     assert e.value.args[0] == 1142
+
+
+def test_create_user_if_not_exist(dictcursor, valueset_org):
+    dictcursor.execute(
+        'SELECT id FROM arbiter_data.organizations '
+        'WHERE name = "Unaffiliated"')
+    unaffiliated_id = dictcursor.fetchone()['id']
+    auth0id = 'auth0|blahblah'
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.users WHERE auth0_id = %s',
+        (auth0id,))
+    assert len(dictcursor.fetchall()) == 0
+    dictcursor.callproc('create_user_if_not_exists', (auth0id,))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.users WHERE auth0_id = %s',
+        (auth0id,))
+    user = dictcursor.fetchone()
+    user_id = user['id']
+    assert user['auth0_id'] == auth0id
+    assert user['organization_id'] == unaffiliated_id
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.user_role_mapping WHERE '
+        'user_id = %s', (user_id,))
+    role_mappings = dictcursor.fetchall()
+    assert len(role_mappings) == 2
+
+    role_ids = [role['role_id'] for role in role_mappings]
+    for role_id in role_ids:
+        dictcursor.execute(
+            'SELECT * FROM arbiter_data.roles WHERE id = %s',
+            role_id)
+        role = dictcursor.fetchone()
+        if role['name'].startswith('User role'):
+            default_role = role
+        else:
+            reference_role = role
+    assert reference_role['name'] == 'Read Reference Data'
+    assert (reference_role['description'] ==
+            'Role to read reference sites, forecasts, and observations')
+    assert default_role['description'] == 'Default role'
+    assert default_role['organization_id'] == unaffiliated_id
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.permissions WHERE id IN '
+        '(SELECT permission_id FROM arbiter_data.role_permission_mapping '
+        'WHERE role_id = %s)',
+        (default_role['id'],))
+    default_permissions = dictcursor.fetchall()
+    assert len(default_permissions) == 2
+
+    for p in default_permissions:
+        if (p['description'] ==
+                f'Read Self User {str(bin_to_uuid(user["id"]))}'):
+            read_self = p
+        if (p['description'] ==
+                f'Read User Role {str(bin_to_uuid(default_role["id"]))}'):
+            read_role = p
+    assert read_self['action'] == 'read'
+    assert read_self['object_type'] == 'users'
+    assert read_self['organization_id'] == unaffiliated_id
+    assert read_role['action'] == 'read'
+    assert read_role['object_type'] == 'roles'
+    assert read_role['organization_id'] == unaffiliated_id
+
+    dictcursor.execute(
+        'SELECT object_id FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', read_self['id'])
+    perm_user_ids = dictcursor.fetchall()
+    assert len(perm_user_ids) == 1
+    assert perm_user_ids[0]['object_id'] == user_id
+    dictcursor.execute(
+        'SELECT object_id FROM arbiter_data.permission_object_mapping '
+        'WHERE permission_id = %s', read_role['id'])
+    perm_role_ids = dictcursor.fetchall()
+    assert len(perm_role_ids) == 1
+    assert perm_role_ids[0]['object_id'] == default_role['id']

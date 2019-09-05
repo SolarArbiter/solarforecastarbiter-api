@@ -1,5 +1,3 @@
-"""Currently just method stubs.
-"""
 from flask import Blueprint, jsonify
 from flask.views import MethodView
 
@@ -146,6 +144,15 @@ class UserRolesManagementView(MethodView):
         return '', 204
 
 
+class CurrentUserView(MethodView):
+    def get(self):
+        """Get info about the current user.
+        """
+        storage = get_storage()
+        user_info = storage.get_current_user_info()
+        return jsonify(user_info), 200
+
+
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
@@ -155,3 +162,6 @@ user_blp.add_url_rule(
     '/<user_id>/roles/<role_id>',
     view_func=UserRolesManagementView.as_view('user_roles_management')
 )
+user_blp.add_url_rule(
+    '/current',
+    view_func=CurrentUserView.as_view('current_user'))

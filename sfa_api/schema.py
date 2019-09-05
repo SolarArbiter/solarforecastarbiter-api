@@ -569,7 +569,7 @@ class PermissionPostSchema(ma.Schema):
         required=True,
         validate=validate.OneOf(['create', 'read', 'update',
                                  'delete', 'read_values', 'write_values',
-                                 'delete_values']),
+                                 'delete_values', 'grant', 'revoke']),
     )
     object_type = ma.String(
         title="Object Type",
@@ -625,6 +625,7 @@ class RoleSchema(RolePostSchema):
     )
     organization = ma.String(title="Organization")
     permissions = ma.Dict()
+    users = ma.Dict()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 

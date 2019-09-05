@@ -1354,3 +1354,21 @@ def store_report_status(report_id, status):
         If the user does not haveupdate permission on the report
     """
     _call_procedure('store_report_status', report_id, status)
+
+
+def get_current_user_info():
+    user_info = _call_procedure_for_single('get_current_user_info')
+    return user_info
+
+
+def create_new_user():
+    _call_procedure('create_user_if_not_exists')
+
+
+def user_exists():
+    with get_cursor('dict') as cursor:
+        query = f'SELECT does_user_exist(%s)'
+        query_cmd = partial(cursor.execute, query, (current_user))
+        try_query(query_cmd)
+        exists = cursor.fetchone()
+    return exists.get(f"does_user_exist('{current_user}')") == 1
