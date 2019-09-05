@@ -763,3 +763,32 @@ def test_store_missing_values(
 def test_read_wrong_type(sql_app, user, forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_observation(forecast_id)
+
+
+@pytest.fixture()
+def fake_user(sql_app):
+    ctx = sql_app.test_request_context()
+    ctx.user = 'auth0|create_me'
+    ctx.push()
+    yield
+    ctx.pop()
+
+
+@pytest.fixture()
+def mock_create_user(mocker):
+    new_user = mocker.patch('sfa_api.utils.storage_interface.create_new_user')
+    new_user.side_effect = storage_interface.create_new_user()
+    return new_user
+
+
+@pytest.mark.parametrize('run', range(5))
+def test_create_new_user(sql_app, fake_user, run, mock_create_user):
+    mock_create_user.assert_called()
+    new_user_roles = storage_interface.list_roles()
+    new_user = storage_interface.get_current_user_info()
+    assert len(new_user_roles) == 1
+    user_role = new_user_roles[0]
+    assert user_role['name'] == f'User role {new_user["user_id"]}'
+    assert len(user_role['permissions']) == 2
+    assert new_user['auth0_id'] == 'auth0|create_me'
+    assert new_user['organization'] == 'Unaffiliated'

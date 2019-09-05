@@ -120,3 +120,13 @@ def test_validate_user_existence(app, mocked_user_exists_storage,
         else:
             assert existence is True
             exists.assert_called()
+
+
+def test_request_user_info(sql_app, auth_token, user_id):
+    ctx = sql_app.test_request_context()
+    ctx.access_token = auth_token
+    ctx.push()
+    user_info = auth.request_user_info()
+    assert user_info['name'] == 'testing@solarforecastarbiter.org'
+    assert user_info['sub'] == 'auth0|5be343df7025406237820b85'
+    ctx.pop()
