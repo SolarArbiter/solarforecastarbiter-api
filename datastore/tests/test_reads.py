@@ -736,6 +736,25 @@ def test_role_granted_to_external_users(
     assert granted[0] == expected
 
 
+def test_role_granted_to_external_users_multiple_users(
+        cursor, valueset, new_role, insertuser, new_organization,
+        new_user, allow_grant_roles):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    internal_users = [new_user(org=organization) for _ in range(4)]
+    external_users = [new_user() for _ in range(4)]
+    users = internal_users + external_users
+    for user in users:
+        cursor.execute(
+            'INSERT INTO user_role_mapping (user_id, role_id) VALUES '
+            '(%s, %s)', (user['id'], role['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_granted_to_external_users(%s)',
+        role['id'])
+    granted = cursor.fetchone()
+    assert granted[0] == 1
+
+
 @pytest.mark.parametrize('action', [
     'read', 'create', 'delete', 'update', 'read_values',
     'write_values', 'grant', 'revoke'])
@@ -760,11 +779,34 @@ def test_role_contains_rbac_permissions(
     cursor.execute(
         'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
         role['id'])
-    granted = cursor.fetchone()[0]
+    contains_rbac = cursor.fetchone()[0]
     if action == 'read':
-        assert granted == 0
+        assert contains_rbac == 0
     else:
-        assert granted == expected
+        assert contains_rbac == expected
+
+
+@pytest.mark.parametrize('action', [
+    'create', 'delete', 'update', 'read_values', 'write_values',
+    'grant', 'revoke'
+])
+def test_role_contains_rbac_permissions_multiple_rbac_perms(
+        cursor, valueset, new_role, insertuser,
+        new_permission, action):
+    organization = insertuser[4]
+    role = new_role(org=organization)
+    rbac_object_types = ['users', 'roles', 'permissions']
+    perms = [new_permission(action, object_type, True, org=organization)
+             for object_type in rbac_object_types]
+    for perm in perms:
+        cursor.execute(
+            'INSERT INTO role_permission_mapping(role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], perm['id']))
+    cursor.execute(
+        'SELECT arbiter_data.role_contains_rbac_permissions(%s)',
+        role['id'])
+    contains_rbac = cursor.fetchone()[0]
+    assert contains_rbac == 1
 
 
 def test_get_reference_role_id(dictcursor):
