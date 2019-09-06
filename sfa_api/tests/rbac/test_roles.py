@@ -24,6 +24,13 @@ def test_get_role(api, new_role):
     role_id = new_role()
     get_role = api.get(f'/roles/{role_id}', BASE_URL)
     assert get_role.status_code == 200
+    role = get_role.json
+    assert role['name'] == ROLE['name']
+    assert role['description'] == ROLE['description']
+    assert role['organization'] == 'Organization 1'
+    assert type(role['permissions']) == dict
+    assert len(role['permissions'].keys()) == 1
+    assert type(role['users']) == dict
 
 
 def test_list_roles_missing_perms(api, user_id, remove_perms):

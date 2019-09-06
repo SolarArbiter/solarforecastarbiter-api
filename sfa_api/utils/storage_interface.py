@@ -967,6 +967,7 @@ def read_role(role_id):
     """
     role = _call_procedure_for_single('read_role', role_id)
     role['permissions'] = json.loads(role['permissions'])
+    role['users'] = json.loads(role['users'])
     return role
 
 
