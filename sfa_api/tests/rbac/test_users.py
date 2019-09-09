@@ -126,3 +126,15 @@ def test_current_user(api):
     assert user['auth0_id'] == 'auth0|5be343df7025406237820b85'
     assert user['organization'] == 'Organization 1'
     assert user['user_id'] == '0c90950a-7cca-11e9-a81f-54bf64606445'
+
+
+def test_add_role_to_user_already_granted(api, user_id, new_role):
+    role_id = new_role()
+    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    assert add_role.status_code == 204
+    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    user = get_user.json
+    roles_on_user = user['roles'].keys()
+    assert role_id in roles_on_user
+    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    assert add_role.status_code == 404

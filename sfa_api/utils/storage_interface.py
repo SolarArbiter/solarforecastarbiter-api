@@ -330,6 +330,8 @@ def list_observations(site_id=None):
     Raises
     ------
     StorageAuthError
+excep pymysql.err.IntegrityError:
+    raise StorageAuthError()
         If the user does not have access to observations with site_id or
         no observations exists for that id
     """
@@ -903,9 +905,14 @@ def add_role_to_user(user_id, role_id):
           permissions to read role and user.
         - If the calling user does not have
           permission to update the user.
+        - If the user has already been granted
+          the role.
     """
-    _call_procedure('add_role_to_user',
-                    user_id, role_id)
+    try:
+        _call_procedure('add_role_to_user',
+                        user_id, role_id)
+    except pymysql.err.IntegrityError:
+        raise StorageAuthError()
 
 
 def list_roles():
@@ -1001,11 +1008,15 @@ def add_permission_to_role(role_id, permission_id):
     ------
     StorageAuthError
         - If the user does not have permission to update the role.
+        - If the role already contains the permission.
         - If the role or permission does not exist.
-        - If the iser does not have permission to read the role and
+        - If the user does not have permission to read the role and
           permission.
     """
-    _call_procedure('add_permission_to_role', role_id, permission_id)
+    try:
+        _call_procedure('add_permission_to_role', role_id, permission_id)
+    except pymysql.err.IntegrityError:
+        raise StorageAuthError()
 
 
 def remove_permission_from_role(role_id, permission_id):

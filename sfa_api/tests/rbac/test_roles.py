@@ -192,3 +192,16 @@ def test_add_perm_to_role_missing_perm(api, new_role, new_perm, remove_perms):
     failed_add = api.post(f'/roles/{role_id}/permissions/{perm_id}',
                           BASE_URL)
     assert failed_add.status_code == 404
+
+
+def test_add_perm_to_role_already_granted(api, new_role, new_perm, missing_id):
+    role_id = new_role()
+    perm_id = new_perm()
+    perms = api.get('/permissions/', BASE_URL)
+    assert perm_id in [perm['permission_id'] for perm in perms.json]
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 204
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 404
