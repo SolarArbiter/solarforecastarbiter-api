@@ -1,6 +1,3 @@
-import pdb
-
-
 class BaseAPIException(Exception):
     """Base exception to be thrown from within API code to trigger
     an immediate HTTP response.
