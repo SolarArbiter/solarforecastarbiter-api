@@ -1,3 +1,6 @@
+import pdb
+
+
 class BaseAPIException(Exception):
     """Base exception to be thrown from within API code to trigger
     an immediate HTTP response.
@@ -26,8 +29,10 @@ class BaseAPIException(Exception):
         {'error0': ['error message'],
          'fieldname': [(error1, error2)]}
     """
-    def __init__(self, status_code, errors={}, **kwargs):
+    def __init__(self, status_code, errors=None, **kwargs):
         Exception.__init__(self)
+        if errors is None:
+            errors = {}
         errors.update(kwargs)
         for key, error in errors.items():
             if not isinstance(error, list):
@@ -37,7 +42,7 @@ class BaseAPIException(Exception):
 
 
 class BadAPIRequest(BaseAPIException):
-    def __init__(self, errors={}, **kwargs):
+    def __init__(self, errors=None, **kwargs):
         super().__init__(400, errors, **kwargs)
 
 
