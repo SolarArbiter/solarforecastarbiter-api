@@ -137,4 +137,6 @@ def test_add_role_to_user_already_granted(api, user_id, new_role):
     roles_on_user = user['roles'].keys()
     assert role_id in roles_on_user
     add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
-    assert add_role.status_code == 404
+    assert add_role.status_code == 400
+    assert add_role.json == {"errors": {
+        "user": ["User already granted role."]}}

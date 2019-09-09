@@ -204,4 +204,6 @@ def test_add_perm_to_role_already_granted(api, new_role, new_perm, missing_id):
     assert added_perm.status_code == 204
     added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
                           BASE_URL)
-    assert added_perm.status_code == 404
+    assert added_perm.status_code == 400
+    assert added_perm.json == {"errors": {
+        "role": ["Role already contains permission."]}}

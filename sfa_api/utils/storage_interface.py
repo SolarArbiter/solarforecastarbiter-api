@@ -22,7 +22,8 @@ from sqlalchemy.pool import QueuePool
 
 from sfa_api import schema, json
 from sfa_api.utils.auth import current_user
-from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
+from sfa_api.utils.errors import (StorageAuthError, DeleteRestrictionError,
+                                  BadAPIRequest)
 
 
 # min and max timestamps storable in mysql
@@ -330,8 +331,6 @@ def list_observations(site_id=None):
     Raises
     ------
     StorageAuthError
-excep pymysql.err.IntegrityError:
-    raise StorageAuthError()
         If the user does not have access to observations with site_id or
         no observations exists for that id
     """
@@ -912,7 +911,8 @@ def add_role_to_user(user_id, role_id):
         _call_procedure('add_role_to_user',
                         user_id, role_id)
     except pymysql.err.IntegrityError:
-        raise StorageAuthError()
+        raise BadAPIRequest(
+            user="User already granted role.")
 
 
 def list_roles():
@@ -1016,7 +1016,7 @@ def add_permission_to_role(role_id, permission_id):
     try:
         _call_procedure('add_permission_to_role', role_id, permission_id)
     except pymysql.err.IntegrityError:
-        raise StorageAuthError()
+        raise BadAPIRequest(role="Role already contains permission.")
 
 
 def remove_permission_from_role(role_id, permission_id):
