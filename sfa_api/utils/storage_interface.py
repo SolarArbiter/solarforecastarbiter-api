@@ -904,15 +904,18 @@ def add_role_to_user(user_id, role_id):
           permissions to read role and user.
         - If the calling user does not have
           permission to update the user.
+    BadAPIRequest
         - If the user has already been granted
           the role.
     """
     try:
         _call_procedure('add_role_to_user',
                         user_id, role_id)
-    except pymysql.err.IntegrityError:
-        raise BadAPIRequest(
-            user="User already granted role.")
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                user="User already granted role.")
 
 
 def list_roles():
@@ -1008,15 +1011,19 @@ def add_permission_to_role(role_id, permission_id):
     ------
     StorageAuthError
         - If the user does not have permission to update the role.
-        - If the role already contains the permission.
         - If the role or permission does not exist.
         - If the user does not have permission to read the role and
           permission.
+    BadAPIRequest
+        - If the role already contains the permission.
     """
     try:
         _call_procedure('add_permission_to_role', role_id, permission_id)
-    except pymysql.err.IntegrityError:
-        raise BadAPIRequest(role="Role already contains permission.")
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                role="Role already contains permission.")
 
 
 def remove_permission_from_role(role_id, permission_id):
