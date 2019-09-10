@@ -140,3 +140,17 @@ def test_add_role_to_user_already_granted(api, user_id, new_role):
     assert add_role.status_code == 400
     assert add_role.json == {"errors": {
         "user": ["User already granted role."]}}
+
+
+def test_add_role_to_user_already_granted_lost_perms(
+        api, user_id, new_role, remove_perms):
+    role_id = new_role()
+    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    assert add_role.status_code == 204
+    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    user = get_user.json
+    roles_on_user = user['roles'].keys()
+    remove_perms('grant', 'roles')
+    assert role_id in roles_on_user
+    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    assert add_role.status_code == 404
