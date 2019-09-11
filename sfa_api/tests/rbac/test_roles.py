@@ -24,6 +24,13 @@ def test_get_role(api, new_role):
     role_id = new_role()
     get_role = api.get(f'/roles/{role_id}', BASE_URL)
     assert get_role.status_code == 200
+    role = get_role.json
+    assert role['name'] == ROLE['name']
+    assert role['description'] == ROLE['description']
+    assert role['organization'] == 'Organization 1'
+    assert type(role['permissions']) == dict
+    assert len(role['permissions'].keys()) == 1
+    assert type(role['users']) == dict
 
 
 def test_list_roles_missing_perms(api, user_id, remove_perms):
@@ -185,3 +192,33 @@ def test_add_perm_to_role_missing_perm(api, new_role, new_perm, remove_perms):
     failed_add = api.post(f'/roles/{role_id}/permissions/{perm_id}',
                           BASE_URL)
     assert failed_add.status_code == 404
+
+
+def test_add_perm_to_role_already_granted(api, new_role, new_perm, missing_id):
+    role_id = new_role()
+    perm_id = new_perm()
+    perms = api.get('/permissions/', BASE_URL)
+    assert perm_id in [perm['permission_id'] for perm in perms.json]
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 204
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 400
+    assert added_perm.json == {"errors": {
+        "role": ["Role already contains permission."]}}
+
+
+def test_add_perm_to_role_already_granted_lost_perms(
+        api, new_role, new_perm, missing_id, remove_perms):
+    role_id = new_role()
+    perm_id = new_perm()
+    perms = api.get('/permissions/', BASE_URL)
+    assert perm_id in [perm['permission_id'] for perm in perms.json]
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 204
+    remove_perms('update', 'roles')
+    added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
+                          BASE_URL)
+    assert added_perm.status_code == 404

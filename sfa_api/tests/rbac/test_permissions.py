@@ -23,6 +23,13 @@ def test_create_permission(api):
     perm_id = create_perm.data.decode('utf-8')
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     assert get_perm.status_code == 200
+    perm = get_perm.json
+    assert perm['description'] == PERMISSION['description']
+    assert perm['applies_to_all'] == PERMISSION['applies_to_all']
+    assert perm['object_type'] == PERMISSION['object_type']
+    assert perm['action'] == PERMISSION['action']
+    assert type(perm['objects']) == dict
+    assert perm['organization'] == 'Organization 1'
 
 
 def test_create_permission_no_perms(api, remove_perms):

@@ -22,7 +22,8 @@ from sqlalchemy.pool import QueuePool
 
 from sfa_api import schema, json
 from sfa_api.utils.auth import current_user
-from sfa_api.utils.errors import StorageAuthError, DeleteRestrictionError
+from sfa_api.utils.errors import (StorageAuthError, DeleteRestrictionError,
+                                  BadAPIRequest)
 
 
 # min and max timestamps storable in mysql
@@ -903,9 +904,18 @@ def add_role_to_user(user_id, role_id):
           permissions to read role and user.
         - If the calling user does not have
           permission to update the user.
+    BadAPIRequest
+        - If the user has already been granted
+          the role.
     """
-    _call_procedure('add_role_to_user',
-                    user_id, role_id)
+    try:
+        _call_procedure('add_role_to_user',
+                        user_id, role_id)
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                user="User already granted role.")
 
 
 def list_roles():
@@ -967,6 +977,7 @@ def read_role(role_id):
     """
     role = _call_procedure_for_single('read_role', role_id)
     role['permissions'] = json.loads(role['permissions'])
+    role['users'] = json.loads(role['users'])
     return role
 
 
@@ -1001,10 +1012,18 @@ def add_permission_to_role(role_id, permission_id):
     StorageAuthError
         - If the user does not have permission to update the role.
         - If the role or permission does not exist.
-        - If the iser does not have permission to read the role and
+        - If the user does not have permission to read the role and
           permission.
+    BadAPIRequest
+        - If the role already contains the permission.
     """
-    _call_procedure('add_permission_to_role', role_id, permission_id)
+    try:
+        _call_procedure('add_permission_to_role', role_id, permission_id)
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                role="Role already contains permission.")
 
 
 def remove_permission_from_role(role_id, permission_id):
