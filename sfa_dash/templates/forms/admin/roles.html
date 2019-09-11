@@ -6,6 +6,7 @@
   {% block tools %}
     <input type="text" placeholder="Search" class="search">
   {% endblock %}
+  <a role="button" class="btn btn-primary" href="{{ url_for('admin.create_role') }}">Create new Role</a>
 </div>
 <table class="roles-table table results">
   <thead>
@@ -18,6 +19,9 @@
     </tr>
   </thead>
   <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td>
+    </tr>
       {% for role in table_data %}
         <tr>
             <td><a href="{{ url_for('admin.role_view', uuid=role['role_id']) }}">{{ role["name"] }}</a></td>

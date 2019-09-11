@@ -1,0 +1,10 @@
+{% macro data_row(row_values, index) %}
+<tr visible="true">
+  <td><input type="checkbox" name="role-permission-{{ index }}" value="{{ row_values['permission_id'] }}"></td>
+  <td>{{ row_values['description'] }}</td>
+  <td>{{ row_values['action']}}</td>
+  <td>{{ row_values['object_type']}}</td>
+  <td>{{ row_values['permission_id']}}</td>
+</tr> 
+{% endmacro %}
+

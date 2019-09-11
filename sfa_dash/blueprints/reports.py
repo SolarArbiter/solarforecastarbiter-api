@@ -6,6 +6,7 @@ from requests.exceptions import HTTPError
 from solarforecastarbiter.reports.main import report_to_html_body
 from sfa_dash.api_interface import observations, forecasts, sites, reports
 from sfa_dash.blueprints.base import BaseView
+from sfa_dash.blueprints.util import filter_form_fields
 
 
 class ReportsView(BaseView):
@@ -49,21 +50,13 @@ class ReportForm(BaseView):
             "page_data": self.get_pairable_objects(),
         }
 
-    def field_values(self, prefix, form_data):
-        """Return a list of values of form elements where the name atribute starts with
-        prefix.
-        """
-        return [form_data[key]
-                for key in form_data.keys()
-                if key.startswith(prefix)]
-
     def zip_object_pairs(self, form_data):
         """Create a list of observation, forecast tuples from the the
         (forecast-n, observation-n) input elements inserted by
         report-handling.js
         """
-        fx = self.field_values('forecast-id-', form_data)
-        obs = self.field_values('observation-id-', form_data)
+        fx = filter_form_fields('forecast-id-', form_data)
+        obs = filter_form_fields('observation-id-', form_data)
         pairs = list(zip(fx, obs))
         return pairs
 

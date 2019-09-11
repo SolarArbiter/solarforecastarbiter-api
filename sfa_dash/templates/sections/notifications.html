@@ -2,7 +2,7 @@
 <div class="messages">
   <ul class="message-list">
     {% for title, message in messages.items() %}
-      <li class="alert alert-success"><p><b>{{ title }}: </b>{{ message | join(', ') }}</p></li> 
+      <li class="alert alert-success"><p><b>{{ title }}: </b>{{ message | join(', ') | safe}}</p></li> 
 	{% endfor %}
   </ul>
 </div>
@@ -11,7 +11,7 @@
 <div class="errors">
   <ul class="error-list">
       {% for title, error in errors.items() %}
-      <li class="alert alert-danger"><p><b>{{ title }}: </b>{{ error | join(', ') }}</p></li>
+      <li class="alert alert-danger"><p><b>{{ title }}: </b>{{ error | join(', ') | safe}}</p></li>
       {% endfor %}
   </ul>
 </div>

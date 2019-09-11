@@ -231,3 +231,29 @@ def timeseries_adapter(type_, metadata, json_value_response):
         data = io_utils.json_payload_to_observation_df(json_value_response)
         return timeseries.generate_observation_figure(
             obj, data, return_components=True)
+
+
+def filter_form_fields(prefix, form_data):
+    """Creates a list of values from a dictionary where
+    keys start with prefix. Mainly used for gathering lists
+    from form data.
+        e.g. If a role form's permissions fields are prefixed
+             with "role-permission-<index>" passing in a prefix
+             if 'role-permission-' will return all of the inputs
+             values as a list.
+
+    Parameters
+    ----------
+    prefix: str
+        The key prefix to search for.
+    form_data: Dict
+        The dictionary of form data to search for.
+
+    Returns
+    -------
+    list
+        List of all values where the corresponding key began with prefix.
+    """
+    return [form_data[key]
+            for key in form_data.keys()
+            if key.startswith(prefix)]

@@ -4,6 +4,7 @@
 {% endif %}
 {% block dash %}
 <h2 class="page-title">Solar Forecast Arbiter Dashboard</h2>
+{% include "sections/notifications.html" %}
 {% if user is none %}
 <p>Please <a href="{{ url_for('auth0.login') }}">login</a> to access the dashboard.</p>
 {% else %}

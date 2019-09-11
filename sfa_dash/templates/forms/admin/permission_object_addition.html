@@ -1,0 +1,58 @@
+{% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% import "forms/admin/permission_macros.jinja" as table_macros %}
+{% set page_title = 'Add Objects to Permission' %}
+{% if data_type is not defined %}
+  {% set data_type="observation" %}
+{% endif %}
+{% if table_data is not defined %}
+  {% set table_data={} %}
+{% endif %}
+{% if data_type == 'site' %}
+  {% set row_macro = table_macros.site_row %}
+{% else %}
+{% set row_macro = table_macros.data_row %}
+{% endif %}
+{% block content %}
+{% include "sections/notifications.html" %}
+{% include "data/metadata/permission_metadata.html" %}
+<form action="{{ url_for('admin.permission_object_addition', uuid=permission['permission_id']) }}" method="post" enctype="application/json" id="permission-form">
+    <p>Creating a new permission for data of type '{{ data_type | convert_data_type}}'.</p>
+    <div class="form-element full-width collapse show" id="object-selector">
+      <div class="permissions-object-table">
+        <label>{{ data_type | convert_data_type }}s</label>
+        <p>Select the {{ data_type | convert_data_type}}s to allow the action on.</p>
+        <div class="tools permissions-objects-table mt-1">
+          <input type="text" placeholder="Search" class="search">
+          <button type='button' class="btn-sm btn-primary mt-1" id='check-button'>Check All</button>
+          <button type='button' class="btn-sm btn-primary mt-1" id='uncheck-button'>Uncheck All</button>
+        </div>
+        <div class="scrollbox">
+          <table class="table results" id='permission-table'>
+            <thead>
+              <th class="selection-column" scope="col"></th>
+              <th scope="col">Name</th>
+              {% if data_type != 'site' %}
+              <th scope="col">Variable</th>
+              {% endif %}
+              <th scope="col">UUID</th>
+            </thead>
+            <tbody>
+              <tr class="warning no-result">
+                <td>
+                  <i class="fa fa-warning"></i>
+                  No Result
+                </td>
+              </tr> 
+              {% for i in range(table_data | length) %}
+              {{ row_macro(data_type, table_data[i], i) }}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {{ form.token() }}
+  <button type="submit" form="permission-form" value="Submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}

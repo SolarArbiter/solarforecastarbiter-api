@@ -1,10 +1,11 @@
 import logging
 
 
-from flask import redirect, url_for
+from flask import redirect, url_for, render_template
 
 
 from oauthlib.oauth2.rfc6749.errors import OAuth2Error
+from sfa_dash.errors import UnverifiedUserException
 
 
 def bad_oauth_token(error):
@@ -16,6 +17,19 @@ def bad_oauth_token(error):
     return redirect(url_for('auth0.login'))
 
 
+def unverified_user(error):
+    """Displays the front page with an error that the user must verify their
+    email before accessing data.
+    """
+    errors = {
+        "Error": ['Account email must be verified before logging in. You '
+                  'should have received a verification email from Auth0. '
+                  'Please verify and refresh the page or '
+                  '<a href="{url_for("logout")}">Log out and try again as '
+                  'a diferent user.</a>']}
+    return render_template('index.html', errors=errors), 401
+
+
 def register_handlers(app):
     """Registers Errors handlers to catch exceptions raised that would otherwise
     propogate and crash the application.
@@ -23,3 +37,4 @@ def register_handlers(app):
     # catch the more general OAuth2Error for any issue related to
     # authentication.
     app.register_error_handler(OAuth2Error, bad_oauth_token)
+    app.register_error_handler(UnverifiedUserException, unverified_user)

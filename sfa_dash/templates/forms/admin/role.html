@@ -2,42 +2,70 @@
 {% set page_title = 'Roles' %}
 {% block content %}
 {% if role is not none %}
-<div class="data-metadata border mt-2">
-    <h3>Role Data</h3>
-    <div class="row">
-        <ul class="data-metadata-fields col-md-6 col-xs-12">
-            <li><b>Name:</b> {{ role['name'] }}</li>
-            <li><b>Description:</b> {{ role['description'] }}</li>
-            <li><b>Organization:</b> {{ role['organization'] }} </li>
-        </ul>
-        <ul class="data-metadata-fields col-md-6 col-xs-12">
-            <li><b>Created:</b> {{ role['created_at'] | format_datetime}}</li>
-            <li><b>Last Modified:</b> {{ role['modified_at'] |format_datetime }}</li>
-        </ul>
-    </div>
-</div>
-<h3>Permissions</h3>
-<div class="tools {{ table_type }}-tools mt-1">
-   {% block tools %}
+{% include 'data/metadata/role_metadata.html' %}
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_perm_addition', uuid=role['role_id']) }}">Add Permissions</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_grant', uuid=role['role_id']) }}">Grant Role</a>
+<a role="button" class="btn btn-danger btn-sm" href="{{ url_for('admin.delete_role', uuid=role['role_id']) }}">Delete</a>
+
+<ul class="mt-2 nav nav-tabs">
+    <li class="nav-item {% if role_table == 'permissions' %}active{% endif %}"><a class="nav-link" href="{{ url_for('admin.role_view', uuid=role['role_id'], table='permissions') }}">Permissions</a></li>
+    <li class="nav-item {% if role_table == 'users' %}active{% endif %}"><a class="nav-link" href="{{ url_for('admin.role_view', uuid=role['role_id'], table='users') }}">Users</a></li>
+</ul>
+{% if role_table == 'permissions' %}
+<div class="tools role-permission-tools mt-1">
    <input type="text" placeholder="Search" class="search">
-   {% endblock %}
 </div>
 <table class="role-permissions-table table results">
   <thead>
     <tr>
       <th scope="col">Name</th>
       <th scope="col">Date Added to Role</th>
+      <th scope="col"></th>
     </tr>
   </thead>
   <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td>
+    </tr>
     {% for perm_id, perm in role['permissions'].items() %}
       <tr>
           <td><a href="{{ url_for('admin.permission_view', uuid=perm_id) }}">{{ perm['description'] }}</a></td>
           <td>{{ perm['added_to_role'] | format_datetime}}</td>
+          <td><a role="button" class="role-permission-delete-button" href="{{ url_for('admin.role_perm_removal', uuid=role['role_id'], permission_id=perm['permission_id']) }}">Remove</a></td>
       </tr>
     {% endfor %}
   </tbody>
 </table>
+{% else %}
+<div class="tools role-users-tools mt-1">
+  <input type="text" placeholder="Search" class="search">
+</div>
+<table class="role-users-table table results">
+  <thead>
+    <tr>
+      <th scope="col">User ID</th>
+      <th scope="col">Email</th>
+      <th scope="col" id="provider-header">
+        <button type="button" class="btn btn-th dropdown-toggle" data-toggle="collapse" data-target="#org-filters" >Organization</button>
+      </th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td>
+    </tr>
+    {% for user_id, user in role['users'].items() %}
+      <tr>
+          <td><a href="{{ url_for('admin.user_view', uuid=user['user_id']) }}">{{ user['user_id'] }}</a></td>
+          <td>&lt;email coming soon&gt;</td>
+          <td class="provider-column">{{ user['organization'] }} </td>
+          <td><a href={{ url_for('admin.user_role_removal', uuid=user_id, role_id=role['role_id']) }}>Remove</a></td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}{# end table-type logic #}
 {% else %}
 <p>404 Not Found</p>
 {% endif %}

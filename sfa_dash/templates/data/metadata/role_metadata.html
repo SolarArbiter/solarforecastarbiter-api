@@ -1,0 +1,14 @@
+{% extends "data/metadata/meta_container.html" %}
+{% import "data/metadata/meta_macro.jinja" as macro %}
+{% set data_type='Role' %}
+{% block metadata %}
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+    <li><b>Name:</b> {{ role['name'] }}</li>
+    <li><b>Description:</b> {{ role['description'] }}</li>
+    <li><b>Organization:</b> {{ role['organization'] }} </li>
+</ul>
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+    <li><b>Created:</b> {{ role['created_at'] | format_datetime}}</li>
+    <li><b>Last Modified:</b> {{ role['modified_at'] |format_datetime }}</li>
+</ul>
+{% endblock %}

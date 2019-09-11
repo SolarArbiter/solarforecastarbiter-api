@@ -1,0 +1,20 @@
+{% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% set page_title = 'Roles' %}
+{% block content %}
+{% include "sections/notifications.html" %}
+{% if role is not none %}
+{% include 'data/metadata/role_metadata.html' %}
+<div>
+<h3>Deleting Permission "{{ perm['description'] }}" from Role "{{ role['name'] }}".</h3>
+<form action="{{ url_for('admin.role_perm_removal', uuid=role['role_id'], permission_id=perm['permission_id']) }}" method="post" id="delete-form", enctype='application/json'>
+  <p>Are you sure you want to remove this permission?</p>
+  <button type="submit" form="delete-form" value="Submit" class="btn btn-danger btn-sml">Yes</button>
+  <a href="{{ url_for('admin.role_view', uuid=role['role_id']) }}" class="btn btn-primary">No</a>
+  {{ form.token() }}
+</form>
+</div>
+{% else %}
+<p>404 Not Found</p>
+{% endif %}
+{% endblock %}

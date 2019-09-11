@@ -1,0 +1,25 @@
+{% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% set page_title = 'Users' %}
+{% block content %}
+{% include "sections/notifications.html" %}
+{% if role is not none %}
+{% if 'organization' not in user %}
+<div class="alert alert-warning" role="alert">It appears you do not have access to read the metadata of this user. They may not exist or may be outside your organization. Please ensure the user id is correct before continuing. </div>
+{% else %}
+{% include 'data/metadata/user_metadata.html' %}
+{% endif %}
+
+<div>
+<h3>Removing role "{{ role['name'] }}" from user "{{ user['user_id'] }}".</h3>
+<form action="{{ url_for('admin.user_role_removal', uuid=user['user_id'], role_id=role['role_id']) }}" method="post" id="delete-form", enctype='application/json'>
+  <p>Are you sure you want to remove this permission?</p>
+    <button type="submit" form="delete-form" value="Submit" class="btn btn-danger btn-sml">Yes</button>
+  <a href="{{ url_for('admin.user_view', uuid=user['user_id']) }}" class="btn btn-primary">No</a>
+  {{ form.token() }}
+</form>
+</div>
+{% else %}
+<p>404 Not Found</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% set page_title = 'Permissions' %}
+{% block content %}
+{% include "sections/notifications.html" %}
+{% if perm is not none %}
+{% include "data/metadata/permission_metadata.html" %}
+<div>
+<h3>Removing {{ permission['object_type'] | title }} "{{ object_data['name'] }}".</h3>
+<form action="{{ url_for('admin.permission_object_removal', uuid=permission['permission_id'], object_id=object_id)}}" method="post" id="delete-form", enctype='application/json'>
+<p>Are you sure you want to remove this {{ permission['object_type'] | title }}?</p>
+<button type="submit" form="delete-form" value="Submit" class="btn btn-danger btn-sml">Yes</button>
+<a href="{{ url_for('admin.permission_view', uuid=permission['permission_id']) }}" class="btn btn-primary">No</a>
+  {{ form.token() }}
+</form>
+</div>
+{% else %}
+<p>404 Not Found</p>
+{% endif %}
+{% endblock %}

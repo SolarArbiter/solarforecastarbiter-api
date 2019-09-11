@@ -1,0 +1,55 @@
+{% extends "dash/data.html" %}
+{% set page_title = 'Create New Role' %}
+{% import "forms/form_macros.jinja" as form %}
+{% import "forms/admin/role_macros.jinja" as table_macros %}
+{% block content %}
+{% include "sections/notifications.html" %}
+<form action="{{ url_for('admin.create_role') }}" method="post" enctype="application/json" id="role-form">
+  <div class="form-group">
+  <div class="form-element full-width">
+    <label>Name</label><br/>
+    <input type="text" class="form-control" name="name">
+  </div>
+  <div class="form-element full-width">
+    <label>Description</label><br/>
+    <input type="text" class="form-control" name="description">
+  </div>
+  <div class="form-element full-width collapse show" id="object-selector">
+    <div class="permissions-object-table">
+      <label>Permissionss</label>
+      <p>Select the permissions for this Role.</p>
+      <div class="tools permissions-objects-table mt-1">
+        <input type="text" placeholder="Search" class="search">
+        <button type='button' class="btn-sm btn-primary mt-1" id='check-button'>Check All</button>
+        <button type='button' class="btn-sm btn-primary mt-1" id='uncheck-button'>Uncheck All</button>
+      </div>
+      <div class="scrollbox">
+        <table class="table results" id='permission-table'>
+          <thead>
+            <th class="selection-column" scope="col"></th>
+            <th scope="col">Description</th>
+            <th scope="col">Action</th>
+            <th scope="col">Object Type</th>
+            <th scope="col">UUID</th>
+          </thead>
+          <tbody>
+            <tr class="warning no-result">
+              <td>
+                <i class="fa fa-warning"></i>
+                No Result
+              </td>
+            </tr> 
+            {% for i in range(table_data | length) %}
+              {% set row = table_data[i] %}
+              {{ table_macros.data_row(row, i) }}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {{ form.token() }}
+  </div>
+</form>
+<button type="submit" form="role-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}

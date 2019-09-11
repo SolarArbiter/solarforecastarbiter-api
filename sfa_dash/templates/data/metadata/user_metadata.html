@@ -1,0 +1,14 @@
+{% extends "data/metadata/meta_container.html" %}
+{% import "data/metadata/meta_macro.jinja" as macro %}
+{% set data_type="User" %}
+{% block metadata %}
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+    <li><b>ID:</b> {{ user['user_id'] }}</li>
+    <li><b>Email:</b> notyetimplemented@solarforecastarbiter.org</li>
+    <li ><b>Organization:</b> {{ user['organization'] }} </li>
+</ul>
+<ul class="data-metadata-fields col-md-6 col-xs-12">
+    <li><b>Created:</b> {{user['created_at'] | format_datetime }}</li>
+    <li><b>Last Modified:</b> {{user['modified_at'] | format_datetime }}</li>
+</ul>
+{% endblock %}

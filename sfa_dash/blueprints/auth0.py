@@ -12,6 +12,9 @@ from jose import jwt, jwk
 from six.moves.urllib.parse import urlencode
 
 
+from sfa_dash.errors import UnverifiedUserException
+
+
 oauth_request_session = LocalProxy(partial(_lookup_app_object, 'auth0_oauth'))
 current_user = LocalProxy(lambda: session.get('user', ''))
 
@@ -56,6 +59,8 @@ def make_auth0_blueprint(
                 jwt.JWTClaimsError,
                 AttributeError):
             return Response('OAuth login failed', 401)
+        if not idtoken.get('email_verified'):
+            raise UnverifiedUserException()
         # set session as permanent and expire after
         # not used for config[PERMANENT_SESSION_LIFETIME]
         session.permanent = True
@@ -68,7 +73,14 @@ def make_auth0_blueprint(
 
     @app.route('/logout')
     def logout():
-        del auth0_bp.token  # delete token
+        try:
+            del auth0_bp.token  # delete token
+        except ValueError:
+            # If the user is unverified the user will not be set
+            # in the oauth session and deleting the token here will
+            # fail, but the user will still need to hit the Auth0
+            # logout endpoint to clear the users JWT from the browser
+            pass
         session.clear()  # clear cookie
         params = {'returnTo': url_for('index',
                                       _external=True),
