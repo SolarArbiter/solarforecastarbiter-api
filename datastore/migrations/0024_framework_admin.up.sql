@@ -254,6 +254,11 @@ BEGIN
     DECLARE revoke_roles BINARY(16);
     DECLARE update_roles BINARY(16);
     DECLARE update_permissions BINARY(16);
+    DECLARE delete_roles BINARY(16);
+    DECLARE delete_permissions BINARY(16);
+    DECLARE read_users BINARY(16);
+    DECLARE read_roles BINARY(16);
+    DECLARE read_permissions BINARY(16);
     -- Administer data access control
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -283,13 +288,38 @@ BEGIN
     SET update_permissions = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         update_permissions, "Update permissions", orgid, "update", "permissions", TRUE);
+    -- delete roles
+    SET delete_roles = (SELECT UUID_TO_BIN(UUID(), 1));
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        delete_roles, "Delete roles", orgid, "delete", "roles", TRUE);
+    -- delete permissions
+    SET delete_permissions = (SELECT UUID_TO_BIN(UUID(), 1));
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        delete_permissions, "Delete permissions", orgid, "delete", "permissions", TRUE);
+    -- read users
+    SET read_users = (SELECT UUID_TO_BIN(UUID(), 1));
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        read_users, "Read users", orgid, "read", "users", TRUE);
+    -- read roles
+    SET read_roles = (SELECT UUID_TO_BIN(UUID(), 1));
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        read_roles, "Read roles", orgid, "read", "roles", TRUE);
+    -- read permissions
+    SET read_permissions = (SELECT UUID_TO_BIN(UUID(), 1));
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        read_permissions, "Read permissions", orgid, "read", "permissions", TRUE);
     INSERT INTO arbiter_data.role_permission_mapping(role_id, permission_id) VALUES (
         roleid, create_roles), (
         roleid, create_perms), (
         roleid, grant_roles), (
         roleid, revoke_roleS), (
         roleid, update_roles), (
-        roleid, update_permissions);
+        roleid, update_permissions), (
+        roleid, delete_roles), (
+        roleid, delete_permissions), (
+        roleid, read_users), (
+        roleid, read_roles), (
+        roleid, read_permissions);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_admin_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_admin_role TO 'frameworkadmin'@'%';
@@ -327,6 +357,7 @@ BEGIN
             userid, get_org_role_by_name('Create metadata', orgid)), (
             userid, get_org_role_by_name('Read all', orgid)), (
             userid, get_org_role_by_name('Write all values', orgid)), (
+            userid, get_org_role_by_name('Delete metadata', orgid)), (
             userid, get_org_role_by_name('Administer data access controls', orgid));
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = "Cannot promote admin from outside organization.",
@@ -377,10 +408,11 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.add_user_to_org TO 'frameworkadmin'@'%';
 
 
 /*
- * Remove all roles 
+ * Remove all roles not affiliated with orgid from a user
  */
-CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_org_roles_from_user(
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_external_org_roles_from_user(
     IN userid BINARY(16), IN orgid BINARY(16))
+COMMENT "Remove all roles not affiliated with the supplied organization from a user"
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DELETE FROM arbiter_data.user_role_mapping
@@ -388,41 +420,28 @@ BEGIN
             SELECT id FROM arbiter_data.roles WHERE organization_id != orgid);
 END;
 GRANT SELECT (organization_id) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_org_roles_from_user TO 'delete_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_org_roles_from_user TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_external_org_roles_from_user TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_external_org_roles_from_user TO 'update_rbac'@'localhost';
 
 
 /*
  * Remove non-unafiliated roles and update user's org to unaffiliated.
  */
 CREATE DEFINER = 'update_rbac'@'localhost' PROCEDURE move_user_to_unaffiliated(
-    IN userid BINARY(16))
+    IN struserid CHAR(36))
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
+    DECLARE userid BINARY(16);
+    DECLARE orgid BINARY(16);
+    SET userid = UUID_TO_BIN(struserid, 1);
+    SET orgid = get_unaffiliated_orgid();
+    -- remove all non-unaffiliated Organizational roles from the user
+    CALL remove_external_org_roles_from_user(userid, orgid);
+    -- update user's organization to Unaffiliated
     UPDATE arbiter_data.users SET organization_id = get_unaffiliated_orgid() WHERE id = userid;
 END;
-GRANT EXECUTE ON PROCEDURE move_user_to_unaffiliated TO 'update_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE move_user_to_unaffiliated TO 'insert_rbac'@'localhost';
-
-
-/*
- * Remove user from organization
- */
-CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE remove_user_from_org(
-    IN struserid CHAR(36), IN strorgid CHAR(36))
-MODIFIES SQL DATA SQL SECURITY DEFINER
-BEGIN
-    DECLARE orgid BINARY(16);
-    DECLARE userid BINARY(16);
-    SET orgid = UUID_TO_BIN(strorgid, 1);
-    SET userid = UUID_TO_BIN(struserid, 1);
-    -- remove all non-unaffiliated Organizational roles from the user
-    CALL remove_org_roles_from_user(userid, orgid);
-    -- update user's organization to Unaffiliated
-    CALL move_user_to_unaffiliated(userid);
-END;
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_from_org TO 'insert_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_from_org TO 'frameworkadmin'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.move_user_to_unaffiliated TO 'update_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.move_user_to_unaffiliated TO 'frameworkadmin'@'%';
 
 
 /*
