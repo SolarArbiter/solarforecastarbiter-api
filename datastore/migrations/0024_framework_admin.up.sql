@@ -125,6 +125,7 @@ BEGIN
     DECLARE write_fx BINARY(16);
     DECLARE write_cdf BINARY(16);
     DECLARE write_aggregates BINARY(16);
+    DECLARE write_reports BINARY(16);
     -- Write all values
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -146,12 +147,17 @@ BEGIN
     SET write_aggregates = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         write_aggregates, "Submit values to all aggregates", orgid, "write_values", "aggregates", TRUE);
+    -- write_values all reports
+    SET write_reports = UUID_TO_BIN(UUID(), 1);
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        write_reports, "Submit values to all reports", orgid, "write_values", "reports", TRUE);
     -- add all write perms to the role
     INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
         roleid, write_obs), (
         roleid, write_fx), (
         roleid, write_cdf), (
-        roleid, write_aggregates);
+        roleid, write_aggregates), (
+        roleid, write_reports);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_write_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_write_role TO 'frameworkadmin'@'%';
@@ -167,6 +173,7 @@ BEGIN
     DECLARE create_fx BINARY(16);
     DECLARE create_cdf BINARY(16);
     DECLARE create_aggregates BINARY(16);
+    DECLARE create_reports BINARY(16);
     -- Create all types of metadata
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -175,11 +182,11 @@ BEGIN
     -- create observations
     SET create_obs = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
-        create_obs, "Create new observations", orgid, "create", "observations", TRUE);
+        create_obs, "Create observations", orgid, "create", "observations", TRUE);
     -- create forecast
     SET create_fx = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
-        create_fx, "Create new forecasts", orgid, "create", "forecasts", TRUE);
+        create_fx, "Create forecasts", orgid, "create", "forecasts", TRUE);
     -- crreate cdf forecasts
     
     SET create_cdf = UUID_TO_BIN(UUID(), 1);
@@ -189,12 +196,17 @@ BEGIN
     SET create_aggregates = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         create_aggregates, "Create aggregates", orgid, "create", "aggregates", TRUE);
+    -- create reports
+    SET create_reports = UUID_TO_BIN(UUID(), 1);
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        create_reports, "Create reports", orgid, "create", "reports", TRUE);
     -- add all write perms to the role
     INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
         roleid, create_obs), (
         roleid, create_fx), (
         roleid, create_cdf), (
-        roleid, create_aggregates);
+        roleid, create_aggregates), (
+        roleid, create_reports);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_create_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_create_role TO 'frameworkadmin'@'%';
@@ -209,6 +221,7 @@ BEGIN
     DECLARE delete_fx BINARY(16);
     DECLARE delete_cdf BINARY(16);
     DECLARE delete_aggregates BINARY(16);
+    DECLARE delete_reports BINARY(16);
     -- Delete all types of metadata
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -230,12 +243,17 @@ BEGIN
     SET delete_aggregates = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         delete_aggregates, "Delete aggregates", orgid, "delete", "aggregates", TRUE);
+    -- delete reports
+    SET delete_reports = UUID_TO_BIN(UUID(), 1);
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        delete_reports, "Delete reports", orgid, "delete", "reports", TRUE);
     -- add all write perms to the role
     INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
         roleid, delete_obs), (
         roleid, delete_fx), (
         roleid, delete_cdf), (
-        roleid, delete_aggregates);
+        roleid, delete_aggregates), (
+        roleid, delete_reports);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_delete_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_delete_role TO 'frameworkadmin'@'%';
