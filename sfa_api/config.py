@@ -40,3 +40,8 @@ class TestingConfig(Config):
     MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
     MYSQL_DATABASE = 'arbiter_data'
     USE_FAKE_REDIS = True
+
+class AdminTestConfig(Config):
+    MYSQL_USER = 'frameworkadmin'
+    MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
+    MYSQL_DATABASE = 'arbiter_data'
