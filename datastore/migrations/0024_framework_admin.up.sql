@@ -1,9 +1,16 @@
 /*
  * Establish new mysql user
  */
--- @localhost?
+
 CREATE USER 'frameworkadmin'@'%' IDENTIFIED BY 'thisisaterribleandpublicpassword';
 CREATE USER 'update_rbac'@'localhost' IDENTIFIED WITH caching_sha2_password as '$A$005$THISISACOMBINATIONOFINVALIDSALTANDPASSWORDTHATMUSTNEVERBRBEUSED' ACCOUNT LOCK;
+
+/*
+ * Set unique key to the pair of role name, organizaiton id
+ */
+ALTER TABLE arbiter_data.roles DROP INDEX name;
+ALTER TABLE arbiter_data.roles ADD UNIQUE organization_role (name, organization_id);
+
 
 /*
  * Create an organization

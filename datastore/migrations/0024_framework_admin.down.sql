@@ -1,5 +1,8 @@
-DROP USER 'frameworkadmin'@'%';
-DROP USER 'update_rbac'@'localhost';
+DROP USER IF EXISTS 'frameworkadmin'@'%';
+DROP USER IF EXISTS 'update_rbac'@'localhost';
+
+ALTER TABLE arbiter_data.roles DROP INDEX organization_role;
+ALTER TABLE arbiter_data.roles ADD UNIQUE name (name);
 
 DROP PROCEDURE IF EXISTS arbiter_data.create_organization;
 DROP PROCEDURE IF EXISTS arbiter_data.create_default_read_role;
