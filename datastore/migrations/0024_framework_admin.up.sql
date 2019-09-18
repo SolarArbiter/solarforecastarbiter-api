@@ -174,6 +174,7 @@ BEGIN
     DECLARE create_cdf BINARY(16);
     DECLARE create_aggregates BINARY(16);
     DECLARE create_reports BINARY(16);
+    DECLARE create_sites BINARY(16);
     -- Create all types of metadata
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -200,6 +201,10 @@ BEGIN
     SET create_reports = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         create_reports, "Create reports", orgid, "create", "reports", TRUE);
+    -- create sites
+    SET create_sites = UUID_TO_BIN(UUID(), 1);
+     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        create_sites, "Create sites", orgid, "create", "sites", TRUE);
     -- add all write perms to the role
     INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
         roleid, create_obs), (
@@ -222,6 +227,7 @@ BEGIN
     DECLARE delete_cdf BINARY(16);
     DECLARE delete_aggregates BINARY(16);
     DECLARE delete_reports BINARY(16);
+    DECLARE delete_sites BINARY(16);
     -- Delete all types of metadata
     SET roleid = (SELECT UUID_TO_BIN(UUID(), 1));
     INSERT INTO arbiter_data.roles(
@@ -247,6 +253,9 @@ BEGIN
     SET delete_reports = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
         delete_reports, "Delete reports", orgid, "delete", "reports", TRUE);
+    SET delete_sites = UUID_TO_BIN(UUID(), 1);
+    INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES (
+        delete_sites, "Delete sites", orgid, "delete", "sites", TRUE);
     -- add all write perms to the role
     INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (
         roleid, delete_obs), (
@@ -384,6 +393,7 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.promote_user_to_org_admin TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.promote_user_to_org_admin TO 'frameworkadmin'@'%';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_org_role_by_name TO 'insert_rbac'@'localhost';
 
 
 /*

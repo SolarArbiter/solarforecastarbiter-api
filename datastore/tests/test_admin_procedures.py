@@ -568,3 +568,54 @@ def test_delete_user(dictcursor, new_user):
     dictcursor.execute(
         'SELECT * FROM user_role_mapping WHERE user_id = %s', user['id'])
     assert len(dictcursor.fetchall()) == 0
+
+
+def test_promote_user_to_org_admin(dictcursor, new_user):
+    # depends on the roles provided by create_organization
+    dictcursor.callproc('create_organization', ('test_org',))
+    dictcursor.execute('SELECT * FROM arbiter_data.organizations '
+                       'WHERE name = "test_org"')
+    user = new_user(org=dictcursor.fetchone())
+    dictcursor.callproc(
+        'promote_user_to_org_admin',
+        (str(bin_to_uuid(user['id'])),
+         str(bin_to_uuid(user['organization_id']))))
+    dictcursor.execute(
+        'SELECT role_id FROM user_role_mapping WHERE user_id = %s',
+        user['id'])
+    role_ids = [r['role_id'] for r in dictcursor.fetchall()]
+    assert len(role_ids) == 5
+    dictcursor.execute(
+        'SELECT name FROM roles WHERE id IN (%s,%s,%s,%s,%s)', role_ids)
+    names = [r['name'] for r in dictcursor.fetchall()]
+    assert 'Create metadata' in names
+    assert 'Read all' in names
+    assert 'Delete metadata' in names
+    assert 'Write all values' in names
+    assert 'Administer data access controls' in names
+
+
+def test_promote_user_to_org_admin_external_user(
+        cursor, new_user):
+    # depends on the roles provided by create_organization
+    cursor.callproc('create_organization', ('test_org',))
+    cursor.execute('SELECT BIN_TO_UUID(id, 1) FROM arbiter_data.organizations '
+                   'WHERE name = "test_org"')
+    orgid = cursor.fetchone()
+    user = new_user()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc(
+            'promote_user_to_org_admin',
+            (str(bin_to_uuid(user['id'])), orgid))
+    assert e.value.args[0] == 1142
+    assert e.value.args[1] == 'Cannot promote admin from outside organization.'
+
+
+def test_promote_user_to_org_admin_missing_roles(cursor, new_user):
+    user = new_user()
+    with pytest.raises(pymysql.err.IntegrityError) as e:
+        cursor.callproc('promote_user_to_org_admin',
+                        (str(bin_to_uuid(user['id'])),
+                         str(bin_to_uuid(user['organization_id']))))
+    assert e.value.args[0] == 1048
+    assert e.value.args[1] == "Column 'role_id' cannot be null"

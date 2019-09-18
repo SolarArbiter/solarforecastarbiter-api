@@ -402,7 +402,8 @@ def new_organization_no_tou(cursor):
 
 @pytest.fixture()
 def unaffiliated_organization(dictcursor):
-    dictcursor.execute('SELECT * FROM organizations WHERE name = "Unaffiliated"') 
+    dictcursor.execute(
+        'SELECT * FROM organizations WHERE name = "Unaffiliated"')
     org = dictcursor.fetchone()
     return org
 
