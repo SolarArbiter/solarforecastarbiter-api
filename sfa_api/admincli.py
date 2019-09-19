@@ -85,7 +85,7 @@ def promote_to_admin(user_id, organization_id):
         click.echo(e.args[0])
 
 
-@admin_cli.command('delete-user')
+@admin_cli.command('move-to-unaffiliated')
 @click.argument('user_id', required=True)
 def move_user_to_unaffiliated(user_id):
     try:
@@ -96,7 +96,7 @@ def move_user_to_unaffiliated(user_id):
     from sfa_api.utils.storage import get_storage
     storage = get_storage()
     storage._call_procedure_without_user(
-        'delete_user', user_id)
+        'move_user_to_unaffiliated', user_id)
 
 
 @admin_cli.command('list-users')
