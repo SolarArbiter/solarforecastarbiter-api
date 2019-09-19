@@ -98,4 +98,33 @@ def move_user_to_unaffiliated(user_id):
         'delete_user', user_id)
 
 
+@admin_cli.command('list-users')
+def list_users():
+    from sfa_api.utils.storage import get_storage
+    storage = get_storage()
+    users = storage._call_procedure_without_user('list_all_users')
+    table_format = '{:<34}|{:<38}|{:<34}|{:<38}'
+    headers = table_format.format(
+            'auth0_id', 'User ID', 'Organization Name', 'Organization ID')
+    click.echo(headers)
+    click.echo('-'*len(headers))
+    for user in users:
+        click.echo(table_format.format(
+            user['auth0_id'], user['id'], user['organization_name'],
+            user['organization_id']))
+
+
+@admin_cli.command('list-organizations')
+def list_organizations():
+    from sfa_api.utils.storage import get_storage
+    storage = get_storage()
+    organizations = storage._call_procedure_without_user('list_all_organizations')
+    table_format = '{:<34}|{:<38}'
+    headers = table_format.format('Name', 'Organization ID')
+    click.echo(headers)
+    click.echo('-'*len(headers))
+    for org in organizations:
+        click.echo(table_format.format(org['name'], org["id"]))
+
+
 app.cli.add_command(admin_cli)
