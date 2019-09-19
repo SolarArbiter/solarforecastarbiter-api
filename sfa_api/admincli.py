@@ -1,4 +1,5 @@
 import uuid
+import os
 
 
 import click
@@ -9,8 +10,8 @@ import pymysql
 from sfa_api import create_app
 from sfa_api.utils.errors import StorageAuthError
 
-
-app = create_app('AdminTestConfig')
+config = os.getenv('SFA_CLI_CONFIG', 'ProductionConfig')
+app = create_app(config)
 admin_cli = AppGroup('admin')
 
 
