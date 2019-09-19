@@ -494,3 +494,27 @@ END;
 GRANT SELECT (id), DELETE ON arbiter_data.users TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';
+
+
+/*
+ * List all users in the framework
+ */
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_all_users()
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    SELECT auth0_id, BIN_TO_UUID(id, 1), get_organization_name(organization_id), organization_id FROM arbiter_data.users;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'frameworkadmin'@'%';
+
+
+/*
+ * List all organizations in the framework
+ */
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_all_organizations()
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    SELECT name, BIN_TO_UUID(id, 1) from arbiter_data.organizations;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'frameworkadmin'@'%';
