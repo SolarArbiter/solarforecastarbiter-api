@@ -502,7 +502,10 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_all_users()
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
-    SELECT auth0_id, BIN_TO_UUID(id, 1), get_organization_name(organization_id), organization_id FROM arbiter_data.users;
+    SELECT auth0_id, BIN_TO_UUID(id, 1) as id,
+        get_organization_name(organization_id) as organization_name,
+        BIN_TO_UUID(organization_id, 1) as organization_id
+        FROM arbiter_data.users;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'frameworkadmin'@'%';
@@ -514,7 +517,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'frameworkadmin'@'%';
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_all_organizations()
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
-    SELECT name, BIN_TO_UUID(id, 1) from arbiter_data.organizations;
+    SELECT name, BIN_TO_UUID(id, 1) as id from arbiter_data.organizations;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'frameworkadmin'@'%';
