@@ -404,19 +404,6 @@ GRANT EXECUTE ON FUNCTION arbiter_data.get_org_role_by_name TO 'insert_rbac'@'lo
 
 
 /*
- * Return id of unaffiliated org
- */
-CREATE DEFINER = 'select_rbac'@'localhost' FUNCTION get_unaffiliated_orgid()
-RETURNS BINARY(16)
-READS SQL DATA SQL SECURITY DEFINER
-BEGIN
-    RETURN (SELECT id FROM arbiter_data.organizations WHERE name = "Unaffiliated");
-END;
-GRANT EXECUTE ON FUNCTION arbiter_data.get_unaffiliated_orgid TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.get_unaffiliated_orgid TO 'update_rbac'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.get_unaffiliated_orgid TO 'frameworkadmin'@'%';
-
-/*
  * Add user to organization (orgid, userid)
  */
 CREATE DEFINER = 'update_rbac'@'localhost' PROCEDURE add_user_to_org(
@@ -428,7 +415,7 @@ BEGIN
     SET orgid = UUID_TO_BIN(strorgid, 1);
     SET userid = UUID_TO_BIN(struserid, 1);
     -- ensure the user belongs to Unaffiliated org
-    IF get_unaffiliated_orgid() = get_object_organization(userid, 'users') THEN
+    IF get_organization_id('Unaffiliated') = get_object_organization(userid, 'users') THEN
         UPDATE arbiter_data.users SET organization_id = orgid WHERE id = userid;
     ELSE
         -- error user in organization
@@ -443,20 +430,26 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.add_user_to_org TO 'frameworkadmin'@'%';
 
 
 /*
- * Remove all roles not affiliated with orgid from a user
+ * Remove all roles from a user other than those in Unaffiliated and Reference
  */
-CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_external_org_roles_from_user(
-    IN userid BINARY(16), IN orgid BINARY(16))
-COMMENT "Remove all roles not affiliated with the supplied organization from a user"
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_org_roles_from_user(
+    IN userid BINARY(16))
+COMMENT "Remove all roles from the user except the defaults"
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
+    DECLARE unaffiliated_orgid BINARY(16);
+    DECLARE reference_orgid BINARY(16);
+    SET unaffiliated_orgid = get_organization_id('Unaffiliated');
+    SET reference_orgid = get_organization_id('Reference');
     DELETE FROM arbiter_data.user_role_mapping
         WHERE user_id = userid AND role_id IN (
-            SELECT id FROM arbiter_data.roles WHERE organization_id != orgid);
+            SELECT id FROM arbiter_data.roles
+            WHERE organization_id NOT IN (unaffiliated_orgid, reference_orgid));
 END;
 GRANT SELECT (organization_id) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_external_org_roles_from_user TO 'delete_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.remove_external_org_roles_from_user TO 'update_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_org_roles_from_user TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_org_roles_from_user TO 'update_rbac'@'localhost';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id TO 'delete_rbac'@'localhost';
 
 
 /*
@@ -467,16 +460,15 @@ CREATE DEFINER = 'update_rbac'@'localhost' PROCEDURE move_user_to_unaffiliated(
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE userid BINARY(16);
-    DECLARE orgid BINARY(16);
     SET userid = UUID_TO_BIN(struserid, 1);
-    SET orgid = get_unaffiliated_orgid();
-    -- remove all non-unaffiliated Organizational roles from the user
-    CALL remove_external_org_roles_from_user(userid, orgid);
+    -- remove all Organizational roles from the user
+    CALL remove_org_roles_from_user(userid);
     -- update user's organization to Unaffiliated
-    UPDATE arbiter_data.users SET organization_id = get_unaffiliated_orgid() WHERE id = userid;
+    UPDATE arbiter_data.users SET organization_id = get_organization_id('Unaffiliated') WHERE id = userid;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.move_user_to_unaffiliated TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.move_user_to_unaffiliated TO 'frameworkadmin'@'%';
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id TO 'update_rbac'@'localhost';
 
 
 /*

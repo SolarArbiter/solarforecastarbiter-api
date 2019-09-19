@@ -470,14 +470,6 @@ def test_get_org_role_by_name_role_dne(dictcursor, role_name):
     assert role['roleid'] is None
 
 
-def test_get_unaffiliated_orgid(dictcursor):
-    dictcursor.execute('SELECT get_unaffiliated_orgid() as orgid')
-    orgid = dictcursor.fetchone()['orgid']
-    dictcursor.execute('SELECT * FROM organizations WHERE id = %s', orgid)
-    org = dictcursor.fetchone()
-    assert org['name'] == 'Unaffiliated'
-
-
 def test_add_user_to_org(
         dictcursor, new_organization, new_unaffiliated_user,
         unaffiliated_organization):
@@ -510,7 +502,7 @@ def test_add_user_to_org_affiliated_user(
     assert e.value.args[1] == 'Cannot add affiliated user to organization'
 
 
-def test_remove_external_org_roles_from_user(
+def test_remove_org_roles_from_user(
         dictcursor, new_user, new_role, new_organization):
     role_ids = []
     for _ in range(5):
@@ -520,7 +512,16 @@ def test_remove_external_org_roles_from_user(
     user_org = new_organization()
     user = new_user(org=user_org)
     org_role = new_role(org=user_org)
+    dictcursor.execute(
+        'SELECT id from organizations WHERE name = "Unaffiliated"')
+    unaffiliated_org = dictcursor.fetchone()
+    unaffiliated_role = new_role(org=unaffiliated_org)
+    dictcursor.execute('SELECT id from organizations WHERE name = "Reference"')
+    reference_org = dictcursor.fetchone()
+    reference_role = new_role(org=reference_org)
     role_ids.append(org_role['id'])
+    role_ids.append(reference_role['id'])
+    role_ids.append(unaffiliated_role['id'])
     for rid in role_ids:
         dictcursor.execute(
             'INSERT INTO user_role_mapping(user_id, role_id) VALUES (%s, %s)',
@@ -528,14 +529,13 @@ def test_remove_external_org_roles_from_user(
     dictcursor.execute(
         'SELECT * FROM user_role_mapping WHERE user_id = %s',
         (user['id'],))
-    assert len(dictcursor.fetchall()) == 6
+    assert len(dictcursor.fetchall()) == 8
     dictcursor.callproc(
-        'remove_external_org_roles_from_user',
-        (user['id'], user['organization_id']))
+        'remove_org_roles_from_user', (user['id'],))
     dictcursor.execute(
         'SELECT * FROM user_role_mapping WHERE user_id = %s',
         (user['id'],))
-    assert len(dictcursor.fetchall()) == 1
+    assert len(dictcursor.fetchall()) == 2
 
 
 def test_move_user_to_unaffiliated(
@@ -619,3 +619,23 @@ def test_promote_user_to_org_admin_missing_roles(cursor, new_user):
                          str(bin_to_uuid(user['organization_id']))))
     assert e.value.args[0] == 1048
     assert e.value.args[1] == "Column 'role_id' cannot be null"
+
+
+def test_list_all_users(dictcursor):
+    dictcursor.callproc('list_all_users')
+    users = dictcursor.fetchall()
+    assert len(users) == 6
+    for user in users:
+        assert 'auth0_id' in user
+        assert 'id' in user
+        assert 'organization_id' in user
+        assert 'organization_name' in user
+
+
+def test_list_all_organizations(dictcursor):
+    dictcursor.callproc('list_all_organizations')
+    orgs = dictcursor.fetchall()
+    assert len(orgs) == 6
+    for org in orgs:
+        assert 'name' in org
+        assert 'id' in org
