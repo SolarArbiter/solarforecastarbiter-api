@@ -22,6 +22,9 @@ def create_organization(organization_name):
     try:
         storage._call_procedure_without_user(
             'create_organization', organization_name)
+    except pymysql.err.DataError as e:
+        click.echo(e.args[1])
+        return
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
             click.echo(f'Organization {organization_name} alread exists.')
