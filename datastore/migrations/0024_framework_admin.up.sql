@@ -218,6 +218,7 @@ BEGIN
         roleid, create_fx), (
         roleid, create_cdf), (
         roleid, create_aggregates), (
+        roleid, create_sites), (
         roleid, create_reports);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_create_role TO 'insert_rbac'@'localhost';
@@ -269,7 +270,8 @@ BEGIN
         roleid, delete_fx), (
         roleid, delete_cdf), (
         roleid, delete_aggregates), (
-        roleid, delete_reports);
+        roleid, delete_reports), (
+        roleid, delete_sites);
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_delete_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_delete_role TO 'frameworkadmin'@'%';
