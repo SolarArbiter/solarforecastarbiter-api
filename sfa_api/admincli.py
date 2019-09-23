@@ -28,12 +28,11 @@ def create_organization(organization_name):
     try:
         storage._call_procedure_without_user(
             'create_organization', organization_name)
-    except pymysql.err.DataError as e:
-        click.echo(e.args[1])
-        return
+    except pymysql.err.DataError:
+        click.echo("Organization name must be 32 characters or fewer.")
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
-            click.echo(f'Organization {organization_name} alread exists.')
+            click.echo(f'Organization {organization_name} already exists.')
         else:
             raise
     else:
@@ -68,6 +67,8 @@ def add_user_to_org(user_id, organization_id):
         click.echo(e.args[1])
     except StorageAuthError as e:
         click.echo(e.args[0])
+    else:
+        click.echo(f'Added user {user_id} to organization {organization_id}')
 
 
 @admin_cli.command('promote-user-to-org-admin')
@@ -93,8 +94,17 @@ def promote_to_admin(user_id, organization_id):
         storage._call_procedure_without_user(
             'promote_user_to_org_admin',
             user_id, organization_id)
+    except pymysql.err.IntegrityError as e:
+        if e.args[0] == 1062:
+            click.echo('User already granted admin permissions.')
+        else:
+            click.echo(e.args[1])
+            raise
     except StorageAuthError as e:
         click.echo(e.args[0])
+    else:
+        click.echo(f'Promoted user {user_id} to administrate '
+                   f'organization {organization_id}')
 
 
 @admin_cli.command('move-to-unaffiliated')
@@ -113,6 +123,7 @@ def move_user_to_unaffiliated(user_id):
     storage = get_storage()
     storage._call_procedure_without_user(
         'move_user_to_unaffiliated', user_id)
+    click.echo(f'User {user_id} moved to unaffiliated organization.')
 
 
 @admin_cli.command('list-users')
