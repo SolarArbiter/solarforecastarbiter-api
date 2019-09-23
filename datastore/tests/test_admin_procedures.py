@@ -20,7 +20,7 @@ def test_create_org(dictcursor):
                        'WHERE name = "test_org"')
     org = dictcursor.fetchone()
     assert org['name'] == 'test_org'
-    assert org['accepted_tou'] == False
+    assert not org['accepted_tou']
     orgid = org['id']
     dictcursor.execute('SELECT * FROM arbiter_data.roles '
                        'WHERE organization_id = %s', orgid)
@@ -652,6 +652,6 @@ def test_set_org_accepted_tou(dictcursor):
         'INSERT INTO organizations (id, name, accepted_tou)'
         'VALUES (%s, %s, FALSE)', (orgid, "OrgHasntacceptedTOU"))
     dictcursor.callproc('set_org_accepted_tou', (str(bin_to_uuid(orgid)),))
-    
-    dictcursor.execute('SELECT accepted_tou FROM organizations WHERE id = %s', orgid)
+    dictcursor.execute(
+        'SELECT accepted_tou FROM organizations WHERE id = %s', orgid)
     assert dictcursor.fetchone()
