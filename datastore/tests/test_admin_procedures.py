@@ -1,7 +1,7 @@
 import pytest
 
 
-from conftest import bin_to_uuid
+from conftest import bin_to_uuid, newuuid
 import pymysql
 
 
@@ -20,6 +20,7 @@ def test_create_org(dictcursor):
                        'WHERE name = "test_org"')
     org = dictcursor.fetchone()
     assert org['name'] == 'test_org'
+    assert org['accepted_tou'] == False
     orgid = org['id']
     dictcursor.execute('SELECT * FROM arbiter_data.roles '
                        'WHERE organization_id = %s', orgid)
@@ -223,7 +224,7 @@ def test_create_default_create_role(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
     perm_objects = []
     for permid in [p['permission_id'] for p in permission_ids]:
         dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
@@ -244,6 +245,8 @@ def test_create_default_create_role(dictcursor, new_organization):
     assert create_aggregates['object_type'] == 'aggregates'
     create_reports = perms['Create reports']
     assert create_reports['object_type'] == 'reports'
+    create_sites = perms['Create sites']
+    assert create_sites['object_type'] == 'sites'
 
 
 def test_create_default_create_role_role_exists(dictcursor, new_organization):
@@ -261,7 +264,7 @@ def test_create_default_create_role_role_exists(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
 
     with pytest.raises(pymysql.err.IntegrityError) as e:
         dictcursor.callproc('create_default_create_role', (orgid,))
@@ -271,7 +274,7 @@ def test_create_default_create_role_role_exists(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
 
 
 def test_create_default_delete_role(dictcursor, new_organization):
@@ -293,7 +296,7 @@ def test_create_default_delete_role(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
     perm_objects = []
     for permid in [p['permission_id'] for p in permission_ids]:
         dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
@@ -314,6 +317,8 @@ def test_create_default_delete_role(dictcursor, new_organization):
     assert delete_aggregates['object_type'] == 'aggregates'
     delete_reports = perms['Delete reports']
     assert delete_reports['object_type'] == 'reports'
+    delete_sites = perms['Delete sites']
+    assert delete_sites['object_type'] == 'sites'
 
 
 def test_create_default_delete_role_role_exists(dictcursor, new_organization):
@@ -331,7 +336,7 @@ def test_create_default_delete_role_role_exists(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
 
     with pytest.raises(pymysql.err.IntegrityError) as e:
         dictcursor.callproc('create_default_delete_role', (orgid,))
@@ -341,7 +346,7 @@ def test_create_default_delete_role_role_exists(dictcursor, new_organization):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 5
+    assert len(permission_ids) == 6
 
 
 def test_create_default_admin_role(dictcursor, new_organization):
@@ -639,3 +644,14 @@ def test_list_all_organizations(dictcursor):
     for org in orgs:
         assert 'name' in org
         assert 'id' in org
+
+
+def test_set_org_accepted_tou(dictcursor):
+    orgid = newuuid()
+    dictcursor.execute(
+        'INSERT INTO organizations (id, name, accepted_tou)'
+        'VALUES (%s, %s, FALSE)', (orgid, "OrgHasntacceptedTOU"))
+    dictcursor.callproc('set_org_accepted_tou', (str(bin_to_uuid(orgid)),))
+    
+    dictcursor.execute('SELECT accepted_tou FROM organizations WHERE id = %s', orgid)
+    assert dictcursor.fetchone()

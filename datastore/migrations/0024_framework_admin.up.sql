@@ -26,7 +26,7 @@ BEGIN
     SET orgid = (SELECT UUID_TO_BIN(UUID(), 1));
     -- insert into organization
     INSERT INTO arbiter_data.organizations(name, id, accepted_tou) VALUES (
-        org_name, orgid, TRUE);
+        org_name, orgid, FALSE);
     CALL create_default_read_role(orgid);
     CALL create_default_write_role(orgid);
     CALL create_default_create_role(orgid);
@@ -375,6 +375,7 @@ END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_org_role_by_name TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_org_role_by_name TO 'frameworkadmin'@'%';
 
+
 /*
  * Promote user to organization admin
  */
@@ -515,3 +516,19 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'frameworkadmin'@'%';
+
+
+/*
+ * Updates an organization to have accepted terms of use
+ */
+CREATE DEFINER = 'update_rbac'@'localhost' PROCEDURE set_org_accepted_tou(
+    IN strorgid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE orgid BINARY(16);
+    SET orgid = UUID_TO_BIN(strorgid, 1);
+    UPDATE arbiter_data.organizations SET accepted_tou = TRUE WHERE id = orgid;
+END;
+GRANT SELECT, UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'update_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'frameworkadmin'@'%';
