@@ -8,6 +8,14 @@ from sfa_api.conftest import _make_nocommit_cursor
 from sfa_api.utils import storage_interface
 
 
+def org_dict(org_list):
+    return {o['name']: o for o in org_list}
+
+
+def user_dict(user_list):
+    return {u['id']: u for u in user_list}
+
+
 @pytest.fixture()
 def app_cli_runner(mocker):
     app = create_app('AdminTestConfig')
@@ -90,6 +98,14 @@ def test_add_user_to_org_invalid_userid(
     assert 'Badly formed user_id\n' == r.output
 
 
+def test_add_user_to_org_user_dne(
+        app_cli_runner, missing_id, test_orgid):
+    r = app_cli_runner.invoke(
+        admincli.add_user_to_org,
+        [missing_id, test_orgid])
+    assert 'Cannot add affiliated user to organization\n' == r.output
+
+
 def test_add_user_to_org_org_dne(
         app_cli_runner, unaffiliated_userid, missing_id):
     r = app_cli_runner.invoke(
@@ -130,6 +146,33 @@ def test_promote_to_admin(
             f'organization {orgid}\n') == r.output
 
 
+def test_promote_to_admin_invalid_userid(
+        dict_cursor, app_cli_runner, new_org_with_user):
+    orgid = new_org_with_user[0]
+    r = app_cli_runner.invoke(
+        admincli.promote_to_admin,
+        ['baduuid', orgid])
+    assert r.output == 'Badly formed user_id\n'
+
+
+def test_promote_to_admin_bad_orgid(
+        dict_cursor, app_cli_runner, new_org_with_user):
+    userid = new_org_with_user[1]
+    r = app_cli_runner.invoke(
+        admincli.promote_to_admin,
+        [userid, 'baduuid'])
+    assert r.output == 'Badly formed organization_id\n'
+
+
+def test_promote_to_admin_user_dne(
+        dict_cursor, app_cli_runner, new_org_with_user, missing_id):
+    orgid = new_org_with_user[0]
+    r = app_cli_runner.invoke(
+        admincli.promote_to_admin,
+        [missing_id, orgid])
+    assert ('Cannot promote admin from outside organization.\n') == r.output
+
+
 def test_promote_to_admin_already_granted(
         dict_cursor, app_cli_runner, new_org_with_user):
     orgid = new_org_with_user[0]
@@ -150,6 +193,15 @@ def test_promote_to_admin_not_in_org(
         admincli.promote_to_admin,
         [unaffiliated_userid, new_org_without_user])
     assert 'Cannot promote admin from outside organization.\n' == r.output
+
+
+def test_promote_to_admin_org_dne(
+        dict_cursor, app_cli_runner, new_org_with_user, missing_id):
+    userid = new_org_with_user[1]
+    r = app_cli_runner.invoke(
+        admincli.promote_to_admin,
+        [userid, missing_id])
+    assert r.output == 'Cannot promote admin from outside organization.\n'
 
 
 def test_list_all_users(app_cli_runner, dict_cursor):
@@ -177,8 +229,6 @@ def test_list_all_organizations(app_cli_runner, dict_cursor):
 
 def test_set_org_accepted_tou(app_cli_runner, dict_cursor):
     with dict_cursor as sql_cursor:
-        def org_dict(org_list):
-            return {o['name']: o for o in org_list}
         sql_cursor.callproc('create_organization', ('clitestorg',))
         sql_cursor.callproc('list_all_organizations')
         original_orgs = org_dict(sql_cursor.fetchall())
@@ -200,3 +250,28 @@ def test_set_org_accepted_tou_org_dne(
         admincli.set_org_accepted_tou,
         (missing_id))
     assert r.output == "Organization does not exist\n"
+
+
+def test_set_org_accepted_tou_bad_orgid(
+        app_cli_runner, dict_cursor):
+    r = app_cli_runner.invoke(
+        admincli.set_org_accepted_tou,
+        ('baduuid'))
+    assert r.output == "Badly formed orgid\n"
+
+
+def test_move_user_to_unaffiliated(
+        app_cli_runner, dict_cursor, new_org_with_user):
+    userid = new_org_with_user[1]
+    r = app_cli_runner.invoke(
+        admincli.move_user_to_unaffiliated,
+        (userid))
+    assert r.output == f'User {userid} moved to unaffiliated organization.\n'
+
+
+def test_move_user_to_unaffiliated_invalid_userid(
+        app_cli_runner, dict_cursor):
+    r = app_cli_runner.invoke(
+        admincli.move_user_to_unaffiliated,
+        'baduuid')
+    assert r.output == 'Badly formed user_id\n'

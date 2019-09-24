@@ -67,7 +67,7 @@ def add_user_to_org(user_id, organization_id):
         if e.args[0] == 1452:
             click.echo('Organization does not exist')
         else:
-            click.echo(e.args[1])
+            raise
     except StorageAuthError as e:
         click.echo(e.args[0])
     else:
@@ -101,7 +101,6 @@ def promote_to_admin(user_id, organization_id):
         if e.args[0] == 1062:
             click.echo('User already granted admin permissions.')
         else:
-            click.echo(e.args[1])
             raise
     except StorageAuthError as e:
         click.echo(e.args[0])
