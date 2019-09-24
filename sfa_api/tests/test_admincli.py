@@ -95,8 +95,7 @@ def test_add_user_to_org_org_dne(
     r = app_cli_runner.invoke(
         admincli.add_user_to_org,
         [unaffiliated_userid, missing_id])
-    assert ('Cannot add or update a child row: a foreign '
-            'key constraint fails\n') == r.output
+    assert 'Organization does not exist\n' == r.output
 
 
 @pytest.fixture(scope='function')
@@ -168,5 +167,36 @@ def test_list_all_organizations(app_cli_runner, dict_cursor):
         admincli.list_organizations)
     output_lines = r.output.split('\n')
     assert len(output_lines) == 9
+    assert output_lines[0] == (
+        "Name                              "
+        "|Organization ID                       "
+        "|Accepted TOU")
     for line in output_lines[2:-1]:
-        assert len(line.split('|')) == 2
+        assert len(line.split('|')) == 3
+
+
+def test_set_org_accepted_tou(app_cli_runner, dict_cursor):
+    with dict_cursor as sql_cursor:
+        def org_dict(org_list):
+            return {o['name']: o for o in org_list}
+        sql_cursor.callproc('create_organization', ('clitestorg',))
+        sql_cursor.callproc('list_all_organizations')
+        original_orgs = org_dict(sql_cursor.fetchall())
+        assert original_orgs['clitestorg']['accepted_tou'] == 0
+        r = app_cli_runner.invoke(
+            admincli.set_org_accepted_tou,
+            (original_orgs['clitestorg']['id']))
+        sql_cursor.callproc('list_all_organizations')
+        updated_orgs = org_dict(sql_cursor.fetchall())
+        assert updated_orgs['clitestorg']['accepted_tou'] == 1
+        assert r.output == (f"Organization {updated_orgs['clitestorg']['id']} "
+                            "has been marked as accepting the terms of "
+                            "use.\n")
+
+
+def test_set_org_accepted_tou_org_dne(
+        app_cli_runner, dict_cursor, missing_id):
+    r = app_cli_runner.invoke(
+        admincli.set_org_accepted_tou,
+        (missing_id))
+    assert r.output == "Organization does not exist\n"
