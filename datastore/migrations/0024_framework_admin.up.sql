@@ -512,7 +512,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_users TO 'frameworkadmin'@'%';
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_all_organizations()
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
-    SELECT name, BIN_TO_UUID(id, 1) as id from arbiter_data.organizations;
+    SELECT name, BIN_TO_UUID(id, 1) as id, accepted_tou from arbiter_data.organizations;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_all_organizations TO 'frameworkadmin'@'%';

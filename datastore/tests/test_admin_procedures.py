@@ -655,6 +655,7 @@ def test_list_all_organizations(dictcursor):
     for org in orgs:
         assert 'name' in org
         assert 'id' in org
+        assert 'accepted_tou' in org
 
 
 def test_set_org_accepted_tou(dictcursor):
