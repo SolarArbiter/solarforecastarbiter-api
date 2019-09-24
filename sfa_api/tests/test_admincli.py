@@ -40,8 +40,7 @@ def test_create_org(mocker, app_cli_runner, dict_cursor):
 
     with dict_cursor as sql_cursor:
         sql_cursor.callproc('list_all_organizations')
-        orgs = sql_cursor.fetchall()
-        assert 'clitestorg' in [o['name'] for o in orgs]
+        assert 'clitestorg' in org_dict(sql_cursor.fetchall())
 
 
 def test_create_org_org_exists(mocker, app_cli_runner):
@@ -68,10 +67,9 @@ def test_add_user_to_org(
             f'{test_orgid}\n') == r.output
     with dict_cursor as cursor:
         cursor.callproc('list_all_users')
-        users = cursor.fetchall()
-        for user in users:
-            if user['id'] == unaffiliated_userid:
-                assert user['organization_id'] == test_orgid
+        users = user_dict(cursor.fetchall())
+        assert unaffiliated_userid in users
+        assert users[unaffiliated_userid]['organization_id'] == test_orgid
 
 
 def test_add_user_to_org_affiliated_user(
@@ -130,8 +128,7 @@ def new_org_without_user(dict_cursor):
     with dict_cursor as sql_cursor:
         sql_cursor.callproc('create_organization', ('clitestorg',))
         sql_cursor.callproc('list_all_organizations')
-        orgid = [o['id'] for o in sql_cursor.fetchall()
-                 if o['name'] == 'clitestorg'][0]
+        orgid = org_dict(sql_cursor.fetchall())['clitestorg']['id']
     return orgid
 
 
@@ -261,12 +258,15 @@ def test_set_org_accepted_tou_bad_orgid(
 
 
 def test_move_user_to_unaffiliated(
-        app_cli_runner, dict_cursor, new_org_with_user):
-    userid = new_org_with_user[1]
+        app_cli_runner, dict_cursor, user_id):
     r = app_cli_runner.invoke(
         admincli.move_user_to_unaffiliated,
-        (userid))
-    assert r.output == f'User {userid} moved to unaffiliated organization.\n'
+        (user_id))
+    assert r.output == f'User {user_id} moved to unaffiliated organization.\n'
+    with dict_cursor as sql_cursor:
+        sql_cursor.callproc('list_all_users')
+        user = user_dict(sql_cursor.fetchall())[user_id]
+        assert user['organization_name'] == 'Unaffiliated'
 
 
 def test_move_user_to_unaffiliated_invalid_userid(
