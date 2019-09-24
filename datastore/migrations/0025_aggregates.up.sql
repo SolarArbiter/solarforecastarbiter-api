@@ -47,7 +47,7 @@ GRANT SELECT(observation_id), UPDATE(observation_removed_at) ON
    TO 'permission_trig'@'localhost';
 
 
-CREATE DEFINER = 'select_objects'@'localhost' FUNCTION get_aggregate_observations (aggregate_id BINARY(16))
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION get_aggregate_observations (agg_id BINARY(16))
 RETURNS JSON
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -58,7 +58,7 @@ BEGIN
             'created_at', created_at,
             'observation_removed_at', observation_removed_at))_
         FROM arbiter_data.aggregate_observation_mapping
-        WHERE aggregate_id = aggregate_id GROUP BY aggregate_id
+        WHERE aggregate_id = agg_id GROUP BY aggregate_id
     );
     IF jsonout is NOT NULL THEN
         RETURN jsonout;
@@ -97,28 +97,49 @@ GRANT SELECT on arbiter_data.aggregates to 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate TO 'select_objects'@'localhost';
 
 -- list aggregates
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_aggregates (IN auth0id VARCHAR(32))
+COMMENT 'List all aggregate metadata the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT BIN_TO_UUID(id, 1) as aggregate_id,
+    get_organization_name(organization_id) as provider,
+    name, variable,  interval_label, interval_length,
+    extra_parameters, created_at, modified_at,
+    get_aggregate_observations(id) as observations
+    FROM arbiter_data.aggregates WHERE id IN (
+        SELECT object_id from user_objects WHERE auth0_id = auth0id
+        AND object_type = 'aggregates');
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_aggregates TO 'select_objects'@'localhost';
+
 -- read aggregate values
 -- delete aggregate
 -- add observation to aggregate
 
-SET @aggid = UUID_TO_BIN('458ffc27-df0b-11e9-b622-62adb5fd6af0', 1);
+SET @aggid0 = UUID_TO_BIN('458ffc27-df0b-11e9-b622-62adb5fd6af0', 1);
+SET @aggid1 = UUID_TO_BIN('d3d1e8e5-df1b-11e9-b622-62adb5fd6af0', 1);
 SET @orgid = UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1);
 SET @roleid = (SELECT id FROM arbiter_data.roles WHERE name = 'Test user role' and organization_id = @orgid);
 INSERT INTO arbiter_data.aggregates (
     id, organization_id, name, variable, interval_label,
     interval_length, extra_parameters, created_at, modified_at)
 VALUES (
-    @aggid, @orgid,
-    'Test Aggregate', 'ghi', 'ending', 60, 'extra',
+    @aggid0, @orgid,
+    'Test Aggregate ghi', 'ghi', 'ending', 60, 'extra',
+    TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
+), (
+    @aggid1, @orgid,
+    'Test Aggregate dni', 'dni', 'ending', 60, 'extra',
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
 );
 
 INSERT INTO arbiter_data.aggregate_observation_mapping (
     aggregate_id, observation_id) VALUES
-    (@aggid, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1)),
-    (@aggid, UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440000', 1)),
-    (@aggid, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1)),
-    (@aggid, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1));
+    (@aggid0, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1)),
+    (@aggid0, UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440000', 1)),
+    (@aggid0, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1)),
+    (@aggid0, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1)),
+    (@aggid1, UUID_TO_BIN('9ce9715c-bd91-47b7-989f-50bb558f1eb9', 1)),
+    (@aggid1, UUID_TO_BIN('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f', 1));
 
 SET @pid0 = UUID_TO_BIN(UUID(), 1);
 

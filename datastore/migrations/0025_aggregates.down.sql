@@ -9,3 +9,4 @@ DROP TRIGGER record_observation_deletion_in_aggregate_mapping;
 DROP FUNCTION get_aggregate_observations;
 DROP PROCEDURE read_aggregate;
 REVOKE SELECT ON arbiter_data.aggregates FROM 'select_objects'@'localhost';
+DROP PROCEDURE list_aggregates;
