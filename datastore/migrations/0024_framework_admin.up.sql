@@ -527,7 +527,12 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE orgid BINARY(16);
     SET orgid = UUID_TO_BIN(strorgid, 1);
-    UPDATE arbiter_data.organizations SET accepted_tou = TRUE WHERE id = orgid;
+    IF EXISTS(SELECT * FROM arbiter_data.organizations WHERE id = orgid) THEN
+        UPDATE arbiter_data.organizations SET accepted_tou = TRUE WHERE id = orgid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Organization does not exist',
+        MYSQL_ERRNO = 1305;
+    END IF;
 END;
 GRANT SELECT, UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'update_rbac'@'localhost';

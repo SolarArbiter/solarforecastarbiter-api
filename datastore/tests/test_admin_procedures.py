@@ -667,3 +667,11 @@ def test_set_org_accepted_tou(dictcursor):
     dictcursor.execute(
         'SELECT accepted_tou FROM organizations WHERE id = %s', orgid)
     assert dictcursor.fetchone()
+
+
+def test_set_org_accepted_tou_org_dne(dictcursor):
+    orgid = newuuid()
+    with pytest.raises(pymysql.err.InternalError) as e:
+        dictcursor.callproc('set_org_accepted_tou', (str(bin_to_uuid(orgid)),))
+    assert e.value.args[0] == 1305
+    assert e.value.args[1] == "Organization does not exist"
