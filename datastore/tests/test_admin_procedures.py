@@ -540,7 +540,18 @@ def test_remove_org_roles_from_user(
     dictcursor.execute(
         'SELECT * FROM user_role_mapping WHERE user_id = %s',
         (user['id'],))
-    assert len(dictcursor.fetchall()) == 2
+    user_roleids = [m['role_id'] for m in dictcursor.fetchall()]
+    assert len(user_roleids) == 2
+    for roleid in user_roleids:
+        dictcursor.execute(
+            'SELECT * FROM arbiter_data.roles WHERE id = %s', roleid)
+        role = dictcursor.fetchone()
+        assert role['name'] in [reference_role['name'],
+                                unaffiliated_role['name']]
+        if role['id'] == reference_role['id']:
+            assert role['organization_id'] == reference_org['id']
+        else:
+            assert role['organization_id'] == unaffiliated_org['id']
 
 
 def test_move_user_to_unaffiliated(
