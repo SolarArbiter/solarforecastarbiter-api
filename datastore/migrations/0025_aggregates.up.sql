@@ -144,6 +144,26 @@ END;
 GRANT EXECUTE ON PROCEDURE read_aggregate_values TO 'select_objects'@'localhost';
 
 -- delete aggregate
+CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_aggregate (
+    IN auth0id VARCHAR(32), IN strid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = (SELECT UUID_TO_BIN(strid, 1));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'delete'));
+    IF allowed THEN
+        DELETE FROM arbiter_data.aggregates WHERE id = binid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "delete aggregate"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT SELECT(id), DELETE ON arbiter_data.aggregates TO 'delete_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE delete_aggregate TO 'delete_objects'@'localhost';
+
+
 -- add observation to aggregate
 
 SET @aggid0 = UUID_TO_BIN('458ffc27-df0b-11e9-b622-62adb5fd6af0', 1);
@@ -174,11 +194,13 @@ INSERT INTO arbiter_data.aggregate_observation_mapping (
 
 SET @pid0 = UUID_TO_BIN(UUID(), 1);
 SET @pid1 = UUID_TO_BIN(UUID(), 1);
+SET @pid2 = UUID_TO_BIN(UUID(), 1);
 
 INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES
     (@pid0, 'Read Aggregates', @orgid, 'read', 'aggregates', TRUE),
-    (@pid1, 'Read Aggregate Values', @orgid, 'read_values', 'aggregates', TRUE);
+    (@pid1, 'Read Aggregate Values', @orgid, 'read_values', 'aggregates', TRUE),
+    (@pid2, 'Delete Aggregates', @orgid, 'delete', 'aggregates', TRUE);
 
-INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (@roleid, @pid0), (@roleid, @pid1);
+INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (@roleid, @pid0), (@roleid, @pid1), (@roleid, @pid2);
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate TO 'apiuser'@'%';
