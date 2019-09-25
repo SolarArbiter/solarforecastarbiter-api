@@ -275,3 +275,19 @@ def test_move_user_to_unaffiliated_invalid_userid(
         admincli.move_user_to_unaffiliated,
         'baduuid')
     assert r.output == 'Badly formed user_id\n'
+
+
+def test_delete_user(
+        app_cli_runner, dict_cursor, user_id):
+    r = app_cli_runner.invoke(
+        admincli.delete_user,
+        user_id)
+    assert r.output == (f'User {user_id} deleted successfully.\n')
+
+
+def test_delete_user_user_dne(
+        app_cli_runner, dict_cursor, missing_id):
+    r = app_cli_runner.invoke(
+        admincli.delete_user,
+        missing_id)
+    assert r.output == (f'User does not exist\n')

@@ -180,10 +180,38 @@ def set_org_accepted_tou(organization_id):
         storage._call_procedure_without_user(
             'set_org_accepted_tou', (organization_id,))
     except pymysql.err.InternalError as e:
-        click.echo(e.args[1])
+        if e.args[0] == 1305:
+            click.echo(e.args[1])
+        else:
+            raise
     else:
         click.echo(f'Organization {organization_id} has been marked '
                    'as accepting the terms of use.')
+
+
+@admin_cli.command('delete-user')
+@click.argument('user_id', required=True)
+def delete_user(user_id):
+    """
+    Remove a user from the framework.
+    """
+    try:
+        uuid.UUID(user_id, version=1)
+    except ValueError:
+        click.echo('Badly formed user_id')
+        return
+    from sfa_api.utils.storage import get_storage
+    storage = get_storage()
+    try:
+        storage._call_procedure_without_user(
+            'delete_user', user_id)
+    except pymysql.err.InternalError as e:
+        if e.args[0] == 1305:
+            click.echo(e.args[1])
+        else:
+            raise
+    else:
+        click.echo(f'User {user_id} deleted successfully.')
 
 
 app.cli.add_command(admin_cli)
