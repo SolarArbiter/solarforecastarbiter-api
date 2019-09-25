@@ -18,11 +18,32 @@ admin_cli = AppGroup(
     help="Tool for administering the Solar Forecast Arbiter Framework")
 
 
+username_opt = click.option('--username', required=True)
+password_opt = click.option('--password', prompt=True, required=True,
+                            hide_input=True)
+
+
+def requires_auth(func):
+    """Decorator adds the username and password options to a cli
+    command.
+    """
+    for option in [password_opt, username_opt]:
+        func = option(func)
+    return func
+
+
+def update_config(username, password):
+    app.config['MYSQL_USER'] = username
+    app.config['MYSQL_PASSWORD'] = password
+
+
 @admin_cli.command('create-organization')
+@requires_auth
 @click.argument('organization_name', required=True)
-def create_organization(organization_name):
+def create_organization(organization_name, username, password):
     """Creates a new organization.
     """
+    update_config(username, password)
     from sfa_api.utils.storage import get_storage
     storage = get_storage()
     try:
@@ -40,13 +61,15 @@ def create_organization(organization_name):
 
 
 @admin_cli.command('add-user-to-org')
+@requires_auth
 @click.argument('user_id', required=True)
 @click.argument('organization_id', required=True)
-def add_user_to_org(user_id, organization_id):
+def add_user_to_org(user_id, organization_id, username, password):
     """
     Adds a user to an organization. The user must currently be
     unaffiliated.
     """
+    update_config(username, password)
     try:
         uuid.UUID(user_id, version=1)
     except ValueError:
@@ -75,12 +98,14 @@ def add_user_to_org(user_id, organization_id):
 
 
 @admin_cli.command('promote-user-to-org-admin')
+@requires_auth
 @click.argument('user_id', required=True)
 @click.argument('organization_id', required=True)
-def promote_to_admin(user_id, organization_id):
+def promote_to_admin(user_id, organization_id, username, password):
     """
     Grants a user admin permissions in the organizations.
     """
+    update_config(username, password)
     try:
         uuid.UUID(user_id, version=1)
     except ValueError:
@@ -110,12 +135,14 @@ def promote_to_admin(user_id, organization_id):
 
 
 @admin_cli.command('move-to-unaffiliated')
+@requires_auth
 @click.argument('user_id', required=True)
-def move_user_to_unaffiliated(user_id):
+def move_user_to_unaffiliated(user_id, username, password):
     """
     Moves a user to the Unaffiliated organization and removes access
     to all data except for the reference data set.
     """
+    update_config(username, password)
     try:
         uuid.UUID(user_id, version=1)
     except ValueError:
@@ -129,11 +156,13 @@ def move_user_to_unaffiliated(user_id):
 
 
 @admin_cli.command('list-users')
-def list_users():
+@requires_auth
+def list_users(username, password):
     """
     Prints a table of user information including auth0 id, user id,
     organization and organization id.
     """
+    update_config(username, password)
     from sfa_api.utils.storage import get_storage
     storage = get_storage()
     users = storage._call_procedure_without_user('list_all_users')
@@ -149,10 +178,12 @@ def list_users():
 
 
 @admin_cli.command('list-organizations')
-def list_organizations():
+@requires_auth
+def list_organizations(username, password):
     """
     Prints a table of organization names and ids.
     """
+    update_config(username, password)
     from sfa_api.utils.storage import get_storage
     storage = get_storage()
     organizations = storage._call_procedure_without_user(
@@ -167,8 +198,13 @@ def list_organizations():
 
 
 @admin_cli.command('set-org-accepted-tou')
+@requires_auth
 @click.argument('organization_id', required=True)
-def set_org_accepted_tou(organization_id):
+def set_org_accepted_tou(organization_id, username, password):
+    """
+    Sets an organizaiton's accepted terms of use field to true.
+    """
+    update_config(username, password)
     try:
         uuid.UUID(organization_id, version=1)
     except ValueError:
@@ -190,11 +226,13 @@ def set_org_accepted_tou(organization_id):
 
 
 @admin_cli.command('delete-user')
+@requires_auth
 @click.argument('user_id', required=True)
-def delete_user(user_id):
+def delete_user(user_id, username, password):
     """
     Remove a user from the framework.
     """
+    update_config(username, password)
     try:
         uuid.UUID(user_id, version=1)
     except ValueError:
