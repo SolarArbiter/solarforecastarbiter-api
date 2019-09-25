@@ -10,3 +10,4 @@ DROP FUNCTION get_aggregate_observations;
 DROP PROCEDURE read_aggregate;
 REVOKE SELECT ON arbiter_data.aggregates FROM 'select_objects'@'localhost';
 DROP PROCEDURE list_aggregates;
+DROP PROCEDURE read_aggregate_values
