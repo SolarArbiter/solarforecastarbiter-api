@@ -426,7 +426,7 @@ BEGIN
         MYSQL_ERRNO = 1142;
     END IF;
 END;
-GRANT SELECT, UPDATE ON arbiter_data.users TO 'update_rbac'@'localhost';
+GRANT SELECT(id), UPDATE ON arbiter_data.users TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.get_object_organization TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_user_to_org TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_user_to_org TO 'frameworkadmin'@'%';
@@ -484,7 +484,7 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE userid BINARY(16);
     SET userid = UUID_TO_BIN(struserid, 1);
-    IF EXISTS(SELECT * FROM arbiter_data.users WHERE id = userid) THEN
+    IF EXISTS(SELECT 1 FROM arbiter_data.users WHERE id = userid) THEN
         DELETE FROM arbiter_data.users WHERE id = userid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not exist',
@@ -532,13 +532,13 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE orgid BINARY(16);
     SET orgid = UUID_TO_BIN(strorgid, 1);
-    IF EXISTS(SELECT * FROM arbiter_data.organizations WHERE id = orgid) THEN
+    IF EXISTS(SELECT 1 FROM arbiter_data.organizations WHERE id = orgid) THEN
         UPDATE arbiter_data.organizations SET accepted_tou = TRUE WHERE id = orgid;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Organization does not exist',
         MYSQL_ERRNO = 1305;
     END IF;
 END;
-GRANT SELECT, UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
+GRANT SELECT (id), UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'frameworkadmin'@'%';
