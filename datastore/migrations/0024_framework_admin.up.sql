@@ -484,7 +484,12 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE userid BINARY(16);
     SET userid = UUID_TO_BIN(struserid, 1);
-    DELETE FROM arbiter_data.users WHERE id = userid; 
+    IF EXISTS(SELECT * FROM arbiter_data.users WHERE id = userid) THEN
+        DELETE FROM arbiter_data.users WHERE id = userid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not exist',
+        MYSQL_ERRNO = 1305;
+    END IF;
 END;
 GRANT SELECT (id), DELETE ON arbiter_data.users TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';

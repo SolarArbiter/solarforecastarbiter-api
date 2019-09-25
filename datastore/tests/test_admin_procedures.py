@@ -586,6 +586,13 @@ def test_delete_user(dictcursor, new_user):
     assert len(dictcursor.fetchall()) == 0
 
 
+def test_delete_user_user_dne(dictcursor):
+    with pytest.raises(pymysql.err.InternalError) as e:
+        dictcursor.callproc('delete_user', (str(bin_to_uuid(newuuid())),))
+    assert e.value.args[0] == 1305
+    assert e.value.args[1] == "User does not exist"
+
+
 def test_promote_user_to_org_admin(dictcursor, new_user):
     # depends on the roles provided by create_organization
     dictcursor.callproc('create_organization', ('test_org',))
