@@ -398,3 +398,23 @@ def new_organization_no_tou(cursor):
             list(out.values()))
         return out
     return fnc
+
+
+@pytest.fixture()
+def unaffiliated_organization(dictcursor):
+    dictcursor.execute(
+        'SELECT * FROM organizations WHERE name = "Unaffiliated"')
+    org = dictcursor.fetchone()
+    return org
+
+
+@pytest.fixture()
+def new_unaffiliated_user(cursor, unaffiliated_organization):
+    def fnc():
+        out = OrderedDict(id=newuuid(), auth0_id=f'authid{str(uuid1())[:10]}',
+                          organization_id=unaffiliated_organization['id'])
+        cursor.execute(
+            'INSERT INTO users (id, auth0_id, organization_id) VALUES '
+            '(%s, %s, %s)', list(out.values()))
+        return out
+    return fnc
