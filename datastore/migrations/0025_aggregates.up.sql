@@ -17,8 +17,6 @@ CREATE TABLE arbiter_data.aggregate_observation_mapping(
     observation_id BINARY(16) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     /* add observation_removed_at to track that an observation
-       can be removed but the aggregate object may still exist
-       enables support of aggregates of objects that a user
        may not control */
     observation_removed_at TIMESTAMP,
 
@@ -165,6 +163,53 @@ GRANT EXECUTE ON PROCEDURE delete_aggregate TO 'delete_objects'@'localhost';
 
 
 -- add observation to aggregate
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE add_observation_to_aggregate (
+    IN auth0id VARCHAR(32), IN agg_strid CHAR(36), IN obs_strid CHAR(36))
+COMMENT 'Adds an observation to an aggregate object'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binaggid BINARY(16);
+    DECLARE binobsid BINARY(16);
+    DECLARE allowd BOOLEAN DEFAULT FALSE;
+    SET binaggid = UUID_TO_BIN(agg_strid, 1);
+    SET binobsid = UUID_TO_BIN(obs_strid, 1);
+    SET allowd = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
+    IF allowed THEN
+        INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id)
+        VALUES (binaggid, binobsid);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add observation to aggregate"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT INSERT ON arbiter_data.aggregate_observation_mapping TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE add_observation_to_aggregate TO 'insert_objects'@'localhost';
+
+-- remove observation from aggregate
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE remove_observation_from_aggregate(
+    IN auth0id VARCHAR(32), IN agg_strid CHAR(36), IN obs_strid CHAR(36))
+COMMENT 'Removes an observation to an aggregate object'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binaggid BINARY(16);
+    DECLARE binobsid BINARY(16);
+    DECLARE allowd BOOLEAN DEFAULT FALSE;
+    SET binaggid = UUID_TO_BIN(agg_strid, 1);
+    SET binobsid = UUID_TO_BIN(obs_strid, 1);
+    SET allowd = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
+    IF allowed THEN
+        UPDATE arbiter_data.aggregate_observation_mapping SET observation_removed_at = NOW()
+        WHERE aggregate_id = binaggid AND observation_id = binobsid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove observation from aggregate"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT SELECT(aggregate_id, observation_id), UPDATE ON arbiter_data.aggregate_observation_mapping TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE remove_observation_from_aggregate TO 'insert_objects'@'localhost';
+
 
 SET @aggid0 = UUID_TO_BIN('458ffc27-df0b-11e9-b622-62adb5fd6af0', 1);
 SET @aggid1 = UUID_TO_BIN('d3d1e8e5-df1b-11e9-b622-62adb5fd6af0', 1);
@@ -204,3 +249,8 @@ INSERT INTO arbiter_data.permissions (id, description, organization_id, action, 
 INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (@roleid, @pid0), (@roleid, @pid1), (@roleid, @pid2);
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_aggregates TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_aggregate TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate_values TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.add_observation_to_aggregate TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_observation_from_aggregate TO 'apiuser'@'%';
