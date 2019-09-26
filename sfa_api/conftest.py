@@ -320,6 +320,11 @@ def site_id_plant():
 
 
 @pytest.fixture()
+def test_orgid():
+    return 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
+
+
+@pytest.fixture()
 def mocked_queuing(mocker):
     mocked = mocker.patch('rq.Queue.enqueue')
     yield

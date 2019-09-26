@@ -57,5 +57,6 @@ setup(
     entry_points='''
     [console_scripts]
     sfa-api=sfa_api.cli:cli
+    sfa-admin=sfa_api.admincli:admin_cli
     '''
 )
