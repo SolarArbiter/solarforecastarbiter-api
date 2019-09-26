@@ -135,28 +135,20 @@ def try_query(query_cmd):
             raise
 
 
-def _call_procedure_without_user(procedure_name, *args, cursor_type='dict'):
+def _call_procedure(
+        procedure_name, *args, cursor_type='dict', with_current_user=True):
     """
     Can't user callproc since it doesn't properly use converters.
     Will not handle OUT or INOUT parameters without first setting
     local variables and retrieving from those variables
     """
     with get_cursor(cursor_type) as cursor:
-        query = f'CALL {procedure_name}({",".join(["%s"] * (len(args)))})'
-        query_cmd = partial(cursor.execute, query, (*args,))
-        try_query(query_cmd)
-        return cursor.fetchall()
-
-
-def _call_procedure(procedure_name, *args, cursor_type='dict'):
-    """
-    Can't user callproc since it doesn't properly use converters.
-    Will not handle OUT or INOUT parameters without first setting
-    local variables and retrieving from those variables
-    """
-    with get_cursor(cursor_type) as cursor:
-        query = f'CALL {procedure_name}({",".join(["%s"] * (len(args) + 1))})'
-        query_cmd = partial(cursor.execute, query, (current_user, *args))
+        if with_current_user:
+            new_args = (current_user, *args)
+        else:
+            new_args = args
+        query = f'CALL {procedure_name}({",".join(["%s"] * len(new_args))})'
+        query_cmd = partial(cursor.execute, query, new_args)
         try_query(query_cmd)
         return cursor.fetchall()
 

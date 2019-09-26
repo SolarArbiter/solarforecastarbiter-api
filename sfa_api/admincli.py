@@ -1,59 +1,64 @@
-import uuid
-import os
+import sys
 
 
 import click
+from flask import Flask
 from flask.cli import AppGroup
 import pymysql
 
 
-from sfa_api import create_app
 from sfa_api.utils.errors import StorageAuthError
 
 
-config = os.getenv('SFA_CLI_CONFIG', 'ProductionConfig')
-app = create_app(config)
+app = Flask(__name__)
 admin_cli = AppGroup(
     'admin',
     help="Tool for administering the Solar Forecast Arbiter Framework")
 
 
-username_opt = click.option('--username', required=True)
-password_opt = click.option('--password', prompt=True, required=True,
-                            hide_input=True)
+config_opt = click.option(
+    '--config', default='ProductionConfig', show_envvar=True,
+    callback=lambda _, y, x: app.config.from_object(f'sfa_api.config.{x}'),
+    envvar='SFA_CLI_CONFIG', is_eager=True)
+username_opt = click.option(
+    '--username', required=True, show_envvar=True, envvar='MYSQL_USER',
+    callback=lambda _, y, x: app.config.update({'MYSQL_USER': x}))
+password_opt = click.option(
+    '--password', prompt=True, required=True,
+    hide_input=True, envvar='MYSQL_PASSWORD',
+    callback=lambda _, y, x: app.config.update({'MYSQL_PASSWORD': x}))
 
 
-def requires_auth(func):
+def with_default_options(func):
     """Decorator adds the username and password options to a cli
     command.
     """
-    for option in [password_opt, username_opt]:
+    for option in [password_opt, username_opt, config_opt]:
         func = option(func)
     return func
 
 
-def update_config(username, password):
-    app.config['MYSQL_USER'] = username
-    app.config['MYSQL_PASSWORD'] = password
+def fail(message):
+    click.echo(message, err=True)
+    sys.exit(1)
 
 
 @admin_cli.command('create-organization')
-@requires_auth
+@with_default_options
 @click.argument('organization_name', required=True)
-def create_organization(organization_name, username, password):
+def create_organization(organization_name, **kwargs):
     """Creates a new organization.
     """
-    update_config(username, password)
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
+    import sfa_api.utils.storage_interface as storage
     try:
-        storage._call_procedure_without_user(
-            'create_organization', organization_name)
+        storage._call_procedure(
+            'create_organization', organization_name,
+            with_current_user=False)
     except pymysql.err.DataError:
-        click.echo("Organization name must be 32 characters or fewer.")
+        fail("Organization name must be 32 characters or fewer.")
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
-            click.echo(f'Organization {organization_name} already exists.')
+            fail(f'Organization {organization_name} already exists.')
         else:
             raise
     else:
@@ -61,70 +66,48 @@ def create_organization(organization_name, username, password):
 
 
 @admin_cli.command('add-user-to-org')
-@requires_auth
-@click.argument('user_id', required=True)
-@click.argument('organization_id', required=True)
-def add_user_to_org(user_id, organization_id, username, password):
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+@click.argument('organization_id', required=True, type=click.UUID)
+def add_user_to_org(
+        user_id, organization_id, **kwargs):
     """
     Adds a user to an organization. The user must currently be
     unaffiliated.
     """
-    update_config(username, password)
+    import sfa_api.utils.storage_interface as storage
     try:
-        uuid.UUID(user_id, version=1)
-    except ValueError:
-        click.echo('Badly formed user_id')
-        return
-    try:
-        uuid.UUID(organization_id, version=1)
-    except ValueError:
-        click.echo('Badly formed organization_id')
-        return
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-
-    try:
-        storage._call_procedure_without_user(
-            'add_user_to_org', user_id, organization_id)
+        storage._call_procedure(
+            'add_user_to_org', str(user_id), str(organization_id),
+            with_current_user=False)
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1452:
-            click.echo('Organization does not exist')
+            fail('Organization does not exist')
         else:
             raise
     except StorageAuthError as e:
-        click.echo(e.args[0])
+        fail(e.args[0])
     else:
         click.echo(f'Added user {user_id} to organization {organization_id}')
 
 
 @admin_cli.command('promote-user-to-org-admin')
-@requires_auth
-@click.argument('user_id', required=True)
-@click.argument('organization_id', required=True)
-def promote_to_admin(user_id, organization_id, username, password):
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+@click.argument('organization_id', required=True, type=click.UUID)
+def promote_to_admin(user_id, organization_id, **kwargs):
     """
     Grants a user admin permissions in the organizations.
     """
-    update_config(username, password)
+    import sfa_api.utils.storage_interface as storage
     try:
-        uuid.UUID(user_id, version=1)
-    except ValueError:
-        click.echo('Badly formed user_id')
-        return
-    try:
-        uuid.UUID(organization_id, version=1)
-    except ValueError:
-        click.echo('Badly formed organization_id')
-        return
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    try:
-        storage._call_procedure_without_user(
+        storage._call_procedure(
             'promote_user_to_org_admin',
-            user_id, organization_id)
+            str(user_id), str(organization_id),
+            with_current_user=False)
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
-            click.echo('User already granted admin permissions.')
+            fail('User already granted admin permissions.')
         else:
             raise
     except StorageAuthError as e:
@@ -135,37 +118,29 @@ def promote_to_admin(user_id, organization_id, username, password):
 
 
 @admin_cli.command('move-to-unaffiliated')
-@requires_auth
-@click.argument('user_id', required=True)
-def move_user_to_unaffiliated(user_id, username, password):
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+def move_user_to_unaffiliated(user_id, **kwargs):
     """
     Moves a user to the Unaffiliated organization and removes access
     to all data except for the reference data set.
     """
-    update_config(username, password)
-    try:
-        uuid.UUID(user_id, version=1)
-    except ValueError:
-        click.echo('Badly formed user_id')
-        return
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    storage._call_procedure_without_user(
-        'move_user_to_unaffiliated', user_id)
+    import sfa_api.utils.storage_interface as storage
+    storage._call_procedure(
+        'move_user_to_unaffiliated', str(user_id),
+        with_current_user=False)
     click.echo(f'User {user_id} moved to unaffiliated organization.')
 
 
 @admin_cli.command('list-users')
-@requires_auth
-def list_users(username, password):
+@with_default_options
+def list_users(**kwargs):
     """
     Prints a table of user information including auth0 id, user id,
     organization and organization id.
     """
-    update_config(username, password)
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    users = storage._call_procedure_without_user('list_all_users')
+    import sfa_api.utils.storage_interface as storage
+    users = storage._call_procedure('list_all_users', with_current_user=False)
     table_format = '{:<34}|{:<38}|{:<34}|{:<38}'
     headers = table_format.format(
         'auth0_id', 'User ID', 'Organization Name', 'Organization ID')
@@ -178,16 +153,14 @@ def list_users(username, password):
 
 
 @admin_cli.command('list-organizations')
-@requires_auth
-def list_organizations(username, password):
+@with_default_options
+def list_organizations(**kwargs):
     """
     Prints a table of organization names and ids.
     """
-    update_config(username, password)
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    organizations = storage._call_procedure_without_user(
-        'list_all_organizations')
+    import sfa_api.utils.storage_interface as storage
+    organizations = storage._call_procedure(
+        'list_all_organizations', with_current_user=False)
     table_format = '{:<34}|{:<38}|{:<12}'
     headers = table_format.format('Name', 'Organization ID', 'Accepted TOU')
     click.echo(headers)
@@ -198,26 +171,21 @@ def list_organizations(username, password):
 
 
 @admin_cli.command('set-org-accepted-tou')
-@requires_auth
-@click.argument('organization_id', required=True)
-def set_org_accepted_tou(organization_id, username, password):
+@with_default_options
+@click.argument('organization_id', required=True, type=click.UUID)
+def set_org_accepted_tou(organization_id, **kwargs):
     """
     Sets an organizaiton's accepted terms of use field to true.
     """
-    update_config(username, password)
+    import sfa_api.utils.storage_interface as storage
     try:
-        uuid.UUID(organization_id, version=1)
-    except ValueError:
-        click.echo('Badly formed orgid')
-        return
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    try:
-        storage._call_procedure_without_user(
-            'set_org_accepted_tou', (organization_id,))
+        storage._call_procedure(
+            'set_org_accepted_tou',
+            str(organization_id),
+            with_current_user=False)
     except pymysql.err.InternalError as e:
         if e.args[0] == 1305:
-            click.echo(e.args[1])
+            fail(e.args[1])
         else:
             raise
     else:
@@ -226,26 +194,20 @@ def set_org_accepted_tou(organization_id, username, password):
 
 
 @admin_cli.command('delete-user')
-@requires_auth
-@click.argument('user_id', required=True)
-def delete_user(user_id, username, password):
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+def delete_user(user_id, **kwargs):
     """
     Remove a user from the framework.
     """
-    update_config(username, password)
+    import sfa_api.utils.storage_interface as storage
     try:
-        uuid.UUID(user_id, version=1)
-    except ValueError:
-        click.echo('Badly formed user_id')
-        return
-    from sfa_api.utils.storage import get_storage
-    storage = get_storage()
-    try:
-        storage._call_procedure_without_user(
-            'delete_user', user_id)
+        storage._call_procedure(
+            'delete_user', str(user_id),
+            with_current_user=False)
     except pymysql.err.InternalError as e:
         if e.args[0] == 1305:
-            click.echo(e.args[1])
+            fail(e.args[1])
         else:
             raise
     else:
