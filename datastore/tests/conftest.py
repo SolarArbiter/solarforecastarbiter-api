@@ -253,10 +253,33 @@ def new_observation(cursor, new_site):
     return fcn
 
 
+@pytest.fixture()
+def new_aggregate(cursor, new_observation):
+    def fcn(obs_list=None, site=None, org=None):
+        if obs_list is None:
+            obs_list = [new_observation(site, org)]
+        if org is None:
+            org_id = obs_list[0]['organization_id']
+        else:
+            org_id = org['id']
+        out = OrderedDict(
+            id=newuuid(), organization_id=org_id,
+            name=f'aggregate{str(uuid1())[:10]}',
+            variable='power',
+            interval_label='ending',
+            interval_length=15,
+            extra_parameters='')
+        insert_dict(cursor, 'aggregates', out)
+        return out
+    return fcn
+
+
 @pytest.fixture(params=['sites', 'users', 'roles', 'forecasts',
-                        'observations', 'cdf_forecasts', 'reports'])
+                        'observations', 'cdf_forecasts', 'reports',
+                        'aggregates'])
 def getfcn(request, new_site, new_user, new_role, new_forecast,
-           new_observation, new_cdf_forecast, new_report):
+           new_observation, new_cdf_forecast, new_report,
+           new_aggregate):
     if request.param == 'sites':
         return new_site, 'sites'
     elif request.param == 'users':
@@ -271,12 +294,14 @@ def getfcn(request, new_site, new_user, new_role, new_forecast,
         return new_cdf_forecast, 'cdf_forecasts'
     elif request.param == 'reports':
         return new_report, 'reports'
+    elif request.param == 'aggregates':
+        return new_aggregate, 'aggregates'
 
 
 @pytest.fixture()
 def valueset(cursor, new_organization, new_user, new_role, new_permission,
              new_site, new_forecast, new_observation, new_cdf_forecast,
-             new_report):
+             new_report, new_aggregate):
     org0 = new_organization()
     org1 = new_organization()
     user0 = new_user(org=org0)
@@ -302,6 +327,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     obs0 = new_observation(site=site0)
     obs1 = new_observation(site=site0)
     obs2 = new_observation(site=site1)
+    agg0 = new_aggregate(obs_list=[obs0, obs1])
+    agg1 = new_aggregate(obs_list=[obs0, obs1, obs2], org=org1)
     cdf0 = new_cdf_forecast(site=site0)
     cdf1 = new_cdf_forecast(site=site1)
     rep0 = new_report(org0, obs0, forecasts0, [cdf0])
@@ -325,7 +352,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
             forecasts0 + forecasts1 + [forecasts2],
-            (obs0, obs1, obs2), (cdf0, cdf1), (rep0, rep1))
+            (obs0, obs1, obs2), (cdf0, cdf1), (rep0, rep1),
+            (agg0, agg1))
 
 
 @pytest.fixture(params=[0, 1])
@@ -366,6 +394,10 @@ def valueset_observation(valueset, request):
 @pytest.fixture(params=[0, 1])
 def valueset_report(valueset, request):
     return valueset[8][request.param]
+
+@pytest.fixture(params=[0, 1])
+def valueset_aggregate(valueset, request):
+    return valueset[9][request.param]
 
 
 @pytest.fixture()
