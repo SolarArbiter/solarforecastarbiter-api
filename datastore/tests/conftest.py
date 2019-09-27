@@ -270,6 +270,12 @@ def new_aggregate(cursor, new_observation):
             interval_length=15,
             extra_parameters='')
         insert_dict(cursor, 'aggregates', out)
+        cursor.executemany(
+            'INSERT INTO aggregate_observation_mapping '
+            '(aggregate_id, observation_id) VALUES (%s, %s)',
+            [(out['id'], obs['id']) for obs in obs_list]
+        )
+        out['obs_list'] = obs_list
         return out
     return fcn
 
