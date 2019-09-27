@@ -120,18 +120,12 @@ BEGIN
     SET binid = UUID_TO_BIN(strid, 1);
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
-        -- leave out ID of observation but still need to keep timeseries together
-        WITH
-           -- map observation_id to integer from 0 to
-           -- len(ids in aggregate) randomly
-           idmap AS (
-               SELECT ROW_NUMBER() OVER (ORDER BY RAND()) AS
-                   'rand_id', observation_id
-               FROM arbiter_data.aggregate_observation_mapping
-               WHERE aggregate_id = binid)
-        SELECT rand_id, timestamp, value FROM
-            arbiter_data.observations_values AS ov JOIN idmap
-        WHERE ov.id = idmap.observation_id AND
+        -- In the future, this may be more complex, checking an aggregate_values table first
+        -- before retrieving the individual observation objects
+        SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag FROM arbiter_data.observations_values
+        WHERE id in (
+            SELECT observation_id FROM arbiter_data.aggregate_observation_mapping
+            WHERE aggregate_id = binid AND can_user_perform_action(auth0id, observation_id, 'read_values')) AND
         timestamp BETWEEN start AND end;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read aggregate values"',
