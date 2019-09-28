@@ -20,3 +20,5 @@ DROP PROCEDURE arbiter_data.list_all_organizations;
 DROP PROCEDURE arbiter_data.set_org_accepted_tou;
 
 DROP FUNCTION arbiter_data.get_org_role_by_name;
+
+DROP TRIGGER update_user_perm_on_org_change;

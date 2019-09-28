@@ -542,3 +542,28 @@ END;
 GRANT SELECT (id), UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'frameworkadmin'@'%';
+
+
+/*
+ * Add the user to be readable by org admin after joining org
+ */
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER update_user_perm_on_org_change AFTER UPDATE ON arbiter_data.users
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+        if OLD.organization_id != get_organization_id('Unaffiliated') THEN
+            DELETE FROM arbiter_data.permission_object_mapping
+            WHERE object_id = NEW.id AND permission_id IN (
+                SELECT id FROM arbiter_data.permissions
+                WHERE organization_id = OLD.organization_id
+                    AND object_type = 'users'
+                    AND action in ('read', 'update'));
+        END IF;
+        INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
+            SELECT id, NEW.id FROM arbiter_data.permissions
+            WHERE organization_id = NEW.organization_id
+                AND object_type = 'users'
+                AND applies_to_all;
+    END IF;
+END;
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id to 'permission_trig'@'localhost';
