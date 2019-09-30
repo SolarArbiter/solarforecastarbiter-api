@@ -25,7 +25,8 @@ def make_user_roles(cursor, new_organization, new_permission, new_user,
 @pytest.fixture()
 def make_test_permissions(cursor, new_organization, new_permission,
                           new_user, new_role, new_forecast, new_site,
-                          new_observation, new_cdf_forecast, request):
+                          new_observation, new_cdf_forecast,
+                          new_aggregate, request):
     def make(org):
         user = new_user(org=org)
         role0 = new_role(org=org)
@@ -52,12 +53,14 @@ def make_test_permissions(cursor, new_organization, new_permission,
         fx = new_forecast(org=org)
         cdf = new_cdf_forecast(org=org)
         site = new_site(org=org)
+        agg = new_aggregate(obs_list=[obj0, obj1])
         return {'user': user,
                 'roles': [role0, role1],
                 'sites': [site],
                 'observations': [obj0, obj1],
                 'forecasts': [fx],
                 'cdf_forecasts': [cdf],
+                'aggregates': [agg],
                 'permissions': [perm0, perm1, perm2, perm3]}
     return make
 
@@ -234,7 +237,7 @@ def test_get_rbac_object_organization_fake(cursor, otype):
 
 
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
-                                   'cdf_forecasts', 'sites'])
+                                   'cdf_forecasts', 'sites', 'aggregates'])
 def test_get_rbac_object_organization_other_types(cursor, otype,
                                                   new_organization,
                                                   make_test_permissions):
@@ -246,7 +249,7 @@ def test_get_rbac_object_organization_other_types(cursor, otype,
 
 
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
-                                   'cdf_forecasts', 'sites'])
+                                   'cdf_forecasts', 'sites', 'aggregates'])
 def test_get_nonrbac_object_organization(cursor, otype,
                                          new_organization,
                                          make_test_permissions):
@@ -274,7 +277,7 @@ def test_get_nonrbac_object_organization_other_types(cursor, otype,
 
 
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
-                                   'cdf_forecasts', 'sites',
+                                   'cdf_forecasts', 'sites', 'aggregates',
                                    'users', 'roles', 'permissions'])
 def test_get_object_organization(cursor, otype,
                                  new_organization,
@@ -293,7 +296,7 @@ def test_get_object_organization(cursor, otype,
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
                                    'cdf_forecasts', 'sites',
                                    'users', 'roles', 'permissions',
-                                   'blah'])
+                                   'blah', 'aggregates'])
 def test_get_object_organization_fake(cursor, otype):
     oid = newuuid()
     cursor.execute('SELECT get_object_organization(%s, %s)', (oid, otype))
@@ -315,7 +318,7 @@ def rbac_user(cursor, make_user_roles, new_permission):
 
 @pytest.mark.parametrize('action', ['create', 'update', 'read', 'delete'])
 @pytest.mark.parametrize('otype', ['forecasts', 'observations',
-                                   'cdf_forecasts', 'sites',
+                                   'cdf_forecasts', 'sites', 'aggregates',
                                    'users', 'roles', 'permissions'])
 def test_is_permission_allowed(cursor, otype, rbac_user,
                                make_test_permissions,
