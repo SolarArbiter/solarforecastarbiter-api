@@ -551,19 +551,18 @@ CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER update_user_perm_on_org_c
 FOR EACH ROW
 BEGIN
     IF NEW.organization_id != OLD.organization_id THEN
-        if OLD.organization_id != get_organization_id('Unaffiliated') THEN
-            DELETE FROM arbiter_data.permission_object_mapping
-            WHERE object_id = NEW.id AND permission_id IN (
-                SELECT id FROM arbiter_data.permissions
-                WHERE organization_id = OLD.organization_id
-                    AND object_type = 'users'
-                    AND action in ('read', 'update'));
-        END IF;
+        -- Remove all mappings that grant actions on the user
+        DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = NEW.id;
+        -- delete the default user role from the organization
+        DELETE FROM arbiter_data.roles WHERE name = CONCAT('User role', BIN_TO_UUID(NEW.id, 1));
+        -- Add the user to 'applies_to_all' user perms in the new organization
         INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
             SELECT id, NEW.id FROM arbiter_data.permissions
             WHERE organization_id = NEW.organization_id
                 AND object_type = 'users'
                 AND applies_to_all;
+        CALL create_default_user_role(NEW.id, NEW.organization_id);
     END IF;
 END;
 GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id to 'permission_trig'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_user_role TO 'permission_trig'@'localhost';

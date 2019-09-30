@@ -16,6 +16,38 @@ DROP PROCEDURE create_user_if_not_exists;
 DROP PROCEDURE get_current_user_info;
 DROP PROCEDURE read_role;
 
+-- delete default roles
+CREATE PROCEDURE remove_defaults_from_existing_users()
+MODIFIES SQL DATA
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE userid BINARY(16);
+    DECLARE roleid BINARY(16);
+
+    DECLARE cur CURSOR FOR SELECT id FROM arbiter_data.users;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO userid;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        -- delete the default user role and permissions
+        SELECT id INTO roleid FROM arbiter_data.roles WHERE name = CONCAT('User role ', BIN_TO_UUID(userid, 1));
+        DELETE FROM arbiter_data.roles WHERE id = roleid;
+        DELETE FROM arbiter_data.permissions WHERE id IN (
+            SELECT permission_id FROM role_permission_mapping
+            WHERE role_id = roleid);
+    END LOOP;
+
+    CLOSE cur;
+END;
+
+CALL remove_defaults_from_existing_users();
+DROP PROCEDURE remove_defaults_from_existing_users;
+
 
 CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE add_role_to_user (
     IN auth0id VARCHAR(32), IN user_id CHAR(36), IN role_id CHAR(36))
