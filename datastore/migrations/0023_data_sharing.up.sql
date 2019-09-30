@@ -318,7 +318,7 @@ BEGIN
     ) VALUES (userperm, userid);
     INSERT INTO arbiter_data.permissions(id, description, organization_id, action, object_type
     ) VALUES(
-    roleperm, CONCAT('Read User Role ', BIN_TO_UUID(roleid, 1)), orgid, 'read', 'roles');
+    roleperm, CONCAT('Read User Role ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'roles');
     INSERT INTO arbiter_data.role_permission_mapping(permission_id, role_id
     ) VALUES (roleperm, roleid);
     INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
