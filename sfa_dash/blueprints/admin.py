@@ -336,7 +336,7 @@ class RoleDeletionView(AdminView):
         delete_request = roles.delete(uuid)
         if delete_request.status_code == 204:
             return redirect(url_for('admin.roles'))
-        elif delete_request.status_Code == 400:
+        elif delete_request.status_code == 400:
             response_json = delete_request.json()
             errors = response_json['errors']
             return self.get(uuid, errors=errors)
@@ -508,7 +508,7 @@ class PermissionDeletionView(AdminView):
         delete_request = permissions.delete(uuid)
         if delete_request.status_code == 204:
             return redirect(url_for('admin.permissions'))
-        elif delete_request.status_Code == 400:
+        elif delete_request.status_code == 400:
             response_json = delete_request.json()
             errors = response_json['errors']
             return self.get(uuid, errors=errors)

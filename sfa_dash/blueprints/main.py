@@ -44,7 +44,9 @@ class SingleObservationView(DataDashView):
         self.metadata['site'] = self.get_site_metadata(
             self.metadata['site_id'])
         temp_args = self.template_args(**kwargs)
-        values_request = observations.get_values(uuid)
+        start, end = self.parse_start_end_from_querystring()
+        values_request = observations.get_values(
+            uuid, params={'start': start, 'end': end})
         if values_request.status_code == 200:
             script_plot = timeseries_adapter(
                 'observation',
@@ -110,7 +112,9 @@ class SingleCDFForecastView(DataDashView):
         self.metadata['site'] = self.get_site_metadata(
             self.metadata['site_id'])
         temp_args = self.template_args(**kwargs)
-        values_request = cdf_forecasts.get_values(uuid)
+        start, end = self.parse_start_end_from_querystring()
+        values_request = cdf_forecasts.get_values(
+            uuid, params={'start': start, 'end': end})
         if values_request.status_code == 200:
             script_plot = timeseries_adapter(
                 'forecast',
@@ -169,7 +173,9 @@ class SingleForecastView(DataDashView):
         self.metadata['site'] = self.get_site_metadata(
             self.metadata['site_id'])
         temp_args = self.template_args(**kwargs)
-        values_request = forecasts.get_values(uuid)
+        start, end = self.parse_start_end_from_querystring()
+        values_request = forecasts.get_values(
+            uuid, params={'start': start, 'end': end})
         if values_request.status_code == 200:
             script_plot = timeseries_adapter(
                 'forecast',
