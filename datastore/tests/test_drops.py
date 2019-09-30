@@ -22,7 +22,8 @@ def check_table_for_org(cursor, oid, table):
 
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'permissions', 'sites',
-    'forecasts', 'cdf_forecasts_groups', 'reports'])
+    'forecasts', 'cdf_forecasts_groups', 'reports',
+    'aggregates'])
 def test_drop_org(cursor, valueset_org, test):
     oid = valueset_org['id']
     name = valueset_org['name']
@@ -37,7 +38,7 @@ def test_drop_org(cursor, valueset_org, test):
     'users', 'roles', 'permissions', 'sites',
     'forecasts', 'permission_object_mapping',
     'user_role_mapping', 'role_permission_mapping',
-    'cdf_forecasts_groups', 'reports'])
+    'cdf_forecasts_groups', 'reports', 'aggregates'])
 def test_drop_all_orgs_all_tables(cursor, valueset_org, test):
     cursor.execute('DELETE FROM organizations')
     check_table_for_org(cursor, None, test)
@@ -228,6 +229,18 @@ def test_drop_observation_values(cursor, valueset_observation):
     cursor.execute('SELECT COUNT(*) from observations_values WHERE id = %s',
                    observation)
     assert cursor.fetchone()[0] == 0
+
+
+def test_drop_aggregate_obs_mapping(cursor, valueset_aggregate):
+    agg = valueset_aggregate['id']
+    cursor.execute('SELECT COUNT(*) FROM aggregate_observation_mapping WHERE'
+                   ' aggregate_id = %s', agg)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute('DELETE FROM aggregates WHERE id = %s', agg)
+    cursor.execute('SELECT COUNT(*) FROM aggregate_observation_mapping WHERE'
+                   ' aggregate_id = %s', agg)
+    assert cursor.fetchone()[0] == 0
+
 
 
 def test_drop_report_values(cursor, valueset_report):
