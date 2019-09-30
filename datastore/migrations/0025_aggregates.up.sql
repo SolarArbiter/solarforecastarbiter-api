@@ -156,21 +156,58 @@ GRANT SELECT(id), DELETE ON arbiter_data.aggregates TO 'delete_objects'@'localho
 GRANT EXECUTE ON PROCEDURE delete_aggregate TO 'delete_objects'@'localhost';
 
 
+-- store aggregate
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_aggregate (
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
+    IN interval_label VARCHAR(32), IN interval_length SMALLINT UNSIGNED,
+    IN extra_parameters TEXT)
+COMMENT 'Create the aggregate object'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE orgid BINARY(16);
+    DECLARE binid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET binid = (SELECT UUID_TO_BIN(strid, 1));
+    SET allowed = (SELECT user_can_create(auth0id, 'aggregates'));
+    IF allowed THEN
+        SELECT get_user_organization(auth0id) INTO orgid;
+        INSERT INTO arbiter_data.aggregates (
+            id, organization_id, name, variable, interval_label, interval_length, extra_parameters
+        ) VALUES (
+            binid, orgid, name, variable, interval_label, interval_length, extra_parameters
+        );
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "store aggregate"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT INSERT ON arbiter_data.aggregates TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE store_aggregate TO 'insert_objects'@'localhost';
+
+
 -- add observation to aggregate
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE add_observation_to_aggregate (
     IN auth0id VARCHAR(32), IN agg_strid CHAR(36), IN obs_strid CHAR(36))
-COMMENT 'Adds an observation to an aggregate object'
+COMMENT 'Adds an observation to an aggregate object. Must be able to read observation'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binaggid BINARY(16);
     DECLARE binobsid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE canreadobs BOOLEAN DEFAULT FALSE;
     SET binaggid = UUID_TO_BIN(agg_strid, 1);
     SET binobsid = UUID_TO_BIN(obs_strid, 1);
     SET allowed = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
     IF allowed THEN
-        INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id)
-        VALUES (binaggid, binobsid);
+        SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
+        IF canreadobs THEN
+            INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id)
+            VALUES (binaggid, binobsid);
+        ELSE
+            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read observation',
+            MYSQL_ERRNO = 1143;
+        END IF;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add observation to aggregate"',
         MYSQL_ERRNO = 1142;
@@ -298,6 +335,7 @@ INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_aggregates TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.store_aggregate TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_aggregate TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate_values TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.add_observation_to_aggregate TO 'apiuser'@'%';

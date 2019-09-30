@@ -12,6 +12,7 @@ REVOKE SELECT ON arbiter_data.aggregates FROM 'select_objects'@'localhost';
 DROP PROCEDURE list_aggregates;
 DROP PROCEDURE read_aggregate_values;
 DROP PROCEDURE delete_aggregate;
+DROP PROCEDURE store_aggregate;
 DROP PROCEDURE add_observation_to_aggregate;
 DROP PROCEDURE remove_observation_from_aggregate;
 DROP FUNCTION get_nonrbac_object_organization;

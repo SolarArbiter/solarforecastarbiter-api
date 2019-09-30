@@ -23,7 +23,7 @@ def insertuser(cursor, new_permission, valueset, new_user):
     cdf = valueset[7][0]
     report = valueset[8][0]
     agg = valueset[9][0]
-    for thing in (user, site, fx, obs):
+    for thing in (user, site, fx, obs, agg):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         'DELETE FROM permissions WHERE action = "create" and '
@@ -85,6 +85,11 @@ def allow_delete_values(add_perm):
 
 
 @pytest.fixture()
+def allow_read_observations(add_perm):
+    add_perm('read', 'observations')
+
+
+@pytest.fixture()
 def allow_read_observation_values(add_perm):
     add_perm('read_values', 'observations')
 
@@ -112,6 +117,11 @@ def allow_update_users(add_perm):
 @pytest.fixture()
 def allow_update_reports(add_perm):
     add_perm('update', 'reports')
+
+
+@pytest.fixture()
+def allow_update_aggregates(add_perm):
+    add_perm('update', 'aggregates')
 
 
 @pytest.fixture()
@@ -149,6 +159,19 @@ def site_callargs(insertuser, new_site):
     del siteargs['organization_id']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(siteargs)
+    return callargs
+
+
+@pytest.fixture()
+def agg_callargs(insertuser, new_aggregate, valueset):
+    auth0id = insertuser[0]['auth0_id']
+    obs = valueset[6]
+    aggargs = new_aggregate(obs_list=obs)
+    del aggargs['id']
+    del aggargs['organization_id']
+    del aggargs['obs_list']
+    callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
+    callargs.update(aggargs)
     return callargs
 
 
@@ -525,6 +548,77 @@ def test_store_cdf_forecast_values_cant_write(cursor, cdf_forecast_values):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('store_cdf_forecast_values', list(testfx)[0])
     assert e.value.args[0] == 1142
+
+
+def test_store_aggregate(dictcursor, agg_callargs, allow_create):
+    dictcursor.callproc('store_aggregate', list(agg_callargs.values()))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',
+        (agg_callargs['strid'],))
+    res = dictcursor.fetchall()[0]
+    for key in ('variable', 'name', 'interval_label', 'interval_length',
+                'extra_parameters'):
+        assert res[key] == agg_callargs[key]
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg_callargs['strid'],))
+    assert dictcursor.fetchone()['nu'] == 0
+
+
+def test_store_aggregate_denied(dictcursor, agg_callargs):
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('store_aggregate', list(agg_callargs.values()))
+    assert e.value.args[0] == 1142
+
+
+def test_add_observation_to_aggregate(dictcursor, insertuser,
+                                      new_observation,
+                                      allow_update_aggregates,
+                                      allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
+    before = dictcursor.fetchone()['nu']
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.execute(
+        'SELECT observation_id as oi FROM '
+        'arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)',
+        (agg['strid'],))
+    res = dictcursor.fetchall()
+    assert len(res) == before + 1
+    assert obs['id'] in [d['oi'] for d in res]
+
+
+def test_add_observation_to_aggregate_no_update(dictcursor, insertuser,
+                                                new_observation,
+                                                allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    assert e.value.args[0] == 1142
+
+
+def test_add_observation_to_aggregate_no_read_obs(dictcursor, insertuser,
+                                                  new_observation,
+                                                  allow_update_aggregates):
+
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    assert e.value.args[0] == 1143
 
 
 def test_create_user(dictcursor, valueset_org):
