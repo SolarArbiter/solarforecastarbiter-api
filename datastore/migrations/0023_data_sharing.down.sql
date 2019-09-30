@@ -35,11 +35,11 @@ BEGIN
             LEAVE read_loop;
         END IF;
         -- delete the default user role and permissions
-        SELECT id INTO roleid FROM arbiter_data.roles WHERE name = CONCAT('User role ', BIN_TO_UUID(userid, 1));
-        DELETE FROM arbiter_data.roles WHERE id = roleid;
+        SELECT id INTO roleid FROM arbiter_data.roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
         DELETE FROM arbiter_data.permissions WHERE id IN (
             SELECT permission_id FROM role_permission_mapping
             WHERE role_id = roleid);
+        DELETE FROM arbiter_data.roles WHERE id = roleid;
     END LOOP;
 
     CLOSE cur;

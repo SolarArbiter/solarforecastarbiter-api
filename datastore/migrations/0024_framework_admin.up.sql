@@ -551,10 +551,12 @@ BEGIN
     -- Remove all mappings that grant actions on the user
     DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = userid;
     -- delete the default user role and specific default permissions
-    DELETE FROM arbiter_data.roles WHERE name = CONCAT('User role', BIN_TO_UUID(userid, 1));
-    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('Read Self User ', BIN_TO_UUID(userid, 1));
-    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('Read User Role ', BIN_TO_UUID(userid, 1));
+    DELETE FROM arbiter_data.roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
+    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(userid, 1));
+    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(userid, 1));
 END;
+GRANT SELECT (name) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
+GRANT SELECT (description) ON arbiter_data.permissions TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_facing_permissions_and_default_roles TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_facing_permissions_and_default_roles TO 'permission_trig'@'localhost';
 

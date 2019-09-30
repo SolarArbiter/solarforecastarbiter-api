@@ -1094,7 +1094,7 @@ def test_create_user_if_not_exist(dictcursor, valueset_org):
             'SELECT * FROM arbiter_data.roles WHERE id = %s',
             role_id)
         role = dictcursor.fetchone()
-        if role['name'].startswith('User role'):
+        if role['name'].startswith('DEFAULT User role'):
             default_role = role
         else:
             reference_role = role
@@ -1113,10 +1113,10 @@ def test_create_user_if_not_exist(dictcursor, valueset_org):
 
     for p in default_permissions:
         if (p['description'] ==
-                f'Read Self User {str(bin_to_uuid(user["id"]))}'):
+                f'DEFAULT Read Self User {str(bin_to_uuid(user["id"]))}'):
             read_self = p
         if (p['description'] ==
-                f'Read User Role {str(bin_to_uuid(default_role["id"]))}'):
+                f'DEFAULT Read User Role {str(bin_to_uuid(user["id"]))}'):
             read_role = p
     assert read_self['action'] == 'read'
     assert read_self['object_type'] == 'users'

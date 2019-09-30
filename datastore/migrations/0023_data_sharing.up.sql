@@ -302,7 +302,7 @@ BEGIN
     DECLARE userperm BINARY(16);
     DECLARE roleperm BINARY(16);
     SET roleid = UUID_TO_BIN(UUID(), 1);
-    SET rolename = CONCAT('User role ', BIN_TO_UUID(userid, 1));
+    SET rolename = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
     SET userperm = UUID_TO_BIN(UUID(), 1);
     SET roleperm = UUID_TO_BIN(UUID(), 1);
     INSERT INTO arbiter_data.roles(name, description, id, organization_id
@@ -311,14 +311,14 @@ BEGIN
     ) VALUES (userid, roleid);
     INSERT INTO arbiter_data.permissions(id, description, organization_id, action, object_type
     ) VALUES (
-    userperm, CONCAT('Read Self User ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'users');
+    userperm, CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'users');
     INSERT INTO arbiter_data.role_permission_mapping(permission_id, role_id
     ) VALUES (userperm, roleid);
     INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id
     ) VALUES (userperm, userid);
     INSERT INTO arbiter_data.permissions(id, description, organization_id, action, object_type
     ) VALUES(
-    roleperm, CONCAT('Read User Role ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'roles');
+    roleperm, CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(userid, 1)), orgid, 'read', 'roles');
     INSERT INTO arbiter_data.role_permission_mapping(permission_id, role_id
     ) VALUES (roleperm, roleid);
     INSERT INTO arbiter_data.permission_object_mapping(permission_id, object_id

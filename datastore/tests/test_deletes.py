@@ -575,3 +575,35 @@ def test_delete_report_denied(cursor, report_obj):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('delete_report', (auth0id, report_id))
     assert e.value.args[0] == 1142
+
+
+def test_remove_user_facing_permissions_and_default_roles(
+        cursor, new_user):
+    user = new_user()
+    cursor.callproc('create_default_user_role', (user['id'], user['organization_id']))
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.roles WHERE name = CONCAT("DEFAULT User role ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone()[0] == 1
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read Self User ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone()[0] == 1
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read User Role ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone()[0] == 1
+
+    cursor.callproc('remove_user_facing_permissions_and_default_roles', (user['id'],))
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.roles WHERE name = CONCAT("DEFAULT User role ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone() is None
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read Self User ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone() is None
+    cursor.execute(
+        f'SELECT 1 FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read User Role ", %s)',
+        str(bin_to_uuid(user['id'])))
+    assert cursor.fetchone() is None
