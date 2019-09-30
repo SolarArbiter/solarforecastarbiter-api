@@ -573,6 +573,7 @@ BEGIN
             SELECT id, NEW.id FROM arbiter_data.permissions
             WHERE organization_id = NEW.organization_id
                 AND object_type = 'users'
+                AND action != 'create'
                 AND applies_to_all;
         CALL create_default_user_role(NEW.id, NEW.organization_id);
     END IF;

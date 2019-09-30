@@ -156,6 +156,7 @@ def test_update_user_perm_on_org_change(
         dictcursor, new_organization, new_user):
     user = new_user()
     org = new_organization()
+    assert org['id'] != user['organization_id']
     dictcursor.callproc(
         'create_default_user_role',
         (user['id'], user['organization_id']))
