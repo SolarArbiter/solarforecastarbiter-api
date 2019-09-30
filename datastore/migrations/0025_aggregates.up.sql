@@ -164,10 +164,10 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binaggid BINARY(16);
     DECLARE binobsid BINARY(16);
-    DECLARE allowd BOOLEAN DEFAULT FALSE;
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binaggid = UUID_TO_BIN(agg_strid, 1);
     SET binobsid = UUID_TO_BIN(obs_strid, 1);
-    SET allowd = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
     IF allowed THEN
         INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id)
         VALUES (binaggid, binobsid);
@@ -188,10 +188,10 @@ MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binaggid BINARY(16);
     DECLARE binobsid BINARY(16);
-    DECLARE allowd BOOLEAN DEFAULT FALSE;
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binaggid = UUID_TO_BIN(agg_strid, 1);
     SET binobsid = UUID_TO_BIN(obs_strid, 1);
-    SET allowd = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
+    SET allowed = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
     IF allowed THEN
         UPDATE arbiter_data.aggregate_observation_mapping SET observation_removed_at = NOW()
         WHERE aggregate_id = binaggid AND observation_id = binobsid;
