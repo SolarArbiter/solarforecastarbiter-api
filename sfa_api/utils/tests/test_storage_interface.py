@@ -781,7 +781,7 @@ def test_create_new_user(sql_app, fake_user, run):
     new_user = storage_interface.get_current_user_info()
     assert len(new_user_roles) == 1
     user_role = new_user_roles[0]
-    assert user_role['name'] == f'User role {new_user["user_id"]}'
+    assert user_role['name'] == f'DEFAULT User role {new_user["user_id"]}'
     assert len(user_role['permissions']) == 2
     assert new_user['auth0_id'] == 'auth0|create_me'
     assert new_user['organization'] == 'Unaffiliated'

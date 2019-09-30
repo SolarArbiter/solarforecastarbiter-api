@@ -39,7 +39,7 @@ def test_list_roles_missing_perms(api, user_id, remove_perms):
     assert roles.status_code == 200
     user_roles = roles.json
     assert len(user_roles) == 1
-    assert user_roles[0]['name'] == f'User role {user_id}'
+    assert user_roles[0]['name'] == f'DEFAULT User role {user_id}'
 
 
 def test_create_delete_role(api):
