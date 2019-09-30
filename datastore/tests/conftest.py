@@ -401,6 +401,7 @@ def valueset_observation(valueset, request):
 def valueset_report(valueset, request):
     return valueset[8][request.param]
 
+
 @pytest.fixture(params=[0, 1])
 def valueset_aggregate(valueset, request):
     return valueset[9][request.param]

@@ -190,12 +190,14 @@ def test_delete_observation_denied(cursor, obs_obj):
 def test_delete_aggregate(cursor, agg_obj, allow_delete_aggregate):
     auth0id, aggid, _ = agg_obj
     cursor.execute(
-        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = '
+        'UUID_TO_BIN(%s, 1)',
         aggid)
     assert cursor.fetchone()[0] > 0
     cursor.callproc('delete_aggregate', (auth0id, aggid))
     cursor.execute(
-        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = '
+        'UUID_TO_BIN(%s, 1)',
         aggid)
     assert cursor.fetchone()[0] == 0
 
@@ -232,7 +234,8 @@ def test_remove_observation_from_aggregate(cursor, agg_obj,
         ' NULL', aggid)
     assert cursor.fetchone()[0] == 2
     cursor.callproc('remove_observation_from_aggregate',
-                    (auth0id, aggid, str(bin_to_uuid(agg['obs_list'][0]['id']))))
+                    (auth0id, aggid,
+                     str(bin_to_uuid(agg['obs_list'][0]['id']))))
     cursor.execute(
         'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
         'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_removed_at is'
