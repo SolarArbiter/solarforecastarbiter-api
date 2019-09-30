@@ -156,19 +156,23 @@ def test_update_user_perm_on_org_change(
         dictcursor, new_organization, new_user):
     user = new_user()
     org = new_organization()
-    dictcursor.callproc('create_default_user_role',
-                        (user['id'], user['organization_id']))
+    dictcursor.callproc(
+        'create_default_user_role',
+        (user['id'], user['organization_id']))
     # assert the default roles exist and are set to the correct org_id
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.roles WHERE name = CONCAT("DEFAULT User role ", %s)',
+        ('SELECT * FROM arbiter_data.roles WHERE '
+         'name = CONCAT("DEFAULT User role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == user['organization_id']
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read Self User ", %s)',
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read Self User ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == user['organization_id']
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read User Role ", %s)',
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read User Role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == user['organization_id']
     # update the org
@@ -177,14 +181,17 @@ def test_update_user_perm_on_org_change(
         (org['id'], user['id']))
     # ensure the trigger fired and recreated the roles in the new organization
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.roles WHERE name = CONCAT("DEFAULT User role ", %s)',
+        ('SELECT * FROM arbiter_data.roles WHERE '
+         'name = CONCAT("DEFAULT User role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == org['id']
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read Self User ", %s)',
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read Self User ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == org['id']
     dictcursor.execute(
-        'SELECT * FROM arbiter_data.permissions WHERE description = CONCAT("DEFAULT Read User Role ", %s)',
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read User Role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert dictcursor.fetchone()['organization_id'] == org['id']
