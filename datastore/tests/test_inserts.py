@@ -594,6 +594,56 @@ def test_add_observation_to_aggregate(dictcursor, insertuser,
     assert obs['id'] in [d['oi'] for d in res]
 
 
+def test_add_observation_to_aggregate_present(
+        dictcursor, insertuser, new_observation, allow_update_aggregates,
+        allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    with pytest.raises(pymysql.err.IntegrityError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    assert e.value.args[0] == 1062
+
+
+def test_add_observation_to_aggregate_again(
+        dictcursor, insertuser, new_observation, allow_update_aggregates,
+        allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
+    before = dictcursor.fetchone()['nu']
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+    dictcursor.execute(
+        'SELECT observation_id as oi, observation_removed_at, _incr FROM '
+        'arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1) ORDER BY _incr',
+        (agg['strid'],))
+    res = dictcursor.fetchall()
+    assert len(res) == before + 3
+    news = []
+    for d in res:
+        if d['oi'] == obs['id']:
+            news.append(d['observation_removed_at'] is None)
+    assert news == [False, False, True]
+
+
+
 def test_add_observation_to_aggregate_no_update(dictcursor, insertuser,
                                                 new_observation,
                                                 allow_read_observations):

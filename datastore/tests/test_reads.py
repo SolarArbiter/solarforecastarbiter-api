@@ -96,6 +96,11 @@ def allow_read_aggregates(add_perm):
 
 
 @pytest.fixture()
+def allow_update_aggregates(add_perm):
+    add_perm('update', 'aggregates')
+
+
+@pytest.fixture()
 def allow_read_aggregate_values(add_perm):
     add_perm('read_values', 'aggregates')
 
@@ -721,7 +726,7 @@ def test_read_aggregate(
         assert obsd['observation_removed_at'] is None
 
 
-def test_read_aggregate_obs_removed(
+def test_read_aggregate_obs_deleted(
         dictcursor, allow_read_aggregates, insertuser):
     org = insertuser[4]
     user = insertuser[0]
@@ -729,7 +734,75 @@ def test_read_aggregate_obs_removed(
     dictcursor.execute(
         'DELETE FROM observations WHERE id = %s', agg['obs_list'][0]['id']
     )
+    dictcursor.callproc(
+        'read_aggregate', (user['auth0_id'], str(bin_to_uuid(agg['id'])))
+    )
+    res = dictcursor.fetchall()[0]
+    assert res['provider'] == org['name']
+    for key in ('name', 'variable', 'interval_length', 'interval_label',
+                'extra_parameters'):
+        assert res[key] == agg[key]
+    assert 'observations' in res
+    obs_ids = [str(bin_to_uuid(obs['id'])) for obs in agg['obs_list']]
+    res_obs = json.loads(res['observations'])
+    assert len(res_obs) == len(agg['obs_list'])
+    assert len(res_obs) > 0
+    for obsd in res_obs:
+        assert obsd['observation_id'] in obs_ids
+        assert obsd['created_at']
+        if obsd['observation_id'] == str(bin_to_uuid(agg['obs_list'][0]['id'])):  # NOQA
+            assert obsd['observation_deleted_at'] is not None
+        else:
+            assert obsd['observation_deleted_at'] is None
+        assert obsd['observation_removed_at'] is None
 
+
+def test_read_aggregate_obs_deleted_removed(
+        dictcursor, allow_read_aggregates, insertuser,
+        allow_update_aggregates):
+    org = insertuser[4]
+    user = insertuser[0]
+    agg = insertuser[8]
+    oid = agg['obs_list'][0]['id']
+    dictcursor.execute(
+        'DELETE FROM observations WHERE id = %s', oid)
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (user['auth0_id'], str(bin_to_uuid(agg['id'])),
+                         str(bin_to_uuid(oid))))
+    dictcursor.callproc(
+        'read_aggregate', (user['auth0_id'], str(bin_to_uuid(agg['id'])))
+    )
+    res = dictcursor.fetchall()[0]
+    assert res['provider'] == org['name']
+    for key in ('name', 'variable', 'interval_length', 'interval_label',
+                'extra_parameters'):
+        assert res[key] == agg[key]
+    assert 'observations' in res
+    obs_ids = [str(bin_to_uuid(obs['id'])) for obs in agg['obs_list']]
+    res_obs = json.loads(res['observations'])
+    assert len(res_obs) == len(agg['obs_list'])
+    assert len(res_obs) > 0
+    for obsd in res_obs:
+        assert obsd['observation_id'] in obs_ids
+        assert obsd['created_at']
+        if obsd['observation_id'] == str(bin_to_uuid(agg['obs_list'][0]['id'])):  # NOQA
+            assert obsd['observation_deleted_at'] is not None
+            assert obsd['observation_removed_at'] is not None
+        else:
+            assert obsd['observation_deleted_at'] is None
+            assert obsd['observation_removed_at'] is None
+
+
+def test_read_aggregate_obs_removed(
+        dictcursor, allow_read_aggregates, insertuser,
+        allow_update_aggregates):
+    org = insertuser[4]
+    user = insertuser[0]
+    agg = insertuser[8]
+    oid = agg['obs_list'][0]['id']
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (user['auth0_id'], str(bin_to_uuid(agg['id'])),
+                         str(bin_to_uuid(oid))))
     dictcursor.callproc(
         'read_aggregate', (user['auth0_id'], str(bin_to_uuid(agg['id'])))
     )
@@ -750,6 +823,8 @@ def test_read_aggregate_obs_removed(
             assert obsd['observation_removed_at'] is not None
         else:
             assert obsd['observation_removed_at'] is None
+        assert obsd['observation_deleted_at'] is None
+
 
 
 def test_read_aggregate_denied(dictcursor, insertuser):

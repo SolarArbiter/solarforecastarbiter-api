@@ -15,12 +15,22 @@ ALTER TABLE arbiter_data.aggregates ADD COLUMN (
 CREATE TABLE arbiter_data.aggregate_observation_mapping(
     aggregate_id BINARY(16) NOT NULL,
     observation_id BINARY(16) NOT NULL,
+    -- _incr allows observations to be removed and readded later
+    _incr TINYINT UNSIGNED DEFAULT 0,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    /* add observation_removed_at to track that an observation
-       may not control */
+    /* add observation_deleted_at to track that an observation
+       may not control. observation_removed_at tracks when an
+       observation is intentionally removed. The purpose of keeping
+       both is that a user may be unaware that an observation is
+       deleted, so the api can flag times after observation_deleted_at
+       as invalid. The user can see this and update
+       observation_removed_at to ignore any data after this time
+       without the flags.
+       */
     observation_removed_at TIMESTAMP,
+    observation_deleted_at TIMESTAMP,
 
-    PRIMARY KEY (aggregate_id, observation_id),
+    PRIMARY KEY (aggregate_id, observation_id, _incr),
     KEY (observation_id),
     FOREIGN KEY (aggregate_id)
         REFERENCES aggregates(id)
@@ -36,11 +46,11 @@ BEFORE DELETE ON arbiter_data.observations
 FOR EACH ROW
 BEGIN
     UPDATE arbiter_data.aggregate_observation_mapping
-    SET observation_removed_at = CURRENT_TIMESTAMP()
+    SET observation_deleted_at = CURRENT_TIMESTAMP()
     WHERE observation_id = OLD.id;
 END;
 
-GRANT SELECT(observation_id), UPDATE(observation_removed_at) ON
+GRANT SELECT(observation_id), UPDATE(observation_deleted_at) ON
    arbiter_data.aggregate_observation_mapping
    TO 'permission_trig'@'localhost';
 
@@ -54,6 +64,7 @@ BEGIN
         SELECT JSON_ARRAYAGG(JSON_OBJECT(
             'observation_id', BIN_TO_UUID(observation_id, 1),
             'created_at', created_at,
+            'observation_deleted_at', observation_deleted_at,
             'observation_removed_at', observation_removed_at))_
         FROM arbiter_data.aggregate_observation_mapping
         WHERE aggregate_id = agg_id GROUP BY aggregate_id
@@ -195,18 +206,30 @@ BEGIN
     DECLARE binaggid BINARY(16);
     DECLARE binobsid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE present BOOLEAN DEFAULT FALSE;
     DECLARE canreadobs BOOLEAN DEFAULT FALSE;
+    DECLARE incr TINYINT DEFAULT 0;
     SET binaggid = UUID_TO_BIN(agg_strid, 1);
     SET binobsid = UUID_TO_BIN(obs_strid, 1);
     SET allowed = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
     IF allowed THEN
-        SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
-        IF canreadobs THEN
-            INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id)
-            VALUES (binaggid, binobsid);
+        SET present = (EXISTS(SELECT 1 FROM arbiter_data.aggregate_observation_mapping
+            WHERE aggregate_id = binaggid AND observation_id = binobsid AND
+            observation_removed_at IS NULL));
+        IF present THEN
+            SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Observation already in aggregate',
+            MYSQL_ERRNO = 1062;
         ELSE
-            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read observation',
-            MYSQL_ERRNO = 1143;
+            SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
+            IF canreadobs THEN
+                SET incr = (SELECT IFNULL(MAX(_incr) + 1, 0) FROM arbiter_data.aggregate_observation_mapping
+                            WHERE aggregate_id = binaggid AND observation_id = binobsid);
+                INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id, _incr)
+                VALUES (binaggid, binobsid, incr);
+            ELSE
+                SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not have permission to read observation',
+                MYSQL_ERRNO = 1143;
+            END IF;
         END IF;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "add observation to aggregate"',
@@ -214,7 +237,7 @@ BEGIN
     END IF;
 END;
 
-GRANT INSERT ON arbiter_data.aggregate_observation_mapping TO 'insert_objects'@'localhost';
+GRANT INSERT, SELECT ON arbiter_data.aggregate_observation_mapping TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE add_observation_to_aggregate TO 'insert_objects'@'localhost';
 
 -- remove observation from aggregate
@@ -231,7 +254,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, binaggid, 'update'));
     IF allowed THEN
         UPDATE arbiter_data.aggregate_observation_mapping SET observation_removed_at = NOW()
-        WHERE aggregate_id = binaggid AND observation_id = binobsid;
+        WHERE aggregate_id = binaggid AND observation_id = binobsid AND observation_removed_at IS NULL;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "remove observation from aggregate"',
         MYSQL_ERRNO = 1142;

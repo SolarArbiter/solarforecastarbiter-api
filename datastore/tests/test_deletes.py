@@ -213,14 +213,14 @@ def test_delete_aggregate_obs(cursor, agg_obj, allow_delete_observation):
     auth0id, aggid, agg = agg_obj
     cursor.execute(
         'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
-        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_removed_at is'
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_deleted_at is'
         ' NULL', aggid)
     assert cursor.fetchone()[0] == 2
     cursor.callproc('delete_observation',
                     (auth0id, str(bin_to_uuid(agg['obs_list'][0]['id']))))
     cursor.execute(
         'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
-        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_removed_at is'
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_deleted_at is'
         ' NULL', aggid)
     assert cursor.fetchone()[0] == 1
 
