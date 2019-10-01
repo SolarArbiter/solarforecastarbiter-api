@@ -273,7 +273,8 @@ def new_aggregate(cursor, new_observation):
         insert_dict(cursor, 'aggregates', out)
         cursor.executemany(
             'INSERT INTO aggregate_observation_mapping '
-            '(aggregate_id, observation_id) VALUES (%s, %s)',
+            '(aggregate_id, observation_id, created_at) VALUES (%s, %s,'
+            'TIMESTAMP("2019-01-01 00:00"))',
             [(out['id'], obs['id']) for obs in obs_list]
         )
         out['obs_list'] = obs_list

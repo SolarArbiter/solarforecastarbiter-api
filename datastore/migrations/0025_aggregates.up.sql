@@ -129,16 +129,22 @@ READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE maxend TIMESTAMP DEFAULT TIMESTAMP('2038-01-01');
     SET binid = UUID_TO_BIN(strid, 1);
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
     IF allowed THEN
         -- In the future, this may be more complex, checking an aggregate_values table first
         -- before retrieving the individual observation objects
-        SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag FROM arbiter_data.observations_values
-        WHERE id in (
-            SELECT observation_id FROM arbiter_data.aggregate_observation_mapping
-            WHERE aggregate_id = binid AND can_user_perform_action(auth0id, observation_id, 'read_values')) AND
-        timestamp BETWEEN start AND end;
+        WITH limits AS (
+            SELECT observation_id, created_at as obs_start,
+                LEAST(IFNULL(observation_removed_at, maxend),
+                      IFNULL(observation_deleted_at, maxend)) as obs_end
+            FROM arbiter_data.aggregate_observation_mapping
+            WHERE aggregate_id = binid AND can_user_perform_action(auth0id, observation_id, 'read_values')
+        )
+        SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag
+        FROM arbiter_data.observations_values JOIN limits
+        WHERE id = limits.observation_id AND timestamp BETWEEN GREATEST(limits.obs_start, start) AND LEAST(limits.obs_end, end);
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read aggregate values"',
         MYSQL_ERRNO = 1142;
@@ -335,14 +341,15 @@ VALUES (
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
 );
 
+SET @created_at = TIMESTAMP('2019-04-01 00:00');
 INSERT INTO arbiter_data.aggregate_observation_mapping (
-    aggregate_id, observation_id) VALUES
-    (@aggid0, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1)),
-    (@aggid0, UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440000', 1)),
-    (@aggid0, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1)),
-    (@aggid0, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1)),
-    (@aggid1, UUID_TO_BIN('9ce9715c-bd91-47b7-989f-50bb558f1eb9', 1)),
-    (@aggid1, UUID_TO_BIN('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f', 1));
+    aggregate_id, observation_id, created_at) VALUES
+    (@aggid0, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1), @created_at),
+    (@aggid0, UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440000', 1), @created_at),
+    (@aggid0, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1), @created_at),
+    (@aggid0, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1), @created_at),
+    (@aggid1, UUID_TO_BIN('9ce9715c-bd91-47b7-989f-50bb558f1eb9', 1), @created_at),
+    (@aggid1, UUID_TO_BIN('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f', 1), @created_at);
 
 SET @pid0 = UUID_TO_BIN(UUID(), 1);
 SET @pid1 = UUID_TO_BIN(UUID(), 1);
