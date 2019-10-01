@@ -826,7 +826,6 @@ def test_read_aggregate_obs_removed(
         assert obsd['observation_deleted_at'] is None
 
 
-
 def test_read_aggregate_denied(dictcursor, insertuser):
     user = insertuser[0]
     agg = insertuser[8]

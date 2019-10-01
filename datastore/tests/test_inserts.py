@@ -643,7 +643,6 @@ def test_add_observation_to_aggregate_again(
     assert news == [False, False, True]
 
 
-
 def test_add_observation_to_aggregate_no_update(dictcursor, insertuser,
                                                 new_observation,
                                                 allow_read_observations):
