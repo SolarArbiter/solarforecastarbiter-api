@@ -602,7 +602,7 @@ def test_add_observation_to_aggregate_present(
     obs = new_observation(site=insertuser[1])
     dictcursor.callproc('add_observation_to_aggregate',
                         (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
-    with pytest.raises(pymysql.err.IntegrityError) as e:
+    with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'add_observation_to_aggregate',
             (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))

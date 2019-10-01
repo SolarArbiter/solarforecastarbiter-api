@@ -265,7 +265,9 @@ def new_aggregate(cursor, new_observation):
         out = OrderedDict(
             id=newuuid(), organization_id=org_id,
             name=f'aggregate{str(uuid1())[:10]}',
+            description='An aggregate',
             variable='power',
+            timezone='America/Denver',
             interval_label='ending',
             interval_length=15,
             interval_value_type='sum',

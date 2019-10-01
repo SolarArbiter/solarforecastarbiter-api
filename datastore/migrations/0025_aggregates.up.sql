@@ -1,5 +1,7 @@
 ALTER TABLE arbiter_data.aggregates ADD COLUMN (
+    description VARCHAR(255) NOT NULL,
     variable VARCHAR(32) NOT NULL,
+    timezone VARCHAR(32) NOT NULL,
     -- aggregates shouldn't be instant, hard to align
     -- observations
     interval_label ENUM('beginning', 'ending') NOT NULL,
@@ -91,8 +93,8 @@ BEGIN
     IF allowed THEN
        SELECT BIN_TO_UUID(id, 1) as aggregate_id,
            get_organization_name(organization_id) as provider,
-           name, variable,  interval_label, interval_length,
-           interval_value_type,
+           name, description, variable,  timezone, interval_label,
+           interval_length, interval_value_type,
            extra_parameters, created_at, modified_at,
            get_aggregate_observations(id) as observations
        FROM arbiter_data.aggregates WHERE id = binid;
@@ -111,8 +113,8 @@ COMMENT 'List all aggregate metadata the user can read'
 READS SQL DATA SQL SECURITY DEFINER
 SELECT BIN_TO_UUID(id, 1) as aggregate_id,
     get_organization_name(organization_id) as provider,
-    name, variable,  interval_label, interval_length,
-    interval_value_type,
+    name, description, variable,  timezone, interval_label,
+    interval_length, interval_value_type,
     extra_parameters, created_at, modified_at,
     get_aggregate_observations(id) as observations
     FROM arbiter_data.aggregates WHERE id IN (
@@ -176,7 +178,8 @@ GRANT EXECUTE ON PROCEDURE delete_aggregate TO 'delete_objects'@'localhost';
 
 -- store aggregate
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_aggregate (
-    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
+    IN description VARCHAR(255), IN variable VARCHAR(32), IN timezone VARCHAR(32),
     IN interval_label VARCHAR(32), IN interval_length SMALLINT UNSIGNED,
     IN interval_value_type VARCHAR(32), IN extra_parameters TEXT)
 COMMENT 'Create the aggregate object'
@@ -190,9 +193,11 @@ BEGIN
     IF allowed THEN
         SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.aggregates (
-            id, organization_id, name, variable, interval_label, interval_length, interval_value_type, extra_parameters
+            id, organization_id, name, description, variable, timezone,
+            interval_label, interval_length, interval_value_type, extra_parameters
         ) VALUES (
-            binid, orgid, name, variable, interval_label, interval_length, interval_value_type, extra_parameters
+            binid, orgid, name, description, variable, timezone,
+            interval_label, interval_length, interval_value_type, extra_parameters
         );
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "store aggregate"',
@@ -229,6 +234,7 @@ BEGIN
         ELSE
             SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
             IF canreadobs THEN
+                -- check if variables are the same
                 SET incr = (SELECT IFNULL(MAX(_incr) + 1, 0) FROM arbiter_data.aggregate_observation_mapping
                             WHERE aggregate_id = binaggid AND observation_id = binobsid);
                 INSERT INTO arbiter_data.aggregate_observation_mapping (aggregate_id, observation_id, _incr)
@@ -330,15 +336,18 @@ SET @orgid = UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1);
 SET @roleid = (SELECT id FROM arbiter_data.roles WHERE name = 'Test user role' and organization_id = @orgid);
 INSERT INTO arbiter_data.aggregates (
     id, organization_id, name, variable, interval_label,
-    interval_length, interval_value_type, extra_parameters, created_at, modified_at)
+    interval_length, interval_value_type, extra_parameters, created_at, modified_at,
+    description, timezone)
 VALUES (
     @aggid0, @orgid,
     'Test Aggregate ghi', 'ghi', 'ending', 60, 'sum', 'extra',
-    TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
+    TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00'),
+    'ghi agg', 'America/Denver'
 ), (
     @aggid1, @orgid,
     'Test Aggregate dni', 'dni', 'ending', 60, 'sum', 'extra',
-    TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
+    TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00'),
+    'dni agg', 'America/Denver'
 );
 
 SET @created_at = TIMESTAMP('2019-04-01 00:00');

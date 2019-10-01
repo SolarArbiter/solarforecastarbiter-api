@@ -713,7 +713,7 @@ def test_read_aggregate(
     res = dictcursor.fetchall()[0]
     assert res['provider'] == org['name']
     for key in ('name', 'variable', 'interval_length', 'interval_label',
-                'extra_parameters'):
+                'extra_parameters', 'description', 'timezone'):
         assert res[key] == agg[key]
     assert 'observations' in res
     obs_ids = [str(bin_to_uuid(obs['id'])) for obs in agg['obs_list']]
