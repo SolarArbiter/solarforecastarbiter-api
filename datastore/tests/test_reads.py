@@ -908,6 +908,80 @@ def test_read_aggregate_values_time_limits(
     assert res == tuple(nvals)
 
 
+def test_read_aggregate_values_removed(
+        cursor, allow_read_aggregate_values, allow_read_observation_values,
+        obs_values, new_aggregate, new_observation, user_org_role):
+    org = user_org_role[1]
+    obs = new_observation(org=org)
+    auth0id, obsid, vals, start, end = obs_values(str(bin_to_uuid(obs['id'])))
+    agg = new_aggregate(obs_list=[obs], org=org)
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
+    cursor.execute(
+        "UPDATE aggregate_observation_mapping SET observation_removed_at = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+    )
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals[:2]
+    # readd and see
+    cursor.execute(
+        "INSERT INTO aggregate_observation_mapping "
+        "(aggregate_id, observation_id, _incr, created_at) VALUES"
+        " (%s, %s, 1, TIMESTAMP('2019-01-30 12:35'))",
+        (agg['id'], obs['id'])
+    )
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == tuple(list(vals[:2]) + list(vals[-3:]))
+
+
+def test_read_aggregate_values_deleted(
+        cursor, allow_read_aggregate_values, allow_read_observation_values,
+        obs_values, new_aggregate, new_observation, user_org_role):
+    org = user_org_role[1]
+    obs = new_observation(org=org)
+    auth0id, obsid, vals, start, end = obs_values(str(bin_to_uuid(obs['id'])))
+    agg = new_aggregate(obs_list=[obs], org=org)
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
+    cursor.execute(
+        "UPDATE aggregate_observation_mapping SET observation_deleted_at = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+    )
+    obs1 = new_observation(org=org)
+    _, _, v2, *_ = obs_values(str(bin_to_uuid(obs1['id'])))
+    cursor.execute(
+        "INSERT INTO aggregate_observation_mapping "
+        "(aggregate_id, observation_id, _incr, created_at) VALUES"
+        " (%s, %s, 1, TIMESTAMP('2019-01-30 12:20'))",
+        (agg['id'], obs1['id'])
+    )
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == tuple(list(vals[:2]) + list(v2))
+
+
 def test_read_aggregate_values_partial_perms(
         cursor, allow_read_aggregate_values,
         allow_read_observation_values, agg_values):
