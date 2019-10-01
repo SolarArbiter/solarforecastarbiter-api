@@ -268,6 +268,7 @@ def new_aggregate(cursor, new_observation):
             variable='power',
             interval_label='ending',
             interval_length=15,
+            interval_value_type='sum',
             extra_parameters='')
         insert_dict(cursor, 'aggregates', out)
         cursor.executemany(

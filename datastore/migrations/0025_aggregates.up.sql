@@ -4,8 +4,7 @@ ALTER TABLE arbiter_data.aggregates ADD COLUMN (
     -- observations
     interval_label ENUM('beginning', 'ending') NOT NULL,
     interval_length SMALLINT UNSIGNED NOT NULL,
-    -- do we want to support more than sum?
-    -- interval_value_type VARCHAR(32) NOT NULL,
+    interval_value_type VARCHAR(32) NOT NULL,
     extra_parameters TEXT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -93,6 +92,7 @@ BEGIN
        SELECT BIN_TO_UUID(id, 1) as aggregate_id,
            get_organization_name(organization_id) as provider,
            name, variable,  interval_label, interval_length,
+           interval_value_type,
            extra_parameters, created_at, modified_at,
            get_aggregate_observations(id) as observations
        FROM arbiter_data.aggregates WHERE id = binid;
@@ -112,6 +112,7 @@ READS SQL DATA SQL SECURITY DEFINER
 SELECT BIN_TO_UUID(id, 1) as aggregate_id,
     get_organization_name(organization_id) as provider,
     name, variable,  interval_label, interval_length,
+    interval_value_type,
     extra_parameters, created_at, modified_at,
     get_aggregate_observations(id) as observations
     FROM arbiter_data.aggregates WHERE id IN (
@@ -171,7 +172,7 @@ GRANT EXECUTE ON PROCEDURE delete_aggregate TO 'delete_objects'@'localhost';
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_aggregate (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64), IN variable VARCHAR(32),
     IN interval_label VARCHAR(32), IN interval_length SMALLINT UNSIGNED,
-    IN extra_parameters TEXT)
+    IN interval_value_type VARCHAR(32), IN extra_parameters TEXT)
 COMMENT 'Create the aggregate object'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -183,9 +184,9 @@ BEGIN
     IF allowed THEN
         SELECT get_user_organization(auth0id) INTO orgid;
         INSERT INTO arbiter_data.aggregates (
-            id, organization_id, name, variable, interval_label, interval_length, extra_parameters
+            id, organization_id, name, variable, interval_label, interval_length, interval_value_type, extra_parameters
         ) VALUES (
-            binid, orgid, name, variable, interval_label, interval_length, extra_parameters
+            binid, orgid, name, variable, interval_label, interval_length, interval_value_type, extra_parameters
         );
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "store aggregate"',
@@ -217,7 +218,7 @@ BEGIN
             WHERE aggregate_id = binaggid AND observation_id = binobsid AND
             observation_removed_at IS NULL));
         IF present THEN
-            SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Observation already in aggregate',
+            SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Adding observation to aggregate failed',
             MYSQL_ERRNO = 1062;
         ELSE
             SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
@@ -323,14 +324,14 @@ SET @orgid = UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1);
 SET @roleid = (SELECT id FROM arbiter_data.roles WHERE name = 'Test user role' and organization_id = @orgid);
 INSERT INTO arbiter_data.aggregates (
     id, organization_id, name, variable, interval_label,
-    interval_length, extra_parameters, created_at, modified_at)
+    interval_length, interval_value_type, extra_parameters, created_at, modified_at)
 VALUES (
     @aggid0, @orgid,
-    'Test Aggregate ghi', 'ghi', 'ending', 60, 'extra',
+    'Test Aggregate ghi', 'ghi', 'ending', 60, 'sum', 'extra',
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
 ), (
     @aggid1, @orgid,
-    'Test Aggregate dni', 'dni', 'ending', 60, 'extra',
+    'Test Aggregate dni', 'dni', 'ending', 60, 'sum', 'extra',
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00')
 );
 

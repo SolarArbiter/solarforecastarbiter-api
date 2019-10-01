@@ -1,7 +1,7 @@
 ALTER TABLE arbiter_data.aggregates DROP COLUMN variable,
 DROP COLUMN interval_label, DROP COLUMN interval_length,
 DROP COLUMN extra_parameters, DROP COLUMN created_at,
-DROP COLUMN modified_at;
+DROP COLUMN modified_at, DROP COLUMN interval_value_type;
 DELETE FROM arbiter_data.aggregates;
 
 DROP TABLE arbiter_data.aggregate_observation_mapping;
