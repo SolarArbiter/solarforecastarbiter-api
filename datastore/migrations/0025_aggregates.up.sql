@@ -224,8 +224,8 @@ BEGIN
             WHERE aggregate_id = binaggid AND observation_id = binobsid AND
             observation_removed_at IS NULL));
         IF present THEN
-            SIGNAL SQLSTATE '23000' SET MESSAGE_TEXT = 'Adding observation to aggregate failed',
-            MYSQL_ERRNO = 1062;
+            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Adding observation to aggregate failed',
+            MYSQL_ERRNO = 1142;
         ELSE
             SET canreadobs = (SELECT can_user_perform_action(auth0id, binobsid, 'read'));
             IF canreadobs THEN

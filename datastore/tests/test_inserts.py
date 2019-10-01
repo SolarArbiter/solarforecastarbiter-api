@@ -606,7 +606,7 @@ def test_add_observation_to_aggregate_present(
         dictcursor.callproc(
             'add_observation_to_aggregate',
             (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
-    assert e.value.args[0] == 1062
+    assert e.value.args[0] == 1142
 
 
 def test_add_observation_to_aggregate_again(
