@@ -4,6 +4,7 @@ import time
 
 from marshmallow.validate import Validator
 from marshmallow.exceptions import ValidationError
+import pytz
 
 
 class TimeFormat(Validator):
@@ -32,4 +33,15 @@ class UserstringValidator(Validator):
         match = self.compiled_re.match(value)
         if match is None or match[0] != value:
             raise ValidationError('Invalid characters in string.')
+        return value
+
+
+ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
+    filter(lambda x: 'GMT' in x, pytz.all_timezones))
+
+
+class TimezoneValidator(Validator):
+    def __call__(self, value):
+        if value not in ALLOWED_TIMEZONES:
+            raise ValidationError('Invalid timezone.')
         return value

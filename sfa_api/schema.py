@@ -1,9 +1,9 @@
 from marshmallow import validate, validates, validates_schema
 from marshmallow.exceptions import ValidationError
-import pytz
 
 from sfa_api import spec, ma
-from sfa_api.utils.validators import TimeFormat, UserstringValidator
+from sfa_api.utils.validators import (
+    TimeFormat, UserstringValidator, TimezoneValidator)
 from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
 
 
@@ -16,9 +16,6 @@ INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
-
-ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
-    filter(lambda x: 'GMT' in x, pytz.all_timezones))
 
 EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
@@ -183,15 +180,11 @@ class SiteSchema(ma.Schema):
     timezone = ma.String(
         title="Timezone",
         description="IANA Timezone",
-        required=True)
+        required=True,
+        validate=TimezoneValidator())
     modeling_parameters = ma.Nested(ModelingParameters,
                                     missing=ModelingParameters().load({}))
     extra_parameters = EXTRA_PARAMETERS_FIELD
-
-    @validates('timezone')
-    def validate_tz(self, tz):
-        if tz not in ALLOWED_TIMEZONES:
-            raise ValidationError('Invalid timezone.')
 
 
 @spec.define_schema('SiteMetadata')
