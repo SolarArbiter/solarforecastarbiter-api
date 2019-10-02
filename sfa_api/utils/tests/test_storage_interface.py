@@ -875,6 +875,17 @@ def test_add_observation_to_aggregate(
         obs['observation_id'] for obs in aggregate['observations']}
 
 
+def test_add_observation_to_aggregate_time(sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    ef = dt.datetime(2019, 9, 12, 13, 49)
+    storage_interface.add_observation_to_aggregate(aggregate_id, obs_id, ef)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['effective_from'] == ef
+
+
 def test_add_observation_to_aggregate_denied(
         sql_app, invalid_user, nocommit_cursor):
     aggregate_id = list(demo_aggregates.keys())[0]
@@ -909,15 +920,31 @@ def test_remove_observation_from_aggregate(
     obs_id = demo_aggregates[aggregate_id][
         'observations'][0]['observation_id']
     aggregate = storage_interface.read_aggregate(aggregate_id)
-    assert all([obs['observation_removed_at'] is None
+    assert all([obs['effective_until'] is None
                 for obs in aggregate['observations']])
     storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id)
     aggregate = storage_interface.read_aggregate(aggregate_id)
     for obs in aggregate['observations']:
         if obs['observation_id'] == obs_id:
-            assert obs['observation_removed_at'] is not None
+            assert obs['effective_until'] is not None
         else:
-            assert obs['observation_removed_at'] is None
+            assert obs['effective_until'] is None
+
+
+def test_remove_observation_from_aggregate_time(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    et = (dt.datetime.utcnow() + dt.timedelta(days=1)).replace(microsecond=0)
+    storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id,
+                                                        et)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['effective_until'] == et
+        else:
+            assert obs['effective_until'] is None
 
 
 def test_remove_observation_from_aggregate_denied(

@@ -13,7 +13,7 @@ VARIABLES = ALLOWED_VARIABLES.keys()
 
 ALLOWED_METRICS = ['mae', 'mbe', 'rmse']
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
-
+AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
 
@@ -40,6 +40,28 @@ MODIFIED_AT = ma.DateTime(
     title="Last Modification Time",
     description="ISO 8601 Datetime when object was last modified",
     format='iso')
+
+INTERVAL_LABEL = ma.String(
+    title='Interval Label',
+    description=('For data that represents intervals, indicates if a time '
+                 'labels the beginning or ending of the interval. '
+                 'instant for instantaneous data'),
+    validate=validate.OneOf(INTERVAL_LABELS),
+    required=True)
+
+INTERVAL_LENGTH = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each data point represents in'
+                     'minutes, e.g. 5 for 5 minutes.'),
+        required=True)
+
+INTERVAL_VALUE_TYPE = ma.String(
+    title='Interval Value Type',
+    description=('For data that represents intervals, what that data'
+                 'represesnts e.g. interval mean, min, max, etc.'
+                 'instantaneous for instantaneous data'),
+    validate=validate.OneOf(INTERVAL_VALUE_TYPES),
+    required=True)
 
 
 # Sites
@@ -249,22 +271,9 @@ class ObservationPostSchema(ma.Schema):
         description='Human friendly name for the observation',
         required=True,
         validate=UserstringValidator())
-    interval_label = ma.String(
-        title='Interval Label',
-        description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval. '
-                     'instant for instantaneous data'),
-        validate=validate.OneOf(INTERVAL_LABELS),
-        required=True)
-    interval_length = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents  in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True)
-    interval_value_type = ma.String(
-        title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES),
-        required=True)
+    interval_label = INTERVAL_LABEL
+    interval_length = INTERVAL_LENGTH
+    interval_value_type = INTERVAL_VALUE_TYPE
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.',
@@ -388,18 +397,9 @@ class ForecastPostSchema(ma.Schema):
                      "the first forecast interval in minutes, e.g. 60 for one"
                      "hour."),
         required=True)
-    interval_label = ma.String(
-        title='Interval Label',
-        description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval.'),
-        validate=validate.OneOf(INTERVAL_LABELS),
-        required=True)
-    interval_length = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True
-    )
+    interval_label = INTERVAL_LABEL
+    interval_length = INTERVAL_LENGTH
+    interval_value_type = INTERVAL_VALUE_TYPE
     run_length = ma.Integer(
         title='Run Length / Issue Frequency',
         description=('The total length of a single issued forecast run in '
@@ -407,10 +407,6 @@ class ForecastPostSchema(ma.Schema):
                      'non-overlapping sequence, this is equal to the forecast'
                      'run issue frequency.'),
         required=True
-    )
-    interval_value_type = ma.String(
-        title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
@@ -755,18 +751,14 @@ class AggregatePostSchema(ma.Schema):
     interval_label = ma.String(
         title='Interval Label',
         description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval.'),
-        validate=validate.OneOf(INTERVAL_LABELS),
+                     'labels the beginning or ending of the interval. '
+                     'Aggregates can not be instantaneous.'),
+        validate=validate.OneOf(('beginning', 'ending')),
         required=True)
-    interval_length = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True
-    )
-    interval_value_type = ma.String(
-        title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
+    interval_length = INTERVAL_LENGTH
+    aggregate_type = ma.String(
+        title='Aggregation Type',
+        validate=validate.OneOf(AGGREGATE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
     timezone = ma.String(
@@ -785,16 +777,20 @@ class AggregatePostSchema(ma.Schema):
 class AggregateObservationSchema(ma.Schema):
     observation_id = ma.UUID()
     created_at = CREATED_AT
+    effective_from = ma.DateTime(
+        title="Observation removal time",
+        description=("ISO 8601 Datetime when the observation should"
+                     " be included in aggregate values"),
+        format='iso')
     observation_deleted_at = ma.DateTime(
         title="Observation deletion time",
         description="ISO 8601 Datetime when the observation was deleted",
         format='iso')
-    observation_removed_at = ma.DateTime(
+    effective_until = ma.DateTime(
         title="Observation removal time",
-        description=("ISO 8601 Datetime when the observation was"
-                     " removed from the aggregate"),
+        description=("ISO 8601 Datetime when the observation should"
+                     " not be included in the aggregate"),
         format='iso')
-    constant_value = ma.Float()
     _links = ma.Hyperlinks(
         {
             'observation': ma.AbsoluteURLFor(
@@ -809,6 +805,12 @@ class AggregateObservationSchema(ma.Schema):
 class AggregateSchema(AggregatePostSchema):
     aggregate_id = ma.UUID()
     provider = ma.String()
+    interval_value_type = ma.String(
+        title='Interval Value Type',
+        description='Aggregates always represent interval means',
+        validate=validate.OneOf(('interval_mean',)),
+        default='interval_mean'
+    )
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
     observations = ma.List(ma.Nested(AggregateObservationSchema()),
