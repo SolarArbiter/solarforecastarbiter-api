@@ -1,4 +1,4 @@
-from marshmallow import validate, validates, validates_schema
+from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
 
 from sfa_api import spec, ma
@@ -739,3 +739,77 @@ class ReportMetricsSchema(ma.Schema):
                      "for inserting timeseries plots"),
         required=True
     )
+
+
+@spec.define_schema('AggregateDefinition')
+class AggregatePostSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    name = ma.String(
+        title='Name',
+        description="Human friendly name for aggregate",
+        required=True,
+        validate=UserstringValidator())
+    variable = VARIABLE_FIELD
+    interval_label = ma.String(
+        title='Interval Label',
+        description=('For data that represents intervals, indicates if a time '
+                     'labels the beginning or ending of the interval.'),
+        validate=validate.OneOf(INTERVAL_LABELS),
+        required=True)
+    interval_length = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each data point represents in'
+                     'minutes, e.g. 5 for 5 minutes.'),
+        required=True
+    )
+    interval_value_type = ma.String(
+        title='Value Type',
+        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
+    )
+    extra_parameters = EXTRA_PARAMETERS_FIELD
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        required=True,
+        validate=TimezoneValidator())
+    description = ma.String(
+        title='Desctription',
+        required=True,
+        description="Description of the aggregate"
+    )
+
+
+@spec.define_schema('AggregateObservation')
+class AggregateObservationSchema(ma.Schema):
+    observation_id = ma.UUID()
+    created_at = CREATED_AT
+    observation_deleted_at = ma.DateTime(
+        title="Observation deletion time",
+        description="ISO 8601 Datetime when the observation was deleted",
+        format='iso')
+    observation_removed_at = ma.DateTime(
+        title="Observation removal time",
+        description=("ISO 8601 Datetime when the observation was"
+                     " removed from the aggregate"),
+        format='iso')
+    constant_value = ma.Float()
+    _links = ma.Hyperlinks(
+        {
+            'observation': ma.AbsoluteURLFor(
+                'observations.metadata',
+                observation_id='<observation_id>'),
+        },
+        description="Contains a link to the observation endpoint."
+    )
+
+
+@spec.define_schema('AggregateMetadata')
+class AggregateSchema(AggregatePostSchema):
+    aggregate_id = ma.UUID()
+    provider = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+    observations = ma.List(ma.Nested(AggregateObservationSchema()),
+                           many=True)

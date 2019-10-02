@@ -1391,3 +1391,108 @@ def user_exists():
         try_query(query_cmd)
         exists = cursor.fetchone()
     return exists.get(f"does_user_exist('{current_user}')") == 1
+
+
+def store_aggregate(aggregate):
+    """Store Aggregate metadata. Should generate and store a uuid
+    as the 'aggregate_id' field.
+
+    Parameters
+    ----------
+    aggregate: dictionary
+        A dictionary of aggregate fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created Aggregate.
+    """
+    aggregate_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_aggregate', aggregate_id,
+        aggregate['name'], aggregate['description'],
+        aggregate['variable'], aggregate['timezone'],
+        aggregate['interval_label'], aggregate['interval_length'],
+        aggregate['interval_value_type'], aggregate['extra_parameters'])
+    return aggregate_id
+
+
+def _set_aggregate_parameters(aggregate_dict):
+    out = {}
+    for key in schema.AggregateSchema().fields.keys():
+        if key in ('_links',):
+            continue
+        elif key == 'observations':
+            out[key] = []
+            for obs in json.loads(aggregate_dict['observations']):
+                for tkey in ('created_at', 'observation_deleted_at',
+                             'observation_removed_at'):
+                    if obs[tkey] is not None:
+                        obs[tkey] = dt.datetime.fromisoformat(obs[tkey])
+                out[key].append(obs)
+        else:
+            out[key] = aggregate_dict[key]
+    return out
+
+
+def read_aggregate(aggregate_id):
+    """Read Aggregate metadata.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of the aggregate to retrieve.
+
+    Returns
+    -------
+    dict
+        The Aggregate's metadata or None if the Aggregate
+        does not exist.
+    """
+    aggregate = _set_aggregate_parameters(
+        _call_procedure_for_single('read_aggregate', aggregate_id))
+    return aggregate
+
+
+def delete_aggregate(aggregate_id):
+    """Remove an Aggregate from storage.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of aggregate to delete
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the aggregate
+    """
+    _call_procedure('delete_aggregate', aggregate_id)
+
+
+def list_aggregates():
+    """Lists all aggregates a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of Aggregate metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to aggregates with site_id or
+        no aggregates exists for that id
+    """
+    aggregates = [_set_aggregate_parameters(agg)
+                  for agg in _call_procedure('list_aggregates')]
+    return aggregates
+
+
+def add_observation_to_aggregate():
+    pass
+
+
+def remove_observation_from_aggregate():
+    pass

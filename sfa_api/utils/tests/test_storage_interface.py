@@ -15,6 +15,7 @@ from sfa_api.demo.observations import static_observations as demo_observations
 from sfa_api.demo.forecasts import static_forecasts as demo_forecasts
 from sfa_api.demo.cdf_forecasts import static_cdf_forecasts as demo_single_cdf
 from sfa_api.demo.cdf_forecasts import static_cdf_forecast_groups as demo_group_cdf  # NOQA
+from sfa_api.demo.aggregates import static_aggregates as demo_aggregates
 from sfa_api.demo import values
 from sfa_api.utils import storage_interface
 
@@ -785,3 +786,75 @@ def test_create_new_user(sql_app, fake_user, run):
     assert len(user_role['permissions']) == 2
     assert new_user['auth0_id'] == 'auth0|create_me'
     assert new_user['organization'] == 'Unaffiliated'
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_read_aggregate(sql_app, user, aggregate_id):
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert aggregate == demo_aggregates[aggregate_id]
+
+
+def test_read_aggregate_invalid_aggregate(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate(str(uuid.uuid1()))
+
+
+def test_read_aggregate_not_uuid(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError) as err:
+        storage_interface.read_aggregate('f8dd49fa-23e2-48a0-862b-ba0af6de')
+    assert "Incorrect string value" in str(err.value)
+
+
+def test_read_aggregate_invalid_user(sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate(list(demo_aggregates.keys())[0])
+
+
+@pytest.mark.parametrize('aggregate', demo_aggregates.values())
+def test_store_aggregate(sql_app, user, aggregate, nocommit_cursor):
+    aggregate = aggregate.copy()
+    aggregate['name'] = 'new_aggregate'
+    new_id = storage_interface.store_aggregate(aggregate)
+    new_aggregate = storage_interface.read_aggregate(new_id)
+    aggregate['aggregate_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at', 'observations'):
+        del aggregate[key]
+        del new_aggregate[key]
+    assert aggregate == new_aggregate
+
+
+def test_store_aggregate_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_aggregate(
+            list(demo_aggregates.values())[0])
+
+
+def test_list_aggregates(sql_app, user):
+    aggregates = storage_interface.list_aggregates()
+    for agg in remove_reference(aggregates):
+        assert agg == demo_aggregates[agg['aggregate_id']]
+
+
+def test_list_aggregates_invalid_user(sql_app, invalid_user):
+    aggregates = storage_interface.list_aggregates()
+    assert len(aggregates) == 0
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_delete_aggregate(sql_app, user, nocommit_cursor, aggregate_id):
+    storage_interface.delete_aggregate(aggregate_id)
+    aggregate_list = [
+        k['aggregate_id'] for k in storage_interface.list_aggregates()]
+    assert aggregate_id not in aggregate_list
+
+
+def test_delete_aggregate_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_aggregate(list(demo_aggregates.keys())[0])
+
+
+def test_delete_aggregate_does_not_exist(sql_app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_aggregate(str(uuid.uuid1()))

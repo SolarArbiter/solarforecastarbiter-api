@@ -350,7 +350,7 @@ VALUES (
     'dni agg', 'America/Denver'
 );
 
-SET @created_at = TIMESTAMP('2019-04-01 00:00');
+SET @created_at = TIMESTAMP('2019-09-25 00:00');
 INSERT INTO arbiter_data.aggregate_observation_mapping (
     aggregate_id, observation_id, created_at) VALUES
     (@aggid0, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1), @created_at),
@@ -364,14 +364,16 @@ SET @pid0 = UUID_TO_BIN(UUID(), 1);
 SET @pid1 = UUID_TO_BIN(UUID(), 1);
 SET @pid2 = UUID_TO_BIN(UUID(), 1);
 SET @pid3 = UUID_TO_BIN(UUID(), 1);
+SET @pid4 = UUID_TO_BIN(UUID(), 1);
 
 INSERT INTO arbiter_data.permissions (id, description, organization_id, action, object_type, applies_to_all) VALUES
     (@pid0, 'Read Aggregates', @orgid, 'read', 'aggregates', TRUE),
     (@pid1, 'Read Aggregate Values', @orgid, 'read_values', 'aggregates', TRUE),
     (@pid2, 'Delete Aggregates', @orgid, 'delete', 'aggregates', TRUE),
-    (@pid3, 'Update Aggregates', @orgid, 'update', 'aggregates', TRUE);
+    (@pid3, 'Update Aggregates', @orgid, 'update', 'aggregates', TRUE),
+    (@pid4, 'Create aggregates', @orgid, 'create', 'aggregates', TRUE);
 
-INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (@roleid, @pid0), (@roleid, @pid1), (@roleid, @pid2), (@roleid, @pid3);
+INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id) VALUES (@roleid, @pid0), (@roleid, @pid1), (@roleid, @pid2), (@roleid, @pid3), (@roleid, @pid4);
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_aggregate TO 'apiuser'@'%';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_aggregates TO 'apiuser'@'%';
