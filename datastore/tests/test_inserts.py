@@ -170,6 +170,7 @@ def agg_callargs(insertuser, new_aggregate, valueset):
     del aggargs['id']
     del aggargs['organization_id']
     del aggargs['obs_list']
+    del aggargs['interval_value_type']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(aggargs)
     return callargs
@@ -557,7 +558,7 @@ def test_store_aggregate(dictcursor, agg_callargs, allow_create):
         (agg_callargs['strid'],))
     res = dictcursor.fetchall()[0]
     for key in ('variable', 'name', 'interval_label', 'interval_length',
-                'extra_parameters'):
+                'extra_parameters', 'aggregate_type'):
         assert res[key] == agg_callargs[key]
     dictcursor.execute(
         'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
@@ -583,7 +584,8 @@ def test_add_observation_to_aggregate(dictcursor, insertuser,
         ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
     before = dictcursor.fetchone()['nu']
     dictcursor.callproc('add_observation_to_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.execute(
         'SELECT observation_id as oi FROM '
         'arbiter_data.aggregate_observation_mapping'
@@ -601,11 +603,13 @@ def test_add_observation_to_aggregate_present(
     agg = insertuser[8]
     obs = new_observation(site=insertuser[1])
     dictcursor.callproc('add_observation_to_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'add_observation_to_aggregate',
-            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01'))
     assert e.value.args[0] == 1142
 
 
@@ -620,17 +624,22 @@ def test_add_observation_to_aggregate_again(
         ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
     before = dictcursor.fetchone()['nu']
     dictcursor.callproc('add_observation_to_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.callproc('remove_observation_from_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.callproc('add_observation_to_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.callproc('remove_observation_from_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.callproc('add_observation_to_aggregate',
-                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
     dictcursor.execute(
-        'SELECT observation_id as oi, observation_removed_at, _incr FROM '
+        'SELECT observation_id as oi, effective_until, _incr FROM '
         'arbiter_data.aggregate_observation_mapping'
         ' WHERE aggregate_id = UUID_TO_BIN(%s, 1) ORDER BY _incr',
         (agg['strid'],))
@@ -639,7 +648,7 @@ def test_add_observation_to_aggregate_again(
     news = []
     for d in res:
         if d['oi'] == obs['id']:
-            news.append(d['observation_removed_at'] is None)
+            news.append(d['effective_until'] is None)
     assert news == [False, False, True]
 
 
@@ -652,7 +661,8 @@ def test_add_observation_to_aggregate_no_update(dictcursor, insertuser,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'add_observation_to_aggregate',
-            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01 00:00'))
     assert e.value.args[0] == 1142
 
 
@@ -666,7 +676,8 @@ def test_add_observation_to_aggregate_no_read_obs(dictcursor, insertuser,
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'add_observation_to_aggregate',
-            (auth0id, agg['strid'], str(bin_to_uuid(obs['id']))))
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01 00:00'))
     assert e.value.args[0] == 1143
 
 

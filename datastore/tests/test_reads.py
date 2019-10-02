@@ -713,7 +713,8 @@ def test_read_aggregate(
     res = dictcursor.fetchall()[0]
     assert res['provider'] == org['name']
     for key in ('name', 'variable', 'interval_length', 'interval_label',
-                'extra_parameters', 'description', 'timezone'):
+                'extra_parameters', 'description', 'timezone',
+                'aggregate_type'):
         assert res[key] == agg[key]
     assert 'observations' in res
     obs_ids = [str(bin_to_uuid(obs['id'])) for obs in agg['obs_list']]
@@ -723,7 +724,9 @@ def test_read_aggregate(
     for obsd in res_obs:
         assert obsd['observation_id'] in obs_ids
         assert obsd['created_at']
-        assert obsd['observation_removed_at'] is None
+        assert obsd['effective_from']
+        assert obsd['effective_until'] is None
+        assert obsd['observation_deleted_at'] is None
 
 
 def test_read_aggregate_obs_deleted(
@@ -750,11 +753,12 @@ def test_read_aggregate_obs_deleted(
     for obsd in res_obs:
         assert obsd['observation_id'] in obs_ids
         assert obsd['created_at']
+        assert obsd['effective_from']
         if obsd['observation_id'] == str(bin_to_uuid(agg['obs_list'][0]['id'])):  # NOQA
             assert obsd['observation_deleted_at'] is not None
         else:
             assert obsd['observation_deleted_at'] is None
-        assert obsd['observation_removed_at'] is None
+        assert obsd['effective_until'] is None
 
 
 def test_read_aggregate_obs_deleted_removed(
@@ -768,7 +772,7 @@ def test_read_aggregate_obs_deleted_removed(
         'DELETE FROM observations WHERE id = %s', oid)
     dictcursor.callproc('remove_observation_from_aggregate',
                         (user['auth0_id'], str(bin_to_uuid(agg['id'])),
-                         str(bin_to_uuid(oid))))
+                         str(bin_to_uuid(oid)), '2019-09-30 00:00'))
     dictcursor.callproc(
         'read_aggregate', (user['auth0_id'], str(bin_to_uuid(agg['id'])))
     )
@@ -785,12 +789,13 @@ def test_read_aggregate_obs_deleted_removed(
     for obsd in res_obs:
         assert obsd['observation_id'] in obs_ids
         assert obsd['created_at']
+        assert obsd['effective_from']
         if obsd['observation_id'] == str(bin_to_uuid(agg['obs_list'][0]['id'])):  # NOQA
             assert obsd['observation_deleted_at'] is not None
-            assert obsd['observation_removed_at'] is not None
+            assert obsd['effective_until'] is not None
         else:
             assert obsd['observation_deleted_at'] is None
-            assert obsd['observation_removed_at'] is None
+            assert obsd['effective_until'] is None
 
 
 def test_read_aggregate_obs_removed(
@@ -802,7 +807,7 @@ def test_read_aggregate_obs_removed(
     oid = agg['obs_list'][0]['id']
     dictcursor.callproc('remove_observation_from_aggregate',
                         (user['auth0_id'], str(bin_to_uuid(agg['id'])),
-                         str(bin_to_uuid(oid))))
+                         str(bin_to_uuid(oid)), '2019-09-30 00:00'))
     dictcursor.callproc(
         'read_aggregate', (user['auth0_id'], str(bin_to_uuid(agg['id'])))
     )
@@ -819,10 +824,11 @@ def test_read_aggregate_obs_removed(
     for obsd in res_obs:
         assert obsd['observation_id'] in obs_ids
         assert obsd['created_at']
+        assert obsd['effective_from']
         if obsd['observation_id'] == str(bin_to_uuid(agg['obs_list'][0]['id'])):  # NOQA
-            assert obsd['observation_removed_at'] is not None
+            assert obsd['effective_until'] is not None
         else:
-            assert obsd['observation_removed_at'] is None
+            assert obsd['effective_until'] is None
         assert obsd['observation_deleted_at'] is None
 
 
@@ -922,7 +928,7 @@ def test_read_aggregate_values_removed(
     res = cursor.fetchall()
     assert res == vals
     cursor.execute(
-        "UPDATE aggregate_observation_mapping SET observation_removed_at = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
     )
     cursor.callproc(
         'read_aggregate_values', (
@@ -934,7 +940,7 @@ def test_read_aggregate_values_removed(
     # readd and see
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
-        "(aggregate_id, observation_id, _incr, created_at) VALUES"
+        "(aggregate_id, observation_id, _incr, effective_from) VALUES"
         " (%s, %s, 1, TIMESTAMP('2019-01-30 12:35'))",
         (agg['id'], obs['id'])
     )
@@ -945,6 +951,38 @@ def test_read_aggregate_values_removed(
     )
     res = cursor.fetchall()
     assert res == tuple(list(vals[:2]) + list(vals[-3:]))
+
+
+def test_read_aggregate_values_removed_overlap(
+        cursor, allow_read_aggregate_values, allow_read_observation_values,
+        obs_values, new_aggregate, new_observation, user_org_role):
+    org = user_org_role[1]
+    obs = new_observation(org=org)
+    auth0id, obsid, vals, start, end = obs_values(str(bin_to_uuid(obs['id'])))
+    agg = new_aggregate(obs_list=[obs], org=org)
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
+    cursor.execute(
+        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+    )
+    cursor.execute(
+        "INSERT INTO aggregate_observation_mapping "
+        "(aggregate_id, observation_id, _incr, effective_from) VALUES"
+        " (%s, %s, 1, TIMESTAMP('2019-01-30 11:00'))",
+        (agg['id'], obs['id'])
+    )
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
 
 
 def test_read_aggregate_values_deleted(

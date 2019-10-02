@@ -230,15 +230,16 @@ def test_remove_observation_from_aggregate(cursor, agg_obj,
     auth0id, aggid, agg = agg_obj
     cursor.execute(
         'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
-        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_removed_at is'
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND effective_until is'
         ' NULL', aggid)
     assert cursor.fetchone()[0] == 2
     cursor.callproc('remove_observation_from_aggregate',
                     (auth0id, aggid,
-                     str(bin_to_uuid(agg['obs_list'][0]['id']))))
+                     str(bin_to_uuid(agg['obs_list'][0]['id'])),
+                     '2019-09-30 00:00'))
     cursor.execute(
         'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
-        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND observation_removed_at is'
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) AND effective_until is'
         ' NULL', aggid)
     assert cursor.fetchone()[0] == 1
 
@@ -249,7 +250,8 @@ def test_remove_observation_from_aggregate_denied(cursor, agg_obj,
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc(
             'remove_observation_from_aggregate',
-            (auth0id, aggid, str(bin_to_uuid(agg['obs_list'][0]['id']))))
+            (auth0id, aggid, str(bin_to_uuid(agg['obs_list'][0]['id'])),
+             '2019-09-30 00:00'))
     assert e.value.args[0] == 1142
 
 

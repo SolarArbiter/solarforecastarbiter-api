@@ -270,15 +270,16 @@ def new_aggregate(cursor, new_observation):
             timezone='America/Denver',
             interval_label='ending',
             interval_length=15,
-            interval_value_type='sum',
+            aggregate_type='sum',
             extra_parameters='')
         insert_dict(cursor, 'aggregates', out)
         cursor.executemany(
             'INSERT INTO aggregate_observation_mapping '
-            '(aggregate_id, observation_id, created_at) VALUES (%s, %s,'
+            '(aggregate_id, observation_id, effective_from) VALUES (%s, %s,'
             'TIMESTAMP("2019-01-01 00:00"))',
             [(out['id'], obs['id']) for obs in obs_list]
         )
+        out['interval_value_type'] = 'interval_mean'
         out['obs_list'] = obs_list
         return out
     return fcn
