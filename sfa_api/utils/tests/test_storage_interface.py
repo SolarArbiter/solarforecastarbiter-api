@@ -879,7 +879,7 @@ def test_add_observation_to_aggregate_denied(
         sql_app, invalid_user, nocommit_cursor):
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
-    with pytest.raises(storage_interface.StorageAuthError) as e:
+    with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.add_observation_to_aggregate(
             aggregate_id, obs_id)
 
@@ -888,7 +888,7 @@ def test_add_observation_to_aggregate_cant_read_obs(
         sql_app, user, nocommit_cursor):
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = '825fa192-824f-11e9-a81f-54bf64606445'
-    with pytest.raises(storage_interface.StorageAuthError) as e:
+    with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.add_observation_to_aggregate(
             aggregate_id, obs_id)
 
@@ -898,6 +898,33 @@ def test_add_observation_to_aggregate_obs_present(
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = demo_aggregates[aggregate_id][
         'observations'][0]['observation_id']
-    with pytest.raises(storage_interface.StorageAuthError) as e:
+    with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_remove_observation_from_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id):
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert all([obs['observation_removed_at'] is None
+                for obs in aggregate['observations']])
+    storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['observation_removed_at'] is not None
+        else:
+            assert obs['observation_removed_at'] is None
+
+
+def test_remove_observation_from_aggregate_denied(
+        sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.remove_observation_from_aggregate(
             aggregate_id, obs_id)

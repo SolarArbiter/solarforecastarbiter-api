@@ -276,6 +276,7 @@ def store_observation(observation):
         observation['name'], observation['interval_label'],
         observation['interval_length'], observation['interval_value_type'],
         observation['uncertainty'], observation['extra_parameters'])
+
     return observation_id
 
 
@@ -1511,5 +1512,20 @@ def add_observation_to_aggregate(aggregate_id, observation_id):
                     observation_id)
 
 
-def remove_observation_from_aggregate():
-    pass
+def remove_observation_from_aggregate(aggregate_id, observation_id):
+    """Remove an Observation from an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id: string
+        UUID of aggregate
+    observation_id: string
+        UUID of the observation
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have update permission on the aggregate
+    """
+    _call_procedure('remove_observation_from_aggregate', aggregate_id,
+                    observation_id)
