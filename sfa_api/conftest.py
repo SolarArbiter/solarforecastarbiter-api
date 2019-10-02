@@ -318,6 +318,10 @@ def site_id():
 def site_id_plant():
     return '123e4567-e89b-12d3-a456-426655440002'
 
+@pytest.fixture()
+def aggregate_id():
+    return '458ffc27-df0b-11e9-b622-62adb5fd6af0'
+
 
 @pytest.fixture()
 def mocked_queuing(mocker):

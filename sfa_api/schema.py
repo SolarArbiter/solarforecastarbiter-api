@@ -813,3 +813,34 @@ class AggregateSchema(AggregatePostSchema):
     modified_at = MODIFIED_AT
     observations = ma.List(ma.Nested(AggregateObservationSchema()),
                            many=True)
+
+
+@spec.define_schema('AggregateLinks')
+class AggregateLinksSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    aggregate_id = ma.UUID()
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('aggregates.metadata',
+                                          aggregate_id='<aggregate_id>'),
+            'values': ma.AbsoluteURLFor('aggregates.values',
+                                        aggregate_id='<aggregate_id>')
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
+
+
+@spec.define_schema('AggregateValues')
+class AggregateValuesSchema(ObservationValuesPostSchema):
+    aggregate_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Aggregate associated with this data.")
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('aggregates.metadata',
+                                          aggregate_id='<aggregate_id>'),
+        },
+        description="Contains a link to the values endpoint."
+    )
