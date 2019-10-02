@@ -858,3 +858,46 @@ def test_delete_aggregate_invalid_user(
 def test_delete_aggregate_does_not_exist(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.delete_aggregate(str(uuid.uuid1()))
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_add_observation_to_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id):
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    obs_before = {
+        obs['observation_id'] for obs in aggregate['observations']}
+    assert obs_id not in obs_before
+    storage_interface.add_observation_to_aggregate(aggregate_id, obs_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    obs_before.add(obs_id)
+    assert obs_before == {
+        obs['observation_id'] for obs in aggregate['observations']}
+
+
+def test_add_observation_to_aggregate_denied(
+        sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    with pytest.raises(storage_interface.StorageAuthError) as e:
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+def test_add_observation_to_aggregate_cant_read_obs(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '825fa192-824f-11e9-a81f-54bf64606445'
+    with pytest.raises(storage_interface.StorageAuthError) as e:
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+def test_add_observation_to_aggregate_obs_present(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    with pytest.raises(storage_interface.StorageAuthError) as e:
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)

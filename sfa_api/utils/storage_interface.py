@@ -1490,8 +1490,25 @@ def list_aggregates():
     return aggregates
 
 
-def add_observation_to_aggregate():
-    pass
+def add_observation_to_aggregate(aggregate_id, observation_id):
+    """Add an Observation to an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id: string
+        UUID of aggregate
+    observation_id: string
+        UUID of the observation
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have update permission on the aggregate
+        - If the observation is already present in the aggregate
+        - If the user cannot read the observation object
+    """
+    _call_procedure('add_observation_to_aggregate', aggregate_id,
+                    observation_id)
 
 
 def remove_observation_from_aggregate():
