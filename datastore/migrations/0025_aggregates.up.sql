@@ -358,7 +358,7 @@ INSERT INTO arbiter_data.aggregate_observation_mapping (
     (@aggid0, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1), @created_at),
     (@aggid0, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1), @created_at),
     (@aggid1, UUID_TO_BIN('9ce9715c-bd91-47b7-989f-50bb558f1eb9', 1), @created_at),
-    (@aggid1, UUID_TO_BIN('9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f', 1), @created_at);
+    (@aggid1, UUID_TO_BIN('95890740-824f-11e9-a81f-54bf64606445', 1), @created_at);
 
 SET @pid0 = UUID_TO_BIN(UUID(), 1);
 SET @pid1 = UUID_TO_BIN(UUID(), 1);

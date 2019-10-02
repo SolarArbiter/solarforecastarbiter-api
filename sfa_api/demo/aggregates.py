@@ -48,11 +48,11 @@ static_aggregates = {
         "created_at": dt.datetime(2019, 9, 24, 12, 0),
         "modified_at": dt.datetime(2019, 9, 24, 12, 0),
         "observations": [
-            {"observation_id": "9ce9715c-bd91-47b7-989f-50bb558f1eb9",
+            {"observation_id": "95890740-824f-11e9-a81f-54bf64606445",
              "created_at": ca,
              "observation_deleted_at": None,
              "observation_removed_at": None},
-            {"observation_id": "9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f",
+            {"observation_id": "9ce9715c-bd91-47b7-989f-50bb558f1eb9",
              "created_at": ca,
              "observation_deleted_at": None,
              "observation_removed_at": None}
