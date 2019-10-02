@@ -3,6 +3,7 @@ on site-section.
 """
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.api_interface import sites
+from sfa_dash.blueprints.util import handle_response
 from flask import render_template, request, url_for
 import pandas as pd
 
@@ -19,7 +20,7 @@ class DataDashView(BaseView):
 
     def get_site_metadata(self, site_id):
         site_request = sites.get_metadata(site_id)
-        return site_request.json()
+        return handle_response(site_request)
 
     def parse_start_end_from_querystring(self):
         """Attempts to find the start and end query parameters. If not found,

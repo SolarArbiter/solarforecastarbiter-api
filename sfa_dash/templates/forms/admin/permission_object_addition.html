@@ -15,6 +15,7 @@
 {% endif %}
 {% block content %}
 {% include "sections/notifications.html" %}
+{% if permission is defined %}
 {% include "data/metadata/permission_metadata.html" %}
 <form action="{{ url_for('admin.permission_object_addition', uuid=permission['permission_id']) }}" method="post" enctype="application/json" id="permission-form">
     <p>Creating a new permission for data of type '{{ data_type | convert_data_type}}'.</p>
@@ -55,4 +56,5 @@
     {{ form.token() }}
   <button type="submit" form="permission-form" value="Submit" class="btn btn-primary">Submit</button>
 </form>
+{% endif %}
 {% endblock %}

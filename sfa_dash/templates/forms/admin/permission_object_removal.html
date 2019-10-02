@@ -3,7 +3,7 @@
 {% set page_title = 'Permissions' %}
 {% block content %}
 {% include "sections/notifications.html" %}
-{% if perm is not none %}
+{% if permission is defined %}
 {% include "data/metadata/permission_metadata.html" %}
 <div>
 <h3>Removing {{ permission['object_type'] | title }} "{{ object_data['name'] }}".</h3>
@@ -14,7 +14,5 @@
   {{ form.token() }}
 </form>
 </div>
-{% else %}
-<p>404 Not Found</p>
 {% endif %}
 {% endblock %}

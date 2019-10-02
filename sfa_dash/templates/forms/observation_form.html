@@ -28,7 +28,8 @@
 </div>
 <div class="form-element">
   {{ form.timedelta('Interval length', 'interval_length',
-                    'The length of time that each data point represents. Values must be integers.') }}
+                    'The length of time that each data point represents. Values must be integers.',
+                    form_data=form_data) }}
 </div>
 <div class="form-element">
   {{ form.select('Interval Label', 'interval_label',

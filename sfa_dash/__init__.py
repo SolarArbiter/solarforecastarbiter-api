@@ -76,7 +76,7 @@ def create_app(config=None):
     def inject_globals():
         # Injects variables into all rendered templates
         global_template_args = {}
-        global_template_args['user'] = session.get('userinfo')
+        global_template_args['current_user'] = session.get('userinfo')
         global_template_args.update(template_variables())
         return global_template_args
 

@@ -1,7 +1,8 @@
-from sfa_dash.blueprints.util import DataTables
+from sfa_dash.blueprints.util import DataTables, handle_response
 from sfa_dash.blueprints.dash import SiteDashView
 from sfa_dash.api_interface import sites
-from flask import render_template, url_for, request, abort
+from sfa_dash.errors import DataRequestException
+from flask import render_template, url_for, request
 
 
 class SitesListingView(SiteDashView):
@@ -54,8 +55,9 @@ class SingleSiteView(SiteDashView):
         return bc
 
     def get(self, uuid, **kwargs):
-        metadata_request = sites.get_metadata(uuid)
-        if metadata_request.status_code != 200:
-            abort(404)
-        self.metadata = metadata_request.json()
+        try:
+            self.metadata = handle_response(
+                sites.get_metadata(uuid))
+        except DataRequestException as e:
+            return render_template(self.template, errors=e.errors)
         return render_template(self.template, **self.template_args(**kwargs))

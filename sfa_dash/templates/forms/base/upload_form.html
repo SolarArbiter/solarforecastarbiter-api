@@ -4,6 +4,7 @@
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+{% if metadata is defined %}
 <form action="{{ url_for('forms.upload_' + data_type + '_data', uuid=uuid) }}" method="post"  id="{{ data_type }}-upload-form" enctype='multipart/form-data'>
   <div class="form-group">
     {% block fields %}
@@ -17,5 +18,5 @@
 <div class="form-element">
   <button type="submit" form="{{ data_type }}-upload-form" value="Submit" class="btn btn-primary">Upload</button>
 </div>
+{% endif %}
 {% endblock %}
-

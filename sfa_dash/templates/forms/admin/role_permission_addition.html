@@ -4,6 +4,7 @@
 {% import "forms/admin/role_macros.jinja" as table_macros %}
 {% block content %}
 {% include "sections/notifications.html" %}
+{% if role is defined %}
 {% include "data/metadata/role_metadata.html" %}
 <form action="{{ url_for('admin.role_perm_addition', uuid=role['role_id']) }}" method="post" enctype="application/json" id="role-form">
   <div class="form-group">
@@ -45,4 +46,5 @@
   </div>
 </form>
 <button type="submit" form="role-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endif %}
 {% endblock %}

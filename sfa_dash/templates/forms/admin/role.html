@@ -1,7 +1,8 @@
 {% extends "dash/data.html" %}
 {% set page_title = 'Roles' %}
 {% block content %}
-{% if role is not none %}
+{% include "sections/notifications.html" %}
+{% if role is defined %}
 {% include 'data/metadata/role_metadata.html' %}
 <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_perm_addition', uuid=role['role_id']) }}">Add Permissions</a>
 <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_grant', uuid=role['role_id']) }}">Grant Role</a>
@@ -66,7 +67,5 @@
   </tbody>
 </table>
 {% endif %}{# end table-type logic #}
-{% else %}
-<p>404 Not Found</p>
 {% endif %}
 {% endblock %}

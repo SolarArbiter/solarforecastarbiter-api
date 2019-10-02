@@ -3,7 +3,7 @@
 {% set page_title = 'Roles' %}
 {% block content %}
 {% include "sections/notifications.html" %}
-{% if role is not none %}
+{% if role is defined %}
 {% include 'data/metadata/role_metadata.html' %}
 <div>
 <h3>Deleting Permission "{{ perm['description'] }}" from Role "{{ role['name'] }}".</h3>
@@ -14,7 +14,5 @@
   {{ form.token() }}
 </form>
 </div>
-{% else %}
-<p>404 Not Found</p>
 {% endif %}
 {% endblock %}

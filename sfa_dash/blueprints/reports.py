@@ -1,6 +1,6 @@
 """Draft of reports endpoints/pages. Need to integrate core report generation.
 """
-from flask import request, redirect, url_for, abort, render_template
+from flask import request, redirect, url_for, render_template
 from requests.exceptions import HTTPError
 
 from solarforecastarbiter.reports.main import report_to_html_body
@@ -163,14 +163,15 @@ class DeleteReportView(BaseView):
                 # failed
                 response_json = delete_request.json()
                 errors = response_json['errors']
-                return self.get(uuid, errors=errors)
             elif e.response.status_code == 404:
-                abort(404)
+                errors = {
+                    "404": ['The requested object could not be found.']
+                }
             else:
                 errors = {
                     "error": ["Could not complete the requested action."]
                 }
-                return self.get(uuid, errors=errors)
+            return self.get(uuid, errors=errors)
         return redirect(url_for(
             f'data_dashboard.reports',
             messages={'delete': ['Success']}))
