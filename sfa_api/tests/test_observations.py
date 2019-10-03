@@ -86,6 +86,19 @@ NON_NUMERICAL_VALUE_JSON = {
          'value': 'four'},
     ]
 }
+WRONG_INTERVAL_VALUE_JSON = {
+    'values': [
+        {'timestamp': '2019-01-22T17:56:00Z',
+         'value': 3,
+         'quality_flag': 0},
+        {'timestamp': '2019-01-22T18:04:00Z',
+         'value': 2,
+         'quality_flag': 0},
+        {'timestamp': '2019-01-22T18:07:00Z',
+         'value': 1,
+         'quality_flag': 0},
+    ]
+}
 NON_BINARY_FLAG_JSON = {
     'values': [
         {'quality_flag': 'ham',
@@ -125,7 +138,8 @@ def test_post_json_storage_call(api, observation_id, mocker,
     {},
     WRONG_DATE_FORMAT_JSON,
     NON_NUMERICAL_VALUE_JSON,
-    NON_BINARY_FLAG_JSON
+    NON_BINARY_FLAG_JSON,
+    WRONG_INTERVAL_VALUE_JSON
 ])
 def test_post_observation_values_invalid_json(api, payload, observation_id):
     r = api.post(f'/observations/{observation_id}/values',

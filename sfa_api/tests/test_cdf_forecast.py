@@ -91,6 +91,16 @@ WRONG_DATE_FORMAT_VALUE_JSON = {
          'value': 3},
     ]
 }
+WRONG_INTERVAL_VALUE_JSON = {
+    'values': [
+        {'timestamp': '2019-01-22T17:56:00Z',
+         'value': 3},
+        {'timestamp': '2019-01-22T18:04:00Z',
+         'value': 2},
+        {'timestamp': '2019-01-22T18:07:00Z',
+         'value': 1},
+    ]
+}
 NON_NUMERICAL_VALUE_JSON = {
     'values': [
         {'timestamp': "2019-01-22T17:56:36Z",
@@ -151,6 +161,7 @@ def test_post_values_cant_read(api, forecast_id, mocker):
     {},
     WRONG_DATE_FORMAT_VALUE_JSON,
     NON_NUMERICAL_VALUE_JSON,
+    WRONG_INTERVAL_VALUE_JSON
 ])
 def test_post_forecast_values_invalid_json(api, payload, cdf_forecast_id):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
