@@ -288,10 +288,10 @@ def validate_index_period(index, interval_length, previous_time):
 
     Parameters
     ----------
-    index : pandas.DatetimeIndex
+    index : pd.DatetimeIndex
     interval_length : int
         Regular period of data in minutes
-    previous_time : pd.Timestamp
+    previous_time : pd.Timestamp or None
         The last time in the database before the start of index.
         May be None.
 
