@@ -274,10 +274,10 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
-        write_meta = storage.read_metadata_for_forecast_values(
+        interval_length, previous_time = storage.read_metadata_for_cdf_forecast_values(  # NOQA
             forecast_id, forecast_df.index[0])
-        validate_index_period(forecast_df.index, write_meta['interval_length'],
-                              write_meta['previous_time'])
+        validate_index_period(forecast_df.index, interval_length,
+                              previous_time)
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         return stored, 201
 
@@ -561,10 +561,10 @@ class CDFForecastValues(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
-        write_meta = storage.read_metadata_for_cdf_forecast_values(
+        interval_length, previous_time = storage.read_metadata_for_cdf_forecast_values(  # NOQA
             forecast_id, forecast_df.index[0])
-        validate_index_period(forecast_df.index, write_meta['interval_length'],
-                              write_meta['previous_time'])
+        validate_index_period(forecast_df.index, interval_length,
+                              previous_time)
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
         return stored, 201
 

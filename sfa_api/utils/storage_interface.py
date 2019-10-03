@@ -1398,6 +1398,16 @@ def user_exists():
     return exists.get(f"does_user_exist('{current_user}')") == 1
 
 
+def _read_metadata_for_write(obj_id, type_, start):
+    out = _call_procedure_for_single(
+        'read_metadata_for_value_write', obj_id, type_, start)
+    interval_length = out['interval_length']
+    previous_time = out['previous_time']
+    if previous_time is not None:
+        previous_time = pd.Timestamp(previous_time).tz_localize('UTC')
+    return interval_length, previous_time
+
+
 def read_metadata_for_forecast_values(forecast_id, start):
     """Reads necessary metadata to process forecast values
     before storing them.
@@ -1411,16 +1421,17 @@ def read_metadata_for_forecast_values(forecast_id, start):
 
     Returns
     -------
-    dict
-       Keys are interval_length: The interval length of the forecast
-       and  previous_time: The most recent timestamp before start
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
     Raises
     ------
     StorageAuthError
         If the user does not have permission to write values for the Forecast
     """
-    return _call_procedure_for_single(
-        'read_metadata_for_value_write', forecast_id, 'forecasts', start)
+    return _read_metadata_for_write(forecast_id, 'forecasts', start)
 
 
 def read_metadata_for_cdf_forecast_values(forecast_id, start):
@@ -1436,17 +1447,18 @@ def read_metadata_for_cdf_forecast_values(forecast_id, start):
 
     Returns
     -------
-    dict
-       Keys are interval_length: The interval length of the forecast
-       and  previous_time: The most recent timestamp before start
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
     Raises
     ------
     StorageAuthError
         If the user does not have permission to write values for the
         CDF Forecast
     """
-    return _call_procedure_for_single(
-        'read_metadata_for_value_write', forecast_id, 'cdf_forecasts', start)
+    return _read_metadata_for_write(forecast_id, 'cdf_forecasts', start)
 
 
 def read_metadata_for_observation_values(observation_id, start):
@@ -1462,14 +1474,15 @@ def read_metadata_for_observation_values(observation_id, start):
 
     Returns
     -------
-    dict
-       Keys are interval_length: The interval length of the observation
-       and  previous_time: The most recent timestamp before start
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
     Raises
     ------
     StorageAuthError
         If the user does not have permission to write values for the
         Observation
     """
-    return _call_procedure_for_single(
-        'read_metadata_for_value_write', observation_id, 'observations', start)
+    return _read_metadata_for_write(observation_id, 'observations', start)
