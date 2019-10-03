@@ -1,3 +1,5 @@
+from flask import abort
+from functools import partial
 import pytest
 
 
@@ -124,11 +126,24 @@ def test_post_json_storage_call(api, cdf_forecast_id, patched_store_values):
     patched_store_values.assert_called()
 
 
-def test_post_values_404(api, missing_id):
+def test_post_values_missing(api, missing_id):
     r = api.post(f'/forecasts/cdf/single/{missing_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 404
+
+
+def test_post_values_cant_read(api, forecast_id, mocker):
+    new = mocker.MagicMock()
+    new.side_effect = partial(abort, 404)
+    mocker.patch('sfa_api.utils.storage_interface.read_cdf_forecast',
+                 new=new)
+    mocker.patch('sfa_api.demo.read_cdf_forecast',
+                 new=new)
+    res = api.post(f'/forecasts/cdf/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 404
 
 
 @pytest.mark.parametrize('payload', [

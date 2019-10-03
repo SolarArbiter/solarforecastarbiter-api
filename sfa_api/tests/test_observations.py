@@ -1,3 +1,5 @@
+from flask import abort
+from functools import partial
 from io import BytesIO
 import json
 import pytest
@@ -154,6 +156,19 @@ def test_post_observation_values_valid_csv(api, observation_id,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
+
+
+def test_post_observation_values_cant_read(api, observation_id, mocker):
+    new = mocker.MagicMock()
+    new.side_effect = partial(abort, 404)
+    mocker.patch('sfa_api.utils.storage_interface.read_observation',
+                 new=new)
+    mocker.patch('sfa_api.demo.read_observation',
+                 new=new)
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 404
 
 
 def test_get_observation_values_404(api, missing_id):

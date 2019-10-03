@@ -1,3 +1,5 @@
+from flask import abort
+from functools import partial
 import pytest
 
 
@@ -127,10 +129,23 @@ def test_post_json_storage_call(api, forecast_id, patched_store_values):
     patched_store_values.assert_called()
 
 
-def test_post_values_404(api, missing_id):
+def test_post_values_missing_id(api, missing_id):
     # previously check if patched_store_values was called, shouldn't
     # even try now if forecast does not exist
     res = api.post(f'/forecasts/single/{missing_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 404
+
+
+def test_post_values_cant_read(api, forecast_id, mocker):
+    new = mocker.MagicMock()
+    new.side_effect = partial(abort, 404)
+    mocker.patch('sfa_api.utils.storage_interface.read_forecast',
+                 new=new)
+    mocker.patch('sfa_api.demo.read_forecast',
+                 new=new)
+    res = api.post(f'/forecasts/{forecast_id}/values',
                    base_url=BASE_URL,
                    json=VALID_FX_VALUE_JSON)
     assert res.status_code == 404
