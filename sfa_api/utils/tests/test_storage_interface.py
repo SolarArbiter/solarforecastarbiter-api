@@ -827,7 +827,6 @@ def test_read_metadata_for_forecast_values_start(
     assert isinstance(pt, pd.Timestamp)
 
 
-
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
 def test_read_metadata_for_cdf_forecast_values(
         sql_app, user, nocommit_cursor, cdf_forecast_id):
