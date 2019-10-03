@@ -280,3 +280,44 @@ def validate_start_end():
     if errors:
         raise BadAPIRequest(errors)
     return start, end
+
+
+def validate_index_period(index, interval_length):
+    """
+    Validate that the index conforms to interval_length.
+
+    Parameters
+    ----------
+    index : pandas.DatetimeIndex
+    interval_length : int
+        Regular period of data in minutes
+
+    Raises
+    ------
+    BadApiRequest
+       If there are any errors
+    """
+    if len(index) == 0:
+        raise BadAPIRequest({'timestamp': ['No times to validate']})
+    errors = []
+    start = index[0]
+    end = index[-1]
+    expected_index = pd.date_range(start=start, end=end,
+                                   freq=f'{interval_length}min')
+    missing_times = expected_index.difference(index)
+    if len(missing_times) > 0:
+        errors.append(f'Missing {len(missing_times)} timestamps. '
+                      f'First missing timestamp is {missing_times[0]}. '
+                      'Uploads must have equally spaced timestamps '
+                      f'from {start} to {end} with {interval_length} '
+                      'minutes between each timestamp.')
+
+    extra_times = index.difference(expected_index)
+    if len(extra_times) > 0:
+        errors.append(f'{len(extra_times)} extra times present in index. '
+                      f'First extra time is {extra_times[0]}.'
+                      'Uploads must have equally spaced timestamps '
+                      f'from {start} to {end} with {interval_length} '
+                      'minutes between each timestamp.')
+    if errors:
+        raise BadAPIRequest({'timestamp': errors})

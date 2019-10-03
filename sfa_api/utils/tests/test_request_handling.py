@@ -197,3 +197,67 @@ def test_parse_to_timestamp(dt_string, expected):
 def test_parse_to_timestamp_error(dt_string):
     with pytest.raises(ValueError):
         request_handling.parse_to_timestamp(dt_string)
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='10min'), 10),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0200Z',
+                       '2019-09-01T0400Z']), 120),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0011Z',
+                       '2019-09-01T0016Z']), 5)
+])
+def test_validate_index_period(index, interval_length):
+    request_handling.validate_index_period(index, interval_length)
+
+
+def test_validate_index_empty():
+    with pytest.raises(request_handling.BadAPIRequest):
+        request_handling.validate_index_period(pd.DatetimeIndex([]), 10)
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0200Z',
+                       '2019-09-01T0300Z']), 60),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0300Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='20min'), 10),
+])
+def test_validate_index_period_missing(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length)
+    errs = e.value.errors['timestamp']
+    assert len(errs) == 1
+    assert 'Missing' in errs[0]
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0100Z',
+                       '2019-09-01T0200Z']), 120),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0045Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='5min'), 10),
+])
+def test_validate_index_period_extra(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length)
+    errs = e.value.errors['timestamp']
+    assert len(errs) == 1
+    assert 'extra' in errs[0]
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0100Z',
+                       '2019-09-01T0201Z']), 120),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0130Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1305Z',
+                   freq='5min'), 10),
+])
+def test_validate_index_period_other(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length)
+    errs = e.value.errors['timestamp']
+    assert len(errs) > 0
