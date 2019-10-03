@@ -1,5 +1,4 @@
-from flask import abort
-from functools import partial
+import pandas as pd
 import pytest
 
 
@@ -111,11 +110,11 @@ WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:23Z,fgh" # NOQA
 
 
-def test_post_forecast_values_valid_json(api, cdf_forecast_id):
-    r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_FX_VALUE_JSON)
-    assert r.status_code == 201
+def test_post_forecast_values_valid_json(api, cdf_forecast_id, mock_previous):
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 201
 
 
 @pytest.fixture()
@@ -128,7 +127,8 @@ def patched_store_values(mocker):
     return new
 
 
-def test_post_json_storage_call(api, cdf_forecast_id, patched_store_values):
+def test_post_json_storage_call(api, cdf_forecast_id, patched_store_values,
+                                mock_previous):
     patched_store_values.return_value = cdf_forecast_id
     api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
              base_url=BASE_URL,
@@ -136,24 +136,20 @@ def test_post_json_storage_call(api, cdf_forecast_id, patched_store_values):
     patched_store_values.assert_called()
 
 
-def test_post_values_missing(api, missing_id):
+def test_post_values_missing(api, missing_id, mock_previous):
     r = api.post(f'/forecasts/cdf/single/{missing_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 404
 
 
-def test_post_values_cant_read(api, forecast_id, mocker):
-    new = mocker.MagicMock()
-    new.side_effect = partial(abort, 404)
-    mocker.patch('sfa_api.utils.storage_interface.read_cdf_forecast',
-                 new=new)
-    mocker.patch('sfa_api.demo.read_cdf_forecast',
-                 new=new)
-    res = api.post(f'/forecasts/cdf/single/{forecast_id}/values',
+def test_post_forecast_values_bad_previous(api, cdf_forecast_id,
+                                           mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:50Z')
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                    base_url=BASE_URL,
                    json=VALID_FX_VALUE_JSON)
-    assert res.status_code == 404
+    assert res.status_code == 400
 
 
 @pytest.mark.parametrize('payload', [
@@ -163,7 +159,8 @@ def test_post_values_cant_read(api, forecast_id, mocker):
     NON_NUMERICAL_VALUE_JSON,
     WRONG_INTERVAL_VALUE_JSON
 ])
-def test_post_forecast_values_invalid_json(api, payload, cdf_forecast_id):
+def test_post_forecast_values_invalid_json(api, payload, cdf_forecast_id,
+                                           mock_previous):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  json=payload)
@@ -176,7 +173,8 @@ def test_post_forecast_values_invalid_json(api, payload, cdf_forecast_id):
     WRONG_DATE_FORMAT_CSV,
     NON_NUMERICAL_VALUE_CSV,
 ])
-def test_post_forecast_values_invalid_csv(api, payload, cdf_forecast_id):
+def test_post_forecast_values_invalid_csv(api, payload, cdf_forecast_id,
+                                          mock_previous):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -184,7 +182,8 @@ def test_post_forecast_values_invalid_csv(api, payload, cdf_forecast_id):
     assert r.status_code == 400
 
 
-def test_post_forecast_values_valid_csv(api, cdf_forecast_id):
+def test_post_forecast_values_valid_csv(api, cdf_forecast_id,
+                                        mock_previous):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -192,7 +191,7 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id):
     assert r.status_code == 201
 
 
-def test_get_forecast_values_404(api, missing_id):
+def test_get_forecast_values_404(api, missing_id, mock_previous):
     r = api.get(f'/forecasts/cdf/single/{missing_id}/values',
                 base_url=BASE_URL)
     assert r.status_code == 404
@@ -202,7 +201,7 @@ def test_get_forecast_values_404(api, missing_id):
     ('bad-date', 'also_bad', 'application/json'),
     ('bad-date', 'also_bad', 'text/csv'),
 ])
-def test_get_forecast_values_400(api, start, end, mimetype, cdf_forecast_id):
+def test_get_forecast_values_400(api, start, end, mimetype, cdf_forecast_id,):
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': mimetype},
@@ -225,7 +224,8 @@ def test_get_cdf_forecast_values_200(api, start, end, mimetype,
     assert r.mimetype == mimetype
 
 
-def test_post_and_get_values_json(api, cdf_forecast_id):
+def test_post_and_get_values_json(api, cdf_forecast_id,
+                                  mock_previous):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
@@ -240,7 +240,7 @@ def test_post_and_get_values_json(api, cdf_forecast_id):
     assert VALID_FX_VALUE_JSON['values'] == posted_data['values']
 
 
-def test_post_and_get_values_csv(api, cdf_forecast_id):
+def test_post_and_get_values_csv(api, cdf_forecast_id, mock_previous):
     r = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
