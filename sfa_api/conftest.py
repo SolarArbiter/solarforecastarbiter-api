@@ -329,3 +329,11 @@ def mocked_queuing(mocker):
     mocked = mocker.patch('rq.Queue.enqueue')
     yield
     assert mocked.called
+
+
+@pytest.fixture()
+def mock_previous(mocker):
+    meta = mocker.patch(
+        'sfa_api.utils.storage_interface._set_previous_time')
+    meta.return_value = None
+    return meta
