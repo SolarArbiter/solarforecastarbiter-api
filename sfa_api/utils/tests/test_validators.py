@@ -22,7 +22,8 @@ def test_time_format_fail(bad):
 
 @pytest.mark.parametrize('thestring', [
     'mysite', 'Site 1', 'A really long but otherwise OK site',
-    "apostrophe '", 'site_99', 'site tucson, az'
+    "apostrophe '", 'site_99', 'site tucson, az',
+    "Test (site)", 'w,', 'test-hyphen'
 ])
 def test_userstring(thestring):
     assert validators.UserstringValidator()(
@@ -32,7 +33,8 @@ def test_userstring(thestring):
 @pytest.mark.parametrize('thestring', [
     '<script>bac</script>', '<', ';delete',
     'site:a:b', 'site+1', 'site\\G',
-    'site\n', '', ' ', "'", "'   ", '_', ','
+    'site\n', '', ' ', "'", "'   ", '_', ',',
+    ',_', '()', "'()',", "(){ :|:& };"
 ])
 def test_invalid_userstring(thestring):
     with pytest.raises(ValidationError):
