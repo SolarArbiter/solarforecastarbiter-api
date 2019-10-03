@@ -206,11 +206,13 @@ def test_parse_to_timestamp_error(dt_string):
                        '2019-09-01T0400Z']), 120),
     (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0011Z',
                        '2019-09-01T0016Z']), 5),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0013Z',
+                       '2019-09-01T0020Z']), 7),
     (pd.date_range(start='2019-03-10 00:00', end='2019-03-10 05:00',
                    tz='America/Denver', freq='1h'), 60),  # DST transition
     (pd.date_range(start='2019-11-03 00:00', end='2019-11-03 05:00',
-                   tz='America/Denver', freq='1h'), 60)  # DST transition
-
+                   tz='America/Denver', freq='1h'), 60),  # DST transition
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 33)
 ])
 def test_validate_index_period(index, interval_length):
     request_handling.validate_index_period(index, interval_length)
