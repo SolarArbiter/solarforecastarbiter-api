@@ -1,0 +1,1 @@
+DROP PROCEDURE read_metadata_for_value_write
