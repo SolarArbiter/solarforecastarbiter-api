@@ -251,6 +251,9 @@ class ObservationValuesView(MethodView):
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
         observation = storage.read_observation(observation_id)
+        # silly handling for demo data
+        if observation is None:
+            abort(404)
         validate_index_period(observation_df.index,
                               observation['interval_length'])
         stored = storage.store_observation_values(

@@ -17,7 +17,8 @@ from sfa_api.schema import (ForecastValuesSchema,
 from sfa_api.utils.errors import BadAPIRequest, NotFoundException
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
-                                            validate_start_end)
+                                            validate_start_end,
+                                            validate_index_period)
 
 
 def validate_forecast_values(forecast_df):
@@ -273,6 +274,11 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
+        forecast = storage.read_forecast(forecast_id)
+        # silly handling only for demo data
+        if forecast is None:
+            abort(404)
+        validate_index_period(forecast_df.index, forecast['interval_length'])
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         if stored is None:
             abort(404)

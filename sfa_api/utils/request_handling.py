@@ -315,7 +315,7 @@ def validate_index_period(index, interval_length):
     extra_times = index.difference(expected_index)
     if len(extra_times) > 0:
         errors.append(f'{len(extra_times)} extra times present in index. '
-                      f'First extra time is {extra_times[0]}.'
+                      f'First extra time is {extra_times[0]}. '
                       'Uploads must have equally spaced timestamps '
                       f'from {start} to {end} with {interval_length} '
                       'minutes between each timestamp.')
