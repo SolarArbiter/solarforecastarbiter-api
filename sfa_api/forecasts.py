@@ -564,6 +564,11 @@ class CDFForecastValues(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
+        cdf_forecast = storage.read_cdf_forecast(forecast_id)
+        if cdf_forecast is None:
+            abort(404)
+        validate_index_period(forecast_df.index,
+                              cdf_forecast['interval_length'])
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
         if stored is None:
             abort(404)

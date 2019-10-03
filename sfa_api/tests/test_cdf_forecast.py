@@ -124,13 +124,11 @@ def test_post_json_storage_call(api, cdf_forecast_id, patched_store_values):
     patched_store_values.assert_called()
 
 
-def test_post_values_404(api, missing_id, patched_store_values):
-    patched_store_values.return_value = None
+def test_post_values_404(api, missing_id):
     r = api.post(f'/forecasts/cdf/single/{missing_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 404
-    patched_store_values.assert_called()
 
 
 @pytest.mark.parametrize('payload', [
@@ -207,7 +205,7 @@ def test_post_and_get_values_json(api, cdf_forecast_id):
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
-    end = '2019-01-22T17:56:00+00:00'
+    end = '2019-01-22T18:04:00+00:00'
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'application/json'},
@@ -222,8 +220,8 @@ def test_post_and_get_values_csv(api, cdf_forecast_id):
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_CDF_VALUE_CSV)
     assert r.status_code == 201
-    start = '2019-01-22T12:04:00+00:00'
-    end = '2019-01-22T12:07:00+00:00'
+    start = '2019-01-22T12:05:00+00:00'
+    end = '2019-01-22T12:20:00+00:00'
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'text/csv'},

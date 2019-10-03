@@ -205,7 +205,9 @@ def test_parse_to_timestamp_error(dt_string):
     (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0200Z',
                        '2019-09-01T0400Z']), 120),
     (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0011Z',
-                       '2019-09-01T0016Z']), 5)
+                       '2019-09-01T0016Z']), 5),
+    (pd.date_range(start='2019-03-10 00:00', end='2019-03-10 05:00',
+                   tz='America/Denver', freq='1h'), 60)
 ])
 def test_validate_index_period(index, interval_length):
     request_handling.validate_index_period(index, interval_length)
