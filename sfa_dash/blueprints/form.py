@@ -235,11 +235,20 @@ class CreateForm(MetadataForm):
             created_uuid = handle_response(
                 self.api_handle.post_metadata(formatted_form))
         except DataRequestException as e:
+            if e.status_code == 404:
+                errors = {
+                    '404': [('You do not have permission to create '
+                            f'{self.data_type}s. You may need to request '
+                             'permissions from your organization '
+                             'administrator.')]
+                }
+            else:
+                errors = e.errors
             if 'errors' in template_args:
                 template_args['errors'].update(
-                    self.flatten_dict(e.errors))
+                    self.flatten_dict(errors))
             else:
-                template_args['errors'] = self.flatten_dict(e.errors)
+                template_args['errors'] = self.flatten_dict(errors)
             if uuid is not None:
                 try:
                     site_metadata = self.get_site_metadata(uuid)
@@ -249,8 +258,8 @@ class CreateForm(MetadataForm):
                     template_args['site_metadata'] = site_metadata
                     template_args['metadata'] = self.render_metadata_section(
                         site_metadata)
-                return render_template(
-                    self.template, form_data=form_data, **template_args)
+            return render_template(
+                self.template, form_data=form_data, **template_args)
         return redirect(url_for(f'data_dashboard.{self.data_type}_view',
                                 uuid=created_uuid))
 
