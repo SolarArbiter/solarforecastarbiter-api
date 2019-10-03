@@ -63,7 +63,7 @@ VALID_OBS_JSON = {
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
     "interval_label": "beginning",
-    "interval_length": 1,
+    "interval_length": 5,
     "interval_value_type": "interval_mean",
     "uncertainty": 0.10,
 }
@@ -82,10 +82,10 @@ VALID_OBS_VALUE_JSON = {
          'timestamp': "2019-01-22T17:54:00+00:00",
          'value': 1.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:55:00+00:00",
+         'timestamp': "2019-01-22T17:59:00+00:00",
          'value': 32.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:56:00+00:00",
+         'timestamp': "2019-01-22T18:04:00+00:00",
          'value': 3.0}
     ]
 }
@@ -93,10 +93,10 @@ VALID_OBS_VALUE_CSV = (
     '# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
     '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
     'timestamp,value,quality_flag\n'
-    '20190122T12:04:00+0000,52.0,0\n'
-    '20190122T12:05:00+0000,73.0,0\n'
-    '20190122T12:06:00+0000,42.0,0\n'
-    '20190122T12:07:00+0000,12.0,0\n')
+    '20190122T12:05:00+0000,52.0,0\n'
+    '20190122T12:10:00+0000,73.0,0\n'
+    '20190122T12:15:00+0000,42.0,0\n'
+    '20190122T12:20:00+0000,12.0,0\n')
 VALID_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [

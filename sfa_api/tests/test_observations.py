@@ -98,10 +98,10 @@ NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,
 
 def test_post_observation_values_valid_json(api, observation_id,
                                             mocked_queuing):
-    r = api.post(f'/observations/{observation_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_OBS_VALUE_JSON)
-    assert r.status_code == 201
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 201
 
 
 def test_post_json_storage_call(api, observation_id, mocker,
@@ -194,7 +194,7 @@ def test_post_and_get_values_json(api, observation_id, mocked_queuing):
                  json=VALID_OBS_VALUE_JSON)
     assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
-    end = '2019-01-22T17:56:00+00:00'
+    end = '2019-01-22T18:04:00+00:00'
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'application/json'},
@@ -209,8 +209,8 @@ def test_post_and_get_values_csv(api, observation_id, mocked_queuing):
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
-    start = '2019-01-22T12:04:00+00:00'
-    end = '2019-01-22T12:07:00+00:00'
+    start = '2019-01-22T12:05:00+00:00'
+    end = '2019-01-22T12:20:00+00:00'
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'text/csv'},
@@ -228,11 +228,11 @@ def dummy_file():
 
 @pytest.mark.parametrize('filename,str_content,content_type,start,end', [
     ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv',
-     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
     ('data.csv', VALID_OBS_VALUE_CSV, 'application/vnd.ms-excel',
-     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
     ('data.json', json.dumps(VALID_OBS_VALUE_JSON), 'application/json',
-     '2019-01-22T17:54:00+00:00', "2019-01-22T17:56:00+00:00"),
+     '2019-01-22T17:54:00+00:00', "2019-01-22T18:04:00+00:00"),
 ])
 def test_posting_files(
         api, dummy_file, filename, str_content, content_type,
