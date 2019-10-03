@@ -170,7 +170,8 @@ def test_post_observation_values_bad_previous(api, observation_id,
     NON_NUMERICAL_VALUE_CSV,
     NON_BINARY_FLAG_CSV
 ])
-def test_post_observation_values_invalid_csv(api, payload, observation_id):
+def test_post_observation_values_invalid_csv(api, payload, observation_id,
+                                             mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -179,7 +180,8 @@ def test_post_observation_values_invalid_csv(api, payload, observation_id):
 
 
 def test_post_observation_values_valid_csv(api, observation_id,
-                                           mocked_queuing):
+                                           mocked_queuing,
+                                           mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -210,7 +212,7 @@ def test_get_observation_values_400(api, start, end, mimetype, observation_id):
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
 ])
-def test_get_observation_values_200(api, start, end, mimetype, observation_id):
+def test_get_observation_values_200(api, start, end, mimetype, observation_id,):
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': mimetype},
@@ -235,7 +237,8 @@ def test_post_and_get_values_json(api, observation_id, mocked_queuing,
     assert VALID_OBS_VALUE_JSON['values'] == posted_data['values']
 
 
-def test_post_and_get_values_csv(api, observation_id, mocked_queuing):
+def test_post_and_get_values_csv(api, observation_id, mocked_queuing,
+                                 mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},

@@ -274,7 +274,7 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
-        interval_length, previous_time = storage.read_metadata_for_cdf_forecast_values(  # NOQA
+        interval_length, previous_time = storage.read_metadata_for_forecast_values(  # NOQA
             forecast_id, forecast_df.index[0])
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
