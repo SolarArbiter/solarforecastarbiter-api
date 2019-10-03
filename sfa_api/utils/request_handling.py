@@ -282,7 +282,7 @@ def validate_start_end():
     return start, end
 
 
-def validate_index_period(index, interval_length):
+def validate_index_period(index, interval_length, previous_time):
     """
     Validate that the index conforms to interval_length.
 
@@ -291,6 +291,9 @@ def validate_index_period(index, interval_length):
     index : pandas.DatetimeIndex
     interval_length : int
         Regular period of data in minutes
+    previous_time : pd.Timestamp
+        The last time in the database before the start of index.
+        May be None.
 
     Raises
     ------
@@ -302,8 +305,9 @@ def validate_index_period(index, interval_length):
     errors = []
     start = index[0]
     end = index[-1]
+    freq = pd.Timedelta(f'{interval_length}min')
     expected_index = pd.date_range(start=start, end=end,
-                                   freq=f'{interval_length}min')
+                                   freq=freq)
     missing_times = expected_index.difference(index)
     if len(missing_times) > 0:
         errors.append(f'Missing {len(missing_times)} timestamps. '
@@ -319,5 +323,11 @@ def validate_index_period(index, interval_length):
                       'Uploads must have equally spaced timestamps '
                       f'from {start} to {end} with {interval_length} '
                       'minutes between each timestamp.')
+    if previous_time is not None:
+        if (start - previous_time).total_seconds() % freq.total_seconds() != 0:
+            errors.append(
+                f'Start of timeseries is not a multiple of {interval_length} '
+                'minutes past the previous time of '
+                f'{previous_time.isoformat()}.')
     if errors:
         raise BadAPIRequest({'timestamp': errors})
