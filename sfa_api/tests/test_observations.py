@@ -212,7 +212,7 @@ def test_get_observation_values_400(api, start, end, mimetype, observation_id):
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
 ])
-def test_get_observation_values_200(api, start, end, mimetype, observation_id,):
+def test_get_observation_values_200(api, start, end, mimetype, observation_id):
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': mimetype},
