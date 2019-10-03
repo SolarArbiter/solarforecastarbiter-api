@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 
@@ -92,6 +93,16 @@ WRONG_DATE_FORMAT_VALUE_JSON = {
          'value': 3},
     ]
 }
+WRONG_INTERVAL_VALUE_JSON = {
+    'values': [
+        {'timestamp': '2019-01-22T17:56:00Z',
+         'value': 3},
+        {'timestamp': '2019-01-22T18:04:00Z',
+         'value': 2},
+        {'timestamp': '2019-01-22T18:07:00Z',
+         'value': 1},
+    ]
+}
 NON_NUMERICAL_VALUE_JSON = {
     'values': [
         {'timestamp': "2019-01-22T17:56:36Z",
@@ -102,11 +113,12 @@ WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:00:00+00,fgh" # NOQA
 
 
-def test_post_forecast_values_valid_json(api, forecast_id):
-    r = api.post(f'/forecasts/single/{forecast_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_FX_VALUE_JSON)
-    assert r.status_code == 201
+def test_post_forecast_values_valid_json(api, forecast_id, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:44Z')
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 201
 
 
 @pytest.fixture()
@@ -119,7 +131,8 @@ def patched_store_values(mocker):
     return new
 
 
-def test_post_json_storage_call(api, forecast_id, patched_store_values):
+def test_post_json_storage_call(api, forecast_id, patched_store_values,
+                                mock_previous):
     patched_store_values.return_value = forecast_id
     api.post(f'/forecasts/single/{forecast_id}/values',
              base_url=BASE_URL,
@@ -127,13 +140,22 @@ def test_post_json_storage_call(api, forecast_id, patched_store_values):
     patched_store_values.assert_called()
 
 
-def test_post_values_404(api, missing_id, patched_store_values):
-    patched_store_values.return_value = None
-    r = api.post(f'/forecasts/single/{missing_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_FX_VALUE_JSON)
-    assert r.status_code == 404
-    patched_store_values.assert_called()
+def test_post_values_missing_id(api, missing_id, mock_previous):
+    # previously check if patched_store_values was called, shouldn't
+    # even try now if forecast does not exist
+    res = api.post(f'/forecasts/single/{missing_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 404
+
+
+def test_post_forecast_values_bad_previous(api, forecast_id,
+                                           mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:50Z')
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 400
 
 
 @pytest.mark.parametrize('payload', [
@@ -141,8 +163,10 @@ def test_post_values_404(api, missing_id, patched_store_values):
     {},
     WRONG_DATE_FORMAT_VALUE_JSON,
     NON_NUMERICAL_VALUE_JSON,
+    WRONG_INTERVAL_VALUE_JSON
 ])
-def test_post_forecast_values_invalid_json(api, payload, forecast_id):
+def test_post_forecast_values_invalid_json(api, payload, forecast_id,
+                                           mock_previous):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  json=payload)
@@ -155,7 +179,8 @@ def test_post_forecast_values_invalid_json(api, payload, forecast_id):
     WRONG_DATE_FORMAT_CSV,
     NON_NUMERICAL_VALUE_CSV,
 ])
-def test_post_forecast_values_invalid_csv(api, payload, forecast_id):
+def test_post_forecast_values_invalid_csv(api, payload, forecast_id,
+                                          mock_previous):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -163,7 +188,7 @@ def test_post_forecast_values_invalid_csv(api, payload, forecast_id):
     assert r.status_code == 400
 
 
-def test_post_forecast_values_valid_csv(api, forecast_id):
+def test_post_forecast_values_valid_csv(api, forecast_id, mock_previous):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -203,13 +228,13 @@ def test_get_forecast_values_200(api, start, end, mimetype, forecast_id):
     assert r.mimetype == mimetype
 
 
-def test_post_and_get_values_json(api, forecast_id):
+def test_post_and_get_values_json(api, forecast_id, mock_previous):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  json=VALID_FX_VALUE_JSON)
     assert r.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
-    end = '2019-01-22T17:56:00+00:00'
+    end = '2019-01-22T18:04:00+00:00'
     r = api.get(f'/forecasts/single/{forecast_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'application/json'},
@@ -218,14 +243,14 @@ def test_post_and_get_values_json(api, forecast_id):
     assert VALID_FX_VALUE_JSON['values'] == posted_data['values']
 
 
-def test_post_and_get_values_csv(api, forecast_id):
+def test_post_and_get_values_csv(api, forecast_id, mock_previous):
     r = api.post(f'/forecasts/single/{forecast_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_FX_VALUE_CSV)
     assert r.status_code == 201
-    start = '2019-01-22T12:04:00+00:00'
-    end = '2019-01-22T12:07:00+00:00'
+    start = '2019-01-22T12:05:00+00:00'
+    end = '2019-01-22T12:20:00+00:00'
     r = api.get(f'/forecasts/single/{forecast_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'text/csv'},

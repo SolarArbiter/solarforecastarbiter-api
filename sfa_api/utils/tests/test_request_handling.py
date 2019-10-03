@@ -197,3 +197,114 @@ def test_parse_to_timestamp(dt_string, expected):
 def test_parse_to_timestamp_error(dt_string):
     with pytest.raises(ValueError):
         request_handling.parse_to_timestamp(dt_string)
+
+
+@pytest.mark.parametrize('index,interval_length,previous_time', [
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='10min'), 10, pd.Timestamp('2019-09-01T1150Z')),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0200Z',
+                       '2019-09-01T0400Z']), 120, None),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0011Z',
+                       '2019-09-01T0016Z']),
+     5,
+     pd.Timestamp('2019-09-01T0001Z')),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0013Z',
+                       '2019-09-01T0020Z']),
+     7,
+     pd.Timestamp('2019-08-31T2352Z')),
+    (pd.date_range(start='2019-03-10 00:00', end='2019-03-10 05:00',
+                   tz='America/Denver', freq='1h'),
+     60, None),  # DST transition
+    (pd.date_range(start='2019-11-03 00:00', end='2019-11-03 05:00',
+                   tz='America/Denver', freq='1h'),
+     60, None),  # DST transition
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 33, None),
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 30,
+     pd.Timestamp('2018-12-01T000132Z')),
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 30,
+     pd.Timestamp('2019-01-02T000132Z'))
+])
+def test_validate_index_period(index, interval_length, previous_time):
+    request_handling.validate_index_period(index, interval_length,
+                                           previous_time)
+
+
+def test_validate_index_empty():
+    with pytest.raises(request_handling.BadAPIRequest):
+        request_handling.validate_index_period(pd.DatetimeIndex([]), 10,
+                                               None)
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0200Z',
+                       '2019-09-01T0300Z']), 60),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0300Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='20min'), 10),
+])
+def test_validate_index_period_missing(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length,
+                                               index[0])
+    errs = e.value.errors['timestamp']
+    assert len(errs) == 1
+    assert 'Missing' in errs[0]
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0100Z',
+                       '2019-09-01T0200Z']), 120),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0045Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='5min'), 10),
+])
+def test_validate_index_period_extra(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length,
+                                               index[0])
+    errs = e.value.errors['timestamp']
+    assert len(errs) == 1
+    assert 'extra' in errs[0]
+
+
+@pytest.mark.parametrize('index,interval_length', [
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0100Z',
+                       '2019-09-01T0201Z']), 120),
+    (pd.DatetimeIndex(['2019-09-01T0000Z', '2019-09-01T0030Z',
+                       '2019-09-01T0130Z']), 30),
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1305Z',
+                   freq='5min'), 10),
+])
+def test_validate_index_period_other(index, interval_length):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length,
+                                               index[0])
+    errs = e.value.errors['timestamp']
+    assert len(errs) > 0
+
+
+@pytest.mark.parametrize('index,interval_length,previous_time', [
+    (pd.date_range(start='2019-09-01T1200Z', end='2019-09-01T1300Z',
+                   freq='10min'), 10, pd.Timestamp('2019-09-01T1155Z')),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0011Z',
+                       '2019-09-01T0016Z']),
+     5,
+     pd.Timestamp('2019-09-01T0000Z')),
+    (pd.DatetimeIndex(['2019-09-01T0006Z', '2019-09-01T0013Z',
+                       '2019-09-01T0020Z']),
+     7,
+     pd.Timestamp('2019-09-01T0000Z')),
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 30,
+     pd.Timestamp('2018-12-01T000232Z')),
+    (pd.DatetimeIndex(['2019-01-01T000132Z']), 30,
+     pd.Timestamp('2020-12-01T000232Z'))
+])
+def test_validate_index_period_previous(index, interval_length, previous_time):
+    with pytest.raises(request_handling.BadAPIRequest) as e:
+        request_handling.validate_index_period(index, interval_length,
+                                               previous_time)
+    errs = e.value.errors['timestamp']
+    assert len(errs) == 1
+    assert 'previous time' in errs[0]

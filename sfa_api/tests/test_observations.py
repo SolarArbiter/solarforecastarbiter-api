@@ -1,5 +1,6 @@
 from io import BytesIO
 import json
+import pandas as pd
 import pytest
 
 
@@ -70,6 +71,9 @@ def test_get_observation_metadata_404(api, missing_id):
     assert r.status_code == 404
 
 
+ALMOST_EMPTY_JSON = {
+    'values': [{}]
+}
 WRONG_DATE_FORMAT_JSON = {
     'values': [
         {'quality_flag': 0,
@@ -82,6 +86,19 @@ NON_NUMERICAL_VALUE_JSON = {
         {'quality_flag': 0,
          'timestamp': "2019-01-22T17:56:36Z",
          'value': 'four'},
+    ]
+}
+WRONG_INTERVAL_VALUE_JSON = {
+    'values': [
+        {'timestamp': '2019-01-22T17:56:00Z',
+         'value': 3,
+         'quality_flag': 0},
+        {'timestamp': '2019-01-22T18:04:00Z',
+         'value': 2,
+         'quality_flag': 0},
+        {'timestamp': '2019-01-22T18:07:00Z',
+         'value': 1,
+         'quality_flag': 0},
     ]
 }
 NON_BINARY_FLAG_JSON = {
@@ -97,39 +114,53 @@ NON_BINARY_FLAG_CSV = "timestamp,value,quality_flag\n2018-10-29T12:04:23Z,32.93,
 
 
 def test_post_observation_values_valid_json(api, observation_id,
-                                            mocked_queuing):
-    r = api.post(f'/observations/{observation_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_OBS_VALUE_JSON)
-    assert r.status_code == 201
+                                            mocked_queuing, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:49Z')
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 201
 
 
 def test_post_json_storage_call(api, observation_id, mocker,
-                                mocked_queuing):
+                                mocked_queuing, mock_previous):
     storage = mocker.MagicMock()
     mocker.patch('sfa_api.utils.storage_interface.store_observation_values',
                  new=storage)
     mocker.patch('sfa_api.demo.store_observation_values',
                  new=storage)
     storage.return_value = observation_id
-    api.post(f'/observations/{observation_id}/values',
-             base_url=BASE_URL,
-             json=VALID_OBS_VALUE_JSON)
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 201
     storage.assert_called()
 
 
 @pytest.mark.parametrize('payload', [
     'taco',
     {},
+    ALMOST_EMPTY_JSON,
     WRONG_DATE_FORMAT_JSON,
     NON_NUMERICAL_VALUE_JSON,
-    NON_BINARY_FLAG_JSON
+    NON_BINARY_FLAG_JSON,
+    WRONG_INTERVAL_VALUE_JSON
 ])
-def test_post_observation_values_invalid_json(api, payload, observation_id):
+def test_post_observation_values_invalid_json(api, payload, observation_id,
+                                              mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  json=payload)
     assert r.status_code == 400
+
+
+def test_post_observation_values_bad_previous(api, observation_id,
+                                              mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:50Z')
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 400
 
 
 @pytest.mark.parametrize('payload', [
@@ -139,7 +170,8 @@ def test_post_observation_values_invalid_json(api, payload, observation_id):
     NON_NUMERICAL_VALUE_CSV,
     NON_BINARY_FLAG_CSV
 ])
-def test_post_observation_values_invalid_csv(api, payload, observation_id):
+def test_post_observation_values_invalid_csv(api, payload, observation_id,
+                                             mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -148,7 +180,8 @@ def test_post_observation_values_invalid_csv(api, payload, observation_id):
 
 
 def test_post_observation_values_valid_csv(api, observation_id,
-                                           mocked_queuing):
+                                           mocked_queuing,
+                                           mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
@@ -188,29 +221,31 @@ def test_get_observation_values_200(api, start, end, mimetype, observation_id):
     assert r.mimetype == mimetype
 
 
-def test_post_and_get_values_json(api, observation_id, mocked_queuing):
-    r = api.post(f'/observations/{observation_id}/values',
-                 base_url=BASE_URL,
-                 json=VALID_OBS_VALUE_JSON)
-    assert r.status_code == 201
+def test_post_and_get_values_json(api, observation_id, mocked_queuing,
+                                  mock_previous):
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 201
     start = '2019-01-22T17:54:00+00:00'
-    end = '2019-01-22T17:56:00+00:00'
-    r = api.get(f'/observations/{observation_id}/values',
-                base_url=BASE_URL,
-                headers={'Accept': 'application/json'},
-                query_string={'start': start, 'end': end})
-    posted_data = r.get_json()
+    end = '2019-01-22T18:04:00+00:00'
+    res = api.get(f'/observations/{observation_id}/values',
+                  base_url=BASE_URL,
+                  headers={'Accept': 'application/json'},
+                  query_string={'start': start, 'end': end})
+    posted_data = res.get_json()
     assert VALID_OBS_VALUE_JSON['values'] == posted_data['values']
 
 
-def test_post_and_get_values_csv(api, observation_id, mocked_queuing):
+def test_post_and_get_values_csv(api, observation_id, mocked_queuing,
+                                 mock_previous):
     r = api.post(f'/observations/{observation_id}/values',
                  base_url=BASE_URL,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
-    start = '2019-01-22T12:04:00+00:00'
-    end = '2019-01-22T12:07:00+00:00'
+    start = '2019-01-22T12:05:00+00:00'
+    end = '2019-01-22T12:20:00+00:00'
     r = api.get(f'/observations/{observation_id}/values',
                 base_url=BASE_URL,
                 headers={'Accept': 'text/csv'},
@@ -228,15 +263,16 @@ def dummy_file():
 
 @pytest.mark.parametrize('filename,str_content,content_type,start,end', [
     ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv',
-     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
     ('data.csv', VALID_OBS_VALUE_CSV, 'application/vnd.ms-excel',
-     '2019-01-22T12:04:00+00:00', '2019-01-22T12:07:00+00:00'),
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
     ('data.json', json.dumps(VALID_OBS_VALUE_JSON), 'application/json',
-     '2019-01-22T17:54:00+00:00', "2019-01-22T17:56:00+00:00"),
+     '2019-01-22T17:54:00+00:00', "2019-01-22T18:04:00+00:00"),
 ])
 def test_posting_files(
         api, dummy_file, filename, str_content, content_type,
-        observation_id, mocked_queuing, start, end):
+        observation_id, mocked_queuing, start, end,
+        mock_previous):
     content = BytesIO(bytes(str_content, 'utf-8'))
     the_file = dummy_file(filename, content, content_type)
     file_post = api.post(

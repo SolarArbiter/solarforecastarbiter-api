@@ -51,7 +51,7 @@ VALID_FORECAST_JSON = {
     "interval_label": "beginning",
     "issue_time_of_day": "12:00",
     "lead_time_to_start": 60,
-    "interval_length": 1,
+    "interval_length": 5,
     "run_length": 1440,
     "interval_value_type": "interval_mean",
 }
@@ -63,7 +63,7 @@ VALID_OBS_JSON = {
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
     "variable": "ghi",
     "interval_label": "beginning",
-    "interval_length": 1,
+    "interval_length": 5,
     "interval_value_type": "interval_mean",
     "uncertainty": 0.10,
 }
@@ -82,10 +82,10 @@ VALID_OBS_VALUE_JSON = {
          'timestamp': "2019-01-22T17:54:00+00:00",
          'value': 1.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:55:00+00:00",
+         'timestamp': "2019-01-22T17:59:00+00:00",
          'value': 32.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:56:00+00:00",
+         'timestamp': "2019-01-22T18:04:00+00:00",
          'value': 3.0}
     ]
 }
@@ -93,27 +93,27 @@ VALID_OBS_VALUE_CSV = (
     '# observation_id: 123e4567-e89b-12d3-a456-426655440000\n'
     '# metadata: https://localhost/observations/123e4567-e89b-12d3-a456-426655440000/metadata\n' # NOQA
     'timestamp,value,quality_flag\n'
-    '20190122T12:04:00+0000,52.0,0\n'
-    '20190122T12:05:00+0000,73.0,0\n'
-    '20190122T12:06:00+0000,42.0,0\n'
-    '20190122T12:07:00+0000,12.0,0\n')
+    '20190122T12:05:00+0000,52.0,0\n'
+    '20190122T12:10:00+0000,73.0,0\n'
+    '20190122T12:15:00+0000,42.0,0\n'
+    '20190122T12:20:00+0000,12.0,0\n')
 VALID_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
         {'timestamp': "2019-01-22T17:54:00+00:00",
          'value': 1.0},
-        {'timestamp': "2019-01-22T17:55:00+00:00",
+        {'timestamp': "2019-01-22T17:59:00+00:00",
          'value': 32.0},
-        {'timestamp': "2019-01-22T17:56:00+00:00",
+        {'timestamp': "2019-01-22T18:04:00+00:00",
          'value': 3.0}
     ]
 }
 FORECAST_CSV = (
     'timestamp,value\n'
-    '20190122T12:04:00+0000,7.0\n'
-    '20190122T12:05:00+0000,3.0\n'
-    '20190122T12:06:00+0000,13.0\n'
-    '20190122T12:07:00+0000,25.0\n')
+    '20190122T12:05:00+0000,7.0\n'
+    '20190122T12:10:00+0000,3.0\n'
+    '20190122T12:15:00+0000,13.0\n'
+    '20190122T12:20:00+0000,25.0\n')
 
 VALID_FX_VALUE_CSV = (
     '# forecast_id: 11c20780-76ae-4b11-bef1-7a75bdc784e3\n'
@@ -329,3 +329,16 @@ def mocked_queuing(mocker):
     mocked = mocker.patch('rq.Queue.enqueue')
     yield
     assert mocked.called
+
+
+@pytest.fixture()
+def mock_previous(mocker):
+    meta = mocker.MagicMock()
+    mocker.patch(
+        'sfa_api.utils.storage_interface._set_previous_time',
+        new=meta)
+    mocker.patch(
+        'sfa_api.demo._set_previous_time',
+        new=meta)
+    meta.return_value = None
+    return meta
