@@ -274,11 +274,9 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
-        forecast = storage.read_forecast(forecast_id)
-        # silly handling only for demo data
-        if forecast is None:
-            abort(404)
-        validate_index_period(forecast_df.index, forecast['interval_length'])
+        write_meta = storage.read_metadata_for_forecast_values(
+            forecast_id, forecast_df.index[0])
+        validate_index_period(forecast_df.index, write_meta['interval_length'])
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         if stored is None:
             abort(404)

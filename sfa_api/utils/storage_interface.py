@@ -1396,3 +1396,28 @@ def user_exists():
         try_query(query_cmd)
         exists = cursor.fetchone()
     return exists.get(f"does_user_exist('{current_user}')") == 1
+
+
+def read_metadata_for_forecast_values(forecast_id, start):
+    """Reads necessary metadata to process forecast values
+    before storing them.
+
+    Parameters
+    ----------
+    forecast_id : string
+        UUID of the associated forecast.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    dict
+       Keys are interval_length: The interval length of the forecast
+       and  previous_time: The most recent timestamp before start
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the Forecast
+    """
+    return _call_procedure_for_single(
+        'read_metadata_for_value_write', forecast_id, 'forecasts', start)
