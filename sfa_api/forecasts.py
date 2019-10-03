@@ -276,10 +276,9 @@ class ForecastValuesView(MethodView):
         storage = get_storage()
         write_meta = storage.read_metadata_for_forecast_values(
             forecast_id, forecast_df.index[0])
-        validate_index_period(forecast_df.index, write_meta['interval_length'])
+        validate_index_period(forecast_df.index, write_meta['interval_length'],
+                              write_meta['previous_time'])
         stored = storage.store_forecast_values(forecast_id, forecast_df)
-        if stored is None:
-            abort(404)
         return stored, 201
 
 
@@ -562,14 +561,11 @@ class CDFForecastValues(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp')
         storage = get_storage()
-        cdf_forecast = storage.read_cdf_forecast(forecast_id)
-        if cdf_forecast is None:
-            abort(404)
-        validate_index_period(forecast_df.index,
-                              cdf_forecast['interval_length'])
+        write_meta = storage.read_metadata_for_cdf_forecast_values(
+            forecast_id, forecast_df.index[0])
+        validate_index_period(forecast_df.index, write_meta['interval_length'],
+                              write_meta['previous_time'])
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
-        if stored is None:
-            abort(404)
         return stored, 201
 
 

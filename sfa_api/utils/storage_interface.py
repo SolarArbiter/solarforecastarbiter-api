@@ -1421,3 +1421,55 @@ def read_metadata_for_forecast_values(forecast_id, start):
     """
     return _call_procedure_for_single(
         'read_metadata_for_value_write', forecast_id, 'forecasts', start)
+
+
+def read_metadata_for_cdf_forecast_values(forecast_id, start):
+    """Reads necessary metadata to process CDF forecast values
+    before storing them.
+
+    Parameters
+    ----------
+    forecast_id : string
+        UUID of the associated CDF forecast single.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    dict
+       Keys are interval_length: The interval length of the forecast
+       and  previous_time: The most recent timestamp before start
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the
+        CDF Forecast
+    """
+    return _call_procedure_for_single(
+        'read_metadata_for_value_write', forecast_id, 'cdf_forecasts', start)
+
+
+def read_metadata_for_observation_values(observation_id, start):
+    """Reads necessary metadata to process observation values
+    before storing them.
+
+    Parameters
+    ----------
+    observation_id : string
+        UUID of the associated observation.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    dict
+       Keys are interval_length: The interval length of the observation
+       and  previous_time: The most recent timestamp before start
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the
+        Observation
+    """
+    return _call_procedure_for_single(
+        'read_metadata_for_value_write', observation_id, 'observations', start)

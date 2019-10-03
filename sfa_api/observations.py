@@ -250,12 +250,11 @@ class ObservationValuesView(MethodView):
             validate_parsable_values(), qf_range)
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
-        observation = storage.read_observation(observation_id)
-        # silly handling for demo data
-        if observation is None:
-            abort(404)
+        write_meta = storage.read_metadata_for_observation_values(
+            observation_id, observation_df.index[0])
         validate_index_period(observation_df.index,
-                              observation['interval_length'])
+                              write_meta['interval_length'],
+                              write_meta['previous_time'])
         stored = storage.store_observation_values(
             observation_id, observation_df)
         if stored is None:
