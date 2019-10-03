@@ -231,13 +231,13 @@ def read_observation_values(observation_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
     list
         A list of dictionaries representing data points.
-        Data points contain a timestamp, value andquality_flag.
+        Data points contain a timestamp, value and quality_flag.
         Returns None if the Observation does not exist.
     """
     if start is None:
@@ -398,7 +398,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
@@ -620,7 +620,7 @@ def read_cdf_forecast_values(forecast_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
@@ -1415,7 +1415,7 @@ def store_aggregate(aggregate):
         aggregate['name'], aggregate['description'],
         aggregate['variable'], aggregate['timezone'],
         aggregate['interval_label'], aggregate['interval_length'],
-        aggregate['interval_value_type'], aggregate['extra_parameters'])
+        aggregate['aggregate_type'], aggregate['extra_parameters'])
     return aggregate_id
 
 
@@ -1428,7 +1428,7 @@ def _set_aggregate_parameters(aggregate_dict):
             out[key] = []
             for obs in json.loads(aggregate_dict['observations']):
                 for tkey in ('created_at', 'observation_deleted_at',
-                             'observation_removed_at'):
+                             'effective_until', 'effective_from'):
                     if obs[tkey] is not None:
                         obs[tkey] = dt.datetime.fromisoformat(obs[tkey])
                 out[key].append(obs)
@@ -1491,15 +1491,20 @@ def list_aggregates():
     return aggregates
 
 
-def add_observation_to_aggregate(aggregate_id, observation_id):
+def add_observation_to_aggregate(
+        aggregate_id, observation_id,
+        effective_from=dt.datetime(1970, 1, 1, 0, 0, 1)):
     """Add an Observation to an Aggregate
 
     Parameters
     ----------
-    aggregate_id: string
+    aggregate_id : string
         UUID of aggregate
-    observation_id: string
+    observation_id : string
         UUID of the observation
+    effective_from : datetime
+        The time that the observation should be included in the aggregate.
+        Default to 1970-01-01 00:00:01 UTC (start of UNIX Epoch).
 
     Raises
     ------
@@ -1509,18 +1514,24 @@ def add_observation_to_aggregate(aggregate_id, observation_id):
         - If the user cannot read the observation object
     """
     _call_procedure('add_observation_to_aggregate', aggregate_id,
-                    observation_id)
+                    observation_id, effective_from)
 
 
-def remove_observation_from_aggregate(aggregate_id, observation_id):
+def remove_observation_from_aggregate(
+        aggregate_id, observation_id,
+        effective_until=dt.datetime.utcnow()):
     """Remove an Observation from an Aggregate
 
     Parameters
     ----------
-    aggregate_id: string
+    aggregate_id : string
         UUID of aggregate
-    observation_id: string
+    observation_id : string
         UUID of the observation
+    effective_until : datetime
+        Time after which this observation is no longer considered in the
+        aggregate. Default is now.
+
 
     Raises
     ------
@@ -1528,4 +1539,24 @@ def remove_observation_from_aggregate(aggregate_id, observation_id):
         If the user does not have update permission on the aggregate
     """
     _call_procedure('remove_observation_from_aggregate', aggregate_id,
-                    observation_id)
+                    observation_id, effective_until)
+
+
+def read_aggregate_values(aggregate_id, start=None, end=None):
+    """Read aggregate values between start and end.
+
+    Parameters
+    ----------
+    aggregate_id: string
+        UUID of associated aggregate.
+    start : datetime
+        Beginning of the period for which to request data.
+    end : datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    pandas.DataFrame
+        With a value column and datetime index
+    """
+    pass
