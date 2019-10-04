@@ -1,7 +1,8 @@
 {% extends "dash/data.html" %}
 {% set page_title = 'Permissions' %}
 {% block content %}
-{% if permission is not none %}
+{% include 'sections/notifications.html' %}
+{% if permission is defined %}
 {% include 'data/metadata/permission_metadata.html' %}
 {% if not permission['applies_to_all'] %}
 <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.permission_object_addition', uuid=permission['permission_id']) }}">Add Objects to Permission</a>
@@ -26,16 +27,21 @@
         {% if dashboard_type in ['role', 'permission', 'user']%}
         <td><a href="{{ url_for('admin.'+dashboard_type+'_view', uuid=uuid) }}">{% if dashboard_type == 'permission' %}{{ obj['description'] }}{% elif dashboard_type == 'user'%}{{ obj['user_id'] }}{% else %}{{ obj['name'] }}{% endif %} </a></td>
         {% else %}
-        <td><a href="{{ url_for('data_dashboard.'+dashboard_type+'_view', uuid=uuid) }}">{{ obj['name'] }}</a></td>
+          {% if (permission['object_type'] == 'reports' and obj['status'] != 'complete') or
+             permission['object_type'] == 'aggregates' %}
+            <td>{{ obj['name'] }}</td>
+          {% else %}
+            <td><a href="{{ url_for('data_dashboard.'+dashboard_type+'_view', uuid=uuid) }}">{{ obj['name'] }}</a></td>
+          {% endif %}
         {% endif %}
         <td>{{ obj['added_to_permission'] | format_datetime}} </td>
+        {% if not permission['applies_to_all'] %}
         <td><a role="button" class="permission-object-delete-button" href="{{ url_for('admin.permission_object_removal', uuid=permission['permission_id'], object_id=uuid)}}">Remove</a></td>
+        {% endif %}
       </tr>
 
     {% endfor %}
   </tbody>
 </table>
-{% else %}
-<p>404 Not Found</p>
 {% endif %}
 {% endblock %}

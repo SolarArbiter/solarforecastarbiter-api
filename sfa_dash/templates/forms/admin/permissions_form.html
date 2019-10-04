@@ -1,5 +1,6 @@
 {% extends "forms/base/base_form.html" %}
 {% import "forms/admin/permission_macros.jinja" as table_macros %}
+
 {% set page_title = 'Create New Permission' %}
 {% if data_type is not defined %}
   {% set data_type="observation" %}
@@ -9,6 +10,8 @@
 {% endif %}
 {% if data_type == 'site' %}
   {% set row_macro = table_macros.site_row %}
+{% elif data_type == 'report' %}
+  {% set row_macro = table_macros.report_row %}
 {% else %}
 {% set row_macro = table_macros.data_row %}
 {% endif %}
@@ -23,7 +26,7 @@
   <p>Select the action this permission will allow.</p>
   <input type="radio" name="action" value="create" required>Create
   <input type="radio" name="action" value="read">Read
-  {# <input type="radio" name="action" value="update">Update #}
+  <input type="radio" name="action" value="update">Update 
   <input type="radio" name="action" value="delete">Delete
   {% if data_type != "site" %}
   <input type="radio" name="action" value="read_values">Read Values
@@ -50,7 +53,7 @@
         <thead>
           <th class="selection-column" scope="col"></th>
           <th scope="col">Name</th>
-          {% if data_type != 'site' %}
+          {% if data_type not in  ['site', 'report'] %}
           <th scope="col">Variable</th>
           {% endif %}
           <th scope="col">UUID</th>

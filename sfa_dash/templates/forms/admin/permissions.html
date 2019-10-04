@@ -8,6 +8,8 @@
   <a class="btn-sm btn-primary" href='{{ url_for("admin.forecast_permission") }}'>Forecasts</a>
   <a class="btn-sm btn-primary" href='{{ url_for("admin.site_permission") }}'>Sites</a>
   <a class="btn-sm btn-primary" href='{{ url_for("admin.cdf_forecast_group_permission") }}'>Probabilistic Forecast Groups</a>
+  <a class="btn-sm btn-primary" href='{{ url_for("admin.report_permission") }}'>Reports</a>
+
 </div>
 <h3>Existing Permissions</h3>
 <div class="tools {{ table_type }}-tools mt-1">
@@ -32,7 +34,7 @@
       {% for perm in table_data %}
         <tr>
             <td>
-            {% if perm['object_type'] != 'reports' %}
+            {% if perm['object_type'] != 'aggregates' %}
               <a href="{{ url_for('admin.permission_view', uuid=perm['permission_id'])}}">{{ perm["description"] }}</a>
             {% else %}
               {{ perm["description"] }}</td>

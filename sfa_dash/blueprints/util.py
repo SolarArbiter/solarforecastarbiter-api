@@ -289,12 +289,12 @@ def handle_response(request_object):
             }
             raise DataRequestException(request_object.status_code, **errors)
         if request_object.status_code == 404:
-            previous_page = request.headers['Referer']
+            previous_page = request.headers.get('Referer', None)
             errors = {'404': (
                 'The requested object could not be found. You may need to '
                 'request access from the data owner.')
             }
-            if previous_page != request.url:
+            if previous_page is not None and previous_page != request.url:
                 errors['404'] = errors['404'] + (
                     f' <a href="{previous_page}">Return to the previous '
                     'page.</a>')

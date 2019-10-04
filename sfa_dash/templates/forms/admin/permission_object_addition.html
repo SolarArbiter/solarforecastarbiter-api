@@ -10,8 +10,10 @@
 {% endif %}
 {% if data_type == 'site' %}
   {% set row_macro = table_macros.site_row %}
+{% elif data_type == 'report' %}
+  {% set row_macro = table_macros.report_row %}
 {% else %}
-{% set row_macro = table_macros.data_row %}
+  {% set row_macro = table_macros.data_row %}
 {% endif %}
 {% block content %}
 {% include "sections/notifications.html" %}
@@ -33,7 +35,7 @@
             <thead>
               <th class="selection-column" scope="col"></th>
               <th scope="col">Name</th>
-              {% if data_type != 'site' %}
+              {% if data_type in ['site', 'report'] %}
               <th scope="col">Variable</th>
               {% endif %}
               <th scope="col">UUID</th>

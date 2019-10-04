@@ -20,3 +20,11 @@
   <td>{{ uuid }}</td>
 </tr>
 {% endmacro %}
+{% macro report_row(data_type, row_values, index) %}
+{% set uuid = row_values['report_id'] %}
+<tr visible="true">
+  <td><input type="checkbox" name="objects-list-{{ index }}" value="{{ uuid }}"></td>
+  <td>{{ row_values['name'] }}</td>
+  <td>{{ uuid }}</td>
+</tr>
+{% endmacro %}

@@ -94,6 +94,8 @@ class UserView(AdminView):
             role_list = handle_response(roles.list_metadata())
         except DataRequestException as e:
             temp_args.update({'errors': e.errors})
+            return render_template('forms/admin/user.html',
+                                   **temp_args)
         else:
             role_map = {role['role_id']: role for role in role_list}
             user['roles'] = {k: {'added_to_user': v, **role_map[k]}
@@ -166,7 +168,8 @@ class UserRoleRemoval(AdminView):
             user = {'user_id': uuid}
         role_req = roles.get_metadata(role_id)
         role = role_req.json()
-        redirect_link = request.headers['Referer']
+        redirect_link = request.headers.get(
+            'Referer', url_for('admin.roles'))
         # set a redirect link, because we can be directed here
         # from a role or user page.
         session['redirect_link'] = redirect_link
@@ -185,7 +188,7 @@ class UserRoleRemoval(AdminView):
             _external=True,
             uuid=uuid,
             role_id=role_id)
-        if request.headers['Referer'] != confirmation_url:
+        if request.headers.get('Referer') != confirmation_url:
             redirect(confirmation_url)
         delete_request = users.remove_role(uuid, role_id)
         if delete_request.status_code != 204:
@@ -249,7 +252,8 @@ class RoleGrant(AdminView):
             role = handle_response(roles.get_metadata(uuid))
         except DataRequestException as e:
             template_args['errors'] = e.errors
-        redirect_link = request.headers['Referer']
+        redirect_link = request.headers.get(
+            'Referer', url_for('admin.roles'))
         # set a redirect link, because we can be directed here
         # from a role or user page.
         session['redirect_link'] = redirect_link
@@ -460,10 +464,15 @@ class PermissionView(AdminView):
                 id_key = f'{object_type}_id'
             # create a dict of objects where keys are uuid and values are
             # objects
-            objects = api_handler.list_metadata()
-            object_list = objects.json()
-            object_map = {obj[id_key]: obj
-                          for obj in object_list}
+            if object_type == 'report':
+                object_list = api_handler.list_metadata()
+                object_map = {obj.to_dict()[id_key]: obj.to_dict()
+                              for obj in object_list}
+            else:
+                objects = api_handler.list_metadata()
+                object_list = objects.json()
+                object_map = {obj[id_key]: obj
+                              for obj in object_list}
             # rebuild the 'objects' dict with the uuid: object structure
             # instead of uuid: created_at
             permission['objects'] = {
@@ -480,7 +489,8 @@ class PermissionView(AdminView):
 class PermissionsCreation(AdminView):
     template = "forms/admin/permissions_form.html"
     allowed_data_types = ['site', 'observation',
-                          'forecast', 'cdf_forecast_group']
+                          'forecast', 'cdf_forecast_group',
+                          'report']
 
     def __init__(self, data_type):
         if data_type not in self.allowed_data_types:
@@ -494,17 +504,23 @@ class PermissionsCreation(AdminView):
                 self.api_handle = sites
             elif data_type == 'cdf_forecast_group':
                 self.api_handle = cdf_forecast_groups
+            elif data_type == 'report':
+                self.api_handle = reports
             self.data_type = data_type
 
     def get(self, **kwargs):
         """Render a permissions form with all of the available
         objects from the
         """
-        try:
-            table_data = handle_response(self.api_handle.list_metadata())
-        except DataRequestException as e:
-            return render_template(self.template, errors=e.errors)
-        table_data = self.filter_by_org(table_data, 'provider')
+        if self.data_type == 'report':
+            table_data = self.api_handle.list_metadata()
+            table_data = [report.to_dict() for report in table_data]
+        else:
+            try:
+                table_data = handle_response(self.api_handle.list_metadata())
+            except DataRequestException as e:
+                return render_template(self.template, errors=e.errors)
+            table_data = self.filter_by_org(table_data, 'provider')
         return render_template(self.template,
                                table_data=table_data,
                                data_type=self.data_type,
@@ -518,7 +534,7 @@ class PermissionsCreation(AdminView):
         permission = {
             'description': form_data['description'],
             'action': form_data['action'],
-            'applies_to_all': form_data.get('applies_to_all', False),
+            'applies_to_all': ('applies-to-all' in form_data),
             'object_type': self.data_type + 's',
         }
         return permission
@@ -604,8 +620,12 @@ class PermissionObjectAddition(PermissionView):
             data_type = permission['object_type'][:-1]
             api = self.get_api_handler(permission['object_type'])
             perm_objects = list(permission['objects'].keys())
-            all_objects = handle_response(api.list_metadata())
-            all_objects = self.filter_by_org(all_objects, 'provider')
+            if data_type == 'report':
+                all_objects = api.list_metadata()
+                all_objects = [rep.to_dict() for rep in all_objects]
+            else:
+                all_objects = handle_response(api.list_metadata())
+                all_objects = self.filter_by_org(all_objects, 'provider')
             # remove any objects alread on the permission
             object_id_key = f"{data_type}_id"
             all_objects = [obj for obj in all_objects
