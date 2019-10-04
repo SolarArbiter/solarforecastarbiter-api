@@ -54,6 +54,7 @@ def test_get_report(api, new_report):
     assert 'created_at' in report
     assert 'modified_at' in report
 
+
 def test_get_report_dne(api, missing_id):
     res = api.get(f'/reports/{missing_id}',
                   base_url=BASE_URL)
