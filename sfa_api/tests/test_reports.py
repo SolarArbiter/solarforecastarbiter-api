@@ -45,6 +45,14 @@ def test_get_report(api, new_report):
     res = api.get(f'/reports/{report_id}',
                   base_url=BASE_URL)
     assert res.status_code == 200
+    report = res.json
+    assert 'report_id' in report
+    assert 'provider' in report
+    assert 'metrics' in report
+    assert 'raw_report' in report
+    assert 'status' in report
+    assert 'created_at' in report
+    assert 'modified_at' in report
 
 
 def test_get_report_dne(api, missing_id):

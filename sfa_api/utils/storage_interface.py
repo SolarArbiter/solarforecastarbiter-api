@@ -135,15 +135,20 @@ def try_query(query_cmd):
             raise
 
 
-def _call_procedure(procedure_name, *args, cursor_type='dict'):
+def _call_procedure(
+        procedure_name, *args, cursor_type='dict', with_current_user=True):
     """
     Can't user callproc since it doesn't properly use converters.
     Will not handle OUT or INOUT parameters without first setting
     local variables and retrieving from those variables
     """
     with get_cursor(cursor_type) as cursor:
-        query = f'CALL {procedure_name}({",".join(["%s"] * (len(args) + 1))})'
-        query_cmd = partial(cursor.execute, query, (current_user, *args))
+        if with_current_user:
+            new_args = (current_user, *args)
+        else:
+            new_args = args
+        query = f'CALL {procedure_name}({",".join(["%s"] * len(new_args))})'
+        query_cmd = partial(cursor.execute, query, new_args)
         try_query(query_cmd)
         return cursor.fetchall()
 
@@ -1392,6 +1397,101 @@ def user_exists():
         try_query(query_cmd)
         exists = cursor.fetchone()
     return exists.get(f"does_user_exist('{current_user}')") == 1
+
+
+def _set_previous_time(previous_time):
+    # easier mocking
+    if previous_time is not None:
+        previous_time = pd.Timestamp(previous_time).tz_localize('UTC')
+    return previous_time
+
+
+def _read_metadata_for_write(obj_id, type_, start):
+    out = _call_procedure_for_single(
+        'read_metadata_for_value_write', obj_id, type_, start)
+    interval_length = out['interval_length']
+    previous_time = _set_previous_time(out['previous_time'])
+    return interval_length, previous_time
+
+
+def read_metadata_for_forecast_values(forecast_id, start):
+    """Reads necessary metadata to process forecast values
+    before storing them.
+
+    Parameters
+    ----------
+    forecast_id : string
+        UUID of the associated forecast.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the Forecast
+    """
+    return _read_metadata_for_write(forecast_id, 'forecasts', start)
+
+
+def read_metadata_for_cdf_forecast_values(forecast_id, start):
+    """Reads necessary metadata to process CDF forecast values
+    before storing them.
+
+    Parameters
+    ----------
+    forecast_id : string
+        UUID of the associated CDF forecast single.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the
+        CDF Forecast
+    """
+    return _read_metadata_for_write(forecast_id, 'cdf_forecasts', start)
+
+
+def read_metadata_for_observation_values(observation_id, start):
+    """Reads necessary metadata to process observation values
+    before storing them.
+
+    Parameters
+    ----------
+    observation_id : string
+        UUID of the associated observation.
+    start : datetime
+        Reference datetime to find last value before
+
+    Returns
+    -------
+    interval_length : int
+        The interval length of the observation
+    previous_time : pandas.Timestamp or None
+       The most recent timestamp before start or None if no times
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to write values for the
+        Observation
+    """
+    return _read_metadata_for_write(observation_id, 'observations', start)
 
 
 def store_aggregate(aggregate):

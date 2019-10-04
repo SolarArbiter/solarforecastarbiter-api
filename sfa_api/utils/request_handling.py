@@ -280,3 +280,54 @@ def validate_start_end():
     if errors:
         raise BadAPIRequest(errors)
     return start, end
+
+
+def validate_index_period(index, interval_length, previous_time):
+    """
+    Validate that the index conforms to interval_length.
+
+    Parameters
+    ----------
+    index : pd.DatetimeIndex
+    interval_length : int
+        Regular period of data in minutes
+    previous_time : pd.Timestamp or None
+        The last time in the database before the start of index.
+        May be None.
+
+    Raises
+    ------
+    BadApiRequest
+       If there are any errors
+    """
+    if len(index) == 0:
+        raise BadAPIRequest({'timestamp': ['No times to validate']})
+    errors = []
+    start = index[0]
+    end = index[-1]
+    freq = pd.Timedelta(f'{interval_length}min')
+    expected_index = pd.date_range(start=start, end=end,
+                                   freq=freq)
+    missing_times = expected_index.difference(index)
+    if len(missing_times) > 0:
+        errors.append(f'Missing {len(missing_times)} timestamps. '
+                      f'First missing timestamp is {missing_times[0]}. '
+                      'Uploads must have equally spaced timestamps '
+                      f'from {start} to {end} with {interval_length} '
+                      'minutes between each timestamp.')
+
+    extra_times = index.difference(expected_index)
+    if len(extra_times) > 0:
+        errors.append(f'{len(extra_times)} extra times present in index. '
+                      f'First extra time is {extra_times[0]}. '
+                      'Uploads must have equally spaced timestamps '
+                      f'from {start} to {end} with {interval_length} '
+                      'minutes between each timestamp.')
+    if previous_time is not None:
+        if (start - previous_time).total_seconds() % freq.total_seconds() != 0:
+            errors.append(
+                f'Start of timeseries is not a multiple of {interval_length} '
+                'minutes past the previous time of '
+                f'{previous_time.isoformat()}.')
+    if errors:
+        raise BadAPIRequest({'timestamp': errors})

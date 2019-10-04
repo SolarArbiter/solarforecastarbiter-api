@@ -18,7 +18,7 @@ from sfa_api.demo.observations import static_observations
 from sfa_api.demo.sites import static_sites
 from sfa_api.demo.values import (static_observation_values,
                                  static_forecast_values)
-from sfa_api.utils.errors import DeleteRestrictionError
+from sfa_api.utils.errors import DeleteRestrictionError, StorageAuthError
 
 
 # Initialize static data
@@ -591,3 +591,30 @@ def list_cdf_forecast_groups(site_id=None):
                            for forecast_group in forecast_groups
                            if forecast_group['site_id'] == site_id]
     return forecast_groups
+
+
+def _set_previous_time(start):
+    return None
+
+
+def read_metadata_for_observation_values(observation_id, start):
+    if observation_id not in static_observations:
+        raise StorageAuthError()
+    return (static_observations[observation_id]['interval_length'],
+            _set_previous_time(start))
+
+
+def read_metadata_for_forecast_values(forecast_id, start):
+    if forecast_id not in static_forecasts:
+        raise StorageAuthError()
+    return (static_forecasts[forecast_id]['interval_length'],
+            _set_previous_time(start))
+
+
+def read_metadata_for_cdf_forecast_values(forecast_id, start):
+    if forecast_id not in static_cdf_forecasts:
+        raise StorageAuthError()
+    return (static_cdf_forecast_groups[
+        static_cdf_forecasts[forecast_id]['parent']
+    ]['interval_length'],
+        _set_previous_time(start))

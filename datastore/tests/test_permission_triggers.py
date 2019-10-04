@@ -5,6 +5,8 @@ permission_object_mapping
 import pymysql
 import pytest
 
+from conftest import bin_to_uuid
+
 
 def test_permissions_not_updatable(cursor, new_permission):
     """Test that permission objects  cant be updated"""
@@ -146,3 +148,51 @@ def test_object_mapping_remove_obj(cursor, action, getfcn, new_permission,
         'SELECT object_id FROM permission_object_mapping WHERE '
         'permission_id = %s', perm['id'])
     assert cursor.fetchone() is None
+
+
+# Note: This test depends on the create_default_user_role
+# function found in 0024_framework_admin.up.sql
+def test_update_user_perm_on_org_change(
+        dictcursor, new_organization, new_user):
+    user = new_user()
+    org = new_organization()
+    assert org['id'] != user['organization_id']
+    dictcursor.callproc(
+        'create_default_user_role',
+        (user['id'], user['organization_id']))
+    # assert the default roles exist and are set to the correct org_id
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.roles WHERE '
+         'name = CONCAT("DEFAULT User role ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == user['organization_id']
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read Self User ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == user['organization_id']
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read User Role ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == user['organization_id']
+    # update the org
+    dictcursor.execute(
+        'UPDATE arbiter_data.users SET organization_id = %s WHERE id = %s',
+        (org['id'], user['id']))
+    # ensure the trigger fired and recreated the roles in the new organization
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.roles WHERE '
+         'name = CONCAT("DEFAULT User role ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == org['id']
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read Self User ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == org['id']
+    dictcursor.execute(
+        ('SELECT * FROM arbiter_data.permissions WHERE '
+         'description = CONCAT("DEFAULT Read User Role ", %s)'),
+        str(bin_to_uuid(user['id'])))
+    assert dictcursor.fetchone()['organization_id'] == org['id']

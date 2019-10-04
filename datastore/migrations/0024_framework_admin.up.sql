@@ -542,3 +542,41 @@ END;
 GRANT SELECT (id), UPDATE ON arbiter_data.organizations TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'update_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.set_org_accepted_tou TO 'frameworkadmin'@'%';
+
+
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE remove_user_facing_permissions_and_default_roles(
+    IN userid BINARY(16))
+SQL SECURITY DEFINER MODIFIES SQL DATA
+BEGIN
+    -- Remove all mappings that grant actions on the user
+    DELETE FROM arbiter_data.permission_object_mapping WHERE object_id = userid;
+    -- delete the default user role and specific default permissions
+    DELETE FROM arbiter_data.roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
+    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(userid, 1));
+    DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(userid, 1));
+END;
+GRANT SELECT (name) ON arbiter_data.roles TO 'delete_rbac'@'localhost';
+GRANT SELECT (description) ON arbiter_data.permissions TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_facing_permissions_and_default_roles TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.remove_user_facing_permissions_and_default_roles TO 'permission_trig'@'localhost';
+
+/*
+ * Add the user to be readable by org admin after joining org
+ */
+CREATE DEFINER = 'permission_trig'@'localhost' TRIGGER update_user_perm_on_org_change AFTER UPDATE ON arbiter_data.users
+FOR EACH ROW
+BEGIN
+    IF NEW.organization_id != OLD.organization_id THEN
+        CALL remove_user_facing_permissions_and_default_roles(NEW.id);
+        -- Add the user to 'applies_to_all' user perms in the new organization
+        INSERT INTO arbiter_data.permission_object_mapping (permission_id, object_id)
+            SELECT id, NEW.id FROM arbiter_data.permissions
+            WHERE organization_id = NEW.organization_id
+                AND object_type = 'users'
+                AND action != 'create'
+                AND applies_to_all;
+        CALL create_default_user_role(NEW.id, NEW.organization_id);
+    END IF;
+END;
+GRANT EXECUTE ON FUNCTION arbiter_data.get_organization_id to 'permission_trig'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_default_user_role TO 'permission_trig'@'localhost';
