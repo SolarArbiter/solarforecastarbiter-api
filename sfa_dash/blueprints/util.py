@@ -226,12 +226,12 @@ def timeseries_adapter(type_, metadata, json_value_response):
         obj = datamodel.Forecast.from_dict(metadata)
         data = io_utils.json_payload_to_forecast_series(json_value_response)
         return timeseries.generate_forecast_figure(
-            obj, data, return_components=True)
+            obj, data, return_components=True, limit=None)
     else:
         obj = datamodel.Observation.from_dict(metadata)
         data = io_utils.json_payload_to_observation_df(json_value_response)
         return timeseries.generate_observation_figure(
-            obj, data, return_components=True)
+            obj, data, return_components=True, limit=None)
 
 
 def filter_form_fields(prefix, form_data):
