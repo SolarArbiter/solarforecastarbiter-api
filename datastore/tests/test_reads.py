@@ -1,3 +1,4 @@
+from collections import namedtuple
 import datetime as dt
 import json
 import random
@@ -12,6 +13,9 @@ from conftest import bin_to_uuid
 
 @pytest.fixture()
 def insertuser(cursor, new_permission, valueset, new_user):
+    AllMeta = namedtuple('AllMeta', ['user', 'site', 'fx', 'obs', 'org',
+                                     'role', 'cdf', 'report', 'agg',
+                                     'auth0id'])
     org = valueset[0][0]
     user = valueset[1][0]
     role = valueset[2][0]
@@ -25,7 +29,8 @@ def insertuser(cursor, new_permission, valueset, new_user):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         "DELETE FROM permissions WHERE action = 'read'")
-    return user, site, fx, obs, org, role, cdf, report, agg
+    return AllMeta(user, site, fx, obs, org, role, cdf, report, agg,
+                   user['auth0_id'])
 
 
 @pytest.fixture()
@@ -1199,27 +1204,24 @@ def test_user_org_accepted_tou(
 
 @pytest.fixture()
 def allow_write_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perms = [new_permission('write_values', obj, True, org=org)
+    perms = [new_permission('write_values', obj, True, org=insertuser.org)
              for obj in ('forecasts', 'observations',
                          'cdf_forecasts', 'reports')]
     cursor.executemany(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
         'VALUES (%s, %s)',
-        [(role['id'], perm['id']) for perm in perms])
+        [(insertuser.role['id'], perm['id']) for perm in perms])
 
 
 def test_read_metadata_for_value_write_fx(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
     dictcursor.execute(
         'INSERT INTO forecasts_values (id, timestamp, value) VALUES'
-        ' (%s, %s, %s)', (fx['id'], time_, 0))
+        ' (%s, %s, %s)', (insertuser.fx['id'], time_, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, fx['strid'], 'forecasts',
-                         '2019-09-30 13:00'))
+                        (insertuser.auth0id, insertuser.fx['strid'],
+                         'forecasts', '2019-09-30 13:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
@@ -1227,14 +1229,13 @@ def test_read_metadata_for_value_write_fx(
 
 def test_read_metadata_for_value_write_fx_before(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
     dictcursor.execute(
         'INSERT INTO forecasts_values (id, timestamp, value) VALUES'
-        ' (%s, %s, %s)', (fx['id'], time_, 0))
+        ' (%s, %s, %s)', (insertuser.fx['id'], time_, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, fx['strid'], 'forecasts',
+                        (insertuser.auth0id, insertuser.fx['strid'],
+                         'forecasts',
                          '2019-09-30 12:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
@@ -1243,10 +1244,9 @@ def test_read_metadata_for_value_write_fx_before(
 
 def test_read_metadata_for_value_write_fx_no_vals(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, fx['strid'], 'forecasts',
+                        (insertuser.auth0id,
+                         insertuser.fx['strid'], 'forecasts',
                          '2019-09-30 13:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
@@ -1255,25 +1255,23 @@ def test_read_metadata_for_value_write_fx_no_vals(
 
 def test_read_metadata_for_value_write_fx_no_write(
         cursor, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_metadata_for_value_write',
-                        (auth0id, fx['strid'], 'forecasts',
+                        (insertuser.auth0id,
+                         insertuser.fx['strid'], 'forecasts',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
 
 
 def test_read_metadata_for_value_write_obs(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
     dictcursor.execute(
         'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
-        ' VALUES (%s, %s, %s, %s)', (obs['id'], time_, 0, 0))
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, obs['strid'], 'observations',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
                          '2019-09-30 13:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
@@ -1282,14 +1280,13 @@ def test_read_metadata_for_value_write_obs(
 
 def test_read_metadata_for_value_write_obs_before(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
     dictcursor.execute(
         'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
-        ' VALUES (%s, %s, %s, %s)', (obs['id'], time_, 0, 0))
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, obs['strid'], 'observations',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
                          '2019-09-30 12:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
@@ -1298,10 +1295,9 @@ def test_read_metadata_for_value_write_obs_before(
 
 def test_read_metadata_for_value_write_obs_no_vals(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, obs['strid'], 'observations',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
                          '2019-09-30 13:00'))
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
@@ -1310,26 +1306,23 @@ def test_read_metadata_for_value_write_obs_no_vals(
 
 def test_read_metadata_for_value_write_obs_no_write(
         cursor, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_metadata_for_value_write',
-                        (auth0id, obs['strid'], 'observations',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
 
 
 def test_read_metadata_for_value_write_cdf(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
-    cdf_id = list(cdf['constant_values'].keys())[0]
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
     dictcursor.execute(
         'INSERT INTO cdf_forecasts_values (id, timestamp, value) VALUES'
         ' (UUID_TO_BIN(%s, 1), %s, %s)', (cdf_id, time_, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, cdf_id,
+                        (insertuser.auth0id, cdf_id,
                          'cdf_forecasts',
                          '2019-09-30 13:00'))
     res = dictcursor.fetchone()
@@ -1339,15 +1332,13 @@ def test_read_metadata_for_value_write_cdf(
 
 def test_read_metadata_for_value_write_cdf_before(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     time_ = dt.datetime(2019, 9, 30, 12, 45)
-    cdf_id = list(cdf['constant_values'].keys())[0]
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
     dictcursor.execute(
         'INSERT INTO cdf_forecasts_values (id, timestamp, value) VALUES'
         ' (UUID_TO_BIN(%s, 1), %s, %s)', (cdf_id, time_, 0))
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, cdf_id,
+                        (insertuser.auth0id, cdf_id,
                          'cdf_forecasts',
                          '2019-09-30 12:00'))
     res = dictcursor.fetchone()
@@ -1357,11 +1348,9 @@ def test_read_metadata_for_value_write_cdf_before(
 
 def test_read_metadata_for_value_write_cdf_no_vals(
         dictcursor, insertuser, allow_write_values):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
-    cdf_id = list(cdf['constant_values'].keys())[0]
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
     dictcursor.callproc('read_metadata_for_value_write',
-                        (auth0id, cdf_id,
+                        (insertuser.auth0id, cdf_id,
                          'cdf_forecasts',
                          '2019-09-30 12:00'))
     res = dictcursor.fetchone()
@@ -1371,23 +1360,19 @@ def test_read_metadata_for_value_write_cdf_no_vals(
 
 def test_read_metadata_for_value_write_cdf_fx_no_write(
         cursor, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
-    cdf_id = list(cdf['constant_values'].keys())[0]
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_metadata_for_value_write',
-                        (auth0id, cdf_id,
+                        (insertuser.auth0id, cdf_id,
                          'cdf_forecasts',
                          '2019-09-30 12:00'))
     assert e.value.args[0] == 1142
 
 
 def test_read_metadata_for_value_write_invalid(cursor, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    auth0id = user['auth0_id']
     with pytest.raises(pymysql.err.ProgrammingError) as e:
         cursor.callproc('read_metadata_for_value_write',
-                        (auth0id, fx['strid'],
+                        (insertuser.auth0id, insertuser.fx['strid'],
                          'sites',
                          '2019-09-30 12:00'))
     assert e.value.args[0] == 1146
