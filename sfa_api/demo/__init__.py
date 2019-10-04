@@ -617,4 +617,4 @@ def read_metadata_for_cdf_forecast_values(forecast_id, start):
     return (static_cdf_forecast_groups[
         static_cdf_forecasts[forecast_id]['parent']
     ]['interval_length'],
-            _set_previous_time(start))
+        _set_previous_time(start))

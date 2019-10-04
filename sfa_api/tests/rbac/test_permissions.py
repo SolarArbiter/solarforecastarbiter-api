@@ -51,7 +51,7 @@ def perm(action, object_type, description, applies_to_all):
     (perm('nope', 'roles', 'role perm', True),
         '{"action":["Must be one of: create, read, update, delete, read_values, write_values, delete_values, grant, revoke."]}'),  # noqa: E501
     (perm('create', 'role', 'role perm', True),
-     '{"object_type":["Must be one of: sites, aggregates, forecasts, observations, users, roles, permissions, cdf_forecasts."]}'),  # noqa: E501
+     '{"object_type":["Must be one of: sites, aggregates, forecasts, observations, users, roles, permissions, cdf_forecasts, reports."]}'),  # noqa: E501
     (perm('create', 'roles', 'role perm', 5),
      '{"applies_to_all":["Not a valid boolean."]}'),
 ])
