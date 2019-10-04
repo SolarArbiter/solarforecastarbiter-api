@@ -577,7 +577,7 @@ class PermissionPostSchema(ma.Schema):
         required=True,
         validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
                                  'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts']),
+                                 'permissions', 'cdf_forecasts', 'reports']),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",
@@ -709,7 +709,7 @@ class ReportSchema(ReportPostSchema):
         string = True
         ordered = True
     report_id = ma.UUID()
-    organization = ma.String(title="Organization")
+    provider = ma.String(title="Provider")
     metrics = ma.Dict(
         title='Calculated Metrics',
         description='Metrics calculated over the '
