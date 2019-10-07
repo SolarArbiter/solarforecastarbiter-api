@@ -29,7 +29,7 @@ INVALID_CONSTANT_VALUES = copy_update(VALID_CDF_FORECAST_JSON,
                                       'invalid')
 
 
-empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 @pytest.mark.parametrize('payload,status_code', [
