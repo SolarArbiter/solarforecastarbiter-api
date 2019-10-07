@@ -776,7 +776,7 @@ def fake_user(sql_app):
 
 
 @pytest.mark.parametrize('run', range(5))
-def test_create_new_user(sql_app, fake_user, run):
+def test_create_new_user(sql_app, fake_user, run, nocommit_cursor):
     storage_interface.create_new_user()
     new_user_roles = storage_interface.list_roles()
     new_user = storage_interface.get_current_user_info()
