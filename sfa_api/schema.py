@@ -823,8 +823,8 @@ class AggregateUpdateSchema(ma.Schema):
     def validate_from_until(self, data, **kwargs):
         for obs in data['observations']:
             if 'effective_from' in obs and 'effective_until' in obs:
-                raise ValidationError(
-                    "Only specify one of 'effective_from' or 'effective_until'")
+                raise ValidationError("Only specify one of 'effective_from' "
+                                      "or effective_until'")
             elif 'effective_from' not in obs and 'effective_until' not in obs:
                 raise ValidationError(
                     "Specify one of 'effective_from' or 'effective_until'")
