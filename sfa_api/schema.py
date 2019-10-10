@@ -766,7 +766,8 @@ class AggregatePostSchema(ma.Schema):
 
     aggregate_type = ma.String(
         title='Aggregation Type',
-        validate=validate.OneOf(AGGREGATE_TYPES)
+        validate=validate.OneOf(AGGREGATE_TYPES),
+        required=True
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
     timezone = ma.String(
@@ -783,7 +784,7 @@ class AggregatePostSchema(ma.Schema):
 
 
 class AggregateObservationPostSchema(ma.Schema):
-    observation_id = ma.UUID()
+    observation_id = ma.UUID(required=True)
     effective_from = ma.DateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
@@ -817,6 +818,16 @@ class AggregateUpdateSchema(ma.Schema):
     # later will add things that can be updated like description
     observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
                            many=True)
+
+    @validates_schema
+    def validate_from_until(self, data, **kwargs):
+        for obs in data['observations']:
+            if 'effective_from' in obs and 'effective_until' in obs:
+                raise ValidationError(
+                    "Only specify one of 'effective_from' or 'effective_until'")
+            elif 'effective_from' not in obs and 'effective_until' not in obs:
+                raise ValidationError(
+                    "Specify one of 'effective_from' or 'effective_until'")
 
 
 @spec.define_schema('AggregateMetadata')

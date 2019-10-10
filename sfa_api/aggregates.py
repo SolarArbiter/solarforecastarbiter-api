@@ -10,7 +10,8 @@ from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (AggregateSchema,
                             AggregatePostSchema,
                             AggregateValuesSchema,
-                            AggregateLinksSchema)
+                            AggregateLinksSchema,
+                            AggregateUpdateSchema)
 
 
 class AllAggregatesView(MethodView):
@@ -221,7 +222,11 @@ class AggregateMetadataView(MethodView):
         summary: Update an aggregate.
         description: >-
           For now, only adding or removing observations to/from the
-          aggregate is supported.
+          aggregate is supported. If an observation is already part
+          of an aggregate, effective_until must be set until it can
+          be added again. Any attempt to set 'effective_until'
+          will apply to all observations with the given ID in the
+          aggregate.
         tags:
         - Aggregates
         parameters:
@@ -235,16 +240,28 @@ class AggregateMetadataView(MethodView):
         responses:
           200:
             description: Successfully updated aggregate metadata.
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/AggregateMetadata'
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        pass
+        data = request.get_json()
+        try:
+            aggregate = AggregateUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+
+        storage = get_storage()
+        for update_obs in aggregate['observations']:
+            if 'effective_from' in update_obs:
+                storage.add_observation_to_aggregate(
+                    aggregate_id, str(update_obs['observation_id']),
+                    update_obs['effective_from'])
+            elif 'effective_until' in update_obs:
+                storage.remove_observation_from_aggregate(
+                    aggregate_id, str(update_obs['observation_id']),
+                    update_obs['effective_until'])
+        return aggregate_id, 200
 
 
 # Add path parameters used by these endpoints to the spec.
