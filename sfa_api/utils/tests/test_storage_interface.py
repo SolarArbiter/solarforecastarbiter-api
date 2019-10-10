@@ -1033,6 +1033,12 @@ def test_read_aggregate_values(sql_app, user, nocommit_cursor):
         pdt.assert_frame_equal(df, values.static_observation_values('ghi'))
 
 
+def test_read_aggregate_values_denied(sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate_values(aggregate_id)
+
+
 def test_read_aggregate_values_restricted_start_end(sql_app, user,
                                                     nocommit_cursor):
     aggregate_id = list(demo_aggregates.keys())[0]
@@ -1049,3 +1055,34 @@ def test_read_aggregate_values_restricted_start_end(sql_app, user,
     for df in out.values():
         pdt.assert_frame_equal(
             df, values.static_observation_values('ghi')[start:end])
+
+
+def test_read_aggregate_values_adj_effective_from(sql_app, user,
+                                                  nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    change_id = "123e4567-e89b-12d3-a456-426655440000"
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190101T0000Z'))
+    storage_interface.add_observation_to_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190416T0000Z'))
+    remove_id = "e0da0dea-9482-4073-84de-f1b12c304d23"
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, remove_id, pd.Timestamp('20190417T0000Z'))
+    out = storage_interface.read_aggregate_values(aggregate_id)
+    assert isinstance(out, dict)
+    # no data in db for 825fa193-824f-11e9-a81f-54bf64606445
+    assert set(out.keys()) == {
+        "123e4567-e89b-12d3-a456-426655440000",
+        "e0da0dea-9482-4073-84de-f1b12c304d23",
+        "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
+    assert out[change_id].index[0] == pd.Timestamp('20190416T0000Z')
+    assert out[remove_id].index[-1] == pd.Timestamp('20190417T0000Z')
+
+
+def test_read_aggregate_values_empty(sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    start = pd.Timestamp('20190915T0000Z')
+    end = pd.Timestamp('20190916T0000Z')
+    out = storage_interface.read_aggregate_values(aggregate_id, start, end)
+    assert isinstance(out, dict)
+    assert not out
