@@ -1656,7 +1656,20 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
 
     Returns
     -------
-    pandas.DataFrame
-        With a value column and datetime index
+    dict of pandas.DataFrame
+        Keys are observation IDs and DataFrames have DatetimeIndex and
+        value and quality_flag columns
     """
-    pass
+    start = start or pd.Timestamp('19700101T000001Z')
+    end = end or pd.Timestamp('20380119T031407Z')
+    agg_vals = _call_procedure('read_aggregate_values', aggregate_id,
+                               start, end)
+    groups = pd.DataFrame.from_records(
+        list(agg_vals), columns=['observation_id', 'timestamp',
+                                 'value', 'quality_flag']
+    ).groupby('observation_id')
+    out = {}
+    for obs_id, df in groups:
+        out[obs_id] = df.drop(columns='observation_id').set_index(
+            'timestamp').tz_localize('UTC')
+    return out
