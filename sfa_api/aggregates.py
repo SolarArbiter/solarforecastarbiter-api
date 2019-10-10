@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
 
+
+from sfa_api import spec
 from sfa_api.utils.request_handling import validate_start_end
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
@@ -72,8 +74,8 @@ class AllAggregatesView(MethodView):
         storage = get_storage()
         aggregate_id = storage.store_aggregate(aggregate)
         response = make_response(aggregate_id, 201)
-        # response.headers['Location'] = url_for('aggregates.single',
-        #                                        aggregate_id=aggregate_id)
+        response.headers['Location'] = url_for('aggregates.single',
+                                               aggregate_id=aggregate_id)
         return response
 
 
@@ -162,8 +164,7 @@ class AggregateValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_aggregate_values(aggregate_id, start, end)
-        if values is None:
-            abort(404)
+        # compute agg
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -213,6 +214,50 @@ class AggregateMetadataView(MethodView):
         if aggregate is None:
             abort(404)
         return jsonify(AggregateSchema().dump(aggregate))
+
+    def post(self, aggregate_id, *args):
+        """
+        ---
+        summary: Update an aggregate.
+        description: >-
+          For now, only adding or removing observations to/from the
+          aggregate is supported.
+        tags:
+        - Aggregates
+        parameters:
+        - $ref: '#/components/parameters/aggregate_id'
+        requestBody:
+          required: True
+          content:
+            application/json:
+             schema:
+               $ref: '#/components/schemas/AggregateMetadataUpdate'
+        responses:
+          200:
+            description: Successfully updated aggregate metadata.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/AggregateMetadata'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        pass
+
+
+# Add path parameters used by these endpoints to the spec.
+spec.components.parameter(
+    'aggregate_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid',
+        },
+        'description': "Resource's unique identifier.",
+        'required': 'true'
+    })
 
 
 agg_blp = Blueprint(

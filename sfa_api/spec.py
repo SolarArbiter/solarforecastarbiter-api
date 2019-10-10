@@ -291,6 +291,8 @@ spec = APISpec(
          'description': 'Access and upload probabilistic forecast metadata and values'}, # NOQA
         {'name': 'Reports',
          'description': 'Access and create reports.'},
+        {'name': 'Aggregates',
+         'description': 'Access observation data that has been aggregated for analysis.'},  # NOQA
         {'name': 'Trials',
          'description': 'Access information about forecast trials. '
                         'API to be determined in March/April 2019.'},

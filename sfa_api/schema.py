@@ -755,7 +755,15 @@ class AggregatePostSchema(ma.Schema):
                      'Aggregates can not be instantaneous.'),
         validate=validate.OneOf(('beginning', 'ending')),
         required=True)
-    interval_length = INTERVAL_LENGTH
+    interval_length = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each aggregate data point '
+                     'represents in minutes, e.g. 5 for 5 minutes. '
+                     'This aggregate interval length must be greater than or '
+                     'equal to the interval length of the observations that go'
+                     ' into it.'),
+        required=True)
+
     aggregate_type = ma.String(
         title='Aggregation Type',
         validate=validate.OneOf(AGGREGATE_TYPES)
@@ -769,27 +777,30 @@ class AggregatePostSchema(ma.Schema):
     description = ma.String(
         title='Desctription',
         required=True,
-        description="Description of the aggregate"
+        description=(
+            "Description of the aggregate (e.g. Total PV power of all plants")
     )
 
 
-@spec.define_schema('AggregateObservation')
-class AggregateObservationSchema(ma.Schema):
+class AggregateObservationPostSchema(ma.Schema):
     observation_id = ma.UUID()
-    created_at = CREATED_AT
     effective_from = ma.DateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
                      " be included in aggregate values"),
         format='iso')
-    observation_deleted_at = ma.DateTime(
-        title="Observation deletion time",
-        description="ISO 8601 Datetime when the observation was deleted",
-        format='iso')
     effective_until = ma.DateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
                      " not be included in the aggregate"),
+        format='iso')
+
+
+class AggregateObservationSchema(AggregateObservationPostSchema):
+    created_at = CREATED_AT
+    observation_deleted_at = ma.DateTime(
+        title="Observation deletion time",
+        description="ISO 8601 Datetime when the observation was deleted",
         format='iso')
     _links = ma.Hyperlinks(
         {
@@ -799,6 +810,13 @@ class AggregateObservationSchema(ma.Schema):
         },
         description="Contains a link to the observation endpoint."
     )
+
+
+@spec.define_schema('AggregateMetadataUpdate')
+class AggregateUpdateSchema(ma.Schema):
+    # later will add things that can be updated like description
+    observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
+                           many=True)
 
 
 @spec.define_schema('AggregateMetadata')
@@ -828,7 +846,7 @@ class AggregateLinksSchema(ma.Schema):
             'metadata': ma.AbsoluteURLFor('aggregates.metadata',
                                           aggregate_id='<aggregate_id>'),
             'values': ma.AbsoluteURLFor('aggregates.values',
-                                        aggregate_id='<aggregate_id>')
+                                        aggregate_id='<aggregate_id>'),
         },
         description="Contains links to the values and metadata endpoints."
     )
