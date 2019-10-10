@@ -341,12 +341,12 @@ INSERT INTO arbiter_data.aggregates (
     description, timezone)
 VALUES (
     @aggid0, @orgid,
-    'Test Aggregate ghi', 'ghi', 'ending', 60, 'sum', 'extra',
+    'Test Aggregate ghi', 'ghi', 'ending', 60, 'mean', 'extra',
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00'),
     'ghi agg', 'America/Denver'
 ), (
     @aggid1, @orgid,
-    'Test Aggregate dni', 'dni', 'ending', 60, 'sum', 'extra',
+    'Test Aggregate dni', 'dni', 'ending', 60, 'mean', 'extra',
     TIMESTAMP('2019-09-24 12:00'), TIMESTAMP('2019-09-24 12:00'),
     'dni agg', 'America/Denver'
 );
@@ -355,7 +355,6 @@ SET @created_at = TIMESTAMP('2019-09-25 00:00');
 SET @effective_from = TIMESTAMP('2019-01-01 00:00');
 INSERT INTO arbiter_data.aggregate_observation_mapping (
     aggregate_id, observation_id, created_at, effective_from) VALUES
-    (@aggid0, UUID_TO_BIN('825fa193-824f-11e9-a81f-54bf64606445', 1), @created_at, @effective_from),
     (@aggid0, UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440000', 1), @created_at, @effective_from),
     (@aggid0, UUID_TO_BIN('e0da0dea-9482-4073-84de-f1b12c304d23', 1), @created_at, @effective_from),
     (@aggid0, UUID_TO_BIN('b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2', 1), @created_at, @effective_from),

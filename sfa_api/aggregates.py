@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
+from solarforecastarbiter.utils import compute_aggregate
 
 
 from sfa_api import spec
@@ -164,8 +165,16 @@ class AggregateValuesView(MethodView):
         """
         start, end = validate_start_end()
         storage = get_storage()
-        values = storage.read_aggregate_values(aggregate_id, start, end)
+        aggregate = storage.read_aggregate(aggregate_id)
+        indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
         # compute agg
+        try:
+            values = compute_aggregate(
+                indv_obs, f"{aggregate['interval_length']}min",
+                aggregate['interval_label'], aggregate['timezone'],
+                aggregate['aggregate_type'], aggregate['observations'])
+        except (KeyError, ValueError) as err:
+            return str(err), 422
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -254,6 +263,7 @@ class AggregateMetadataView(MethodView):
         storage = get_storage()
         for update_obs in aggregate['observations']:
             if 'effective_from' in update_obs:
+                # what about checks on interval_length, variable, etc?
                 storage.add_observation_to_aggregate(
                     aggregate_id, str(update_obs['observation_id']),
                     update_obs['effective_from'])
