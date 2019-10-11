@@ -1,4 +1,4 @@
-import datetime as dt
+import math
 
 
 from flask import _request_ctx_stack
@@ -272,20 +272,79 @@ def test_update_aggregate_bad_req(api, aggregate_id, payload, intext):
 
 
 def test_get_aggregate_values(api, aggregate_id):
-    pass
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert res.json['aggregate_id'] == aggregate_id
+    assert 'values' in res.json
+    assert 'timestamp' in res.json['values'][0]
+    assert 'value' in res.json['values'][0]
+    assert 'quality_flag' in res.json['values'][0]
 
 
 def test_get_aggregate_values_csv(api, aggregate_id):
-    pass
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'text/csv'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    data = res.get_data(as_text=True)
+    assert aggregate_id in data
+    assert 'timestamp,value,quality_flag' in data
 
 
-def test_get_aggregate_values_no_obs(api):
-    pass
+def test_get_aggregate_values_outside_range(api, aggregate_id):
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL,
+                  query_string={'start': '2018-01-01T00:00:00Z',
+                                'end': '2018-01-02T00:00:00Z'})
+    assert res.status_code == 422
 
 
 def test_get_aggregate_values_422(api, aggregate_id):
-    pass
+    payload = {'observations': [{
+        'observation_id': '123e4567-e89b-12d3-a456-426655440000',
+        'effective_until': '2019-01-01 01:23:00Z'}]}
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 200
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 422
+    assert 'missing keys 123e4567-e89b-12d3-a456-426655440000' in res.get_data(
+        as_text=True)
 
 
-def test_get_aggregate_values_404(api, aggregate_id):
-    pass
+def test_get_aggregate_values_obs_deleted(api, aggregate_id, missing_id):
+    res = api.delete('/observations/123e4567-e89b-12d3-a456-426655440000',
+                     base_url=BASE_URL)
+    assert res.status_code == 204
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 422
+
+
+def test_get_aggregate_values_some_na(api, aggregate_id):
+    payload = {'observations': [{
+        'observation_id': '123e4567-e89b-12d3-a456-426655440000',
+        'effective_until': '2019-04-17 01:23:00Z'}]}
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 200
+    res = api.get(f'/aggregates/{aggregate_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert math.isnan(res.json['values'][-1]['value'])
+
+
+def test_get_aggregate_values_404(api, missing_id):
+    res = api.get(f'/aggregates/{missing_id}/values',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 404
