@@ -3,7 +3,7 @@ from marshmallow.exceptions import ValidationError
 
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
-    TimeFormat, UserstringValidator, TimezoneValidator)
+    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
 from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
 
 
@@ -226,7 +226,8 @@ class ObservationValueSchema(ma.Schema):
     timestamp = ma.DateTime(
         title="Timestamp",
         description="ISO 8601 Datetime",
-        format='iso')
+        format='iso',
+        validate=TimeLimitValidator())
     value = ma.Float(
         title='Value',
         description="Value of the measurement",
@@ -325,7 +326,8 @@ class ForecastValueSchema(ma.Schema):
     timestamp = ma.DateTime(
         title="Timestamp",
         description="ISO 8601 Datetime",
-        format='iso')
+        format='iso',
+        validate=TimeLimitValidator())
     value = ma.Float(
         title="Value",
         description="Value of the forecast variable.",
@@ -625,12 +627,14 @@ class ReportParameters(ma.Schema):
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601"
                      "datetime."),
-        format='iso'
+        format='iso',
+        validate=TimeLimitValidator()
     )
     end = ma.DateTime(
         title="End",
         description="The end of the analysis period as an ISO 8601 datetime.",
-        format='iso'
+        format='iso',
+        validate=TimeLimitValidator()
     )
     # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't
     # been added to apispec, so this will not render correctly right now
@@ -789,12 +793,14 @@ class AggregateObservationPostSchema(ma.Schema):
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
                      " be included in aggregate values"),
-        format='iso')
+        format='iso',
+        validate=TimeLimitValidator())
     effective_until = ma.DateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
                      " not be included in the aggregate"),
-        format='iso')
+        format='iso',
+        validate=TimeLimitValidator())
 
 
 class AggregateObservationSchema(AggregateObservationPostSchema):
@@ -817,7 +823,7 @@ class AggregateObservationSchema(AggregateObservationPostSchema):
 class AggregateUpdateSchema(ma.Schema):
     # later will add things that can be updated like description
     observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
-                           many=True)
+                           many=True, required=True)
 
     @validates_schema
     def validate_from_until(self, data, **kwargs):
