@@ -2,7 +2,7 @@ from collections import defaultdict
 from functools import partial
 
 
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 from solarforecastarbiter.utils import compute_aggregate
@@ -109,8 +109,6 @@ class AggregateView(MethodView):
         """
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
-        if aggregate is None:
-            abort(404)
         return jsonify(AggregateLinksSchema().dump(aggregate))
 
     def delete(self, aggregate_id, *args):
@@ -227,8 +225,6 @@ class AggregateMetadataView(MethodView):
         """
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
-        if aggregate is None:
-            abort(404)
         return jsonify(AggregateSchema().dump(aggregate))
 
     def post(self, aggregate_id, *args):

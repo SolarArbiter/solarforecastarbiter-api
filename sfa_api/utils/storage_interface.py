@@ -1522,9 +1522,7 @@ def store_aggregate(aggregate):
 def _set_aggregate_parameters(aggregate_dict):
     out = {}
     for key in schema.AggregateSchema().fields.keys():
-        if key in ('_links',):
-            continue
-        elif key == 'observations':
+        if key == 'observations':
             out[key] = []
             for obs in json.loads(aggregate_dict['observations']):
                 for tkey in ('created_at', 'observation_deleted_at',
