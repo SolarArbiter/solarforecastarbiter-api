@@ -1,3 +1,7 @@
+from collections import defaultdict
+from functools import partial
+
+
 from flask import Blueprint, request, jsonify, make_response, url_for, abort
 from flask.views import MethodView
 from marshmallow import ValidationError
@@ -6,7 +10,7 @@ from solarforecastarbiter.utils import compute_aggregate
 
 from sfa_api import spec
 from sfa_api.utils.request_handling import validate_start_end
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import BadAPIRequest, BaseAPIException
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (AggregateSchema,
                             AggregatePostSchema,
@@ -119,7 +123,7 @@ class AggregateView(MethodView):
         parameters:
         - $ref: '#/components/parameters/aggregate_id'
         responses:
-          200:
+          204:
             description: Aggregate deleted successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -162,6 +166,8 @@ class AggregateValuesView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
+          422:
+            description: Failed to compute aggregate values
         """
         start, end = validate_start_end()
         storage = get_storage()
@@ -174,7 +180,7 @@ class AggregateValuesView(MethodView):
                 aggregate['interval_label'], aggregate['timezone'],
                 aggregate['aggregate_type'], aggregate['observations'])
         except (KeyError, ValueError) as err:
-            return str(err), 422
+            raise BaseAPIException(422, values=str(err))
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -253,7 +259,10 @@ class AggregateMetadataView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
         """
+        # post for consistency with other endpoints
         data = request.get_json()
         try:
             aggregate = AggregateUpdateSchema().load(data)
@@ -261,11 +270,38 @@ class AggregateMetadataView(MethodView):
             raise BadAPIRequest(err.messages)
 
         storage = get_storage()
-        for update_obs in aggregate['observations']:
+        for i, update_obs in enumerate(aggregate['observations']):
             if 'effective_from' in update_obs:
-                # what about checks on interval_length, variable, etc?
+                obs_id = str(update_obs['observation_id'])
+                obs = storage.read_observation(obs_id)
+                agg = storage.read_aggregate(aggregate_id)
+                errors = defaultdict(partial(defaultdict, dict))
+                for aggobs in agg['observations']:
+                    if (
+                            aggobs['observation_id'] == obs_id and
+                            aggobs['effective_until'] is None
+                    ):
+                        raise BadAPIRequest({'observations': {
+                            str(i): ['Observation already present and valid in'
+                                     ' aggregate']}})
+                if obs['interval_length'] > agg['interval_length']:
+                    errors['observations'][str(i)]['interval_length'] = (
+                        'Observation interval length is not less than or '
+                        'equal to the aggregate interval length')
+                if obs['variable'] != agg['variable']:
+                    errors['observations'][str(i)]['variable'] = (
+                        'Observation does not have the same variable as the '
+                        'aggregate.')
+                if obs['interval_value_type'] not in (
+                        'interval_mean', 'instantaneous'):
+                    errors['observations'][str(i)]['interval_value_type'] = (
+                        'Only observations with interval_mean and '
+                        'instantaneous interval_value_type are valid in '
+                        'aggregates')
+                if errors:
+                    raise BadAPIRequest(errors)
                 storage.add_observation_to_aggregate(
-                    aggregate_id, str(update_obs['observation_id']),
+                    aggregate_id, obs_id,
                     update_obs['effective_from'])
             elif 'effective_until' in update_obs:
                 storage.remove_observation_from_aggregate(
