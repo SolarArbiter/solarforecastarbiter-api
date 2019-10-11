@@ -118,7 +118,7 @@ class ModelingParameters(ma.Schema):
         missing=None)
 
     @validates_schema
-    def validate_modeling_parameters(self, data):
+    def validate_modeling_parameters(self, data, **kwargs):
         common_fields = {
             'ac_capacity', 'dc_capacity', 'temperature_coefficient',
             'dc_loss_factor', 'ac_loss_factor'}
@@ -189,7 +189,7 @@ class SiteSchema(ma.Schema):
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates('timezone')
-    def validate_tz(self, tz):
+    def validate_tz(self, tz, **kwargs):
         if tz not in ALLOWED_TIMEZONES:
             raise ValidationError('Invalid timezone.')
 

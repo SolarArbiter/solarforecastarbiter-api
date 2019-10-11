@@ -3,6 +3,7 @@ from flask.views import MethodView
 from marshmallow import ValidationError
 
 
+from sfa_api import spec
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.schema import (PermissionSchema,
@@ -76,6 +77,8 @@ class PermissionView(MethodView):
         """
         ---
         summary: Get information about a Permission.
+        parameters:
+        - permission_id
         tags:
           - Permissions
         responses:
@@ -97,6 +100,8 @@ class PermissionView(MethodView):
         """
         ---
         summary: Delete a Permission
+        parameters:
+        - permission_id
         tags:
           - Permissions
         responses:
@@ -113,13 +118,16 @@ class PermissionView(MethodView):
 
 
 class PermissionObjectManagementView(MethodView):
-    def post(self, permission_id, uuid):
+    def post(self, permission_id, object_id):
         """
         ---
         summary: Add an object to the permission
+        parameters:
+        - permission_id
+        - object_id
         tags:
           - Permissions
-        reponses:
+        responses:
           204:
             description: Object added to permission successfully.
           404:
@@ -128,16 +136,19 @@ class PermissionObjectManagementView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
         """
         storage = get_storage()
-        storage.add_object_to_permission(uuid, permission_id)
+        storage.add_object_to_permission(object_id, permission_id)
         return '', 204
 
-    def delete(self, permission_id, uuid):
+    def delete(self, permission_id, object_id):
         """
         ---
         summary: Remove an object from the permission
+        parameters:
+        - permission_id
+        - object_id
         tags:
           - Permissions
-        reponses:
+        responses:
           204:
             description: Object removed from permission successfully.
           404:
@@ -147,8 +158,32 @@ class PermissionObjectManagementView(MethodView):
 
         """
         storage = get_storage()
-        storage.remove_object_from_permission(permission_id, uuid)
+        storage.remove_object_from_permission(permission_id, object_id)
         return '', 204
+
+
+spec.components.parameter(
+    'permission_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid',
+        },
+        'description': "permissions's unique identifier.",
+        'required': 'true',
+        'name': 'permission_id'
+    })
+spec.components.parameter(
+    'object_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid',
+        },
+        'description': "Object's unique identifier.",
+        'required': 'true',
+        'name': 'object_id'
+    })
 
 
 permission_blp = Blueprint(
@@ -159,5 +194,5 @@ permission_blp.add_url_rule(
     '/<permission_id>',
     view_func=PermissionView.as_view('single'))
 permission_blp.add_url_rule(
-    '/<permission_id>/objects/<uuid>',
+    '/<permission_id>/objects/<object_id>',
     view_func=PermissionObjectManagementView.as_view('objects'))

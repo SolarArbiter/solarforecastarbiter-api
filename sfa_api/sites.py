@@ -84,7 +84,7 @@ class SiteView(MethodView):
         tags:
         - Sites
         parameters:
-        - $ref: '#/components/parameters/site_id'
+        - site_id
         responses:
           200:
             description: Successfully retrieved site metadata.
@@ -111,7 +111,7 @@ class SiteView(MethodView):
         tags:
           - Sites
         parameters:
-        - $ref: '#/components/parameters/site_id'
+        - site_id
         responses:
           200:
             description: Site deleted Successfully.
@@ -136,7 +136,7 @@ class SiteObservations(MethodView):
         tags:
         - Sites
         parameters:
-        - $ref: '#/components/parameters/site_id'
+        - site_id
         responses:
           200:
             description: Successfully retrieved site observations.
@@ -169,7 +169,7 @@ class SiteForecasts(MethodView):
         tags:
         - Sites
         parameters:
-        - $ref: '#/components/parameters/site_id'
+        - site_id
         responses:
           200:
             description: Successfully retrieved site forecasts
@@ -202,7 +202,7 @@ class SiteCDFForecastGroups(MethodView):
         tags:
         - Sites
         parameters:
-        - $ref: '#/components/parameters/site_id'
+        - site_id
         responses:
           200:
             description: Successfully retrieved site cdf forecasts
@@ -232,7 +232,8 @@ spec.components.parameter(
             'format': 'uuid'
         },
         'description': "Site's unique identifier.",
-        'required': 'true'
+        'required': 'true',
+        'name': 'site_id'
     })
 
 site_blp = Blueprint(

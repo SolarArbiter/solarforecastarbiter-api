@@ -124,7 +124,7 @@ class ObservationView(MethodView):
         tags:
           - Observations
         parameters:
-        - $ref: '#/components/parameters/observation_id'
+        - observation_id
         responses:
           200:
             description: Observation deleted successfully.
@@ -147,10 +147,10 @@ class ObservationValuesView(MethodView):
         tags:
         - Observations
         parameters:
-          - $ref: '#/components/parameters/observation_id'
-          - $ref: '#/components/parameters/start_time'
-          - $ref: '#/components/parameters/end_time'
-          - $ref: '#/components/parameters/accepts'
+          - observation_id
+          - start_time
+          - end_time
+          - accepts
         responses:
           200:
             content:
@@ -205,7 +205,7 @@ class ObservationValuesView(MethodView):
         tags:
         - Observations
         parameters:
-        - $ref: '#/components/parameters/observation_id'
+        - observation_id
         requestBody:
           required: True
           content:
@@ -278,7 +278,7 @@ class ObservationMetadataView(MethodView):
         tags:
         - Observations
         parameters:
-        - $ref: '#/components/parameters/observation_id'
+        - observation_id
         responses:
           200:
             description: Successfully retrieved observation metadata.
@@ -307,7 +307,8 @@ spec.components.parameter(
             'format': 'uuid',
         },
         'description': "Resource's unique identifier.",
-        'required': 'true'
+        'required': 'true',
+        'name': 'observation_id'
     })
 
 obs_blp = Blueprint(
