@@ -6,7 +6,12 @@
 <h2 class="page-title">Solar Forecast Arbiter Dashboard</h2>
 {% include "sections/notifications.html" %}
 {% if current_user is none %}
-<p>Please <a href="{{ url_for('auth0.login') }}">login</a> to access the dashboard.</p>
+<p>Welcome to the Solar Forecast Arbiter Dashboard. If you have an account, please
+<a href="{{ url_for('auth0.login') }}">log in</a> to access the dashboard.</p>
+<p>New users can create an account using the '<i>Sign up</i>' link at the bottom
+of the <a href="{{url_for('auth0.login') }}">log in form.</a> See
+<a href="https://solarforecastarbiter.org/documentation/dashboard/#getting-started">
+Getting Started</a> for more information.</p>
 {% else %}
 <p>Use the links on the left to access your data.</p>
 
