@@ -1,7 +1,6 @@
 Flask==1.0.2
 Flask-SeaSurf==0.2.2
 requests==2.21.0
-pandas==0.24.2
 flask-dance
 gunicorn
 gevent
