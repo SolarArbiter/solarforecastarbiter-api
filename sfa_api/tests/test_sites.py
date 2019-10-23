@@ -151,9 +151,9 @@ def test_site_post_extra_modeling_params(api, tracking_type, params, extras):
 @pytest.mark.parametrize('payload,message', [
     (INVALID_ELEVATION, '{"elevation":["Not a valid number."]}'),
     (INVALID_LATITUDE, '{"latitude":["Not a valid number."]}'),
-    (OUTSIDE_LATITUDE, '{"latitude":["Must be between -90 and 90."]}'),
+    (OUTSIDE_LATITUDE, '{"latitude":["Must be greater than or equal to -90 and less than or equal to 90."]}'),  # NOQA
     (INVALID_LONGITUDE, '{"longitude":["Not a valid number."]}'),
-    (OUTSIDE_LONGITUDE, '{"longitude":["Must be between -180 and 180."]}'),
+    (OUTSIDE_LONGITUDE, '{"longitude":["Must be greater than or equal to -180 and less than or equal to 180."]}'),  # NOQA
     (INVALID_TIMEZONE, '{"timezone":["Invalid timezone."]}'),
     (INVALID_TRACKING_TYPE, '{"tracking_type":["Unknown field."]}'),
     (INVALID_NAME, '{"name":["Invalid characters in string."]}')

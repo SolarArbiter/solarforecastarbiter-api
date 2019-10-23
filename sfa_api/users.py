@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify
 from flask.views import MethodView
 
+
+from sfa_api import spec
 from sfa_api.schema import UserSchema
 from sfa_api.utils.storage import get_storage
 
@@ -68,6 +70,8 @@ class UserView(MethodView):
         """
         ---
         summary: Get User Metadata.
+        parameters:
+        - user_id
         tags:
           - Users
         responses:
@@ -90,6 +94,8 @@ class UserView(MethodView):
         """
         ---
         summary: Delete a User.
+        parameters:
+        - user_id
         tags:
           - Users
         responses:
@@ -109,6 +115,9 @@ class UserRolesManagementView(MethodView):
         """
         ---
         summary: Add a Role to a User.
+        parameters:
+        - user_id
+        - role_id
         tags:
           - Users
           - Roles
@@ -128,6 +137,9 @@ class UserRolesManagementView(MethodView):
         """
         ---
         summary: Remove a role from a User.
+        parameters:
+        - user_id
+        - role_id
         tags:
           - Users
           - Roles
@@ -168,6 +180,17 @@ class CurrentUserView(MethodView):
         return jsonify(user_info), 200
 
 
+spec.components.parameter(
+    'user_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid'
+        },
+        'description': "The user's unique identifier",
+        'required': 'true',
+        'name': 'user_id'
+    })
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )

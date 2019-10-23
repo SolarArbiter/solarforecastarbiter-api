@@ -3,6 +3,7 @@ from flask.views import MethodView
 from marshmallow import ValidationError
 
 
+from sfa_api import spec
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.schema import (RoleSchema,
@@ -73,6 +74,8 @@ class RoleView(MethodView):
         """
         ---
         summary: Get information about a Role.
+        parameters:
+        - role_id
         tags:
           - Roles
         responses:
@@ -95,6 +98,8 @@ class RoleView(MethodView):
         """
         ---
         summary: Delete a Role
+        parameters:
+        - role_id
         tags:
           - Roles
         responses:
@@ -115,8 +120,12 @@ class RolePermissionManagementView(MethodView):
         """
         ---
         summary: Add a permission to a role
+        parameters:
+        - role_id
+        - permission_id
         tags:
           - Roles
+          - Permissions
         responses:
           204:
             description: Permission added to role successfully.
@@ -135,8 +144,12 @@ class RolePermissionManagementView(MethodView):
         """
         ---
         summary: Remove a permission from a role
+        parameters:
+        - role_id
+        - permission_id
         tags:
           - Roles
+          - Permissions
         responses:
           204:
             description: Removed permission successfully.
@@ -149,6 +162,18 @@ class RolePermissionManagementView(MethodView):
         storage.remove_permission_from_role(role_id, permission_id)
         return '', 204
 
+
+spec.components.parameter(
+    'role_id', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'uuid'
+        },
+        'description': "The role's unique identifier",
+        'required': 'true',
+        'name': 'role_id'
+    })
 
 role_blp = Blueprint(
     'roles', 'roles', url_prefix='/roles',

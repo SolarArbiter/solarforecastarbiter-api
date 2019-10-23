@@ -137,7 +137,7 @@ class ModelingParameters(ma.Schema):
         missing=None)
 
     @validates_schema
-    def validate_modeling_parameters(self, data):
+    def validate_modeling_parameters(self, data, **kwargs):
         common_fields = {
             'ac_capacity', 'dc_capacity', 'temperature_coefficient',
             'dc_loss_factor', 'ac_loss_factor'}

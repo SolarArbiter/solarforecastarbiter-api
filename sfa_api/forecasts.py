@@ -135,7 +135,7 @@ class ForecastView(MethodView):
         tags:
         - Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Forecast options retrieved sucessfully.
@@ -162,7 +162,7 @@ class ForecastView(MethodView):
         tags:
         - Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Forecast deleted sucessfully.
@@ -185,10 +185,10 @@ class ForecastValuesView(MethodView):
         tags:
         - Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
-        - $ref: '#/components/parameters/start_time'
-        - $ref: '#/components/parameters/end_time'
-        - $ref: '#/components/parameters/accepts'
+        - forecast_id
+        - start_time
+        - end_time
+        - accepts
         responses:
           200:
             content:
@@ -240,7 +240,7 @@ class ForecastValuesView(MethodView):
         tags:
         - Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         requestBody:
           required: True
           content:
@@ -290,7 +290,7 @@ class ForecastMetadataView(MethodView):
         tags:
         - Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Successfully retrieved Forecasts.
@@ -395,7 +395,7 @@ class CDFForecastGroupMetadataView(MethodView):
         tags:
           - Probabilistic Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Successfully retrieved Forecasts.
@@ -426,7 +426,7 @@ class CDFForecastGroupMetadataView(MethodView):
         tags:
         - Probabilistic Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Forecast deleted sucessfully.
@@ -448,7 +448,7 @@ class CDFForecastMetadata(MethodView):
         tags:
           - Probabilistic Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         responses:
           200:
             description: Successfully retrieved Forecast CDF metadata.
@@ -529,7 +529,7 @@ class CDFForecastValues(MethodView):
         tags:
         - Probabilistic Forecasts
         parameters:
-        - $ref: '#/components/parameters/forecast_id'
+        - forecast_id
         requestBody:
           required: True
           content:
@@ -577,6 +577,7 @@ spec.components.parameter(
             'format': 'uuid'
         },
         'description': "Forecast's unique identifier.",
+        'name': 'forecast_id',
         'required': 'true'
     })
 
