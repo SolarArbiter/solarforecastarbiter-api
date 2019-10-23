@@ -1093,7 +1093,6 @@ def test_read_aggregate_values_effective_overlap(sql_app, user,
     # effective from 4/15 onward
     storage_interface.add_observation_to_aggregate(
         aggregate_id, change_id, pd.Timestamp('20190415T0000Z'))
-    agg = storage_interface.read_aggregate(aggregate_id)
     out = storage_interface.read_aggregate_values(aggregate_id)
     assert isinstance(out, dict)
     # no data in db for 825fa193-824f-11e9-a81f-54bf64606445

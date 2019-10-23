@@ -216,7 +216,6 @@ def test_update_aggregate_add_obs_bad_many(api, aggregate_id):
     assert res.status_code == 400
     assert 'present and valid' in res.get_data(as_text=True)
     assert 'interval length is not less' in res.get_data(as_text=True)
-    assert False
 
 
 def test_update_aggregate_remove_obs(api, aggregate_id):

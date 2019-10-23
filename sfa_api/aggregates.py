@@ -298,7 +298,8 @@ class AggregateMetadataView(MethodView):
             raise BadAPIRequest(err.messages)
 
         storage = get_storage()
-        self._check_post_for_errs(aggregate_id, aggregate['observations'], storage)
+        self._check_post_for_errs(aggregate_id, aggregate['observations'],
+                                  storage)
 
         for i, update_obs in enumerate(aggregate['observations']):
             obs_id = str(update_obs['observation_id'])
