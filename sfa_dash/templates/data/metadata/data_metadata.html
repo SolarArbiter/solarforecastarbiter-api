@@ -6,7 +6,11 @@
 {% block metadata %}
 <ul class="data-metadata-fields col-md-6 col-sm-12">
       {{ macro.li('Name', name) }}
-      {{ macro.li('Site', site_link )}}
+      {% if site_link is defined %}
+        {{ macro.li('Site', site_link )}}
+      {% else %}
+        {{ macro.li('Site', site_id)}}
+      {% endif %}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-sm-12">
   {{ macro.li('Variable', variable |convert_varname, variable | var_to_units) }}

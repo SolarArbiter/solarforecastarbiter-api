@@ -1,6 +1,6 @@
 {% extends "dash/data.html" %}
 {% block content %}
-{{ metadata_section | safe }}
+{{ metadata | safe }}
 {% if upload_link is defined %}
 <a role="button" class="btn btn-primary btn-sm" href="{{upload_link}}">Upload data</a>
 {% endif %}
@@ -10,13 +10,14 @@
 {% if delete_link is defined %}
 <a role="button" class="btn btn-danger btn-sm" href="{{ delete_link }}">Delete</a>
 {% endif %}
-{% if 'constant_values' in metadata %}
+{% include "sections/notifications.html" %}
+{% if constant_values is defined %}
 <div class="bin-list">
   <table>
     <tr>
       <th>Value</th>
     </tr>
-    {% for cdf_bin in metadata['constant_values'] %}
+    {% for cdf_bin in constant_values %}
     <tr>
         <td><a href="{{url_for('data_dashboard.cdf_forecast_view', uuid=cdf_bin['forecast_id'])}}">{{ cdf_bin['constant_value'] }}</a></td>
     </tr>

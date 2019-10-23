@@ -537,6 +537,8 @@ class PermissionsCreation(AdminView):
             'applies_to_all': ('applies-to-all' in form_data),
             'object_type': self.data_type + 's',
         }
+        if self.data_type == 'cdf_forecast_group':
+            permission.update({'object_type': 'cdf_forecasts'})
         return permission
 
     def post(self):

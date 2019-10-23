@@ -1,5 +1,7 @@
 {% extends "dash/site.html" %}
 {% block content %}
+{% include "sections/notifications.html" %}
+{% if metadata is defined %}
 {{ metadata | safe }}
 {% block toolbar %}
   <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_observation', uuid=site_id) }}">Create new Observation</a>
@@ -9,4 +11,5 @@
 
 {% endblock %}
 {{ listing | safe }}
+{% endif %}
 {% endblock %}

@@ -31,16 +31,19 @@ class DataTables(object):
     def create_table_elements(cls, data_list, id_key, **kwargs):
         """Creates a list of objects to be rendered as table by jinja template
         """
-        sites_list_request = sites.list_metadata()
-        sites_list = sites_list_request.json()
+        sites_list = handle_response(sites.list_metadata())
         site_dict = {site['site_id']: site for site in sites_list}
         table_rows = []
         for data in data_list:
             table_row = {}
-            site_name = site_dict[data['site_id']]['name']
-            site_href = url_for('data_dashboard.site_view',
-                                uuid=data['site_id'])
-            site_link = f'<a href={site_href}>{site_name}</a>'
+            site = site_dict.get(data['site_id'])
+            if site is not None:
+                site_name = site_dict[data['site_id']]['name']
+                site_href = url_for('data_dashboard.site_view',
+                                    uuid=data['site_id'])
+                site_link = f'<a href={site_href}>{site_name}</a>'
+            else:
+                site_link = 'Site Unavailable'
             table_row['name'] = data['name']
             table_row['variable'] = data['variable']
             table_row['provider'] = data.get('provider', '')
@@ -70,8 +73,8 @@ class DataTables(object):
             new Observation' button.
         """
         creation_link = cls.creation_link('observation', site_id)
-        obs_data_request = observations.list_metadata(site_id=site_id)
-        obs_data = obs_data_request.json()
+        obs_data = handle_response(
+            observations.list_metadata(site_id=site_id))
         rows = cls.create_table_elements(obs_data, 'observation_id', **kwargs)
         rendered_table = render_template(cls.observation_template,
                                          table_rows=rows,
@@ -93,9 +96,16 @@ class DataTables(object):
         string
             Rendered HTML table with search bar and a 'Create
             new Forecast' button.
+
+        Raises
+        ------
+        DataRequestException
+            If a site_id is passed and the user does not have access
+            to that site or some other api error has occurred.
         """
         creation_link = cls.creation_link('forecast', site_id)
-        forecast_data = forecasts.list_metadata(site_id=site_id).json()
+        forecast_data = handle_response(
+            forecasts.list_metadata(site_id=site_id))
         rows = cls.create_table_elements(forecast_data,
                                          'forecast_id',
                                          **kwargs)
@@ -119,11 +129,16 @@ class DataTables(object):
         string
             Rendered HTML table with search bar and a 'Create
             new Probabilistic Forecast' button.
+
+        Raises
+        ------
+        DataRequestException
+            If a site_id is passed and the user does not have access
+            to that site or some other api error has occurred.
         """
         creation_link = cls.creation_link('cdf_forecast_group', site_id)
-        cdf_forecast_request = cdf_forecast_groups.list_metadata(
-            site_id=site_id)
-        cdf_forecast_data = cdf_forecast_request.json()
+        cdf_forecast_data = handle_response(
+            cdf_forecast_groups.list_metadata(site_id=site_id))
         rows = cls.create_cdf_forecast_elements(cdf_forecast_data,
                                                 **kwargs)
         rendered_table = render_template(cls.cdf_forecast_template,
@@ -134,16 +149,19 @@ class DataTables(object):
 
     @classmethod
     def create_cdf_forecast_elements(cls, data_list, **kwargs):
-        sites_list_request = sites.list_metadata()
-        sites_list = sites_list_request.json()
+        sites_list = handle_response(sites.list_metadata())
         site_dict = {site['site_id']: site for site in sites_list}
         table_rows = []
         for data in data_list:
             table_row = {}
-            site_name = site_dict[data['site_id']]['name']
-            site_href = url_for('data_dashboard.site_view',
-                                uuid=data['site_id'])
-            site_link = f'<a href={site_href}>{site_name}</a>'
+            site = site_dict.get(data['site_id'])
+            if site is not None:
+                site_name = site['name']
+                site_href = url_for('data_dashboard.site_view',
+                                    uuid=data['site_id'])
+                site_link = f'<a href={site_href}>{site_name}</a>'
+            else:
+                site_link = 'Site Unavailable'
             table_row['name'] = data['name']
             table_row['variable'] = data['variable']
             table_row['provider'] = data.get('provider', '')
@@ -169,9 +187,14 @@ class DataTables(object):
         string
             The rendered html template, including a table of sites, with search
             bar and 'Create new Site' button.
+
+        Raises
+        ------
+        DataRequestException
+            If a site_id is passed and the user does not have access
+            to that site or some other api error has occurred.
         """
-        site_data_request = sites.list_metadata()
-        site_data = site_data_request.json()
+        site_data = handle_response(sites.list_metadata())
         rows = cls.create_site_table_elements(site_data, create, **kwargs)
         if create is None:
             # If the create argument is present, we don't need a "Create
@@ -261,7 +284,9 @@ def filter_form_fields(prefix, form_data):
 
 
 def handle_response(request_object):
-    """Pass a request object to attempt to parse the response.
+    """Parses the response from a request object. On an a resolvable
+    error, raises a DataRequestException with a default error
+    message.
 
     Parameters
     ----------
@@ -270,25 +295,31 @@ def handle_response(request_object):
 
     Returns
     -------
-    dict
-        The parsed json of a response.
+    dict, str or None
+        Note that this function checks the content-type of a response
+        and returns the appropriate type. A Dictionary parsed from a
+        JSON object, or a string. Returns None when a 204 is encountered.
+        Users should be mindful of the expected response body from the
+        API.
 
     Raises
     ------
     sfa_dash.errors.DataRequestException
         If a recoverable 400 level error has been encountered.
         The errors attribute will contain a dict of errors.
+    requests.exceptions.HTTPError
+        If the status code received from the API could not be
+        handled.
     """
-    if request_object.status_code != 200:
+    if not request_object.ok:
+        errors = {}
         if request_object.status_code == 400:
             errors = request_object.json()
-            raise DataRequestException(request_object.status_code, **errors)
-        if request_object.status_code == 401:
+        elif request_object.status_code == 401:
             errors = {
                 '401': "You do not have permission to create this resource."
             }
-            raise DataRequestException(request_object.status_code, **errors)
-        if request_object.status_code == 404:
+        elif request_object.status_code == 404:
             previous_page = request.headers.get('Referer', None)
             errors = {'404': (
                 'The requested object could not be found. You may need to '
@@ -298,15 +329,23 @@ def handle_response(request_object):
                 errors['404'] = errors['404'] + (
                     f' <a href="{previous_page}">Return to the previous '
                     'page.</a>')
+        elif request_object.status_code == 422:
+            errors = {'422': ['Failed to compute aggregate Values']}
+        if errors:
             raise DataRequestException(request_object.status_code, **errors)
-        # Other errors should be due to bugs and not by attempts to reach
-        # inaccessible data. Allow exceptions to be raised
-        # so that they can be reported to Sentry.
+        else:
+            # Other errors should be due to bugs and not by attempts to reach
+            # inaccessible data. Allow exceptions to be raised
+            # so that they can be reported to Sentry.
+            request_object.raise_for_status()
     if request_object.request.method == 'GET':
+        # all GET endpoints should return a JSON object
         if request_object.headers['Content-Type'] == 'application/json':
             return request_object.json()
         else:
             return request_object.text
+    # POST responses should contain a single string uuid of a newly created
+    # object unless a 204 No Content was returned.
     if request_object.request.method == 'POST':
         if request_object.status_code != 204:
             return request_object.text

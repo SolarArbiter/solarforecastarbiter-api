@@ -33,8 +33,11 @@ class SitesListingView(SiteDashView):
     def get(self, **kwargs):
         # Update kwargs with the create query parameter
         kwargs.update({'create': request.args.get('create')})
-        return render_template(self.template,
-                               **self.get_template_args(**kwargs))
+        try:
+            temp_args = self.get_template_args(**kwargs)
+        except DataRequestException as e:
+            temp_args = {'errors': e.errors}
+        return render_template(self.template, **temp_args)
 
 
 class SingleSiteView(SiteDashView):

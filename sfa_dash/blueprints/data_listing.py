@@ -1,10 +1,13 @@
 """Flask endpoints for listing Observations, Forecasts and CDF Forecasts.
 Defers actual table creation and rendering to DataTables in the util module.
 """
+from flask import render_template, request, url_for
+
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import DataTables
+from sfa_dash.blueprints.util import DataTables, handle_response
 from sfa_dash.api_interface import sites
-from flask import render_template, request, url_for, abort
+
+from sfa_dash.errors import DataRequestException
 
 
 class DataListingView(BaseView):
@@ -38,10 +41,8 @@ class DataListingView(BaseView):
         else:
             type_label = self.data_type.title()
         if site_id is not None:
-            site_metadata_request = sites.get_metadata(site_id)
-            if site_metadata_request.status_code != 200:
-                abort(404)
-            site_metadata = site_metadata_request.json()
+            site_metadata = handle_response(
+                sites.get_metadata(site_id))
             breadcrumb += breadcrumb_format.format(
                 url=url_for('data_dashboard.sites'),
                 text='Sites')
@@ -81,5 +82,8 @@ class DataListingView(BaseView):
         uuid = request.args.get('uuid')
         if uuid is not None:
             kwargs.update({'site_id': uuid})
-        return render_template(self.template,
-                               **self.get_template_args(**kwargs))
+        try:
+            temp_args = self.get_template_args(**kwargs)
+        except DataRequestException as e:
+            temp_args = {'errors': e.errors}
+        return render_template(self.template, **temp_args)

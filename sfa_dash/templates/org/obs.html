@@ -1,5 +1,6 @@
 {% extends "dash/site.html" %}
 {% set sidebar = True %}
 {% block content %}
+{% include "sections/notifications.html" %}
 {{ data_table | safe }}
 {% endblock %}

@@ -1,15 +1,25 @@
 {% if messages is defined %}
 <div class="messages">
-  <ul class="message-list">
+  <ul class="message-list notification-list">
     {% for title, message in messages.items() %}
       <li class="alert alert-success"><p><b>{{ title }}: </b>{{ message | join(', ') | safe}}</p></li> 
 	{% endfor %}
   </ul>
 </div>
 {% endif %}
+{% if warnings is defined %}
+<div class="warnings">
+  <ul class="warning-list notification-list">
+      {% for title, warning in warnings.items() %}
+      <li class="alert alert-warning"><p><b>{{ title }}: </b>{{ warning | join(', ') | safe}}</p></li>
+      {% endfor %}
+  </ul>
+</div>
+
+{% endif %}
 {% if errors is defined %}
 <div class="errors">
-  <ul class="error-list">
+  <ul class="error-list notification-list">
       {% for title, error in errors.items() %}
       <li class="alert alert-danger"><p><b>{{ title }}: </b>{{ error | join(', ') | safe}}</p></li>
       {% endfor %}

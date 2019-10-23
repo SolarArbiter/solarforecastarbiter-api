@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 from solarforecastarbiter.reports.main import report_to_html_body
 from sfa_dash.api_interface import observations, forecasts, sites, reports
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import filter_form_fields
+from sfa_dash.blueprints.util import filter_form_fields, handle_response
 
 
 class ReportsView(BaseView):
@@ -27,16 +27,14 @@ class ReportForm(BaseView):
         """Requests the forecasts and observations from
         the api for injecting into the dom as a js variable
         """
-        observation_request = observations.list_metadata()
-        forecast_request = forecasts.list_metadata()
-        site_request = sites.list_metadata()
-        observation_list = observation_request.json()
+        observation_list = handle_response(
+            observations.list_metadata())
+        forecast_list = handle_response(forecasts.list_metadata())
+        site_list = handle_response(sites.list_metadata())
         for obs in observation_list:
             del obs['extra_parameters']
-        forecast_list = forecast_request.json()
         for fx in forecast_list:
             del fx['extra_parameters']
-        site_list = site_request.json()
         for site in site_list:
             del site['extra_parameters']
         return {
@@ -51,8 +49,8 @@ class ReportForm(BaseView):
         }
 
     def zip_object_pairs(self, form_data):
-        """Create a list of observation, forecast tuples from the the
-        (forecast-n, observation-n) input elements inserted by
+        """Create a list of observation, forecast tuples in the form
+        (forecast-n, observation-n) from input elements inserted by
         report-handling.js
         """
         fx = filter_form_fields('forecast-id-', form_data)

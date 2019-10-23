@@ -252,7 +252,7 @@ span.help-text::before {
   border-style: solid;
   border-color: transparent transparent #6c757d transparent;
 }
-ul.error-list, ul.message-list{
+.notification-list{
   list-style: none;
   margin-top: .5rem;
   padding-left: 0;
