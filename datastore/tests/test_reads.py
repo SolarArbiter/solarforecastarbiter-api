@@ -990,6 +990,38 @@ def test_read_aggregate_values_removed_overlap(
     assert res == vals
 
 
+def test_read_aggregate_values_full_overlap(
+        cursor, allow_read_aggregate_values, allow_read_observation_values,
+        obs_values, new_aggregate, new_observation, user_org_role):
+    org = user_org_role[1]
+    obs = new_observation(org=org)
+    auth0id, obsid, vals, start, end = obs_values(str(bin_to_uuid(obs['id'])))
+    agg = new_aggregate(obs_list=[obs], org=org)
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
+    cursor.execute(
+        "UPDATE aggregate_observation_mapping SET effective_from = TIMESTAMP('2019-01-30 12:29'), effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+    )
+    cursor.execute(
+        "INSERT INTO aggregate_observation_mapping "
+        "(aggregate_id, observation_id, _incr, effective_from) VALUES"
+        f" (%s, %s, 1, TIMESTAMP('{start.strftime('%Y-%m-%d %H:%M')}'))",
+        (agg['id'], obs['id'])
+    )
+    cursor.callproc(
+        'read_aggregate_values', (
+            auth0id, str(bin_to_uuid(agg['id'])),
+            start, end)
+    )
+    res = cursor.fetchall()
+    assert res == vals
+
+
 def test_read_aggregate_values_deleted(
         cursor, allow_read_aggregate_values, allow_read_observation_values,
         obs_values, new_aggregate, new_observation, user_org_role):

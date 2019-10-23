@@ -1662,13 +1662,12 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
     end = end or pd.Timestamp('20380119T031407Z')
     agg_vals = _call_procedure('read_aggregate_values', aggregate_id,
                                start, end)
-    df = pd.DataFrame.from_records(
+    groups = pd.DataFrame.from_records(
         list(agg_vals), columns=['observation_id', 'timestamp',
                                  'value', 'quality_flag']
-    )
-    groups = df.groupby('observation_id')
+    ).groupby('observation_id')
     out = {}
     for obs_id, df in groups:
         out[obs_id] = df.drop(columns='observation_id').set_index(
-            'timestamp').tz_localize('UTC').drop_duplicates().sort_index()
+            'timestamp').tz_localize('UTC')
     return out

@@ -147,7 +147,8 @@ BEGIN
         )
         SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag
         FROM arbiter_data.observations_values JOIN limits
-        WHERE id = limits.observation_id AND timestamp BETWEEN GREATEST(limits.obs_start, start) AND LEAST(limits.obs_end, end);
+        WHERE id = limits.observation_id AND timestamp BETWEEN GREATEST(limits.obs_start, start) AND LEAST(limits.obs_end, end)
+        GROUP BY observation_id, timestamp ORDER BY observation_id, timestamp;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read aggregate values"',
         MYSQL_ERRNO = 1142;
