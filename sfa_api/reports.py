@@ -265,7 +265,7 @@ spec.components.parameter(
         'schema': {
             'type': 'string',
         },
-        'description': "The new status of the repot",
+        'description': "The new status of the report",
         'required': 'true',
         'name': 'status'
     })
