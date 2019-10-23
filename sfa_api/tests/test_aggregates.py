@@ -199,6 +199,26 @@ def test_update_aggregate_add_obs_bad_obs(api, aggregate_id, intext,
     assert intext in res.get_data(as_text=True)
 
 
+def test_update_aggregate_add_obs_bad_many(api, aggregate_id):
+    r1 = api.post('/observations/',
+                  base_url=BASE_URL,
+                  json=copy_update(VALID_OBS_JSON, 'interval_length', 300))
+    obs_id = r1.get_data(as_text=True)
+    payload = {'observations': [
+        {'observation_id': obs_id,
+         'effective_from': '2019-01-01 01:23:00Z'},
+        {'observation_id': '123e4567-e89b-12d3-a456-426655440000',
+         'effective_from': '2019-01-01 01:23:00Z'}
+    ]}
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 400
+    assert 'present and valid' in res.get_data(as_text=True)
+    assert 'interval length is not less' in res.get_data(as_text=True)
+    assert False
+
+
 def test_update_aggregate_remove_obs(api, aggregate_id):
     payload = {'observations': [{
         'observation_id': '123e4567-e89b-12d3-a456-426655440000',

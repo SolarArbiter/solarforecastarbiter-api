@@ -100,8 +100,6 @@ class AggregateView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/AggregateLinks'
-          400:
-            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -227,17 +225,51 @@ class AggregateMetadataView(MethodView):
         aggregate = storage.read_aggregate(aggregate_id)
         return jsonify(AggregateSchema().dump(aggregate))
 
+    def _check_post_for_errs(self, aggregate_id, agg_observations, storage):
+        errors = defaultdict(partial(defaultdict, dict))
+        for i, update_obs in enumerate(agg_observations):
+            if 'effective_from' in update_obs:
+                obs_id = str(update_obs['observation_id'])
+                obs = storage.read_observation(obs_id)
+                agg = storage.read_aggregate(aggregate_id)
+
+                for aggobs in agg['observations']:
+                    if (
+                            aggobs['observation_id'] == obs_id and
+                            aggobs['effective_until'] is None
+                    ):
+                        errors['observations'][str(i)]['effective_from'] = (
+                            'Observation already present and valid in'
+                            ' aggregate')
+                if obs['interval_length'] > agg['interval_length']:
+                    errors['observations'][str(i)]['interval_length'] = (
+                        'Observation interval length is not less than or '
+                        'equal to the aggregate interval length')
+                if obs['variable'] != agg['variable']:
+                    errors['observations'][str(i)]['variable'] = (
+                        'Observation does not have the same variable as the '
+                        'aggregate.')
+                if obs['interval_value_type'] not in (
+                        'interval_mean', 'instantaneous'):
+                    errors['observations'][str(i)]['interval_value_type'] = (
+                        'Only observations with interval_mean and '
+                        'instantaneous interval_value_type are valid in '
+                        'aggregates')
+        if errors:
+            raise BadAPIRequest(errors)
+
     def post(self, aggregate_id, *args):
         """
         ---
         summary: Update an aggregate.
         description: >-
-          For now, only adding or removing observations to/from the
-          aggregate is supported. If an observation is already part
-          of an aggregate, effective_until must be set until it can
-          be added again. Any attempt to set 'effective_until'
-          will apply to all observations with the given ID in the
-          aggregate.
+          For now, only adding or removing observations to the
+          aggregate is supported (i.e. only one of 'effective_until'
+          or 'effective_from' may be specified per observation). If
+          an observation is already part of an aggregate, effective_until
+          must be set until it can be added again. Any attempt to set
+          'effective_until' will apply to all observations with the given
+          ID in the aggregate.
         tags:
         - Aggregates
         parameters:
@@ -266,42 +298,17 @@ class AggregateMetadataView(MethodView):
             raise BadAPIRequest(err.messages)
 
         storage = get_storage()
+        self._check_post_for_errs(aggregate_id, aggregate['observations'], storage)
+
         for i, update_obs in enumerate(aggregate['observations']):
+            obs_id = str(update_obs['observation_id'])
             if 'effective_from' in update_obs:
-                obs_id = str(update_obs['observation_id'])
-                obs = storage.read_observation(obs_id)
-                agg = storage.read_aggregate(aggregate_id)
-                errors = defaultdict(partial(defaultdict, dict))
-                for aggobs in agg['observations']:
-                    if (
-                            aggobs['observation_id'] == obs_id and
-                            aggobs['effective_until'] is None
-                    ):
-                        raise BadAPIRequest({'observations': {
-                            str(i): ['Observation already present and valid in'
-                                     ' aggregate']}})
-                if obs['interval_length'] > agg['interval_length']:
-                    errors['observations'][str(i)]['interval_length'] = (
-                        'Observation interval length is not less than or '
-                        'equal to the aggregate interval length')
-                if obs['variable'] != agg['variable']:
-                    errors['observations'][str(i)]['variable'] = (
-                        'Observation does not have the same variable as the '
-                        'aggregate.')
-                if obs['interval_value_type'] not in (
-                        'interval_mean', 'instantaneous'):
-                    errors['observations'][str(i)]['interval_value_type'] = (
-                        'Only observations with interval_mean and '
-                        'instantaneous interval_value_type are valid in '
-                        'aggregates')
-                if errors:
-                    raise BadAPIRequest(errors)
                 storage.add_observation_to_aggregate(
                     aggregate_id, obs_id,
                     update_obs['effective_from'])
             elif 'effective_until' in update_obs:
                 storage.remove_observation_from_aggregate(
-                    aggregate_id, str(update_obs['observation_id']),
+                    aggregate_id, obs_id,
                     update_obs['effective_until'])
         return aggregate_id, 200
 
