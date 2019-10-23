@@ -92,7 +92,7 @@ class ReportView(MethodView):
         tags:
           - Reports
         parameters:
-        - $ref: '#/components/parameters/report_id'
+        - report_id
         responses:
           200:
             description: Successfully retrieved report metadata.
@@ -116,7 +116,7 @@ class ReportView(MethodView):
         tags:
           - Reports
         parameters:
-        - $ref: '#/components/parameters/report_id'
+        - report_id
         responses:
           204:
             description: Deleted report successfully.
@@ -138,14 +138,11 @@ class ReportStatusView(MethodView):
         tags:
           - Reports
         parameters:
-          - $ref: '#/components/parameters/report_id'
-          - status:
-              name: Status
-              in: path
-              description: The new status of the report.
+          - report_id
+          - status
         responses:
           204:
-            description: Deleted report successfully.
+            description: Updated status successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -174,7 +171,7 @@ class ReportMetricsView(MethodView):
               schema:
                 $ref: '#/components/schemas/ReportMetricsSchema'
         parameters:
-          - $ref: '#/components/parameters/report_id'
+          - report_id
         """
         raw_metrics_report = request.get_json()
         metrics_report = ReportMetricsSchema().load(raw_metrics_report)
@@ -195,7 +192,7 @@ class ReportValuesView(MethodView):
         tags:
         - Reports
         parameters:
-        - $ref: '#/components/parameters/report_id'
+        - report_id
         responses:
           200:
             description: Successfully retrieved
@@ -217,7 +214,7 @@ class ReportValuesView(MethodView):
         tags:
         - Reports
         parameters:
-        - $ref: '#/components/parameters/report_id'
+        - report_id
         requestBody:
           description: >-
             JSON object mapping uuids to processed data used in report
@@ -259,8 +256,20 @@ spec.components.parameter(
             'format': 'uuid'
         },
         'description': "The report's unique identifier",
-        'required': 'true'
+        'required': 'true',
+        'name': 'report_id'
     })
+spec.components.parameter(
+    'status', 'path',
+    {
+        'schema': {
+            'type': 'string',
+        },
+        'description': "The new status of the report",
+        'required': 'true',
+        'name': 'status'
+    })
+
 reports_blp = Blueprint(
     'reports', 'reports', url_prefix='/reports',
 )
