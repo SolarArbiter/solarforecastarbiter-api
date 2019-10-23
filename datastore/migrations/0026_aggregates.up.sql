@@ -145,7 +145,7 @@ BEGIN
             FROM arbiter_data.aggregate_observation_mapping
             WHERE aggregate_id = binid AND can_user_perform_action(auth0id, observation_id, 'read_values')
         )
-        SELECT DISTINCT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag
+        SELECT BIN_TO_UUID(id, 1) as observation_id, timestamp, value, quality_flag
         FROM arbiter_data.observations_values JOIN limits
         WHERE id = limits.observation_id AND timestamp BETWEEN GREATEST(limits.obs_start, start) AND LEAST(limits.obs_end, end);
     ELSE
