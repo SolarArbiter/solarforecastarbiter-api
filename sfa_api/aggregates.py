@@ -117,7 +117,7 @@ class AggregateView(MethodView):
         tags:
           - Aggregates
         parameters:
-        - $ref: '#/components/parameters/aggregate_id'
+        - aggregate_id
         responses:
           204:
             description: Aggregate deleted successfully.
@@ -140,10 +140,10 @@ class AggregateValuesView(MethodView):
         tags:
         - Aggregates
         parameters:
-          - $ref: '#/components/parameters/aggregate_id'
-          - $ref: '#/components/parameters/start_time'
-          - $ref: '#/components/parameters/end_time'
-          - $ref: '#/components/parameters/accepts'
+          - aggregate_id
+          - start_time
+          - end_time
+          - accepts
         responses:
           200:
             content:
@@ -208,7 +208,7 @@ class AggregateMetadataView(MethodView):
         tags:
         - Aggregates
         parameters:
-        - $ref: '#/components/parameters/aggregate_id'
+        - aggregate_id
         responses:
           200:
             description: Successfully retrieved aggregate metadata.
@@ -273,7 +273,7 @@ class AggregateMetadataView(MethodView):
         tags:
         - Aggregates
         parameters:
-        - $ref: '#/components/parameters/aggregate_id'
+        - aggregate_id
         requestBody:
           required: True
           content:
