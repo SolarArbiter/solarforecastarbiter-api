@@ -31,6 +31,8 @@ def test_get_role(api, new_role):
     assert type(role['permissions']) == dict
     assert len(role['permissions'].keys()) == 1
     assert type(role['users']) == dict
+    assert role['created_at'].endswith('+00:00')
+    assert role['modified_at'].endswith('+00:00')
 
 
 def test_list_roles_missing_perms(api, user_id, remove_perms):

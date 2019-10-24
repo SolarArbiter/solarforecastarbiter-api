@@ -79,6 +79,8 @@ def test_get_forecast_metadata(api, forecast_id):
     assert 'variable' in response
     assert 'name' in response
     assert 'site_id' in response
+    assert response['created_at'].endswith('+00:00')
+    assert response['modified_at'].endswith('+00:00')
 
 
 def test_get_forecast_metadata_404(api, missing_id):
