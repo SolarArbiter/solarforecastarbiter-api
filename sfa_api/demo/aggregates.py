@@ -1,7 +1,8 @@
 import datetime as dt
 
-ca = dt.datetime(2019, 9, 25, 0, 0)
-ef = dt.datetime(2019, 1, 1, 0, 0)
+
+ca = dt.datetime(2019, 9, 25, 0, 0, tzinfo=dt.timezone.utc)
+ef = dt.datetime(2019, 1, 1, 0, 0, tzinfo=dt.timezone.utc)
 static_aggregates = {
     "458ffc27-df0b-11e9-b622-62adb5fd6af0": {
         "aggregate_id": "458ffc27-df0b-11e9-b622-62adb5fd6af0",
@@ -15,8 +16,8 @@ static_aggregates = {
         "extra_parameters": "extra",
         "description": "ghi agg",
         "timezone": "America/Denver",
-        "created_at": dt.datetime(2019, 9, 24, 12, 0),
-        "modified_at": dt.datetime(2019, 9, 24, 12, 0),
+        "created_at": dt.datetime(2019, 9, 24, 12, 0, tzinfo=dt.timezone.utc),
+        "modified_at": dt.datetime(2019, 9, 24, 12, 0, tzinfo=dt.timezone.utc),
         "observations": [
             {"observation_id": "123e4567-e89b-12d3-a456-426655440000",
              "created_at": ca,
@@ -47,8 +48,8 @@ static_aggregates = {
         "extra_parameters": "extra",
         "description": "dni agg",
         "timezone": "America/Denver",
-        "created_at": dt.datetime(2019, 9, 24, 12, 0),
-        "modified_at": dt.datetime(2019, 9, 24, 12, 0),
+        "created_at": dt.datetime(2019, 9, 24, 12, 0, tzinfo=dt.timezone.utc),
+        "modified_at": dt.datetime(2019, 9, 24, 12, 0, tzinfo=dt.timezone.utc),
         "observations": [
             {"observation_id": "95890740-824f-11e9-a81f-54bf64606445",
              "created_at": ca,

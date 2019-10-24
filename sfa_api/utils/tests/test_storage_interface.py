@@ -950,7 +950,7 @@ def test_add_observation_to_aggregate(
 def test_add_observation_to_aggregate_time(sql_app, user, nocommit_cursor):
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
-    ef = dt.datetime(2019, 9, 12, 13, 49)
+    ef = dt.datetime(2019, 9, 12, 13, 49, tzinfo=dt.timezone.utc)
     storage_interface.add_observation_to_aggregate(aggregate_id, obs_id, ef)
     aggregate = storage_interface.read_aggregate(aggregate_id)
     for obs in aggregate['observations']:
@@ -1008,7 +1008,7 @@ def test_remove_observation_from_aggregate_time(
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = demo_aggregates[aggregate_id][
         'observations'][0]['observation_id']
-    et = (dt.datetime.utcnow() + dt.timedelta(days=1)).replace(microsecond=0)
+    et = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)).replace(microsecond=0)
     storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id,
                                                         et)
     aggregate = storage_interface.read_aggregate(aggregate_id)
