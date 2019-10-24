@@ -1008,7 +1008,8 @@ def test_remove_observation_from_aggregate_time(
     aggregate_id = list(demo_aggregates.keys())[0]
     obs_id = demo_aggregates[aggregate_id][
         'observations'][0]['observation_id']
-    et = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)).replace(microsecond=0)
+    et = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
+          ).replace(microsecond=0)
     storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id,
                                                         et)
     aggregate = storage_interface.read_aggregate(aggregate_id)
