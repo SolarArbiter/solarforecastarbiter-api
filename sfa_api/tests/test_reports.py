@@ -53,6 +53,8 @@ def test_get_report(api, new_report):
     assert 'status' in report
     assert 'created_at' in report
     assert 'modified_at' in report
+    assert report['created_at'].endswith('+00:00')
+    assert report['modified_at'].endswith('+00:00')
 
 
 def test_get_report_dne(api, missing_id):

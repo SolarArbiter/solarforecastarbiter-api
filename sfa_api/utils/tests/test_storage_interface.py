@@ -87,6 +87,13 @@ def test_escape_datetime():
             "'2019-05-02 04:33:12'")
 
 
+def test_convert_datetime_utc():
+    assert (
+        storage_interface.convert_datetime_utc('2019-05-01 23:01:32') ==
+        dt.datetime(2019, 5, 1, 23, 1, 32,
+                    tzinfo=dt.timezone(dt.timedelta(hours=0))))
+
+
 def test_try_query_raises():
     with pytest.raises(pymysql.err.IntegrityError):
         def f():
@@ -806,6 +813,7 @@ def test_read_metadata_for_observation_values_start(
         observation['observation_id'], start)
     assert iv == observation['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
 
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
@@ -826,6 +834,7 @@ def test_read_metadata_for_forecast_values_start(
         forecast['forecast_id'], start)
     assert iv == forecast['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
 
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
@@ -848,6 +857,7 @@ def test_read_metadata_for_cdf_forecast_values_start(
     assert iv == demo_group_cdf[demo_single_cdf[
         cdf_forecast_id]['parent']]['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
 
 
 @pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())

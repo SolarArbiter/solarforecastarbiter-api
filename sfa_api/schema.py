@@ -7,6 +7,22 @@ from sfa_api.utils.validators import (
 from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
 
 
+class ISODateTime(ma.AwareDateTime):
+    """
+    Serialize/deserialize ISO8601 datetimes and
+    assume unlocalized times are UTC
+    """
+    def __init__(self, **kwargs):
+        super().__init__(format='iso', default_timezone=pytz.utc, **kwargs)
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            value = pytz.utc.localize(value)
+        return value.isoformat()
+
+
 # solarforecastarbiter.datamodel defines allowed variable as a dict of
 # variable: units we just want the variable names here
 VARIABLES = ALLOWED_VARIABLES.keys()
@@ -31,15 +47,15 @@ ORGANIZATION_ID = ma.UUID(
     title="Organization ID",
     description="UUID of the Organization the Object belongs to."
 )
-CREATED_AT = ma.DateTime(
+CREATED_AT = ISODateTime(
     title="Creation time",
     description="ISO 8601 Datetime when object was created",
-    format='iso')
+    )
 
-MODIFIED_AT = ma.DateTime(
+MODIFIED_AT = ISODateTime(
     title="Last Modification Time",
     description="ISO 8601 Datetime when object was last modified",
-    format='iso')
+    )
 
 INTERVAL_LABEL = ma.String(
     title='Interval Label',
@@ -223,11 +239,13 @@ class ObservationValueSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    timestamp = ma.DateTime(
+    timestamp = ISODateTime(
         title="Timestamp",
-        description="ISO 8601 Datetime",
-        format='iso',
-        validate=TimeLimitValidator())
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        validate=TimeLimitValidator()
+    )
     value = ma.Float(
         title='Value',
         description="Value of the measurement",
@@ -323,11 +341,13 @@ class ForecastValueSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    timestamp = ma.DateTime(
+    timestamp = ISODateTime(
         title="Timestamp",
-        description="ISO 8601 Datetime",
-        format='iso',
-        validate=TimeLimitValidator())
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        validate=TimeLimitValidator()
+    )
     value = ma.Float(
         title="Value",
         description="Value of the forecast variable.",
@@ -623,17 +643,17 @@ class RoleSchema(RolePostSchema):
 
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
-    start = ma.DateTime(
+    start = ISODateTime(
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601"
-                     "datetime."),
-        format='iso',
+                     "datetime. Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
     )
-    end = ma.DateTime(
+    end = ISODateTime(
         title="End",
-        description="The end of the analysis period as an ISO 8601 datetime.",
-        format='iso',
+        description=(
+            "The end of the analysis period as an ISO 8601 datetime."
+            " Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
     )
     # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't

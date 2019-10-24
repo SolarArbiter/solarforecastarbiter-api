@@ -16,6 +16,7 @@ from flask import current_app
 import pandas as pd
 import pymysql
 from pymysql import converters
+import pytz
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import QueuePool
 
@@ -60,12 +61,19 @@ def escape_datetime(value, mapping=None):
         return TIMEFORMAT.format(value)
 
 
+def convert_datetime_utc(obj):
+    unlocalized = converters.convert_datetime(obj)
+    return pytz.utc.localize(unlocalized)
+
+
 def _make_sql_connection_partial():
     config = current_app.config
     conv = converters.conversions.copy()
     # either convert decimals to floats, or add decimals to schema
     conv[converters.FIELD_TYPE.DECIMAL] = float
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
+    conv[converters.FIELD_TYPE.TIMESTAMP] = convert_datetime_utc
+    conv[converters.FIELD_TYPE.DATETIME] = convert_datetime_utc
     conv[pd.Timestamp] = escape_timestamp
     conv[dt.datetime] = escape_datetime
     conv[float] = escape_float_with_nan
@@ -255,7 +263,7 @@ def read_observation_values(observation_id, start=None, end=None):
     df = pd.DataFrame.from_records(
         list(obs_vals), columns=['observation_id', 'timestamp',
                                  'value', 'quality_flag']
-    ).drop(columns='observation_id').set_index('timestamp').tz_localize('UTC')
+    ).drop(columns='observation_id').set_index('timestamp')
     return df
 
 
@@ -389,7 +397,7 @@ def _read_fx_values(procedure_name, forecast_id, start, end):
                               start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp').tz_localize('UTC')
+    ).drop(columns='forecast_id').set_index('timestamp')
     return df
 
 
@@ -1402,7 +1410,7 @@ def user_exists():
 def _set_previous_time(previous_time):
     # easier mocking
     if previous_time is not None:
-        previous_time = pd.Timestamp(previous_time).tz_localize('UTC')
+        previous_time = pd.Timestamp(previous_time)
     return previous_time
 
 
