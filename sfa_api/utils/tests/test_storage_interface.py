@@ -86,6 +86,13 @@ def test_escape_datetime():
             "'2019-05-02 04:33:12'")
 
 
+def test_convert_datetime_utc():
+    assert (
+        storage_interface.convert_datetime_utc('2019-05-01 23:01:32') ==
+        dt.datetime(2019, 5, 1, 23, 1, 32,
+                    tzinfo=dt.timezone(dt.timedelta(hours=0))))
+
+
 def test_try_query_raises():
     with pytest.raises(pymysql.err.IntegrityError):
         def f():
