@@ -805,6 +805,7 @@ def test_read_metadata_for_observation_values_start(
         observation['observation_id'], start)
     assert iv == observation['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
 
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
@@ -825,6 +826,7 @@ def test_read_metadata_for_forecast_values_start(
         forecast['forecast_id'], start)
     assert iv == forecast['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
 
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
@@ -847,3 +849,4 @@ def test_read_metadata_for_cdf_forecast_values_start(
     assert iv == demo_group_cdf[demo_single_cdf[
         cdf_forecast_id]['parent']]['interval_length']
     assert isinstance(pt, pd.Timestamp)
+    assert pt.tzinfo is not None
