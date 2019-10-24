@@ -1,4 +1,5 @@
 import datetime as dt
+import pytz
 
 
 static_cdf_forecasts = {
@@ -83,8 +84,8 @@ static_cdf_forecast_groups = {
             _get_constant_values('633f9b2a-50bb-11e9-8647-d663bd873d93'),
             _get_constant_values('633f9d96-50bb-11e9-8647-d663bd873d93'),
             _get_constant_values('633fa548-50bb-11e9-8647-d663bd873d93')],
-        "created_at": dt.datetime(2019, 3, 2, 14, 55, 37),
-        "modified_at": dt.datetime(2019, 3, 2, 14, 55, 37)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 2, 14, 55, 37)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 2, 14, 55, 37))
     },
     '058b182a-50ba-11e9-8647-d663bd873d93': {
         "forecast_id": "058b182a-50ba-11e9-8647-d663bd873d93",
@@ -106,7 +107,7 @@ static_cdf_forecast_groups = {
             _get_constant_values('633fae62-50bb-11e9-8647-d663bd873d93'),
             _get_constant_values('633fabec-50bb-11e9-8647-d663bd873d93'),
             _get_constant_values('633fa94e-50bb-11e9-8647-d663bd873d93')],
-        "created_at": dt.datetime(2019, 3, 2, 14, 55, 38),
-        "modified_at": dt.datetime(2019, 3, 2, 14, 55, 38)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 2, 14, 55, 38)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 2, 14, 55, 38))
     }
 }

@@ -1,4 +1,5 @@
 import datetime as dt
+import pytz
 
 
 static_forecasts = {
@@ -15,8 +16,8 @@ static_forecasts = {
         "interval_label": "beginning",
         "lead_time_to_start": 60,
         "interval_value_type": "interval_mean",
-        "created_at": dt.datetime(2019, 3, 1, 11, 55, 37),
-        "modified_at": dt.datetime(2019, 3, 1, 11, 55, 37)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37))
     },
     'f8dd49fa-23e2-48a0-862b-ba0af6dec276': {
         "extra_parameters": "",
@@ -31,7 +32,7 @@ static_forecasts = {
         "interval_label": "beginning",
         "lead_time_to_start": 60,
         "interval_value_type": "interval_mean",
-        "created_at": dt.datetime(2019, 3, 1, 11, 55, 38),
-        "modified_at": dt.datetime(2019, 3, 1, 11, 55, 38)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 38)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 38))
     }
 }

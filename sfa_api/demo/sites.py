@@ -1,4 +1,5 @@
 import datetime as dt
+import pytz
 
 
 static_sites = {
@@ -28,8 +29,8 @@ static_sites = {
         "provider": "Organization 1",
         "timezone": "Etc/GMT+8",
         "site_id": '123e4567-e89b-12d3-a456-426655440001',
-        "created_at": dt.datetime(2019, 3, 1, 11, 44, 38),
-        "modified_at": dt.datetime(2019, 3, 1, 11, 44, 38)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 38)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 38))
     },
     'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a': {
         "elevation": 786.0,
@@ -55,8 +56,8 @@ static_sites = {
         "provider": "Organization 1",
         "timezone": "America/Phoenix",
         "site_id": 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a',
-        "created_at": dt.datetime(2019, 3, 1, 11, 44, 44),
-        "modified_at": dt.datetime(2019, 3, 1, 11, 44, 44)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 44)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 44))
     },
     '123e4567-e89b-12d3-a456-426655440002': {
         "elevation": 786.0,
@@ -82,7 +83,7 @@ static_sites = {
         "provider": "Organization 1",
         "timezone": "Etc/GMT+6",
         "site_id": '123e4567-e89b-12d3-a456-426655440002',
-        "created_at": dt.datetime(2019, 3, 1, 11, 44, 46),
-        "modified_at": dt.datetime(2019, 3, 1, 11, 44, 46)
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 46)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 46))
     }
 }
