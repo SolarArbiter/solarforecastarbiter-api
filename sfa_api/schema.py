@@ -1,5 +1,7 @@
 from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
+import pytz
+
 
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
@@ -809,26 +811,26 @@ class AggregatePostSchema(ma.Schema):
 
 class AggregateObservationPostSchema(ma.Schema):
     observation_id = ma.UUID(required=True)
-    effective_from = ma.DateTime(
+    effective_from = ISODateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
-                     " be included in aggregate values"),
-        format='iso',
+                     " be included in aggregate values. Unlocalized"
+                     " times are assumed to be UTC."),
         validate=TimeLimitValidator())
-    effective_until = ma.DateTime(
+    effective_until = ISODateTime(
         title="Observation removal time",
         description=("ISO 8601 Datetime when the observation should"
-                     " not be included in the aggregate"),
-        format='iso',
+                     " not be included in the aggregate. Unlocalized"
+                     " times are assumed to be UTC."),
         validate=TimeLimitValidator())
 
 
 class AggregateObservationSchema(AggregateObservationPostSchema):
     created_at = CREATED_AT
-    observation_deleted_at = ma.DateTime(
+    observation_deleted_at = ISODateTime(
         title="Observation deletion time",
         description="ISO 8601 Datetime when the observation was deleted",
-        format='iso')
+    )
     _links = ma.Hyperlinks(
         {
             'observation': ma.AbsoluteURLFor(

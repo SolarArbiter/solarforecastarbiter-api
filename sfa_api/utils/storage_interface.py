@@ -1536,7 +1536,10 @@ def _set_aggregate_parameters(aggregate_dict):
                 for tkey in ('created_at', 'observation_deleted_at',
                              'effective_until', 'effective_from'):
                     if obs[tkey] is not None:
-                        obs[tkey] = dt.datetime.fromisoformat(obs[tkey])
+                        keydt = dt.datetime.fromisoformat(obs[tkey])
+                        if keydt.tzinfo is None:
+                            keydt = pytz.utc.localize(keydt)
+                        obs[tkey] = keydt
                 out[key].append(obs)
         else:
             out[key] = aggregate_dict[key]
@@ -1599,7 +1602,8 @@ def list_aggregates():
 
 def add_observation_to_aggregate(
         aggregate_id, observation_id,
-        effective_from=dt.datetime(1970, 1, 1, 0, 0, 1)):
+        effective_from=dt.datetime(
+            1970, 1, 1, 0, 0, 1, tzinfo=dt.timezone.utc)):
     """Add an Observation to an Aggregate
 
     Parameters
@@ -1625,7 +1629,7 @@ def add_observation_to_aggregate(
 
 def remove_observation_from_aggregate(
         aggregate_id, observation_id,
-        effective_until=dt.datetime.utcnow()):
+        effective_until=dt.datetime.now(dt.timezone.utc)):
     """Remove an Observation from an Aggregate
 
     Parameters
@@ -1677,5 +1681,5 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
     out = {}
     for obs_id, df in groups:
         out[obs_id] = df.drop(columns='observation_id').set_index(
-            'timestamp').tz_localize('UTC')
+            'timestamp')
     return out
