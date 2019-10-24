@@ -181,7 +181,6 @@ def test_site_get_200(api, site_id):
     assert response['modified_at'].endswith('+00:00')
 
 
-
 def test_site_get_404(api, missing_id):
     r = api.get(f'/sites/{missing_id}',
                 base_url=BASE_URL)
