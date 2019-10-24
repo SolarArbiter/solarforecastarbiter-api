@@ -4,12 +4,14 @@ from sfa_api.conftest import BASE_URL
 def test_get_user(api, user_id):
     get_user = api.get(f'/users/{user_id}', BASE_URL)
     assert get_user.status_code == 200
-    user_fields = get_user.json.keys()
+    user_fields = get_user.get_json()
     assert 'user_id' in user_fields
     assert 'organization' in user_fields
     assert 'created_at' in user_fields
     assert 'modified_at' in user_fields
     assert 'roles' in user_fields
+    assert user_fields['created_at'].endswith('+00:00')
+    assert user_fields['modified_at'].endswith('+00:00')
 
 
 def test_get_user_dne(api, missing_id):

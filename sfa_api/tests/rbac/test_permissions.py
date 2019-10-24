@@ -65,6 +65,9 @@ def test_get_permission(api, new_perm):
     perm_id = new_perm()
     get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
     assert get_perm.status_code == 200
+    response = get_perm.get_json()
+    assert response['created_at'].endswith('+00:00')
+    assert response['modified_at'].endswith('+00:00')
 
 
 def test_get_permission_no_perms(api, remove_perms, new_perm):
