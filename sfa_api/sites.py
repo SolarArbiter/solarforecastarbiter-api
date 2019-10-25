@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort, make_response, url_for
+from flask import Blueprint, jsonify, request, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 

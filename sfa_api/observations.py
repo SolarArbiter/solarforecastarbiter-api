@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 from solarforecastarbiter.io.utils import HiddenToken

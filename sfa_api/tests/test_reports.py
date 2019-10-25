@@ -2,7 +2,6 @@ import pytest
 
 
 from copy import deepcopy
-from flask import _request_ctx_stack
 import json
 from sfa_api.conftest import BASE_URL, REPORT_POST_JSON
 
