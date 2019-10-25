@@ -36,12 +36,16 @@ def dictcursor(connection):
 
 def uuid_to_bin(uuid):
     """Copy mysql UUID_TO_BIN with time swap of hi and low"""
+    if uuid is None:
+        return None
     return uuid.bytes[6:8] + uuid.bytes[4:6] + uuid.bytes[:4] + uuid.bytes[8:]
 
 
 def bin_to_uuid(binid):
     """Copy mysql BIN_TO_UUID"""
-    return UUID(bytes=binid[4:8] + binid[2:4] + binid[:2] + binid[8:])
+    if binid is None:
+        return None
+    return str(UUID(bytes=binid[4:8] + binid[2:4] + binid[:2] + binid[8:]))
 
 
 def newuuid():
@@ -183,13 +187,27 @@ def new_site(cursor, new_organization):
 
 
 @pytest.fixture()
-def new_forecast(cursor, new_site):
-    def fcn(site=None, org=None):
-        if site is None:
+def new_forecast(cursor, new_site, new_aggregate):
+    def fcn(site=None, org=None, aggregate=None):
+        if aggregate is not None and site is None:
+            agg = new_aggregate(org=org)
+            siteid = None
+            orgid = agg['organization_id']
+            aggid = agg['id']
+        elif site is None:
             site = new_site(org)
+            siteid = site['id']
+            orgid = site['organization_id']
+            aggid = None
+        else:
+            siteid = site['id']
+            aggid = None
+            orgid = site['organization_id']
+
         out = OrderedDict(
-            id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}',
+            id=newuuid(), organization_id=orgid,
+            site_id=siteid, aggregate_id=aggid,
+            name=f'forecast{str(uuid1())[:10]}',
             variable='power', issue_time_of_day='12:00',
             lead_time_to_start=60, interval_label='beginning',
             interval_length=60, run_length=1440,
@@ -205,12 +223,26 @@ def new_forecast(cursor, new_site):
 
 @pytest.fixture()
 def new_cdf_forecast(cursor, new_site):
-    def fcn(site=None, org=None):
-        if site is None:
+    def fcn(site=None, org=None, aggregate=None):
+        if aggregate is not None and site is None:
+            agg = new_aggregate(org=org)
+            siteid = None
+            orgid = agg['organization_id']
+            aggid = agg['id']
+        elif site is None:
             site = new_site(org)
+            siteid = site['id']
+            orgid = site['organization_id']
+            aggid = None
+        else:
+            siteid = site['id']
+            aggid = None
+            orgid = site['organization_id']
+
         out = OrderedDict(
-            id=newuuid(), organization_id=site['organization_id'],
-            site_id=site['id'], name=f'forecast{str(uuid1())[:10]}',
+            id=newuuid(), organization_id=orgid,
+            site_id=siteid, aggregate_id=aggid,
+            name=f'forecast{str(uuid1())[:10]}',
             variable='power', issue_time_of_day='12:00',
             lead_time_to_start=60, interval_label='beginning',
             interval_length=60, run_length=1440,
@@ -340,6 +372,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     obs2 = new_observation(site=site1)
     agg0 = new_aggregate(obs_list=[obs0, obs1])
     agg1 = new_aggregate(obs_list=[obs0, obs1, obs2], org=org1)
+    forecasts3 = new_forecast(aggregate=agg0)
     cdf0 = new_cdf_forecast(site=site0)
     cdf1 = new_cdf_forecast(site=site1)
     rep0 = new_report(org0, obs0, forecasts0, [cdf0])
@@ -362,7 +395,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     return ((org0, org1), (user0, user1), (role0, role1, role2),
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
-            forecasts0 + forecasts1 + [forecasts2],
+            forecasts0 + forecasts1 + [forecasts2, forecasts3],
             (obs0, obs1, obs2), (cdf0, cdf1), (rep0, rep1),
             (agg0, agg1))
 

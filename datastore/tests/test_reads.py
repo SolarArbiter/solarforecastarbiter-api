@@ -141,7 +141,7 @@ def test_read_observation(dictcursor, insertuser, allow_read_observations):
     observation['observation_id'] = observation['strid']
     del observation['strid']
     del observation['id']
-    observation['site_id'] = str(bin_to_uuid(observation['site_id']))
+    observation['site_id'] = bin_to_uuid(observation['site_id'])
     observation['provider'] = insertuser[4]['name']
     del observation['organization_id']
     del res['created_at']
@@ -165,7 +165,8 @@ def test_read_forecast(dictcursor, insertuser, allow_read_forecasts):
     forecast['forecast_id'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
     forecast['provider'] = insertuser[4]['name']
     del forecast['organization_id']
     del res['created_at']
@@ -316,7 +317,8 @@ def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
     forecast['forecast_id'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
     forecast['provider'] = insertuser[4]['name']
     forecast['constant_values'] = str(forecast['constant_values']).replace(
         '\'', '"')

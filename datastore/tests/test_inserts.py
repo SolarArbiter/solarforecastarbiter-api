@@ -137,17 +137,25 @@ def obs_callargs(insertuser):
     return callargs
 
 
-@pytest.fixture()
-def fx_callargs(insertuser):
+@pytest.fixture(params=[1, 0])
+def fx_callargs(insertuser, request):
     auth0id = insertuser[0]['auth0_id']
     site_id = insertuser[1]['strid']
+    agg_id = insertuser[8]['strid']
+    if request.param:
+        sa_id = site_id
+        ref_site = True
+    else:
+        sa_id = agg_id
+        ref_site = False
     callargs = OrderedDict(
-        auth0id=auth0id, strid=str(uuid.uuid1()), site_id=site_id,
+        auth0id=auth0id, strid=str(uuid.uuid1()), site_or_agg_id=sa_id,
         name='The site', variable='power',
         issue_time_of_day='12:00',
         lead_time_to_start=60, interval_label='beginning',
         interval_length=5, run_length=60,
-        interval_value_type='interval_mean', extra_parameters='')
+        interval_value_type='interval_mean', extra_parameters='',
+        references_site=ref_site)
     return callargs
 
 
@@ -179,7 +187,9 @@ def agg_callargs(insertuser, new_aggregate, valueset):
 @pytest.fixture()
 def cdf_fx_callargs(fx_callargs):
     cdfargs = fx_callargs.copy()
+    rf = cdfargs.pop('references_site')
     cdfargs['axis'] = 'x'
+    cdfargs['references_site'] = rf
     return cdfargs
 
 
@@ -233,7 +243,7 @@ def test_store_observation_denied_cant_read_sites(dictcursor, obs_callargs,
 
 
 def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
-                        allow_create):
+                        allow_read_aggregate, allow_create):
     dictcursor.callproc('store_forecast', list(fx_callargs.values()))
     dictcursor.execute(
         'SELECT * FROM arbiter_data.forecasts WHERE id = UUID_TO_BIN(%s, 1)',
@@ -245,8 +255,8 @@ def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
         assert res[key] == fx_callargs[key]
 
 
-def test_store_forecast_denied_cant_create(dictcursor, fx_callargs,
-                                           allow_read_sites):
+def test_store_forecast_denied_cant_create(
+        dictcursor, fx_callargs, allow_read_aggregate, allow_read_sites):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_forecast', list(fx_callargs.values()))
     assert e.value.args[0] == 1142
@@ -414,7 +424,7 @@ def test_store_forecast_values_cant_write_cant_delete(
 
 
 def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
-                            allow_create):
+                            allow_read_aggregate, allow_create):
     dictcursor.callproc('store_cdf_forecasts_group',
                         list(cdf_fx_callargs.values()))
     dictcursor.execute(
@@ -428,8 +438,8 @@ def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
         assert res[key] == cdf_fx_callargs[key]
 
 
-def test_store_cdf_forecast_denied_cant_create(dictcursor, cdf_fx_callargs,
-                                               allow_read_sites):
+def test_store_cdf_forecast_denied_cant_create(
+        dictcursor, cdf_fx_callargs, allow_read_aggregate, allow_read_sites):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_group',
                             list(cdf_fx_callargs.values()))
@@ -448,6 +458,7 @@ def test_store_cdf_forecast_denied_cant_read_sites(dictcursor, cdf_fx_callargs,
 
 def test_store_cdf_forecast_single(dictcursor, cdf_single_callargs,
                                    cdf_fx_callargs, allow_read_sites,
+                                   allow_read_aggregate,
                                    allow_create, allow_update_cdf):
     # must first create parent...
     dictcursor.callproc('store_cdf_forecasts_group',
@@ -466,7 +477,8 @@ def test_store_cdf_forecast_single(dictcursor, cdf_single_callargs,
 
 
 def test_store_cdf_forecast_single_denied_cant_create(
-        dictcursor, cdf_single_callargs, allow_read_sites, allow_update_cdf):
+        dictcursor, cdf_single_callargs, allow_read_sites, allow_update_cdf,
+        allow_read_aggregate):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_single',
                             list(cdf_single_callargs.values()))
@@ -484,7 +496,8 @@ def test_store_cdf_forecast_single_denied_cant_read_sites(
 
 
 def test_store_cdf_forecast_single_denied_cant_update_group(
-        dictcursor, cdf_single_callargs, allow_create, allow_read_sites):
+        dictcursor, cdf_single_callargs, allow_create, allow_read_sites,
+        allow_read_aggregate):
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc('store_cdf_forecasts_single',
                             list(cdf_single_callargs.values()))

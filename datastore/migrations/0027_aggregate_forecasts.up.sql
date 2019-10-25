@@ -56,7 +56,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE canreadsite BOOLEAN DEFAULT FALSE;
     SET allowed = (SELECT user_can_create(auth0id, 'forecasts'));
-    SET binsiteaggid = (SELECT UUID_TO_BIN(site_or_aggid, 1));
+    SET binsiteaggid = UUID_TO_BIN(site_or_agg_id, 1);
     IF allowed THEN
        SET canreadsite = (SELECT can_user_perform_action(auth0id, binsiteaggid, 'read'));
        IF canreadsite THEN
