@@ -9,7 +9,7 @@ from sfa_api import spec
 from sfa_api.utils.auth import current_access_token
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.queuing import get_queue
-from sfa_api.utils.errors import BadAPIRequest, NotFoundException
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_observation_values,
@@ -72,6 +72,8 @@ class AllObservationsView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -80,8 +82,6 @@ class AllObservationsView(MethodView):
             raise BadAPIRequest(err.messages)
         storage = get_storage()
         observation_id = storage.store_observation(observation)
-        if observation_id is None:
-            raise NotFoundException(error='Site does not exist')
         response = make_response(observation_id, 201)
         response.headers['Location'] = url_for('observations.single',
                                                observation_id=observation_id)

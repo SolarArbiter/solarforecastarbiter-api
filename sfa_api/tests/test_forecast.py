@@ -68,6 +68,22 @@ def test_forecast_post_bad_request(api, payload, message):
     assert res.get_data(as_text=True) == f'{{"errors":{message}}}\n'
 
 
+def test_forecast_post_invalid_site(api, missing_id):
+    payload = copy_update(VALID_FORECAST_JSON, 'site_id', missing_id)
+    res = api.post('/forecasts/single/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
+
+
+def test_forecast_post_invalid_aggregate(api, missing_id):
+    payload = copy_update(VALID_FORECAST_AGG_JSON, 'aggregate_id', missing_id)
+    res = api.post('/forecasts/single/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
+
+
 def test_get_forecast_links(api, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}',
                 base_url=BASE_URL)

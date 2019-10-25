@@ -41,6 +41,14 @@ def test_observation_post_bad_request(api, payload, message):
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
 
 
+def test_observation_post_bad_site(api, missing_id):
+    payload = copy_update(VALID_OBS_JSON, 'site_id', missing_id)
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 404
+
+
 def test_get_observation_links(api, observation_id):
     r = api.get(f'/observations/{observation_id}',
                 base_url=BASE_URL)

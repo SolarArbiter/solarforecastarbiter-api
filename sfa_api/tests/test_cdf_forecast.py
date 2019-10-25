@@ -73,6 +73,24 @@ def test_cdf_forecast_group_post_bad_request(api, payload, message):
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
 
 
+def test_cdf_forecast_group_post_invalid_site(api, missing_id):
+    payload = copy_update(VALID_CDF_FORECAST_JSON,
+                          'site_id', missing_id)
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
+
+
+def test_cdf_forecast_group_post_invalid_agg(api, missing_id):
+    payload = copy_update(VALID_CDF_FORECAST_AGG_JSON,
+                          'aggregate_id', missing_id)
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
+
+
 def test_get_cdf_forecast_group_404(api, missing_id):
     r = api.get(f'/forecasts/cdf/{missing_id}',
                 base_url=BASE_URL)
