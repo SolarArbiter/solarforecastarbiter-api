@@ -249,6 +249,12 @@ def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
         'SELECT * FROM arbiter_data.forecasts WHERE id = UUID_TO_BIN(%s, 1)',
         (fx_callargs['strid'],))
     res = dictcursor.fetchall()[0]
+    if fx_callargs['references_site']:
+        assert bin_to_uuid(res['site_id']) == fx_callargs['site_or_agg_id']
+        assert res['aggregate_id'] is None
+    else:
+        assert bin_to_uuid(res['aggregate_id']) == fx_callargs['site_or_agg_id']
+        assert res['site_id'] is None
     for key in ('variable', 'name', 'interval_label', 'interval_length',
                 'interval_value_type', 'issue_time_of_day', 'run_length',
                 'lead_time_to_start', 'extra_parameters'):
@@ -432,6 +438,13 @@ def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
         'id = UUID_TO_BIN(%s, 1)',
         (cdf_fx_callargs['strid'],))
     res = dictcursor.fetchall()[0]
+    if cdf_fx_callargs['references_site']:
+        assert bin_to_uuid(res['site_id']) == cdf_fx_callargs['site_or_agg_id']
+        assert res['aggregate_id'] is None
+    else:
+        assert bin_to_uuid(res['aggregate_id']) == cdf_fx_callargs[
+            'site_or_agg_id']
+        assert res['site_id'] is None
     for key in ('variable', 'name', 'interval_label', 'interval_length',
                 'interval_value_type', 'issue_time_of_day', 'run_length',
                 'lead_time_to_start', 'extra_parameters', 'axis'):
