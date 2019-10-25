@@ -112,8 +112,6 @@ class ObservationView(MethodView):
         """
         storage = get_storage()
         observation = storage.read_observation(observation_id)
-        if observation is None:
-            abort(404)
         return jsonify(ObservationLinksSchema().dump(observation))
 
     def delete(self, observation_id, *args):
@@ -173,8 +171,6 @@ class ObservationValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_observation_values(observation_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -256,8 +252,6 @@ class ObservationValuesView(MethodView):
                               interval_length, previous_time)
         stored = storage.store_observation_values(
             observation_id, observation_df)
-        if stored is None:
-            abort(404)
         if run_validation:
             q = get_queue()
             q.enqueue(
@@ -293,8 +287,6 @@ class ObservationMetadataView(MethodView):
         """
         storage = get_storage()
         observation = storage.read_observation(observation_id)
-        if observation is None:
-            abort(404)
         return jsonify(ObservationSchema().dump(observation))
 
 

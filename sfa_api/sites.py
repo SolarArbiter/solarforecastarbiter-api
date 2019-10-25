@@ -99,8 +99,6 @@ class SiteView(MethodView):
         """
         storage = get_storage()
         site = storage.read_site(site_id)
-        if site is None:
-            abort(404)
         return jsonify(SiteResponseSchema().dump(site))
 
     def delete(self, site_id, *args):
@@ -153,8 +151,6 @@ class SiteObservations(MethodView):
         """
         storage = get_storage()
         observations = storage.list_observations(site_id)
-        if observations is None:
-            abort(404)
         return jsonify(ObservationSchema(many=True).dump(observations))
 
 
@@ -186,8 +182,6 @@ class SiteForecasts(MethodView):
         """
         storage = get_storage()
         forecasts = storage.list_forecasts(site_id)
-        if forecasts is None:
-            abort(404)
         return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 
@@ -219,8 +213,6 @@ class SiteCDFForecastGroups(MethodView):
         """
         storage = get_storage()
         forecasts = storage.list_cdf_forecast_groups(site_id)
-        if forecasts is None:
-            abort(404)
         return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
 
 

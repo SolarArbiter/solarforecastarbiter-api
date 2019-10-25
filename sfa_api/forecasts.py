@@ -210,13 +210,10 @@ class ForecastValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            values['timestamp'] = values.index
-            dict_values = values.to_dict(orient='records')
+            dict_values = values.reset_index().to_dict(orient='records')
             data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
                                                 "values": dict_values})
             return jsonify(data)
@@ -307,8 +304,6 @@ class ForecastMetadataView(MethodView):
         """
         storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
-        if forecast is None:
-            abort(404)
         return jsonify(ForecastSchema().dump(forecast))
 
 
@@ -412,8 +407,6 @@ class CDFForecastGroupMetadataView(MethodView):
         """
         storage = get_storage()
         cdf_forecast_group = storage.read_cdf_forecast_group(forecast_id)
-        if cdf_forecast_group is None:
-            abort(404)
         return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
 
     def delete(self, forecast_id, *args):
@@ -465,8 +458,6 @@ class CDFForecastMetadata(MethodView):
         """
         storage = get_storage()
         cdf_forecast = storage.read_cdf_forecast(forecast_id)
-        if cdf_forecast is None:
-            abort(404)
         return jsonify(CDFForecastSchema().dump(cdf_forecast))
 
 
@@ -498,8 +489,6 @@ class CDFForecastValues(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_cdf_forecast_values(forecast_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':

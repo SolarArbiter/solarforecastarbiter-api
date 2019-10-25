@@ -232,21 +232,6 @@ def auth_token():
 
 
 @pytest.fixture()
-def demo_app():
-    app = create_app(config_name='TestingConfig')
-    app.config['SFA_API_STATIC_DATA'] = True
-    return app
-
-
-@pytest.fixture()
-def demo_api(demo_app, mocker):
-    verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
-    verify.return_value = True
-    api = demo_app.test_client()
-    return api
-
-
-@pytest.fixture()
 def user(sql_app):
     ctx = sql_app.test_request_context()
     ctx.user = 'auth0|5be343df7025406237820b85'
@@ -264,15 +249,11 @@ def invalid_user(sql_app):
     ctx.pop()
 
 
-@pytest.fixture(params=[0, 1])
-def app(request, demo_app, mocker):
-    if request.param:
-        yield demo_app
-    else:
-        # do this to avoid skipping app when no mysql
-        with _make_sql_app() as sql_app:
-            with _make_nocommit_cursor(mocker):
-                yield sql_app
+@pytest.fixture()
+def app(mocker):
+    with _make_sql_app() as sql_app:
+        with _make_nocommit_cursor(mocker):
+            yield sql_app
 
 
 @pytest.fixture()
