@@ -442,13 +442,20 @@ def store_forecast(forecast):
         If the user can create Forecasts or the user can't read the site
     """
     forecast_id = generate_uuid()
+    if forecast.get('site_id') is not None:
+        site_or_agg_id = str(forecast['site_id'])
+        ref_site = True
+    else:
+        site_or_agg_id = str(forecast['aggregate_id'])
+        ref_site = False
     # the procedure expects arguments in a certain order
     _call_procedure(
-        'store_forecast', forecast_id, str(forecast['site_id']),
+        'store_forecast', forecast_id, site_or_agg_id,
         forecast['name'], forecast['variable'], forecast['issue_time_of_day'],
         forecast['lead_time_to_start'], forecast['interval_label'],
         forecast['interval_length'], forecast['run_length'],
-        forecast['interval_value_type'], forecast['extra_parameters'])
+        forecast['interval_value_type'], forecast['extra_parameters'],
+        ref_site)
     return forecast_id
 
 
@@ -753,10 +760,17 @@ def store_cdf_forecast_group(cdf_forecast_group):
 
     """
     forecast_id = generate_uuid()
+    if cdf_forecast_group.get('site_id') is not None:
+        site_or_agg_id = str(cdf_forecast_group['site_id'])
+        ref_site = True
+    else:
+        site_or_agg_id = str(cdf_forecast_group['aggregate_id'])
+        ref_site = False
+
     # the procedure expects arguments in a certain order
     _call_procedure('store_cdf_forecasts_group',
                     forecast_id,
-                    str(cdf_forecast_group['site_id']),
+                    site_or_agg_id,
                     cdf_forecast_group['name'],
                     cdf_forecast_group['variable'],
                     cdf_forecast_group['issue_time_of_day'],
@@ -766,7 +780,8 @@ def store_cdf_forecast_group(cdf_forecast_group):
                     cdf_forecast_group['run_length'],
                     cdf_forecast_group['interval_value_type'],
                     cdf_forecast_group['extra_parameters'],
-                    cdf_forecast_group['axis'])
+                    cdf_forecast_group['axis'],
+                    ref_site)
     for cv in cdf_forecast_group['constant_values']:
         cdfsingle = {'parent': forecast_id,
                      'constant_value': cv}

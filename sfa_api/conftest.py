@@ -64,6 +64,20 @@ VALID_FORECAST_JSON = {
 }
 
 
+VALID_FORECAST_AGG_JSON = {
+    "extra_parameters": '{"instrument": "pyranometer"}',
+    "name": "test forecast",
+    "aggregate_id": '458ffc27-df0b-11e9-b622-62adb5fd6af0',
+    "variable": "ac_power",
+    "interval_label": "beginning",
+    "issue_time_of_day": "12:00",
+    "lead_time_to_start": 60,
+    "interval_length": 5,
+    "run_length": 1440,
+    "interval_value_type": "interval_mean",
+}
+
+
 VALID_OBS_JSON = {
     "extra_parameters": '{"instrument": "Ascension Technology Rotating Shadowband Pyranometer"}', # NOQA
     "name": "Weather Station, ghi",
@@ -81,6 +95,15 @@ VALID_CDF_FORECAST_JSON.update({
     "axis": 'x',
     "constant_values": [5.0, 20.0, 50.0, 80.0, 95.0]
 })
+
+
+VALID_CDF_FORECAST_AGG_JSON = VALID_FORECAST_AGG_JSON.copy()
+VALID_CDF_FORECAST_AGG_JSON.update({
+    "name": 'test cdf forecast',
+    "axis": 'x',
+    "constant_values": [10.0, 20.0, 50.0, 80.0, 100.0]
+})
+
 
 VALID_OBS_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',

@@ -396,8 +396,16 @@ class ForecastPostSchema(ma.Schema):
         ordered = True
     site_id = ma.UUID(
         name="Site ID",
-        description="UUID of the associated site",
-        required=True)
+        description=(
+            "UUID of the associated site. Either site_id or aggregate_id "
+            "must be provided"),
+        required=False)
+    aggregate_id = ma.UUID(
+        name="Aggregate ID",
+        description=(
+            "UUID of the associated aggregate. Either site_id or aggregate_id "
+            "must be provided"),
+        required=False)
     name = ma.String(
         title='Name',
         description="Human friendly name for forecast",
@@ -433,6 +441,22 @@ class ForecastPostSchema(ma.Schema):
         required=True
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
+
+    @validates_schema
+    def validate_id(self, data, **kwargs):
+        if (
+                data.get('site_id') is not None and
+                data.get('aggregate_id') is not None
+        ):
+            raise ValidationError(
+                "Forecasts can only be associated with one site or one "
+                "aggregate, so only site_id or aggregate_id may be provided")
+        elif (
+                data.get('site_id') is None and
+                data.get('aggregate_id') is None
+        ):
+            raise ValidationError(
+                "One of site_id or aggregate_id must be provided")
 
 
 @spec.define_schema('ForecastMetadata')
