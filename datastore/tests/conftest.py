@@ -373,6 +373,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     forecasts3 = new_forecast(aggregate=agg0)
     cdf0 = new_cdf_forecast(site=site0)
     cdf1 = new_cdf_forecast(site=site1)
+    cdf2 = new_cdf_forecast(aggregate=agg0)
     rep0 = new_report(org0, obs0, forecasts0, [cdf0])
     rep1 = new_report(org1, obs2, forecasts1, [cdf1])
     cursor.executemany(
@@ -394,7 +395,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
             forecasts0 + forecasts1 + [forecasts2, forecasts3],
-            (obs0, obs1, obs2), (cdf0, cdf1), (rep0, rep1),
+            (obs0, obs1, obs2), (cdf0, cdf1, cdf2), (rep0, rep1),
             (agg0, agg1))
 
 
