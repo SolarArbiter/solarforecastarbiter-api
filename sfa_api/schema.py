@@ -399,13 +399,15 @@ class ForecastPostSchema(ma.Schema):
         description=(
             "UUID of the associated site. Either site_id or aggregate_id "
             "must be provided"),
-        required=False)
+        required=False,
+        allow_none=True)
     aggregate_id = ma.UUID(
         name="Aggregate ID",
         description=(
             "UUID of the associated aggregate. Either site_id or aggregate_id "
             "must be provided"),
-        required=False)
+        required=False,
+        allow_none=True)
     name = ma.String(
         title='Name',
         description="Human friendly name for forecast",

@@ -36,6 +36,8 @@ empty_json_response = '{"interval_label":["Missing data for required field."],"i
 @pytest.mark.parametrize('payload,status_code', [
     (VALID_FORECAST_JSON, 201),
     (VALID_FORECAST_AGG_JSON, 201),
+    (copy_update(VALID_FORECAST_JSON, 'aggregate_id', None), 201),
+    (copy_update(VALID_FORECAST_AGG_JSON, 'site_id', None), 201),
 ])
 def test_forecast_post_success(api, payload, status_code):
     res = api.post('/forecasts/single/',
@@ -57,10 +59,6 @@ def test_forecast_post_success(api, payload, status_code):
     (INVALID_NAME, '{"name":["Invalid characters in string."]}'),
     (INVALID_BOTH_IDS, '{"_schema":["Forecasts can only be associated with one site or one aggregate, so only site_id or aggregate_id may be provided"]}'),  # NOQA
     (INVALID_NO_IDS, '{"_schema":["One of site_id or aggregate_id must be provided"]}'),  # NOQA
-    (copy_update(VALID_FORECAST_JSON, 'aggregate_id', None),
-     "{\"aggregate_id\":[\"Field may not be null.\"]}"),
-    (copy_update(VALID_FORECAST_AGG_JSON, 'site_id', None),
-     "{\"site_id\":[\"Field may not be null.\"]}"),
 ])
 def test_forecast_post_bad_request(api, payload, message):
     res = api.post('/forecasts/single/',
