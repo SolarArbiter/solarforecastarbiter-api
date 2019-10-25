@@ -37,12 +37,14 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             'INSERT INTO role_permission_mapping (role_id, permission_id)'
             ' VALUES (%s, %s)', [(role['id'], perm['id']) for perm in perms])
         sites = [new_site(org=org) for _ in range(2)]
-        fx = [new_forecast(site=site) for site in sites for _ in range(2)]
         obs = [new_observation(site=site) for site in sites for _ in range(2)]
-        cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
+        aggregates = [new_aggregate(obs_list=obs[i:i + 2]) for i in range(2)]
+        fx = [new_forecast(site=sites[0]),
+              new_forecast(aggregate=aggregates[0])]
+        cdf = [new_cdf_forecast(site=sites[1]),
+               new_cdf_forecast(aggregate=aggregates[1])]
         reports = [new_report(org, obs[i], [fx[i]], [cdf[i]])
                    for i in range(2)]
-        aggregates = [new_aggregate(obs_list=obs[i:i + 2]) for i in range(2)]
         return user, role, perms, sites, fx, obs, cdf, reports, org, aggregates
     return make
 
@@ -122,6 +124,10 @@ def test_list_forecasts(dictcursor, twosets):
     fxs = twosets[4]
     dictcursor.callproc('list_forecasts', (authid,))
     res = dictcursor.fetchall()
+    assert res[0]['site_id'] is not None
+    assert res[0]['aggregate_id'] is None
+    assert res[1]['site_id'] is None
+    assert res[1]['aggregate_id'] is not None
     assert ([str(bin_to_uuid(fx['id'])) for fx in fxs] ==
             [r['forecast_id'] for r in res])
     assert (
@@ -148,6 +154,10 @@ def test_list_cdf_forecast_groups(dictcursor, twosets):
     cdf = twosets[6]
     dictcursor.callproc('list_cdf_forecasts_groups', (authid,))
     res = dictcursor.fetchall()
+    assert res[0]['site_id'] is not None
+    assert res[0]['aggregate_id'] is None
+    assert res[1]['site_id'] is None
+    assert res[1]['aggregate_id'] is not None
     assert ([str(bin_to_uuid(fx['id'])) for fx in cdf] ==
             [r['forecast_id'] for r in res])
     assert (

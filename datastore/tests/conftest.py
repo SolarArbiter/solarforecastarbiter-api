@@ -187,13 +187,12 @@ def new_site(cursor, new_organization):
 
 
 @pytest.fixture()
-def new_forecast(cursor, new_site, new_aggregate):
+def new_forecast(cursor, new_site):
     def fcn(site=None, org=None, aggregate=None):
         if aggregate is not None and site is None:
-            agg = new_aggregate(org=org)
             siteid = None
-            orgid = agg['organization_id']
-            aggid = agg['id']
+            orgid = aggregate['organization_id']
+            aggid = aggregate['id']
         elif site is None:
             site = new_site(org)
             siteid = site['id']
@@ -225,10 +224,9 @@ def new_forecast(cursor, new_site, new_aggregate):
 def new_cdf_forecast(cursor, new_site):
     def fcn(site=None, org=None, aggregate=None):
         if aggregate is not None and site is None:
-            agg = new_aggregate(org=org)
             siteid = None
-            orgid = agg['organization_id']
-            aggid = agg['id']
+            orgid = aggregate['organization_id']
+            aggid = aggregate['id']
         elif site is None:
             site = new_site(org)
             siteid = site['id']
