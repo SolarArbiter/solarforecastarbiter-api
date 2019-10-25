@@ -140,6 +140,50 @@ def test_delete_site(cursor, site_obj, allow_delete_site):
     assert cursor.fetchone()[0] == 0
 
 
+def test_delete_site_with_forecast(cursor, site_obj, allow_delete_site,
+                                   new_forecast):
+    auth0id, siteid, site = site_obj
+    fx = new_forecast(site=site)
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.forecasts WHERE site_id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_site', (auth0id, siteid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] == 0
+    cursor.execute('SELECT site_id FROM arbiter_data.forecasts where id = %s',
+                   fx['id'])
+    assert cursor.fetchone()[0] is None
+
+
+def test_delete_site_with_cdf_forecast(cursor, site_obj, allow_delete_site,
+                                       new_cdf_forecast):
+    auth0id, siteid, site = site_obj
+    fx = new_cdf_forecast(site=site)
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_groups WHERE site_id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_site', (auth0id, siteid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] == 0
+    cursor.execute('SELECT site_id FROM arbiter_data.cdf_forecasts_groups where id = %s',  # NOQA
+                   fx['id'])
+    assert cursor.fetchone()[0] is None
+
+
 def test_delete_site_denied(cursor, site_obj):
     auth0id, siteid, *_ = site_obj
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -200,6 +244,50 @@ def test_delete_aggregate(cursor, agg_obj, allow_delete_aggregate):
         'UUID_TO_BIN(%s, 1)',
         aggid)
     assert cursor.fetchone()[0] == 0
+
+
+def test_delete_aggregate_with_forecast(
+        cursor, agg_obj, allow_delete_aggregate, new_forecast):
+    auth0id, aggregateid, aggregate = agg_obj
+    fx = new_forecast(aggregate=aggregate)
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.forecasts WHERE aggregate_id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_aggregate', (auth0id, aggregateid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] == 0
+    cursor.execute('SELECT aggregate_id FROM arbiter_data.forecasts where id = %s',
+                   fx['id'])
+    assert cursor.fetchone()[0] is None
+
+
+def test_delete_aggregate_with_cdf_forecast(
+        cursor, agg_obj, allow_delete_aggregate, new_cdf_forecast):
+    auth0id, aggregateid, aggregate = agg_obj
+    fx = new_cdf_forecast(aggregate=aggregate)
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_groups WHERE aggregate_id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] > 0
+    cursor.callproc('delete_aggregate', (auth0id, aggregateid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        aggregateid)
+    assert cursor.fetchone()[0] == 0
+    cursor.execute('SELECT aggregate_id FROM arbiter_data.cdf_forecasts_groups where id = %s',  # NOQA
+                   fx['id'])
+    assert cursor.fetchone()[0] is None
 
 
 def test_delete_aggregate_fail(cursor, agg_obj):
