@@ -6,8 +6,6 @@ import pytest
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
                               VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
                               BASE_URL)
-from sfa_api.demo.values import (static_observation_values,
-                                 static_forecast_values)
 
 
 invalid_json = {'invalid': 'garbage'}
@@ -114,7 +112,8 @@ def test_create_site_unauthorized(sql_api, auth_header):
     pass
 
 
-def test_create_delete_observation(sql_api, auth_header, mocked_queuing):
+def test_create_delete_observation(sql_api, auth_header, mocked_queuing,
+                                   obs_vals):
     post = sql_api.post('/observations/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -136,10 +135,9 @@ def test_create_delete_observation(sql_api, auth_header, mocked_queuing):
     assert new_obs in get_site_obs(sql_api, auth_header, new_obs['site_id'])
 
     # Post json values to the observation
-    obs_values = static_observation_values()
-    obs_values['quality_flag'] = 0
-    obs_values['timestamp'] = obs_values.index
-    json_values = obs_values.to_dict(orient='records')
+    obs_vals['quality_flag'] = 0
+    obs_vals['timestamp'] = obs_vals.index
+    json_values = obs_vals.to_dict(orient='records')
 
     post_values = sql_api.post(f'/observations/{new_obs_id}/values',
                                headers=auth_header,
@@ -153,9 +151,8 @@ def test_create_delete_observation(sql_api, auth_header, mocked_queuing):
     assert get_values.status_code == 200
 
     # post csv_values to the observation
-    obs_values = static_observation_values()
-    obs_values['quality_flag'] = 0
-    csv_values = obs_values.to_csv()
+    obs_vals['quality_flag'] = 0
+    csv_values = obs_vals.to_csv()
     post_values = sql_api.post(f'/observations/{new_obs_id}/values',
                                base_url=BASE_URL,
                                headers={'Content-Type': 'text/csv',
@@ -204,7 +201,7 @@ def test_create_observation_site_dne(sql_api, auth_header, missing_id):
     assert observations == get_obs_list(sql_api, auth_header)
 
 
-def test_create_delete_forecast(sql_api, auth_header):
+def test_create_delete_forecast(sql_api, auth_header, fx_vals):
     post = sql_api.post('/forecasts/single/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -226,9 +223,8 @@ def test_create_delete_forecast(sql_api, auth_header):
     assert new_fx in get_site_fx(sql_api, auth_header, new_fx['site_id'])
 
     # Post json values to the forecast
-    fx_values = static_forecast_values()
-    fx_values['timestamp'] = fx_values.index
-    json_values = fx_values.to_dict(orient='records')
+    fx_vals['timestamp'] = fx_vals.index
+    json_values = fx_vals.to_dict(orient='records')
 
     post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
                                headers=auth_header,
@@ -244,8 +240,7 @@ def test_create_delete_forecast(sql_api, auth_header):
     assert get_values.status_code == 200
 
     # post csv_values to the forecasts
-    fx_values = static_forecast_values()
-    csv_values = fx_values.to_csv()
+    csv_values = fx_vals.to_csv()
 
     post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
                                base_url=BASE_URL,
@@ -299,7 +294,7 @@ def test_post_forecast_site_dne(sql_api, auth_header, missing_id):
     assert forecasts == get_fx_list(sql_api, auth_header)
 
 
-def test_create_delete_cdf_forecast(sql_api, auth_header):
+def test_create_delete_cdf_forecast(sql_api, auth_header, fx_vals):
     post = sql_api.post('/forecasts/cdf/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -332,9 +327,8 @@ def test_create_delete_cdf_forecast(sql_api, auth_header):
         assert get_cdf_const_values.status_code == 200
 
         # Post values to the forecast
-        fx_values = static_forecast_values()
-        fx_values['timestamp'] = fx_values.index
-        json_values = fx_values.to_dict(orient='records')
+        fx_vals['timestamp'] = fx_vals.index
+        json_values = fx_vals.to_dict(orient='records')
 
         post_values = sql_api.post(value['_links']['values'],
                                    headers=auth_header,

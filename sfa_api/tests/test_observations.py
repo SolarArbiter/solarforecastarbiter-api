@@ -129,8 +129,6 @@ def test_post_json_storage_call(api, observation_id, mocker,
     storage = mocker.MagicMock()
     mocker.patch('sfa_api.utils.storage_interface.store_observation_values',
                  new=storage)
-    mocker.patch('sfa_api.demo.store_observation_values',
-                 new=storage)
     storage.return_value = observation_id
     res = api.post(f'/observations/{observation_id}/values',
                    base_url=BASE_URL,
