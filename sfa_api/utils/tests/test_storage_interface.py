@@ -15,6 +15,7 @@ from sfa_api.demo.observations import static_observations as demo_observations
 from sfa_api.demo.forecasts import static_forecasts as demo_forecasts
 from sfa_api.demo.cdf_forecasts import static_cdf_forecasts as demo_single_cdf
 from sfa_api.demo.cdf_forecasts import static_cdf_forecast_groups as demo_group_cdf  # NOQA
+from sfa_api.demo.aggregates import static_aggregates as demo_aggregates
 from sfa_api.demo import values
 from sfa_api.utils import storage_interface
 
@@ -782,7 +783,7 @@ def fake_user(sql_app):
 
 
 @pytest.mark.parametrize('run', range(5))
-def test_create_new_user(sql_app, fake_user, run):
+def test_create_new_user(sql_app, fake_user, run, nocommit_cursor):
     storage_interface.create_new_user()
     new_user_roles = storage_interface.list_roles()
     new_user = storage_interface.get_current_user_info()
@@ -857,3 +858,268 @@ def test_read_metadata_for_cdf_forecast_values_start(
         cdf_forecast_id]['parent']]['interval_length']
     assert isinstance(pt, pd.Timestamp)
     assert pt.tzinfo is not None
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_read_aggregate(sql_app, user, aggregate_id):
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert aggregate == demo_aggregates[aggregate_id]
+
+
+def test_read_aggregate_invalid_aggregate(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate(str(uuid.uuid1()))
+
+
+def test_read_aggregate_not_uuid(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError) as err:
+        storage_interface.read_aggregate('f8dd49fa-23e2-48a0-862b-ba0af6de')
+    assert "Incorrect string value" in str(err.value)
+
+
+def test_read_aggregate_invalid_user(sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate(list(demo_aggregates.keys())[0])
+
+
+@pytest.mark.parametrize('aggregate', demo_aggregates.values())
+def test_store_aggregate(sql_app, user, aggregate, nocommit_cursor):
+    aggregate = aggregate.copy()
+    aggregate['name'] = 'new_aggregate'
+    new_id = storage_interface.store_aggregate(aggregate)
+    new_aggregate = storage_interface.read_aggregate(new_id)
+    aggregate['aggregate_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at', 'observations'):
+        del aggregate[key]
+        del new_aggregate[key]
+    assert aggregate == new_aggregate
+
+
+def test_store_aggregate_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_aggregate(
+            list(demo_aggregates.values())[0])
+
+
+def test_list_aggregates(sql_app, user):
+    aggregates = storage_interface.list_aggregates()
+    for agg in remove_reference(aggregates):
+        assert agg == demo_aggregates[agg['aggregate_id']]
+
+
+def test_list_aggregates_invalid_user(sql_app, invalid_user):
+    aggregates = storage_interface.list_aggregates()
+    assert len(aggregates) == 0
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_delete_aggregate(sql_app, user, nocommit_cursor, aggregate_id):
+    storage_interface.delete_aggregate(aggregate_id)
+    aggregate_list = [
+        k['aggregate_id'] for k in storage_interface.list_aggregates()]
+    assert aggregate_id not in aggregate_list
+
+
+def test_delete_aggregate_invalid_user(
+        sql_app, invalid_user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_aggregate(list(demo_aggregates.keys())[0])
+
+
+def test_delete_aggregate_does_not_exist(sql_app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_aggregate(str(uuid.uuid1()))
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_add_observation_to_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id):
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    obs_before = {
+        obs['observation_id'] for obs in aggregate['observations']}
+    assert obs_id not in obs_before
+    storage_interface.add_observation_to_aggregate(aggregate_id, obs_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    obs_before.add(obs_id)
+    assert obs_before == {
+        obs['observation_id'] for obs in aggregate['observations']}
+
+
+def test_add_observation_to_aggregate_time(sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    ef = dt.datetime(2019, 9, 12, 13, 49, tzinfo=dt.timezone.utc)
+    storage_interface.add_observation_to_aggregate(aggregate_id, obs_id, ef)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['effective_from'] == ef
+
+
+def test_add_observation_to_aggregate_denied(
+        sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '9cfa4aa2-7d0f-4f6f-a1c1-47f75e1d226f'
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+def test_add_observation_to_aggregate_cant_read_obs(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = '825fa192-824f-11e9-a81f-54bf64606445'
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+def test_add_observation_to_aggregate_obs_present(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.add_observation_to_aggregate(
+            aggregate_id, obs_id)
+
+
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_remove_observation_from_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id):
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert all([obs['effective_until'] is None
+                for obs in aggregate['observations']])
+    storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['effective_until'] is not None
+        else:
+            assert obs['effective_until'] is None
+
+
+def test_remove_observation_from_aggregate_time(
+        sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    et = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)
+          ).replace(microsecond=0)
+    storage_interface.remove_observation_from_aggregate(aggregate_id, obs_id,
+                                                        et)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    for obs in aggregate['observations']:
+        if obs['observation_id'] == obs_id:
+            assert obs['effective_until'] == et
+        else:
+            assert obs['effective_until'] is None
+
+
+def test_remove_observation_from_aggregate_denied(
+        sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.remove_observation_from_aggregate(
+            aggregate_id, obs_id)
+
+
+def test_read_aggregate_values(sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    out = storage_interface.read_aggregate_values(aggregate_id)
+    assert isinstance(out, dict)
+    # no data in db for 825fa193-824f-11e9-a81f-54bf64606445
+    assert set(out.keys()) == {
+        "123e4567-e89b-12d3-a456-426655440000",
+        "e0da0dea-9482-4073-84de-f1b12c304d23",
+        "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
+
+    for df in out.values():
+        pdt.assert_frame_equal(df, values.static_observation_values('ghi'))
+
+
+def test_read_aggregate_values_denied(sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_aggregate_values(aggregate_id)
+
+
+def test_read_aggregate_values_restricted_start_end(sql_app, user,
+                                                    nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    start = pd.Timestamp('20190415T0000Z')
+    end = pd.Timestamp('20190416T0000Z')
+    out = storage_interface.read_aggregate_values(aggregate_id, start, end)
+    assert isinstance(out, dict)
+    # no data in db for 825fa193-824f-11e9-a81f-54bf64606445
+    assert set(out.keys()) == {
+        "123e4567-e89b-12d3-a456-426655440000",
+        "e0da0dea-9482-4073-84de-f1b12c304d23",
+        "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
+
+    for df in out.values():
+        pdt.assert_frame_equal(
+            df, values.static_observation_values('ghi')[start:end])
+
+
+def test_read_aggregate_values_adj_effective_from(sql_app, user,
+                                                  nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    change_id = "123e4567-e89b-12d3-a456-426655440000"
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190101T0000Z'))
+    storage_interface.add_observation_to_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190416T0000Z'))
+    remove_id = "e0da0dea-9482-4073-84de-f1b12c304d23"
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, remove_id, pd.Timestamp('20190417T0000Z'))
+    out = storage_interface.read_aggregate_values(aggregate_id)
+    assert isinstance(out, dict)
+    # no data in db for 825fa193-824f-11e9-a81f-54bf64606445
+    assert set(out.keys()) == {
+        "123e4567-e89b-12d3-a456-426655440000",
+        "e0da0dea-9482-4073-84de-f1b12c304d23",
+        "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
+    assert out[change_id].index[0] == pd.Timestamp('20190416T0000Z')
+    assert out[remove_id].index[-1] == pd.Timestamp('20190417T0000Z')
+
+
+def test_read_aggregate_values_effective_overlap(sql_app, user,
+                                                 nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    change_id = "123e4567-e89b-12d3-a456-426655440000"
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190101T0000Z'))
+    # effective from 4/16 to 4/17
+    storage_interface.add_observation_to_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190416T0000Z'))
+    storage_interface.remove_observation_from_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190417T0000Z'))
+    # effective from 4/15 onward
+    storage_interface.add_observation_to_aggregate(
+        aggregate_id, change_id, pd.Timestamp('20190415T0000Z'))
+    out = storage_interface.read_aggregate_values(aggregate_id)
+    assert isinstance(out, dict)
+    # no data in db for 825fa193-824f-11e9-a81f-54bf64606445
+    assert set(out.keys()) == {
+        "123e4567-e89b-12d3-a456-426655440000",
+        "e0da0dea-9482-4073-84de-f1b12c304d23",
+        "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
+    assert out[change_id].index[0] == pd.Timestamp('20190415T0000Z')
+    assert out[change_id].index[-1] > pd.Timestamp('20190417T0000Z')
+    assert (out[change_id].index == out[change_id].index.unique()).all()
+
+
+def test_read_aggregate_values_empty(sql_app, user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    start = pd.Timestamp('20190915T0000Z')
+    end = pd.Timestamp('20190916T0000Z')
+    out = storage_interface.read_aggregate_values(aggregate_id, start, end)
+    assert isinstance(out, dict)
+    assert not out

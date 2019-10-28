@@ -1,9 +1,11 @@
-from marshmallow import validate, validates, validates_schema
+from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
 import pytz
 
+
 from sfa_api import spec, ma
-from sfa_api.utils.validators import TimeFormat, UserstringValidator
+from sfa_api.utils.validators import (
+    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
 from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
 
 
@@ -29,12 +31,9 @@ VARIABLES = ALLOWED_VARIABLES.keys()
 
 ALLOWED_METRICS = ['mae', 'mbe', 'rmse']
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
-
+AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
-
-ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
-    filter(lambda x: 'GMT' in x, pytz.all_timezones))
 
 EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
@@ -59,6 +58,28 @@ MODIFIED_AT = ISODateTime(
     title="Last Modification Time",
     description="ISO 8601 Datetime when object was last modified",
     )
+
+INTERVAL_LABEL = ma.String(
+    title='Interval Label',
+    description=('For data that represents intervals, indicates if a time '
+                 'labels the beginning or ending of the interval. '
+                 'instant for instantaneous data'),
+    validate=validate.OneOf(INTERVAL_LABELS),
+    required=True)
+
+INTERVAL_LENGTH = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each data point represents in'
+                     'minutes, e.g. 5 for 5 minutes.'),
+        required=True)
+
+INTERVAL_VALUE_TYPE = ma.String(
+    title='Interval Value Type',
+    description=('For data that represents intervals, what that data'
+                 'represesnts e.g. interval mean, min, max, etc.'
+                 'instantaneous for instantaneous data'),
+    validate=validate.OneOf(INTERVAL_VALUE_TYPES),
+    required=True)
 
 
 # Sites
@@ -199,15 +220,11 @@ class SiteSchema(ma.Schema):
     timezone = ma.String(
         title="Timezone",
         description="IANA Timezone",
-        required=True)
+        required=True,
+        validate=TimezoneValidator())
     modeling_parameters = ma.Nested(ModelingParameters,
                                     missing=ModelingParameters().load({}))
     extra_parameters = EXTRA_PARAMETERS_FIELD
-
-    @validates('timezone')
-    def validate_tz(self, tz, **kwargs):
-        if tz not in ALLOWED_TIMEZONES:
-            raise ValidationError('Invalid timezone.')
 
 
 @spec.define_schema('SiteMetadata')
@@ -228,7 +245,9 @@ class ObservationValueSchema(ma.Schema):
         title="Timestamp",
         description=(
             "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
-        ))
+        ),
+        validate=TimeLimitValidator()
+    )
     value = ma.Float(
         title='Value',
         description="Value of the measurement",
@@ -273,22 +292,9 @@ class ObservationPostSchema(ma.Schema):
         description='Human friendly name for the observation',
         required=True,
         validate=UserstringValidator())
-    interval_label = ma.String(
-        title='Interval Label',
-        description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval. '
-                     'instant for instantaneous data'),
-        validate=validate.OneOf(INTERVAL_LABELS),
-        required=True)
-    interval_length = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents  in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True)
-    interval_value_type = ma.String(
-        title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES),
-        required=True)
+    interval_label = INTERVAL_LABEL
+    interval_length = INTERVAL_LENGTH
+    interval_value_type = INTERVAL_VALUE_TYPE
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.',
@@ -341,7 +347,9 @@ class ForecastValueSchema(ma.Schema):
         title="Timestamp",
         description=(
             "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
-        ))
+        ),
+        validate=TimeLimitValidator()
+    )
     value = ma.Float(
         title="Value",
         description="Value of the forecast variable.",
@@ -413,18 +421,9 @@ class ForecastPostSchema(ma.Schema):
                      "the first forecast interval in minutes, e.g. 60 for one"
                      "hour."),
         required=True)
-    interval_label = ma.String(
-        title='Interval Label',
-        description=('For data that represents intervals, indicates if a time '
-                     'labels the beginning or ending of the interval.'),
-        validate=validate.OneOf(INTERVAL_LABELS),
-        required=True)
-    interval_length = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True
-    )
+    interval_label = INTERVAL_LABEL
+    interval_length = INTERVAL_LENGTH
+    interval_value_type = INTERVAL_VALUE_TYPE
     run_length = ma.Integer(
         title='Run Length / Issue Frequency',
         description=('The total length of a single issued forecast run in '
@@ -432,10 +431,6 @@ class ForecastPostSchema(ma.Schema):
                      'non-overlapping sequence, this is equal to the forecast'
                      'run issue frequency.'),
         required=True
-    )
-    interval_value_type = ma.String(
-        title='Value Type',
-        validate=validate.OneOf(INTERVAL_VALUE_TYPES)
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
@@ -654,12 +649,14 @@ class ReportParameters(ma.Schema):
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601"
                      "datetime. Unlocalized times are assumed to be UTC."),
+        validate=TimeLimitValidator()
     )
     end = ISODateTime(
         title="End",
         description=(
             "The end of the analysis period as an ISO 8601 datetime."
             " Unlocalized times are assumed to be UTC."),
+        validate=TimeLimitValidator()
     )
     # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't
     # been added to apispec, so this will not render correctly right now
@@ -763,4 +760,146 @@ class ReportMetricsSchema(ma.Schema):
         description=("A Markdown template with rendered metrics, and a block "
                      "for inserting timeseries plots"),
         required=True
+    )
+
+
+@spec.define_schema('AggregateDefinition')
+class AggregatePostSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    name = ma.String(
+        title='Name',
+        description="Human friendly name for aggregate",
+        required=True,
+        validate=UserstringValidator())
+    variable = VARIABLE_FIELD
+    interval_label = ma.String(
+        title='Interval Label',
+        description=('For data that represents intervals, indicates if a time '
+                     'labels the beginning or ending of the interval. '
+                     'Aggregates can not be instantaneous.'),
+        validate=validate.OneOf(('beginning', 'ending')),
+        required=True)
+    interval_length = ma.Integer(
+        title='Interval length',
+        description=('The length of time that each aggregate data point '
+                     'represents in minutes, e.g. 5 for 5 minutes. '
+                     'This aggregate interval length must be greater than or '
+                     'equal to the interval length of the observations that go'
+                     ' into it.'),
+        required=True)
+
+    aggregate_type = ma.String(
+        title='Aggregation Type',
+        validate=validate.OneOf(AGGREGATE_TYPES),
+        required=True
+    )
+    extra_parameters = EXTRA_PARAMETERS_FIELD
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        required=True,
+        validate=TimezoneValidator())
+    description = ma.String(
+        title='Desctription',
+        required=True,
+        description=(
+            "Description of the aggregate (e.g. Total PV power of all plants")
+    )
+
+
+class AggregateObservationPostSchema(ma.Schema):
+    observation_id = ma.UUID(required=True)
+    effective_from = ISODateTime(
+        title="Observation removal time",
+        description=("ISO 8601 Datetime when the observation should"
+                     " be included in aggregate values. Unlocalized"
+                     " times are assumed to be UTC."),
+        validate=TimeLimitValidator())
+    effective_until = ISODateTime(
+        title="Observation removal time",
+        description=("ISO 8601 Datetime when the observation should"
+                     " not be included in the aggregate. Unlocalized"
+                     " times are assumed to be UTC."),
+        validate=TimeLimitValidator())
+
+
+class AggregateObservationSchema(AggregateObservationPostSchema):
+    created_at = CREATED_AT
+    observation_deleted_at = ISODateTime(
+        title="Observation deletion time",
+        description="ISO 8601 Datetime when the observation was deleted",
+    )
+    _links = ma.Hyperlinks(
+        {
+            'observation': ma.AbsoluteURLFor(
+                'observations.metadata',
+                observation_id='<observation_id>'),
+        },
+        description="Contains a link to the observation endpoint."
+    )
+
+
+@spec.define_schema('AggregateMetadataUpdate')
+class AggregateUpdateSchema(ma.Schema):
+    # later will add things that can be updated like description
+    observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
+                           many=True, required=True)
+
+    @validates_schema
+    def validate_from_until(self, data, **kwargs):
+        for obs in data['observations']:
+            if 'effective_from' in obs and 'effective_until' in obs:
+                raise ValidationError("Only specify one of 'effective_from' "
+                                      "or effective_until'")
+            elif 'effective_from' not in obs and 'effective_until' not in obs:
+                raise ValidationError(
+                    "Specify one of 'effective_from' or 'effective_until'")
+
+
+@spec.define_schema('AggregateMetadata')
+class AggregateSchema(AggregatePostSchema):
+    aggregate_id = ma.UUID()
+    provider = ma.String()
+    interval_value_type = ma.String(
+        title='Interval Value Type',
+        description='Aggregates always represent interval means',
+        validate=validate.OneOf(('interval_mean',)),
+        default='interval_mean'
+    )
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+    observations = ma.List(ma.Nested(AggregateObservationSchema()),
+                           many=True)
+
+
+@spec.define_schema('AggregateLinks')
+class AggregateLinksSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    aggregate_id = ma.UUID()
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('aggregates.metadata',
+                                          aggregate_id='<aggregate_id>'),
+            'values': ma.AbsoluteURLFor('aggregates.values',
+                                        aggregate_id='<aggregate_id>'),
+        },
+        description="Contains links to the values and metadata endpoints."
+    )
+
+
+@spec.define_schema('AggregateValues')
+class AggregateValuesSchema(ObservationValuesPostSchema):
+    aggregate_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Aggregate associated with this data.")
+    _links = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('aggregates.metadata',
+                                          aggregate_id='<aggregate_id>'),
+        },
+        description="Contains a link to the values endpoint."
     )

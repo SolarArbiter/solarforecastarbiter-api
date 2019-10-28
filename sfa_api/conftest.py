@@ -10,7 +10,8 @@ import requests
 
 from sfa_api import create_app
 from sfa_api.utils import storage_interface
-from sfa_api.schema import VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS
+from sfa_api.schema import (
+    VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS, AGGREGATE_TYPES)
 
 
 BASE_URL = 'https://localhost'
@@ -20,6 +21,7 @@ BASE_URL = 'https://localhost'
 # f'Must be one of: {interval_value_types}.' can be checked
 # against the errors returned from marshmallow
 variables = ', '.join(VARIABLES)
+agg_types = ', '.join(AGGREGATE_TYPES)
 interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
 interval_labels = ', '.join(INTERVAL_LABELS)
 
@@ -317,6 +319,11 @@ def site_id():
 @pytest.fixture()
 def site_id_plant():
     return '123e4567-e89b-12d3-a456-426655440002'
+
+
+@pytest.fixture()
+def aggregate_id():
+    return '458ffc27-df0b-11e9-b622-62adb5fd6af0'
 
 
 @pytest.fixture()

@@ -158,7 +158,22 @@ class UserRolesManagementView(MethodView):
 
 class CurrentUserView(MethodView):
     def get(self):
-        """Get info about the current user.
+        """
+        ---
+        summary: Get current user metadata.
+        tags:
+          - Users
+        responses:
+          200:
+            description: User successully retrieved.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserSchema'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
         """
         storage = get_storage()
         user_info = storage.get_current_user_info()

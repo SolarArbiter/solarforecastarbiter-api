@@ -244,13 +244,13 @@ def read_observation_values(observation_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
     list
         A list of dictionaries representing data points.
-        Data points contain a timestamp, value andquality_flag.
+        Data points contain a timestamp, value and quality_flag.
         Returns None if the Observation does not exist.
     """
     if start is None:
@@ -289,6 +289,7 @@ def store_observation(observation):
         observation['name'], observation['interval_label'],
         observation['interval_length'], observation['interval_value_type'],
         observation['uncertainty'], observation['extra_parameters'])
+
     return observation_id
 
 
@@ -410,7 +411,7 @@ def read_forecast_values(forecast_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
@@ -632,7 +633,7 @@ def read_cdf_forecast_values(forecast_id, start=None, end=None):
     start: datetime
         Beginning of the period for which to request data.
     end: datetime
-        End of the peried for which to request data.
+        End of the period for which to request data.
 
     Returns
     -------
@@ -1499,3 +1500,186 @@ def read_metadata_for_observation_values(observation_id, start):
         Observation
     """
     return _read_metadata_for_write(observation_id, 'observations', start)
+
+
+def store_aggregate(aggregate):
+    """Store Aggregate metadata. Should generate and store a uuid
+    as the 'aggregate_id' field.
+
+    Parameters
+    ----------
+    aggregate: dictionary
+        A dictionary of aggregate fields to insert.
+
+    Returns
+    -------
+    string
+        The UUID of the newly created Aggregate.
+    """
+    aggregate_id = generate_uuid()
+    # the procedure expects arguments in a certain order
+    _call_procedure(
+        'store_aggregate', aggregate_id,
+        aggregate['name'], aggregate['description'],
+        aggregate['variable'], aggregate['timezone'],
+        aggregate['interval_label'], aggregate['interval_length'],
+        aggregate['aggregate_type'], aggregate['extra_parameters'])
+    return aggregate_id
+
+
+def _set_aggregate_parameters(aggregate_dict):
+    out = {}
+    for key in schema.AggregateSchema().fields.keys():
+        if key == 'observations':
+            out[key] = []
+            for obs in json.loads(aggregate_dict['observations']):
+                for tkey in ('created_at', 'observation_deleted_at',
+                             'effective_until', 'effective_from'):
+                    if obs[tkey] is not None:
+                        keydt = dt.datetime.fromisoformat(obs[tkey])
+                        if keydt.tzinfo is None:
+                            keydt = pytz.utc.localize(keydt)
+                        obs[tkey] = keydt
+                out[key].append(obs)
+        else:
+            out[key] = aggregate_dict[key]
+    return out
+
+
+def read_aggregate(aggregate_id):
+    """Read Aggregate metadata.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of the aggregate to retrieve.
+
+    Returns
+    -------
+    dict
+        The Aggregate's metadata or None if the Aggregate
+        does not exist.
+    """
+    aggregate = _set_aggregate_parameters(
+        _call_procedure_for_single('read_aggregate', aggregate_id))
+    return aggregate
+
+
+def delete_aggregate(aggregate_id):
+    """Remove an Aggregate from storage.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of aggregate to delete
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to delete the aggregate
+    """
+    _call_procedure('delete_aggregate', aggregate_id)
+
+
+def list_aggregates():
+    """Lists all aggregates a user has access to.
+
+    Returns
+    -------
+    list
+        List of dictionaries of Aggregate metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have access to aggregates with site_id or
+        no aggregates exists for that id
+    """
+    aggregates = [_set_aggregate_parameters(agg)
+                  for agg in _call_procedure('list_aggregates')]
+    return aggregates
+
+
+def add_observation_to_aggregate(
+        aggregate_id, observation_id,
+        effective_from=dt.datetime(
+            1970, 1, 1, 0, 0, 1, tzinfo=dt.timezone.utc)):
+    """Add an Observation to an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id : string
+        UUID of aggregate
+    observation_id : string
+        UUID of the observation
+    effective_from : datetime
+        The time that the observation should be included in the aggregate.
+        Default to 1970-01-01 00:00:01 UTC (start of UNIX Epoch).
+
+    Raises
+    ------
+    StorageAuthError
+        - If the user does not have update permission on the aggregate
+        - If the observation is already present in the aggregate
+        - If the user cannot read the observation object
+    """
+    _call_procedure('add_observation_to_aggregate', aggregate_id,
+                    observation_id, effective_from)
+
+
+def remove_observation_from_aggregate(
+        aggregate_id, observation_id,
+        effective_until=dt.datetime.now(dt.timezone.utc)):
+    """Remove an Observation from an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id : string
+        UUID of aggregate
+    observation_id : string
+        UUID of the observation
+    effective_until : datetime
+        Time after which this observation is no longer considered in the
+        aggregate. Default is now.
+
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have update permission on the aggregate
+    """
+    _call_procedure('remove_observation_from_aggregate', aggregate_id,
+                    observation_id, effective_until)
+
+
+def read_aggregate_values(aggregate_id, start=None, end=None):
+    """Read aggregate values between start and end.
+
+    Parameters
+    ----------
+    aggregate_id: string
+        UUID of associated aggregate.
+    start : datetime
+        Beginning of the period for which to request data.
+    end : datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    dict of pandas.DataFrame
+        Keys are observation IDs and DataFrames have DatetimeIndex and
+        value and quality_flag columns
+    """
+    start = start or pd.Timestamp('19700101T000001Z')
+    end = end or pd.Timestamp('20380119T031407Z')
+    agg_vals = _call_procedure('read_aggregate_values', aggregate_id,
+                               start, end)
+    groups = pd.DataFrame.from_records(
+        list(agg_vals), columns=['observation_id', 'timestamp',
+                                 'value', 'quality_flag']
+    ).groupby('observation_id')
+    out = {}
+    for obs_id, df in groups:
+        out[obs_id] = df.drop(columns='observation_id').set_index(
+            'timestamp')
+    return out

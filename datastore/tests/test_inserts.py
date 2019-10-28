@@ -22,120 +22,106 @@ def insertuser(cursor, new_permission, valueset, new_user):
     obs = valueset[6][0]
     cdf = valueset[7][0]
     report = valueset[8][0]
-    for thing in (user, site, fx, obs):
+    agg = valueset[9][0]
+    for thing in (user, site, fx, obs, agg):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         'DELETE FROM permissions WHERE action = "create" and '
         'object_type = "forecasts"')
-    return user, site, fx, obs, org, role, cdf, report
+    return user, site, fx, obs, org, role, cdf, report, agg
 
 
 @pytest.fixture()
-def allow_read_sites(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('read', 'sites', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def user_org_role(insertuser):
+    return insertuser[0], insertuser[4], insertuser[5]
 
 
 @pytest.fixture()
-def allow_read_reports(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('read', 'reports', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def add_perm(user_org_role, new_permission, cursor):
+    user, org, role = user_org_role
+
+    def fcn(action, what):
+        perm = new_permission(action, what, True, org=org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], perm['id']))
+    return fcn
 
 
 @pytest.fixture()
-def allow_create(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perms = [new_permission('create', obj, True, org=org)
-             for obj in ('sites', 'forecasts', 'observations',
-                         'cdf_forecasts', 'roles', 'permissions',
-                         'reports')]
-    cursor.executemany(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)',
-        [(role['id'], perm['id']) for perm in perms])
+def allow_read_sites(add_perm):
+    add_perm('read', 'sites')
 
 
 @pytest.fixture()
-def allow_write_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perms = [new_permission('write_values', obj, True, org=org)
-             for obj in ('forecasts', 'observations',
-                         'cdf_forecasts', 'reports')]
-    cursor.executemany(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)',
-        [(role['id'], perm['id']) for perm in perms])
+def allow_read_reports(add_perm):
+    add_perm('read', 'reports')
 
 
 @pytest.fixture()
-def allow_delete_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perms = [new_permission('delete_values', obj, True, org=org)
-             for obj in ('forecasts', 'observations', 'cdf_forecasts')]
-    cursor.executemany(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        'VALUES (%s, %s)',
-        [(role['id'], perm['id']) for perm in perms])
+def allow_read_aggregate(add_perm):
+    add_perm('read', 'aggregates')
 
 
 @pytest.fixture()
-def allow_read_observation_values(insertuser, new_permission, cursor):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('read_values', 'observations', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_create(add_perm):
+    [add_perm('create', obj)
+     for obj in ('sites', 'forecasts', 'observations',
+                 'cdf_forecasts', 'roles', 'permissions',
+                 'reports', 'aggregates')]
 
 
 @pytest.fixture()
-def allow_update_cdf(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('update', 'cdf_forecasts', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_write_values(add_perm):
+    [add_perm('write_values', obj)
+     for obj in ('forecasts', 'observations',
+                 'cdf_forecasts', 'reports')]
 
 
 @pytest.fixture()
-def allow_update_permissions(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('update', 'permissions', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_delete_values(add_perm):
+    [add_perm('delete_values', obj)
+     for obj in ('forecasts', 'observations', 'cdf_forecasts')]
 
 
 @pytest.fixture()
-def allow_update_roles(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('update', 'roles', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_read_observations(add_perm):
+    add_perm('read', 'observations')
 
 
 @pytest.fixture()
-def allow_update_users(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('update', 'users', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_read_observation_values(add_perm):
+    add_perm('read_values', 'observations')
 
 
 @pytest.fixture()
-def allow_update_reports(cursor, new_permission, insertuser):
-    user, site, fx, obs, org, role, cdf, report = insertuser
-    perm = new_permission('update', 'reports', True, org=org)
-    cursor.execute(
-        'INSERT INTO role_permission_mapping (role_id, permission_id) VALUES '
-        '(%s, %s)', (role['id'], perm['id']))
+def allow_update_cdf(add_perm):
+    add_perm('update', 'cdf_forecasts')
+
+
+@pytest.fixture()
+def allow_update_permissions(add_perm):
+    add_perm('update', 'permissions')
+
+
+@pytest.fixture()
+def allow_update_roles(add_perm):
+    add_perm('update', 'roles')
+
+
+@pytest.fixture()
+def allow_update_users(add_perm):
+    add_perm('update', 'users')
+
+
+@pytest.fixture()
+def allow_update_reports(add_perm):
+    add_perm('update', 'reports')
+
+
+@pytest.fixture()
+def allow_update_aggregates(add_perm):
+    add_perm('update', 'aggregates')
 
 
 @pytest.fixture()
@@ -173,6 +159,20 @@ def site_callargs(insertuser, new_site):
     del siteargs['organization_id']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(siteargs)
+    return callargs
+
+
+@pytest.fixture()
+def agg_callargs(insertuser, new_aggregate, valueset):
+    auth0id = insertuser[0]['auth0_id']
+    obs = valueset[6]
+    aggargs = new_aggregate(obs_list=obs)
+    del aggargs['id']
+    del aggargs['organization_id']
+    del aggargs['obs_list']
+    del aggargs['interval_value_type']
+    callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
+    callargs.update(aggargs)
     return callargs
 
 
@@ -551,6 +551,136 @@ def test_store_cdf_forecast_values_cant_write(cursor, cdf_forecast_values):
     assert e.value.args[0] == 1142
 
 
+def test_store_aggregate(dictcursor, agg_callargs, allow_create):
+    dictcursor.callproc('store_aggregate', list(agg_callargs.values()))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.aggregates WHERE id = UUID_TO_BIN(%s, 1)',
+        (agg_callargs['strid'],))
+    res = dictcursor.fetchall()[0]
+    for key in ('variable', 'name', 'interval_label', 'interval_length',
+                'extra_parameters', 'aggregate_type'):
+        assert res[key] == agg_callargs[key]
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg_callargs['strid'],))
+    assert dictcursor.fetchone()['nu'] == 0
+
+
+def test_store_aggregate_denied(dictcursor, agg_callargs):
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('store_aggregate', list(agg_callargs.values()))
+    assert e.value.args[0] == 1142
+
+
+def test_add_observation_to_aggregate(dictcursor, insertuser,
+                                      new_observation,
+                                      allow_update_aggregates,
+                                      allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
+    before = dictcursor.fetchone()['nu']
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.execute(
+        'SELECT observation_id as oi FROM '
+        'arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)',
+        (agg['strid'],))
+    res = dictcursor.fetchall()
+    assert len(res) == before + 1
+    assert obs['id'] in [d['oi'] for d in res]
+
+
+def test_add_observation_to_aggregate_present(
+        dictcursor, insertuser, new_observation, allow_update_aggregates,
+        allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01'))
+    assert e.value.args[0] == 1142
+
+
+def test_add_observation_to_aggregate_again(
+        dictcursor, insertuser, new_observation, allow_update_aggregates,
+        allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    dictcursor.execute(
+        'SELECT COUNT(*) as nu FROM arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1)', (agg['strid'],))
+    before = dictcursor.fetchone()['nu']
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.callproc('remove_observation_from_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.callproc('add_observation_to_aggregate',
+                        (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+                         '2019-01-01 00:00'))
+    dictcursor.execute(
+        'SELECT observation_id as oi, effective_until, _incr FROM '
+        'arbiter_data.aggregate_observation_mapping'
+        ' WHERE aggregate_id = UUID_TO_BIN(%s, 1) ORDER BY _incr',
+        (agg['strid'],))
+    res = dictcursor.fetchall()
+    assert len(res) == before + 3
+    news = []
+    for d in res:
+        if d['oi'] == obs['id']:
+            news.append(d['effective_until'] is None)
+    assert news == [False, False, True]
+
+
+def test_add_observation_to_aggregate_no_update(dictcursor, insertuser,
+                                                new_observation,
+                                                allow_read_observations):
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01 00:00'))
+    assert e.value.args[0] == 1142
+
+
+def test_add_observation_to_aggregate_no_read_obs(dictcursor, insertuser,
+                                                  new_observation,
+                                                  allow_update_aggregates):
+
+    auth0id = insertuser[0]['auth0_id']
+    agg = insertuser[8]
+    obs = new_observation(site=insertuser[1])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'add_observation_to_aggregate',
+            (auth0id, agg['strid'], str(bin_to_uuid(obs['id'])),
+             '2019-01-01 00:00'))
+    assert e.value.args[0] == 1143
+
+
 def test_create_user(dictcursor, valueset_org):
     userid = str(uuid.uuid1())
     auth0id = 'auth0|blahblah'
@@ -576,7 +706,7 @@ def test_create_role(dictcursor, allow_create, insertuser):
     res = dictcursor.fetchall()[0]
     assert res['name'] == 'newrole'
     assert res['description'] == 'A brandh new role!'
-    assert res['organization_id'] == insertuser[-4]['id']
+    assert res['organization_id'] == insertuser[4]['id']
 
     dictcursor.execute(
         'SELECT * FROM arbiter_data.role_permission_mapping '
@@ -588,7 +718,7 @@ def test_create_role(dictcursor, allow_create, insertuser):
         'id = %s', (read_perm_id,))
     read_role_perm = dictcursor.fetchone()
     assert read_role_perm['object_type'] == 'roles'
-    assert read_role_perm['organization_id'] == insertuser[-4]['id']
+    assert read_role_perm['organization_id'] == insertuser[4]['id']
     assert read_role_perm['description'] == f'Read Role {strid}'
     assert read_role_perm['applies_to_all'] == 0
     assert 'created_at' in read_role_perm
@@ -656,8 +786,8 @@ def test_create_permission_denied(dictcursor, insertuser):
 
 
 def test_add_object_to_permission(cursor, getfcn, new_permission,
-                                  insertuser, allow_update_permissions):
-    user, _, _, _, org, role, _, _ = insertuser
+                                  allow_update_permissions, user_org_role):
+    user, org, role = user_org_role
     fcn, obj_type = getfcn
     objid = fcn(org=org)['id']
     readperm = new_permission('read', obj_type, False, org=org)
@@ -679,8 +809,8 @@ def test_add_object_to_permission(cursor, getfcn, new_permission,
 
 def test_add_object_to_permission_denied_no_update(
         cursor, new_observation, new_permission,
-        insertuser):
-    user, _, _, _, org, role, _, _ = insertuser
+        user_org_role):
+    user, org, role = user_org_role
     objid = new_observation(org=org)['id']
     readperm = new_permission('read', 'observations', False, org=org)
     cursor.execute(
@@ -700,8 +830,8 @@ def test_add_object_to_permission_denied_no_update(
 
 def test_add_object_to_permission_denied_no_read(
         cursor, new_observation, new_permission, allow_update_permissions,
-        insertuser):
-    user, _, _, _, org, role, _, _ = insertuser
+        user_org_role):
+    user, org, role = user_org_role
     objid = new_observation(org=org)['id']
     perm = new_permission('read', 'observations', False, org=org)
     cursor.execute(
@@ -717,8 +847,8 @@ def test_add_object_to_permission_denied_no_read(
 
 def test_add_object_to_permission_no_perm(
         cursor, new_site, new_permission, allow_update_permissions,
-        insertuser):
-    user, _, _, _, org, role, _, _ = insertuser
+        user_org_role):
+    user, org, role = user_org_role
     objid = new_site(org=org)['id']
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_object_to_permission',
@@ -729,10 +859,11 @@ def test_add_object_to_permission_no_perm(
 
 @pytest.mark.parametrize('obj_type', ['users', 'roles', 'forecasts',
                                       'permissions', 'observations',
-                                      'cdf_forecasts', 'sites'])
-def test_add_permission_to_role(cursor, new_permission, insertuser, obj_type,
-                                allow_update_roles):
-    user, _, _, _, org, role, _, _ = insertuser
+                                      'cdf_forecasts', 'sites',
+                                      'reports', 'aggregates'])
+def test_add_permission_to_role(cursor, new_permission, obj_type,
+                                allow_update_roles, user_org_role):
+    user, org, role = user_org_role
     perm = new_permission('read', obj_type, False, org=org)
     cursor.callproc('add_permission_to_role', (
         user['auth0_id'], str(bin_to_uuid(role['id'])),
@@ -743,9 +874,10 @@ def test_add_permission_to_role(cursor, new_permission, insertuser, obj_type,
     assert cursor.fetchall()[0][0]
 
 
-def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
+def test_add_permission_to_role_wrong_org(cursor, new_permission,
+                                          user_org_role,
                                           allow_update_roles):
-    user, _, _, _, org, role, _, _ = insertuser
+    user, org, role = user_org_role
     perm = new_permission('read', 'sites', False)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_permission_to_role', (
@@ -759,8 +891,8 @@ def test_add_permission_to_role_wrong_org(cursor, new_permission, insertuser,
 )
 def test_add_permission_to_role_rbac_on_external_role(
         cursor, new_permission, new_user, new_role,
-        insertuser, object_type):
-    user, _, _, _, org, _, _, _ = insertuser
+        user_org_role, object_type):
+    user, org, role = user_org_role
     perm = new_permission('create', object_type, False, org=org)
     share_user = new_user()
     role = new_role(org=org)
@@ -774,8 +906,8 @@ def test_add_permission_to_role_rbac_on_external_role(
         assert e.value.args[0] == 1142
 
 
-def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
-    user, _, _, _, org, role, _, _ = insertuser
+def test_add_permission_to_role_denied(cursor, new_permission, user_org_role):
+    user, org, role = user_org_role
     perm = new_permission('read', 'sites', False, org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_permission_to_role', (
@@ -786,8 +918,8 @@ def test_add_permission_to_role_denied(cursor, new_permission, insertuser):
 
 def test_add_role_to_user(
         cursor, new_role, allow_create,
-        allow_grant_roles, insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        allow_grant_roles, user_org_role):
+    user, org, role = user_org_role
     role = new_role(org=org)
     cursor.callproc('add_role_to_user', (
         user['auth0_id'], str(bin_to_uuid(user['id'])),
@@ -799,8 +931,8 @@ def test_add_role_to_user(
 
 def test_add_role_to_user_outside_org(
         cursor, new_role, allow_create, allow_grant_roles,
-        new_user, insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        new_user, user_org_role):
+    user, org, role = user_org_role
     role = new_role(org=org)
     share_user = new_user()
     cursor.callproc('add_role_to_user', (
@@ -813,8 +945,8 @@ def test_add_role_to_user_outside_org(
 
 def test_add_role_to_user_admin_role(
         cursor, new_role, allow_create, allow_grant_roles,
-        new_permission, insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        new_permission, user_org_role):
+    user, org, role = user_org_role
     role = new_role(org=org)
     perm = new_permission('create', 'roles', True, org=org)
     cursor.execute(
@@ -830,8 +962,8 @@ def test_add_role_to_user_admin_role(
 
 def test_add_role_to_user_admin_role_outside_org(
         allow_create, cursor, new_role, allow_grant_roles,
-        new_user, new_permission, insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        new_user, new_permission, user_org_role):
+    user, org, role = user_org_role
     share_user = new_user()
     role = new_role(org=org)
     perm = new_permission('create', 'roles', True, org=org)
@@ -846,8 +978,8 @@ def test_add_role_to_user_admin_role_outside_org(
 
 
 def test_add_role_to_user_missing_perm(
-        cursor, new_role, insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        cursor, new_role, user_org_role):
+    user, org, role = user_org_role
     role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
@@ -858,8 +990,8 @@ def test_add_role_to_user_missing_perm(
 
 def test_add_role_to_user_user_dne(
         cursor, allow_create, new_role, allow_grant_roles,
-        insertuser):
-    user, _, _, _, org, _, _, _ = insertuser
+        user_org_role):
+    user, org, role = user_org_role
     role = new_role(org=org)
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
@@ -870,8 +1002,8 @@ def test_add_role_to_user_user_dne(
 
 def test_add_role_to_user_no_tou(
         cursor, allow_create, new_role, allow_grant_roles,
-        insertuser, new_user, new_organization_no_tou):
-    user, _, _, _, org, _, _, _ = insertuser
+        user_org_role, new_user, new_organization_no_tou):
+    user, org, role = user_org_role
     role = new_role(org=org)
     share_user = new_user(org=new_organization_no_tou())
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -902,7 +1034,7 @@ def test_store_report_denied(dictcursor, report_callargs, insertuser):
 def test_store_report_values(
         dictcursor, insertuser, allow_write_values,
         allow_read_observation_values, new_observation):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     value = b'\x00\x0F\xFF'
     value_id = newuuid()
     dictcursor.callproc(
@@ -926,7 +1058,7 @@ def test_store_report_values(
 def test_update_report_values(
         dictcursor, insertuser, allow_write_values,
         allow_read_observation_values):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     value = b'\x00\x0F\xFF'
     dictcursor.execute(
         'SELECT id FROM arbiter_data.report_values WHERE report_id = %s '
@@ -955,7 +1087,7 @@ def test_update_report_values(
 def test_store_report_values_wrong_type(
         dictcursor, insertuser, allow_write_values,
         allow_read_observation_values):
-    user, _, _, obs, org, role, cdf, report = insertuser
+    user, _, _, obs, org, role, cdf, report, _ = insertuser
     value = b'\x00\x0F\xFF'
     cdf_singles = list(cdf['constant_values'].keys())
     object_id = cdf_singles[0]
@@ -973,7 +1105,7 @@ def test_store_report_values_wrong_type(
 
 def test_store_report_values_no_write_report(
         dictcursor, insertuser, allow_read_observation_values):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     value = b'\x00\x0F\xFF'
     dictcursor.execute(
         'SELECT id FROM arbiter_data.report_values WHERE report_id = %s '
@@ -996,7 +1128,7 @@ def test_store_report_values_no_write_report(
 def test_store_report_metrics(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     metrics = {"a": "b", "c": "d"}
     raw_report = b'\x00\x0F\xFF'
     dictcursor.callproc(
@@ -1015,7 +1147,7 @@ def test_store_report_metrics(
 
 def test_store_report_metrics_no_update(
         dictcursor, insertuser, allow_read_reports):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     metrics = {"a": "b", "c": "d"}
     raw_report = b'\x00\x0F\xFF'
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -1034,7 +1166,7 @@ def test_store_report_metrics_no_update(
 def test_store_report_status(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports, new_status):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     dictcursor.callproc(
         'store_report_status',
         (user['auth0_id'],
@@ -1053,7 +1185,7 @@ def test_store_report_status(
 def test_store_report_status_denied(
         dictcursor, insertuser, allow_read_reports,
         new_status):
-    user, _, _, obs, org, role, _, report = insertuser
+    user, _, _, obs, org, role, _, report, _ = insertuser
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
             'store_report_status',

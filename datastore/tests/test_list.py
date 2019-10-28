@@ -1,3 +1,4 @@
+import json
 from random import shuffle
 
 
@@ -10,7 +11,7 @@ from conftest import bin_to_uuid
 @pytest.fixture()
 def readall(cursor, new_organization, new_user, new_role, new_permission,
             new_site, new_forecast, new_observation, new_cdf_forecast,
-            new_report):
+            new_report, new_aggregate):
     # remove test data
     # temporarily remove fx, obs and cdf to avoid foreign key constraint
     cursor.execute('DELETE FROM forecasts')
@@ -27,7 +28,7 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
             (user['id'], role['id']))
         items = ['users', 'roles', 'permissions',
                  'forecasts', 'observations', 'sites',
-                 'cdf_forecasts', 'reports']
+                 'cdf_forecasts', 'reports', 'aggregates']
         shuffle(items)
         perms = [new_permission('read', obj, True, org=org)
                  for obj in items]
@@ -41,19 +42,20 @@ def readall(cursor, new_organization, new_user, new_role, new_permission,
         cdf = [new_cdf_forecast(site=site) for site in sites for _ in range(2)]
         reports = [new_report(org, obs[i], [fx[i]], [cdf[i]])
                    for i in range(2)]
-        return user, role, perms, sites, fx, obs, cdf, reports, org
+        aggregates = [new_aggregate(obs_list=obs[i:i + 2]) for i in range(2)]
+        return user, role, perms, sites, fx, obs, cdf, reports, org, aggregates
     return make
 
 
 @pytest.fixture()
 def twosets(readall):
-    user, role, perms, sites, fx, obs, cdf, reports, org = readall()
+    user, role, perms, sites, fx, obs, cdf, reports, org, aggs = readall()
     dummy = readall()
-    return user, role, perms, sites, fx, obs, cdf, reports, org, dummy
+    return user, role, perms, sites, fx, obs, cdf, reports, org, aggs, dummy
 
 
 @pytest.mark.parametrize('type_', ['permissions', 'sites', 'forecasts',
-                                   'observations', 'reports'])
+                                   'observations', 'reports', 'aggregates'])
 def test_items_present(cursor, twosets, type_):
     cursor.execute(f'SELECT DISTINCT(organization_id) FROM {type_}')
     assert len(cursor.fetchall()) == 2
@@ -195,3 +197,20 @@ def test_list_reports(dictcursor, twosets):
             ('created_at', 'modified_at', 'provider', 'report_id'))
         == ((set(reports[0].keys()) | set(('status',))) -
             set(('organization_id', 'id'))))
+
+
+def test_list_aggregates(dictcursor, twosets):
+    authid = twosets[0]['auth0_id']
+    agg = twosets[9]
+    dictcursor.callproc('list_aggregates', (authid, ))
+    res = dictcursor.fetchall()
+    assert ([str(bin_to_uuid(a['id'])) for a in agg] ==
+            [r['aggregate_id'] for r in res])
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'aggregate_id',
+             'observations'))
+        == set(agg[0].keys()) - set(('organization_id', 'id', 'obs_list')))
+    assert ([str(bin_to_uuid(o['id'])) for a in agg for o in a['obs_list']] ==
+            [b['observation_id'] for r in res for b in
+             json.loads(r['observations'])])
