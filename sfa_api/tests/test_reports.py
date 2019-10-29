@@ -2,19 +2,8 @@ import pytest
 
 
 from copy import deepcopy
-from flask import _request_ctx_stack
 import json
 from sfa_api.conftest import BASE_URL, REPORT_POST_JSON
-
-
-@pytest.fixture()
-def api(sql_app_no_commit, mocker):
-    def add_user():
-        _request_ctx_stack.top.user = 'auth0|5be343df7025406237820b85'
-        return True
-    verify = mocker.patch('sfa_api.utils.auth.verify_access_token')
-    verify.side_effect = add_user
-    yield sql_app_no_commit.test_client()
 
 
 @pytest.fixture()

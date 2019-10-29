@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 from solarforecastarbiter.io.utils import HiddenToken
@@ -9,7 +9,7 @@ from sfa_api import spec
 from sfa_api.utils.auth import current_access_token
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.queuing import get_queue
-from sfa_api.utils.errors import BadAPIRequest, NotFoundException
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_observation_values,
@@ -72,6 +72,8 @@ class AllObservationsView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -80,8 +82,6 @@ class AllObservationsView(MethodView):
             raise BadAPIRequest(err.messages)
         storage = get_storage()
         observation_id = storage.store_observation(observation)
-        if observation_id is None:
-            raise NotFoundException(error='Site does not exist')
         response = make_response(observation_id, 201)
         response.headers['Location'] = url_for('observations.single',
                                                observation_id=observation_id)
@@ -112,8 +112,6 @@ class ObservationView(MethodView):
         """
         storage = get_storage()
         observation = storage.read_observation(observation_id)
-        if observation is None:
-            abort(404)
         return jsonify(ObservationLinksSchema().dump(observation))
 
     def delete(self, observation_id, *args):
@@ -173,8 +171,6 @@ class ObservationValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_observation_values(observation_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
@@ -256,8 +252,6 @@ class ObservationValuesView(MethodView):
                               interval_length, previous_time)
         stored = storage.store_observation_values(
             observation_id, observation_df)
-        if stored is None:
-            abort(404)
         if run_validation:
             q = get_queue()
             q.enqueue(
@@ -293,8 +287,6 @@ class ObservationMetadataView(MethodView):
         """
         storage = get_storage()
         observation = storage.read_observation(observation_id)
-        if observation is None:
-            abort(404)
         return jsonify(ObservationSchema().dump(observation))
 
 

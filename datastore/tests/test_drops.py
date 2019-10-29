@@ -32,8 +32,6 @@ def test_drop_org(cursor, valueset_org, test):
     assert check_table_for_org(cursor, oid, test) == 0
 
 
-@pytest.mark.skip(reason="Foreign Key constraint does not currently "
-                         "work with data sharing")
 @pytest.mark.parametrize('test', [
     'users', 'roles', 'permissions', 'sites',
     'forecasts', 'permission_object_mapping',
@@ -41,7 +39,7 @@ def test_drop_org(cursor, valueset_org, test):
     'cdf_forecasts_groups', 'reports', 'aggregates'])
 def test_drop_all_orgs_all_tables(cursor, valueset_org, test):
     cursor.execute('DELETE FROM organizations')
-    check_table_for_org(cursor, None, test)
+    assert check_table_for_org(cursor, None, test) == 0
 
 
 def test_drop_user(cursor, valueset_user):
@@ -156,18 +154,26 @@ def test_drop_permission_same_count(cursor, test, valueset_permission):
     assert before == after
 
 
-@pytest.mark.parametrize('delt', [
-    None, 'forecasts', 'observations', 'cdf_forecasts_groups'
-])
-def test_drop_site_fail(cursor, delt, valueset_site):
+def test_drop_site_fail(cursor, valueset_site):
     """
-    Test that a site cannot be dropped before forecasts or observations
+    Test that a site cannot be dropped before observations
     that reference it."""
     site = valueset_site['id']
-    if delt is not None:
-        cursor.execute(f'DELETE FROM {delt} WHERE site_id = %s', site)
     with pytest.raises(pymysql.err.IntegrityError):
         cursor.execute('DELETE FROM sites WHERE id = %s', site)
+
+
+def test_drop_site_fx_ok(cursor, valueset_site):
+    """
+    Test that a site can be dropped even with forecast
+    that reference it."""
+    site = valueset_site['id']
+    cursor.execute('SELECT id FROM forecasts where site_id = %s', site)
+    fxid = cursor.fetchone()
+    cursor.execute('DELETE FROM observations WHERE site_id = %s', site)
+    cursor.execute('DELETE FROM sites WHERE id = %s', site)
+    cursor.execute('SELECT site_id FROM forecasts where id = %s', fxid)
+    assert cursor.fetchone()[0] is None
 
 
 def test_drop_site(cursor, valueset_site):

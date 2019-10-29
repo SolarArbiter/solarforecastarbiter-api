@@ -4,7 +4,8 @@ import pytest
 
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_CDF_FORECAST_JSON, copy_update,
-                              VALID_FX_VALUE_JSON, VALID_CDF_VALUE_CSV)
+                              VALID_FX_VALUE_JSON, VALID_CDF_VALUE_CSV,
+                              VALID_CDF_FORECAST_AGG_JSON)
 
 
 INVALID_NAME = copy_update(VALID_CDF_FORECAST_JSON, 'name', '@drain')
@@ -27,13 +28,21 @@ INVALID_AXIS = copy_update(VALID_CDF_FORECAST_JSON,
 INVALID_CONSTANT_VALUES = copy_update(VALID_CDF_FORECAST_JSON,
                                       'interval_value_type',
                                       'invalid')
+INVALID_BOTH_IDS = copy_update(
+    VALID_CDF_FORECAST_JSON, 'aggregate_id',
+    '458ffc27-df0b-11e9-b622-62adb5fd6af0')
+INVALID_NO_IDS = VALID_CDF_FORECAST_JSON.copy()
+del INVALID_NO_IDS['site_id']
 
 
-empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 @pytest.mark.parametrize('payload,status_code', [
     (VALID_CDF_FORECAST_JSON, 201),
+    (VALID_CDF_FORECAST_AGG_JSON, 201),
+    (copy_update(VALID_CDF_FORECAST_JSON, 'aggregate_id', None), 201),
+    (copy_update(VALID_CDF_FORECAST_AGG_JSON, 'site_id', None), 201),
 ])
 def test_cdf_forecast_group_post_success(api, payload, status_code):
     r = api.post('/forecasts/cdf/',
@@ -52,7 +61,9 @@ def test_cdf_forecast_group_post_success(api, payload, status_code):
     (INVALID_RUN_LENGTH, '{"run_length":["Not a valid integer."]}'),
     (INVALID_VALUE_TYPE, f'{{"interval_value_type":["Must be one of: {interval_value_types}."]}}'), # NOQA
     ({}, empty_json_response),
-    (INVALID_NAME, '{"name":["Invalid characters in string."]}')
+    (INVALID_NAME, '{"name":["Invalid characters in string."]}'),
+    (INVALID_BOTH_IDS, '{"_schema":["Forecasts can only be associated with one site or one aggregate, so only site_id or aggregate_id may be provided"]}'),  # NOQA
+    (INVALID_NO_IDS, '{"_schema":["One of site_id or aggregate_id must be provided"]}'),  # NOQA
 ])
 def test_cdf_forecast_group_post_bad_request(api, payload, message):
     r = api.post('/forecasts/cdf/',
@@ -60,6 +71,24 @@ def test_cdf_forecast_group_post_bad_request(api, payload, message):
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_cdf_forecast_group_post_invalid_site(api, missing_id):
+    payload = copy_update(VALID_CDF_FORECAST_JSON,
+                          'site_id', missing_id)
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
+
+
+def test_cdf_forecast_group_post_invalid_agg(api, missing_id):
+    payload = copy_update(VALID_CDF_FORECAST_AGG_JSON,
+                          'aggregate_id', missing_id)
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 404
 
 
 def test_get_cdf_forecast_group_404(api, missing_id):
@@ -76,6 +105,7 @@ def test_get_cdf_forecast_group_metadata(api, cdf_forecast_group_id):
     assert 'variable' in response
     assert 'name' in response
     assert 'site_id' in response
+    assert 'aggregate_id' in response
     assert response['created_at'].endswith('+00:00')
     assert response['modified_at'].endswith('+00:00')
 
@@ -123,8 +153,6 @@ def test_post_forecast_values_valid_json(api, cdf_forecast_id, mock_previous):
 def patched_store_values(mocker):
     new = mocker.MagicMock()
     mocker.patch('sfa_api.utils.storage_interface.store_cdf_forecast_values',
-                 new=new)
-    mocker.patch('sfa_api.demo.store_cdf_forecast_values',
                  new=new)
     return new
 

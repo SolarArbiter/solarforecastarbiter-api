@@ -64,6 +64,8 @@ class AllReportsView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:

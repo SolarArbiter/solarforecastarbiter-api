@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, make_response, url_for, abort
+from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 import pandas as pd
@@ -14,7 +14,7 @@ from sfa_api.schema import (ForecastValuesSchema,
                             CDFForecastSchema,
                             CDFForecastValuesSchema)
 
-from sfa_api.utils.errors import BadAPIRequest, NotFoundException
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
@@ -109,6 +109,8 @@ class AllForecastsView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -118,8 +120,6 @@ class AllForecastsView(MethodView):
         else:
             storage = get_storage()
             forecast_id = storage.store_forecast(forecast)
-            if forecast_id is None:
-                raise NotFoundException(error='Site does not exist')
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for('forecasts.single',
                                                    forecast_id=forecast_id)
@@ -150,8 +150,6 @@ class ForecastView(MethodView):
         """
         storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
-        if forecast is None:
-            abort(404)
         return jsonify(ForecastLinksSchema().dump(forecast))
 
     def delete(self, forecast_id, *args):
@@ -210,13 +208,10 @@ class ForecastValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_forecast_values(forecast_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            values['timestamp'] = values.index
-            dict_values = values.to_dict(orient='records')
+            dict_values = values.reset_index().to_dict(orient='records')
             data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
                                                 "values": dict_values})
             return jsonify(data)
@@ -307,8 +302,6 @@ class ForecastMetadataView(MethodView):
         """
         storage = get_storage()
         forecast = storage.read_forecast(forecast_id)
-        if forecast is None:
-            abort(404)
         return jsonify(ForecastSchema().dump(forecast))
 
 
@@ -368,7 +361,8 @@ class AllCDFForecastGroupsView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
-
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -378,8 +372,6 @@ class AllCDFForecastGroupsView(MethodView):
         else:
             storage = get_storage()
             forecast_id = storage.store_cdf_forecast_group(cdf_forecast_group)
-            if forecast_id is None:
-                raise NotFoundException(error='Site does not exist')
             response = make_response(forecast_id, 201)
             response.headers['Location'] = url_for(
                 'forecasts.single_cdf_group',
@@ -412,8 +404,6 @@ class CDFForecastGroupMetadataView(MethodView):
         """
         storage = get_storage()
         cdf_forecast_group = storage.read_cdf_forecast_group(forecast_id)
-        if cdf_forecast_group is None:
-            abort(404)
         return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
 
     def delete(self, forecast_id, *args):
@@ -465,8 +455,6 @@ class CDFForecastMetadata(MethodView):
         """
         storage = get_storage()
         cdf_forecast = storage.read_cdf_forecast(forecast_id)
-        if cdf_forecast is None:
-            abort(404)
         return jsonify(CDFForecastSchema().dump(cdf_forecast))
 
 
@@ -498,8 +486,6 @@ class CDFForecastValues(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         values = storage.read_cdf_forecast_values(forecast_id, start, end)
-        if values is None:
-            abort(404)
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':

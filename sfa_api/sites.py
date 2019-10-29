@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort, make_response, url_for
+from flask import Blueprint, jsonify, request, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
 
@@ -62,6 +62,8 @@ class AllSitesView(MethodView):
             $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -99,8 +101,6 @@ class SiteView(MethodView):
         """
         storage = get_storage()
         site = storage.read_site(site_id)
-        if site is None:
-            abort(404)
         return jsonify(SiteResponseSchema().dump(site))
 
     def delete(self, site_id, *args):
@@ -153,8 +153,6 @@ class SiteObservations(MethodView):
         """
         storage = get_storage()
         observations = storage.list_observations(site_id)
-        if observations is None:
-            abort(404)
         return jsonify(ObservationSchema(many=True).dump(observations))
 
 
@@ -186,8 +184,6 @@ class SiteForecasts(MethodView):
         """
         storage = get_storage()
         forecasts = storage.list_forecasts(site_id)
-        if forecasts is None:
-            abort(404)
         return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 
@@ -219,8 +215,6 @@ class SiteCDFForecastGroups(MethodView):
         """
         storage = get_storage()
         forecasts = storage.list_cdf_forecast_groups(site_id)
-        if forecasts is None:
-            abort(404)
         return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
 
 

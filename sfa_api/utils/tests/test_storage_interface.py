@@ -10,19 +10,15 @@ import pytest
 import pymysql
 
 
-from sfa_api.demo.sites import static_sites as demo_sites
-from sfa_api.demo.observations import static_observations as demo_observations
-from sfa_api.demo.forecasts import static_forecasts as demo_forecasts
-from sfa_api.demo.cdf_forecasts import static_cdf_forecasts as demo_single_cdf
-from sfa_api.demo.cdf_forecasts import static_cdf_forecast_groups as demo_group_cdf  # NOQA
-from sfa_api.demo.aggregates import static_aggregates as demo_aggregates
-from sfa_api.demo import values
+from sfa_api.conftest import (
+    demo_sites, demo_observations, demo_forecasts, demo_single_cdf,
+    demo_group_cdf, demo_aggregates, generate_randoms)
 from sfa_api.utils import storage_interface
 
 
 TESTINDICES = {
-    1: values.generate_randoms(1)[0].to_series(keep_tz=True),
-    5: values.generate_randoms(5)[0].to_series(keep_tz=True),
+    1: generate_randoms(1)[0].to_series(keep_tz=True),
+    5: generate_randoms(5)[0].to_series(keep_tz=True),
 }
 
 
@@ -232,20 +228,18 @@ def test_store_observation_invalid_user(
 
 @pytest.mark.parametrize('observation', demo_observations.values())
 def test_store_observation_values(sql_app, user, nocommit_cursor,
-                                  observation):
+                                  observation, obs_vals):
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
-    obs_vals = values.static_observation_values()
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
     pdt.assert_frame_equal(stored, obs_vals)
 
 
-def test_store_observation_values_tz(sql_app, user, nocommit_cursor):
+def test_store_observation_values_tz(sql_app, user, nocommit_cursor, obs_vals):
     observation = list(demo_observations.values())[0]
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
-    obs_vals = values.static_observation_values()
     storage_interface.store_observation_values(
         new_id, obs_vals.tz_convert('MST'))
     stored = storage_interface.read_observation_values(new_id)
@@ -253,17 +247,15 @@ def test_store_observation_values_tz(sql_app, user, nocommit_cursor):
 
 
 def test_store_observation_values_no_observation(
-        sql_app, user, nocommit_cursor):
+        sql_app, user, nocommit_cursor, obs_vals):
     new_id = str(uuid.uuid1())
-    obs_vals = values.static_observation_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_observation_values(new_id, obs_vals)
 
 
 def test_store_observation_values_invalid_user(sql_app, invalid_user,
-                                               nocommit_cursor):
+                                               nocommit_cursor, obs_vals):
     obs_id = list(demo_observations.keys())[0]
-    obs_vals = values.static_observation_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_observation_values(obs_id, obs_vals)
 
@@ -365,36 +357,33 @@ def test_store_forecast_invalid_user(sql_app, invalid_user, nocommit_cursor):
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
 def test_store_forecast_values(sql_app, user, nocommit_cursor,
-                               forecast):
+                               forecast, fx_vals):
     forecast['name'] = 'new_forecast'
     new_id = storage_interface.store_forecast(forecast)
-    fx_vals = values.static_forecast_values()
     storage_interface.store_forecast_values(new_id, fx_vals)
     stored = storage_interface.read_forecast_values(new_id)
     pdt.assert_frame_equal(stored, fx_vals)
 
 
-def test_store_forecast_values_tz(sql_app, user, nocommit_cursor):
+def test_store_forecast_values_tz(sql_app, user, nocommit_cursor, fx_vals):
     forecast = list(demo_forecasts.values())[0]
     forecast['name'] = 'new_forecast'
     new_id = storage_interface.store_forecast(forecast)
-    fx_vals = values.static_forecast_values()
     storage_interface.store_forecast_values(new_id, fx_vals.tz_convert('MST'))
     stored = storage_interface.read_forecast_values(new_id)
     pdt.assert_frame_equal(stored, fx_vals)
 
 
-def test_store_forecast_values_no_forecast(sql_app, user, nocommit_cursor):
+def test_store_forecast_values_no_forecast(sql_app, user, nocommit_cursor,
+                                           fx_vals):
     new_id = str(uuid.uuid1())
-    fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_forecast_values(new_id, fx_vals)
 
 
 def test_store_forecast_values_invalid_user(sql_app, invalid_user,
-                                            nocommit_cursor):
+                                            nocommit_cursor, fx_vals):
     fx_id = list(demo_forecasts.keys())[0]
-    fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_forecast_values(fx_id, fx_vals)
 
@@ -522,25 +511,24 @@ def test_read_cdf_forecast_values_invalid_user(
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
 def test_store_cdf_forecast_values(sql_app, user, nocommit_cursor,
-                                   cdf_forecast_id):
-    fx_vals = values.static_forecast_values().shift(freq='30d')
+                                   cdf_forecast_id, fx_vals):
+    fx_vals = fx_vals.shift(freq='30d')
     storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
     stored = storage_interface.read_cdf_forecast_values(
         cdf_forecast_id, start=fx_vals.index[0])
     pdt.assert_frame_equal(stored, fx_vals)
 
 
-def test_store_cdf_forecast_values_no_forecast(sql_app, user, nocommit_cursor):
+def test_store_cdf_forecast_values_no_forecast(sql_app, user, nocommit_cursor,
+                                               fx_vals):
     new_id = str(uuid.uuid1())
-    fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_cdf_forecast_values(new_id, fx_vals)
 
 
 def test_store_cdf_forecast_values_invalid_user(sql_app, invalid_user,
-                                                nocommit_cursor):
+                                                nocommit_cursor, fx_vals):
     fx_id = list(demo_single_cdf.keys())[0]
-    fx_vals = values.static_forecast_values()
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_cdf_forecast_values(fx_id, fx_vals)
 
@@ -755,13 +743,12 @@ def test_delete_cdf_forecast_group_does_not_exist(
 
 
 def test_store_missing_values(
-        sql_app, user, nocommit_cursor):
+        sql_app, user, nocommit_cursor, obs_vals):
     observation = list(demo_observations.values())[0]
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
-    obs_vals = values.static_observation_values()
-    missing_indices = range(0, obs_vals.index.size, 3)
-    obs_vals['value'].iloc[missing_indices] = pd.np.nan
+    missing_indices = obs_vals.index[range(0, obs_vals.index.size, 3)]
+    obs_vals.loc[missing_indices, 'value'] = pd.np.nan
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
     pdt.assert_frame_equal(stored, obs_vals)
@@ -1030,7 +1017,8 @@ def test_remove_observation_from_aggregate_denied(
             aggregate_id, obs_id)
 
 
-def test_read_aggregate_values(sql_app, user, nocommit_cursor):
+def test_read_aggregate_values(sql_app, user, nocommit_cursor,
+                               ghi_obs_vals):
     aggregate_id = list(demo_aggregates.keys())[0]
     out = storage_interface.read_aggregate_values(aggregate_id)
     assert isinstance(out, dict)
@@ -1041,7 +1029,7 @@ def test_read_aggregate_values(sql_app, user, nocommit_cursor):
         "b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2"}
 
     for df in out.values():
-        pdt.assert_frame_equal(df, values.static_observation_values('ghi'))
+        pdt.assert_frame_equal(df, ghi_obs_vals)
 
 
 def test_read_aggregate_values_denied(sql_app, invalid_user, nocommit_cursor):
@@ -1050,8 +1038,8 @@ def test_read_aggregate_values_denied(sql_app, invalid_user, nocommit_cursor):
         storage_interface.read_aggregate_values(aggregate_id)
 
 
-def test_read_aggregate_values_restricted_start_end(sql_app, user,
-                                                    nocommit_cursor):
+def test_read_aggregate_values_restricted_start_end(
+        sql_app, user, nocommit_cursor, ghi_obs_vals):
     aggregate_id = list(demo_aggregates.keys())[0]
     start = pd.Timestamp('20190415T0000Z')
     end = pd.Timestamp('20190416T0000Z')
@@ -1065,7 +1053,7 @@ def test_read_aggregate_values_restricted_start_end(sql_app, user,
 
     for df in out.values():
         pdt.assert_frame_equal(
-            df, values.static_observation_values('ghi')[start:end])
+            df, ghi_obs_vals[start:end])
 
 
 def test_read_aggregate_values_adj_effective_from(sql_app, user,

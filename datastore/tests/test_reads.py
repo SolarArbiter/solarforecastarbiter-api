@@ -15,22 +15,24 @@ from conftest import bin_to_uuid
 def insertuser(cursor, new_permission, valueset, new_user):
     AllMeta = namedtuple('AllMeta', ['user', 'site', 'fx', 'obs', 'org',
                                      'role', 'cdf', 'report', 'agg',
-                                     'auth0id'])
+                                     'auth0id', 'agg_fx', 'agg_cdf'])
     org = valueset[0][0]
     user = valueset[1][0]
     role = valueset[2][0]
     site = valueset[3][0]
     fx = valueset[5][0]
+    agg_fx = valueset[5][-1]
     obs = valueset[6][0]
     cdf = valueset[7][0]
+    agg_cdf = valueset[7][2]
     report = valueset[8][0]
     agg = valueset[9][0]
-    for thing in (user, site, fx, obs, cdf):
+    for thing in (user, site, fx, obs, cdf, agg_fx, agg_cdf):
         thing['strid'] = str(bin_to_uuid(thing['id']))
     cursor.execute(
         "DELETE FROM permissions WHERE action = 'read'")
     return AllMeta(user, site, fx, obs, org, role, cdf, report, agg,
-                   user['auth0_id'])
+                   user['auth0_id'], agg_fx, agg_cdf)
 
 
 @pytest.fixture()
@@ -141,7 +143,7 @@ def test_read_observation(dictcursor, insertuser, allow_read_observations):
     observation['observation_id'] = observation['strid']
     del observation['strid']
     del observation['id']
-    observation['site_id'] = str(bin_to_uuid(observation['site_id']))
+    observation['site_id'] = bin_to_uuid(observation['site_id'])
     observation['provider'] = insertuser[4]['name']
     del observation['organization_id']
     del res['created_at']
@@ -157,25 +159,33 @@ def test_read_observation_denied(cursor, insertuser):
     assert e.value.args[0] == 1142
 
 
-def test_read_forecast(dictcursor, insertuser, allow_read_forecasts):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[2]
+@pytest.fixture(params=[0, 1])
+def both_fx_types(insertuser, request):
+    if request.param:
+        fx = insertuser.fx
+    else:
+        fx = insertuser.agg_fx
+    return insertuser[0]['auth0_id'], fx, insertuser[4]['name']
+
+
+def test_read_forecast(dictcursor, allow_read_forecasts, both_fx_types):
+    auth0id, forecast, provider = both_fx_types
     dictcursor.callproc('read_forecast', (auth0id, forecast['strid']))
     res = dictcursor.fetchall()[0]
     forecast['forecast_id'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
-    forecast['provider'] = insertuser[4]['name']
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
+    forecast['provider'] = provider
     del forecast['organization_id']
     del res['created_at']
     del res['modified_at']
     assert res == forecast
 
 
-def test_read_forecast_denied(cursor, insertuser):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[3]
+def test_read_forecast_denied(cursor, both_fx_types):
+    auth0id, forecast, provider = both_fx_types
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast', (auth0id, forecast['strid']))
     assert e.value.args[0] == 1142
@@ -307,17 +317,27 @@ def test_read_forecast_values_denied_can_read_meta(
     assert e.value.args[0] == 1142
 
 
-def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[6]
+@pytest.fixture(params=[0, 1])
+def both_cdf_fx_types(insertuser, request):
+    if request.param:
+        fx = insertuser.cdf
+    else:
+        fx = insertuser.agg_cdf
+    return insertuser[0]['auth0_id'], fx, insertuser[4]['name']
+
+
+def test_read_cdf_forecast(
+        dictcursor, both_cdf_fx_types, allow_read_cdf_forecasts):
+    auth0id, forecast, provider = both_cdf_fx_types
     dictcursor.callproc('read_cdf_forecasts_group',
                         (auth0id, forecast['strid']))
     res = dictcursor.fetchall()[0]
     forecast['forecast_id'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
-    forecast['provider'] = insertuser[4]['name']
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
+    forecast['provider'] = provider
     forecast['constant_values'] = str(forecast['constant_values']).replace(
         '\'', '"')
     del forecast['organization_id']
@@ -326,10 +346,9 @@ def test_read_cdf_forecast(dictcursor, insertuser, allow_read_cdf_forecasts):
     assert res == forecast
 
 
-def test_read_cdf_forecast_no_values(dictcursor, insertuser,
+def test_read_cdf_forecast_no_values(dictcursor, both_cdf_fx_types,
                                      allow_read_cdf_forecasts):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[6]
+    auth0id, forecast, provider = both_cdf_fx_types
     dictcursor.execute('DELETE FROM cdf_forecasts_singles')
     dictcursor.callproc('read_cdf_forecasts_group',
                         (auth0id, forecast['strid']))
@@ -337,8 +356,9 @@ def test_read_cdf_forecast_no_values(dictcursor, insertuser,
     forecast['forecast_id'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
-    forecast['provider'] = insertuser[4]['name']
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
+    forecast['provider'] = provider
     forecast['constant_values'] = '{}'
     del forecast['organization_id']
     del res['created_at']
@@ -346,19 +366,17 @@ def test_read_cdf_forecast_no_values(dictcursor, insertuser,
     assert res == forecast
 
 
-def test_read_cdf_forecast_denied(cursor, insertuser):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[6]
+def test_read_cdf_forecast_denied(cursor, both_cdf_fx_types):
+    auth0id, forecast, provider = both_cdf_fx_types
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecasts_group',
                         (auth0id, forecast['strid']))
     assert e.value.args[0] == 1142
 
 
-def test_read_cdf_forecast_single(dictcursor, insertuser,
+def test_read_cdf_forecast_single(dictcursor, both_cdf_fx_types,
                                   allow_read_cdf_forecasts):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[6]
+    auth0id, forecast, provider = both_cdf_fx_types
     strid = list(forecast['constant_values'].keys())[0]
     dictcursor.callproc('read_cdf_forecasts_single',
                         (auth0id, strid))
@@ -367,8 +385,9 @@ def test_read_cdf_forecast_single(dictcursor, insertuser,
     forecast['parent'] = forecast['strid']
     del forecast['id']
     del forecast['strid']
-    forecast['site_id'] = str(bin_to_uuid(forecast['site_id']))
-    forecast['provider'] = insertuser[4]['name']
+    forecast['site_id'] = bin_to_uuid(forecast['site_id'])
+    forecast['aggregate_id'] = bin_to_uuid(forecast['aggregate_id'])
+    forecast['provider'] = provider
     forecast['constant_value'] = forecast['constant_values'][strid]
     del forecast['constant_values']
     del forecast['organization_id']
@@ -376,9 +395,8 @@ def test_read_cdf_forecast_single(dictcursor, insertuser,
     assert res == forecast
 
 
-def test_read_cdf_forecast_single_denied(cursor, insertuser):
-    auth0id = insertuser[0]['auth0_id']
-    forecast = insertuser[6]
+def test_read_cdf_forecast_single_denied(cursor, both_cdf_fx_types):
+    auth0id, forecast, provider = both_cdf_fx_types
     strid = list(forecast['constant_values'].keys())[0]
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_cdf_forecasts_single',
