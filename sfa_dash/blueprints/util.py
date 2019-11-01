@@ -330,7 +330,7 @@ def handle_response(request_object):
                     f' <a href="{previous_page}">Return to the previous '
                     'page.</a>')
         elif request_object.status_code == 422:
-            errors = {'422': ['Failed to compute aggregate Values']}
+            errors = {'422': 'Failed to compute aggregate Values'}
         if errors:
             raise DataRequestException(request_object.status_code, **errors)
         else:

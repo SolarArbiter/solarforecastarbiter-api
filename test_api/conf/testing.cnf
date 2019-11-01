@@ -1,0 +1,12 @@
+[mysqld]
+bind-address=0.0.0.0
+default-time-zone='+00:00'
+innodb_file_per_table
+
+# encryption
+early-plugin-load=keyring_file.so
+keyring_file_data=/var/lib/mysql-keyring/keyring
+master_verify_checksum=ON
+binlog_checksum=crc32
+# encrypt by default
+innodb_encrypt_tables=ON

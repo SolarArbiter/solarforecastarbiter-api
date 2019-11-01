@@ -22,6 +22,24 @@ jobs:
       displayName: 'Use Python $(python.version)'
 
     - script: |
+        git clone https://github.com/SolarArbiter/solarforecastarbiter-api.git test_api/solarforecastarbiter-api
+      displayName: 'Clone API'
+
+    - task: DockerCompose@0
+      displayName: 'Start test api'
+      inputs:
+        action: Run services
+        dockerComposeFile: test_api/docker-compose.yml
+        buildImages: true
+        abortOnContainerExit: false
+        detached: true
+  
+    - script: |
+        echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
+        echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter_dashboard_mysql_1 | rev | cut -d':' -f 1 | rev)"
+      displayName: 'Set env variables'
+
+    - script: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-test.txt

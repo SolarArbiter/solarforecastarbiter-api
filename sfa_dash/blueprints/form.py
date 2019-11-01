@@ -474,7 +474,7 @@ forms_blp.add_url_rule('/observations/<uuid>/download',
 forms_blp.add_url_rule('/forecasts/single/<uuid>/download',
                        view_func=DownloadForm.as_view('download_forecast_data',
                                                       data_type='forecast'))
-forms_blp.add_url_rule('/forecasts/cdf/<uuid>/download',
+forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/download',
                        view_func=DownloadForm.as_view(
                            'download_cdf_forecast_data',
                            data_type='cdf_forecast'))

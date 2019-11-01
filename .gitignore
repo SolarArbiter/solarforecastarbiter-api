@@ -116,3 +116,6 @@ dmypy.json
 # editors
 *.swo
 *.swp
+
+# Testing-only submodules
+/test_api/solarforecastarbiter-api

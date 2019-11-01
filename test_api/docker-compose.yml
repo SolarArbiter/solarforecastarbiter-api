@@ -1,0 +1,44 @@
+version: '3'
+services:
+  mysql:
+    image: percona:8.0.13-4-centos
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 'testpassword'
+      MYSQL_DATABASE: arbiter_data
+    volumes:
+      - ./conf:/usr/local/mysqlconf
+    ports:
+      - "3306"
+    entrypoint:
+      bash -c "
+      cp /usr/local/mysqlconf/*.cnf /etc/my.cnf.d/
+      && chmod 644 /etc/my.cnf.d/*.cnf 
+      && /docker-entrypoint.sh mysqld
+      "
+  migrate_schemas:
+    build:
+      context: ./solarforecastarbiter-api/datastore/migrations
+    depends_on:
+      - mysql
+    volumes:
+      - ./solarforecastarbiter-api/datastore/migrations:/migrations
+    entrypoint: sh ./wait-for -t 60 mysql:3306 -- /migrate -path=/migrations/ -database mysql://root:testpassword@tcp(mysql:3306)/arbiter_data goto 29
+
+  api:
+    build: .
+    environment:
+      MYSQL_HOST: "solararbitersolarforecastarbiter_dashboard_mysql_1"
+      MYSQL_PORT: 3306
+      FLASK_APP: "sfa_api:create_app('DevelopmentConfig')"
+      FLASK_ENV: "development"
+      FLASK_RUN_PORT: 5000
+      FLASK_RUN_HOST: "0.0.0.0"
+    ports:
+        - "5000:5000"
+    networks:
+      - default
+    entrypoint:
+      flask run
+    depends_on:
+      - migrate_schemas

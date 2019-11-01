@@ -1,10 +1,32 @@
 import os
+import requests
 
 
+import pymysql
 import pytest
+from flask import url_for
 
 
 from sfa_dash import create_app
+
+BASE_URL = 'http://localhost'
+
+
+@pytest.fixture(scope='session')
+def auth_token():
+    token_req = requests.post(
+        'https://solarforecastarbiter.auth0.com/oauth/token',
+        headers={'content-type': 'application/json'},
+        data=('{"grant_type": "password", '
+              '"username": "testing@solarforecastarbiter.org",'
+              '"password": "Thepassword123!", '
+              '"audience": "https://api.solarforecastarbiter.org", '
+              '"client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}'))
+    if token_req.status_code != 200:
+        pytest.skip('Cannot retrieve valid Auth0 token')
+    else:
+        token = token_req.json()
+        return token
 
 
 @pytest.fixture()
@@ -14,25 +36,321 @@ def expired_token():
 
 
 @pytest.fixture()
-def mocked_storage(mocker, expired_token):
-    class fake_storage:
-        def __init__(*args, **kwargs):
-            pass
+def mocked_storage(mocker, auth_token, expired_token):
+    def make_storage(authenticated=False):
+        if authenticated:
+            token = auth_token
+        else:
+            token = expired_token
 
-        def get(self, *args):
-            return expired_token
+        class fake_storage:
+            def __init__(*args, **kwargs):
+                pass
 
-        def set(self, *args):
-            pass
+            def get(self, *args):
+                return token
 
-        def delete(self, *args):
-            pass
-    storage = mocker.patch('sfa_dash.session_storage',
-                           new=fake_storage)
-    return storage
+            def set(self, *args):
+                pass
+
+            def delete(self, *args):
+                pass
+        return fake_storage
+    return make_storage
 
 
 @pytest.fixture()
-def app(mocked_storage):
+def mocked_unauth_storage(mocker, mocked_storage):
+    mocker.patch('sfa_dash.session_storage',
+                 new=mocked_storage())
+
+
+@pytest.fixture()
+def mocked_auth_storage(mocker, mocked_storage):
+    mocker.patch('sfa_dash.session_storage',
+                 new=mocked_storage(True))
+
+
+@pytest.fixture()
+def app_unauth(mocked_unauth_storage):
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
     return create_app('sfa_dash.config.TestConfig')
+
+
+@pytest.fixture()
+def app(mocked_auth_storage):
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    return create_app('sfa_dash.config.TestConfig')
+
+
+@pytest.fixture()
+def client(app):
+    yield app.test_client()
+
+
+no_arg_routes_list = [
+    '/sites/',
+    '/observations/',
+    '/forecasts/single/',
+    '/forecasts/cdf/',
+    '/reports/',
+]
+
+
+@pytest.fixture(params=no_arg_routes_list)
+def no_arg_route(request):
+    return request.param
+
+
+admin_routes_list = [
+    '/admin/permissions/create/cdf_forecast_group',
+    '/admin/permissions/create/observation',
+    '/admin/permissions/create/forecast',
+    '/admin/permissions/create/report',
+    '/admin/permissions/create/site',
+    '/admin/roles/create',
+    '/admin/permissions/',
+    '/admin/roles/',
+    '/admin/users/',
+]
+
+
+@pytest.fixture(params=admin_routes_list)
+def admin_route(request):
+    return request.param
+
+
+admin_multiarg_route_list = [
+    '/admin/permissions/<uuid>/remove/<object_id>',
+    '/admin/roles/<uuid>/remove/<permission_id>',
+    '/admin/users/<uuid>/remove/<role_id>',
+]
+
+
+user_id_route_list = [
+    '/admin/users/{user_id}',
+    '/admin/users/{user_id}/add/',
+]
+
+
+@pytest.fixture(params=user_id_route_list)
+def user_id_route(request):
+    def fn(user_id):
+        return request.param.format(user_id=user_id)
+    return fn
+
+
+role_id_route_list = [
+    '/admin/roles/{role_id}',
+    '/admin/roles/{role_id}/delete',
+    '/admin/roles/{role_id}/add/',
+    '/admin/roles/{role_id}/grant/',
+]
+
+
+@pytest.fixture(params=role_id_route_list)
+def role_id_route(request):
+    def fn(role_id):
+        return request.param.format(role_id=role_id)
+    return fn
+
+
+permission_id_route_list = [
+    '/admin/permissions/{permission_id}',
+    '/admin/permissions/{permission_id}/delete',
+    '/admin/permissions/{permission_id}/add',
+]
+
+
+@pytest.fixture(params=permission_id_route_list)
+def permission_id_route(request):
+    def fn(permission_id):
+        return request.param.format(permission_id=permission_id)
+    return fn
+
+
+create_form_routes_list = [
+    '/sites/create',
+    '/reports/create',
+]
+
+
+single_object_routes_list = [
+    '/forecasts/cdf/single/<uuid>/upload',
+    '/forecasts/cdf/single/<uuid>',
+    '/forecasts/cdf/single<uuid>/download',
+]
+
+
+report_id_route_list = [
+    '/reports/<uuid>'
+    '/reports/<uuid>/delete',
+]
+
+site_id_route_list = [
+    '/sites/{site_id}/',
+    '/sites/<uuid>/delete',
+    '/sites/{site_id}/forecasts/single/create',
+    '/sites/{site_id}/forecasts/cdf/create',
+    '/sites/{site_id}/observations/create',
+    '/sites/{site_id}/observations/create',
+]
+
+
+@pytest.fixture(params=site_id_route_list)
+def site_id_route(request):
+    def fn(site_id):
+        return request.param.format(site_id=site_id)
+    return fn
+
+
+observation_id_route_list = [
+    '/observations/{observation_id}',
+    '/observations/{observation_id}/upload',
+    '/observations/{observation_id}/download',
+    '/observations/{observation_id}/delete',
+]
+
+
+@pytest.fixture(params=observation_id_route_list)
+def observation_id_route(request):
+    def fn(observation_id):
+        return request.param.format(observation_id=observation_id)
+    return fn
+
+
+forecast_id_route_list = [
+    '/forecasts/single/<uuid>',
+    '/forecasts/single/<uuid>/upload',
+    '/forecasts/single/<uuid>/download',
+    '/forecasts/single/<uuid>/delete',
+]
+
+
+@pytest.fixture(params=forecast_id_route_list)
+def forecast_id_route(request):
+    def fn(forecast_id):
+        return request.param.format(forecast_id=forecast_id)
+    return fn
+
+
+cdf_forecast_id_route_list = [
+    '/forecasts/cdf/{forecast_id}',
+    '/forecasts/cdf/{forecast_id}/delete',
+]
+
+
+@pytest.fixture(params=forecast_id_route_list)
+def cdf_forecast_id_route(request):
+    def fn(forecast_id):
+        return request.param.format(forecast_id=forecast_id)
+    return fn
+
+
+test_metadata_dict = {
+    'observation': {},
+    'forecast': {},
+    'cdf_forecast': {},
+    'report': {},
+    'user': {},
+    'permission': {},
+    'role': {},
+}
+
+
+@pytest.fixture()
+def missing_id():
+    return '7d2c3208-5243-11e9-8647-d663bd873d93'
+
+
+@pytest.fixture()
+def observation_id():
+    return '123e4567-e89b-12d3-a456-426655440000'
+
+
+@pytest.fixture()
+def cdf_forecast_group_id():
+    return 'ef51e87c-50b9-11e9-8647-d663bd873d93'
+
+
+@pytest.fixture()
+def cdf_forecast_id():
+    return '633f9396-50bb-11e9-8647-d663bd873d93'
+
+
+@pytest.fixture()
+def forecast_id():
+    return '11c20780-76ae-4b11-bef1-7a75bdc784e3'
+
+
+@pytest.fixture()
+def site_id():
+    return 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a'
+
+
+@pytest.fixture()
+def site_id_plant():
+    return '123e4567-e89b-12d3-a456-426655440002'
+
+
+@pytest.fixture()
+def test_orgid():
+    return 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
+
+
+@pytest.fixture()
+def user_id():
+    return '0c90950a-7cca-11e9-a81f-54bf64606445'
+
+
+@pytest.fixture()
+def test_url(app):
+    def fn(view):
+        with app.test_request_context():
+            return url_for(view, _external=True)
+    return fn
+
+
+@pytest.fixture(scope='session')
+def connection():
+    connection = pymysql.connect(
+        host=os.getenv('MYSQL_HOST', '127.0.0.1'),
+        port=int(os.getenv('MYSQL_PORT', '3306')),
+        user='root',
+        password='testpassword',
+        database='arbiter_data',
+        binary_prefix=True)
+    # with no connection.commit(), no data should stay in db
+    return connection
+
+
+@pytest.fixture()
+def cursor(connection):
+    connection.rollback()
+    return connection.cursor()
+
+
+@pytest.fixture()
+def dictcursor(connection):
+    connection.rollback()
+    return connection.cursor(cursor=pymysql.cursors.DictCursor)
+
+
+@pytest.fixture()
+def role_id(cursor):
+    cursor.execute(
+        'SELECT BIN_TO_UUID(id, 1) from arbiter_data.roles '
+        'WHERE name = "Test user role"')
+    role_id = cursor.fetchone()[0]
+    return role_id
+
+
+@pytest.fixture()
+def permission_id(cursor, role_id):
+    cursor.execute(
+        'SELECT BIN_TO_UUID(id, 1) FROM arbiter_data.permissions '
+        'WHERE id IN (SELECT permission_id FROM '
+        'arbiter_data.role_permission_mapping WHERE role_id '
+        '= UUID_TO_BIN(%s, 1) ) LIMIT 1', role_id)
+    permission_id = cursor.fetchone()[0]
+    return permission_id
