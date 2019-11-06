@@ -135,7 +135,7 @@ def try_query(query_cmd):
     except (pymysql.err.OperationalError, pymysql.err.IntegrityError,
             pymysql.err.InternalError) as e:
         ecode = e.args[0]
-        if ecode == 1142 or ecode == 1143 or ecode == 1411:
+        if ecode == 1142 or ecode == 1143 or ecode == 1411 or ecode == 1216:
             raise StorageAuthError(e.args[1])
         elif ecode == 1451:
             raise DeleteRestrictionError
