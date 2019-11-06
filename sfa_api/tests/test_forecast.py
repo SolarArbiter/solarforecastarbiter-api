@@ -92,7 +92,7 @@ def test_forecast_post_invalid_aggregate(api, missing_id):
     assert res.status_code == 404
 
 
-def test_forecast_post_invalid_aggregate(api, site_id):
+def test_forecast_post_aggregate_id_is_site(api, site_id):
     payload = copy_update(VALID_FORECAST_AGG_JSON, 'aggregate_id', site_id)
     res = api.post('/forecasts/single/',
                    base_url=BASE_URL,
