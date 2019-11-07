@@ -165,7 +165,8 @@ def _call_procedure_for_single(procedure_name, *args, cursor_type='dict'):
     """Wrapper handling try/except logic when a single value is expected
     """
     try:
-        result = _call_procedure(procedure_name, *args, cursor_type='dict')[0]
+        result = _call_procedure(procedure_name, *args,
+                                 cursor_type=cursor_type)[0]
     except IndexError:
         raise StorageAuthError()
     return result
@@ -1434,7 +1435,8 @@ def _read_metadata_for_write(obj_id, type_, start):
         'read_metadata_for_value_write', obj_id, type_, start)
     interval_length = out['interval_length']
     previous_time = _set_previous_time(out['previous_time'])
-    return interval_length, previous_time
+    extra_parameters = out['extra_parameters']
+    return interval_length, previous_time, extra_parameters
 
 
 def read_metadata_for_forecast_values(forecast_id, start):
@@ -1451,9 +1453,11 @@ def read_metadata_for_forecast_values(forecast_id, start):
     Returns
     -------
     interval_length : int
-        The interval length of the observation
+        The interval length of the forecast
     previous_time : pandas.Timestamp or None
        The most recent timestamp before start or None if no times
+    extra_parameters : str
+       The extra parameters of the forecast
 
     Raises
     ------
@@ -1477,9 +1481,11 @@ def read_metadata_for_cdf_forecast_values(forecast_id, start):
     Returns
     -------
     interval_length : int
-        The interval length of the observation
+        The interval length of the forecast
     previous_time : pandas.Timestamp or None
        The most recent timestamp before start or None if no times
+    extra_parameters : str
+       The extra parameters of the forecast
 
     Raises
     ------
@@ -1507,6 +1513,8 @@ def read_metadata_for_observation_values(observation_id, start):
         The interval length of the observation
     previous_time : pandas.Timestamp or None
        The most recent timestamp before start or None if no times
+    extra_parameters : str
+       The extra parameters of the observation
 
     Raises
     ------

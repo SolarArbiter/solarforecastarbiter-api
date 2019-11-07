@@ -246,8 +246,10 @@ class ObservationValuesView(MethodView):
             validate_parsable_values(), qf_range)
         observation_df = observation_df.set_index('timestamp')
         storage = get_storage()
-        interval_length, previous_time = storage.read_metadata_for_observation_values(  # NOQA
-            observation_id, observation_df.index[0])
+        interval_length, previous_time, _ = (
+            storage.read_metadata_for_observation_values(
+                observation_id, observation_df.index[0])
+        )
         validate_index_period(observation_df.index,
                               interval_length, previous_time)
         stored = storage.store_observation_values(
