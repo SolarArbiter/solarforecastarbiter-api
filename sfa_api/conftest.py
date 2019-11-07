@@ -138,6 +138,17 @@ VALID_FX_VALUE_JSON = {
          'value': 3.0}
     ]
 }
+UNSORTED_FX_VALUE_JSON = {
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'timestamp': "2019-01-22T17:59:00+00:00",
+         'value': 32.0},
+        {'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T18:04:00+00:00",
+         'value': 3.0}
+    ]
+}
 FORECAST_CSV = (
     'timestamp,value\n'
     '20190122T12:05:00+0000,7.0\n'

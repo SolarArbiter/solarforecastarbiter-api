@@ -5,7 +5,7 @@ import pytest
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_FORECAST_JSON, copy_update,
                               VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV,
-                              VALID_FORECAST_AGG_JSON)
+                              VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON)
 
 
 INVALID_NAME = copy_update(VALID_FORECAST_JSON, 'name', 'Bad semicolon;')
@@ -159,11 +159,13 @@ WRONG_DATE_FORMAT_CSV = "timestamp,value\nksdfjgn,32.93"
 NON_NUMERICAL_VALUE_CSV = "timestamp,value\n2018-10-29T12:04:00:00+00,fgh" # NOQA
 
 
-def test_post_forecast_values_valid_json(api, forecast_id, mock_previous):
+@pytest.mark.parametrize('vals', (VALID_FX_VALUE_JSON, UNSORTED_FX_VALUE_JSON))
+def test_post_forecast_values_valid_json(api, forecast_id, mock_previous,
+                                         vals):
     mock_previous.return_value = pd.Timestamp('2019-01-22T17:44Z')
     res = api.post(f'/forecasts/single/{forecast_id}/values',
                    base_url=BASE_URL,
-                   json=VALID_FX_VALUE_JSON)
+                   json=vals)
     assert res.status_code == 201
 
 

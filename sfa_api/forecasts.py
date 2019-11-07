@@ -230,7 +230,7 @@ class ForecastValuesView(MethodView):
         """
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
-        forecast_df = forecast_df.set_index('timestamp')
+        forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
         interval_length, previous_time, extra_params = (
             storage.read_metadata_for_forecast_values(
@@ -510,7 +510,7 @@ class CDFForecastValues(MethodView):
         """
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
-        forecast_df = forecast_df.set_index('timestamp')
+        forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
         interval_length, previous_time, extra_params = (
             storage.read_metadata_for_cdf_forecast_values(
