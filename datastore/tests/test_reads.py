@@ -1275,7 +1275,7 @@ def test_read_metadata_for_value_write_fx(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
-
+    assert isinstance(res['extra_parameters'], str)
 
 def test_read_metadata_for_value_write_fx_before(
         dictcursor, insertuser, allow_write_values):
@@ -1290,6 +1290,7 @@ def test_read_metadata_for_value_write_fx_before(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_fx_no_vals(
@@ -1301,6 +1302,7 @@ def test_read_metadata_for_value_write_fx_no_vals(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_fx_no_write(
@@ -1326,6 +1328,7 @@ def test_read_metadata_for_value_write_obs(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_obs_before(
@@ -1341,6 +1344,7 @@ def test_read_metadata_for_value_write_obs_before(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_obs_no_vals(
@@ -1352,6 +1356,7 @@ def test_read_metadata_for_value_write_obs_no_vals(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_obs_no_write(
@@ -1378,6 +1383,7 @@ def test_read_metadata_for_value_write_cdf(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_cdf_before(
@@ -1394,6 +1400,7 @@ def test_read_metadata_for_value_write_cdf_before(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_cdf_no_vals(
@@ -1406,6 +1413,7 @@ def test_read_metadata_for_value_write_cdf_no_vals(
     res = dictcursor.fetchone()
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
+    assert isinstance(res['extra_parameters'], str)
 
 
 def test_read_metadata_for_value_write_cdf_fx_no_write(
