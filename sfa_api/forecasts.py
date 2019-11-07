@@ -1,3 +1,5 @@
+from functools import partial
+
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
@@ -18,7 +20,8 @@ from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_index_period,
-                                            validate_forecast_values)
+                                            validate_forecast_values,
+                                            restrict_forecast_upload_window)
 
 
 class AllForecastsView(MethodView):
@@ -223,6 +226,8 @@ class ForecastValuesView(MethodView):
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -235,6 +240,10 @@ class ForecastValuesView(MethodView):
         interval_length, previous_time, extra_params = (
             storage.read_metadata_for_forecast_values(
                 forecast_id, forecast_df.index[0])
+        )
+        restrict_forecast_upload_window(
+            extra_params, partial(storage.read_forecast, forecast_id),
+            forecast_df.index[0]
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
@@ -503,6 +512,8 @@ class CDFForecastValues(MethodView):
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -515,6 +526,10 @@ class CDFForecastValues(MethodView):
         interval_length, previous_time, extra_params = (
             storage.read_metadata_for_cdf_forecast_values(
                 forecast_id, forecast_df.index[0])
+        )
+        restrict_forecast_upload_window(
+            extra_params, partial(storage.read_cdf_forecast, forecast_id),
+            forecast_df.index[0]
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)

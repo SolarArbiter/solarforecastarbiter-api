@@ -1423,19 +1423,25 @@ def user_exists():
     return exists.get(f"does_user_exist('{current_user}')") == 1
 
 
-def _set_previous_time(previous_time):
+def _set_previous_time(out):
     # easier mocking
+    previous_time = out['previous_time']
     if previous_time is not None:
         previous_time = pd.Timestamp(previous_time)
     return previous_time
+
+
+def _set_extra_params(out):
+    # for mocking
+    return out['extra_parameters']
 
 
 def _read_metadata_for_write(obj_id, type_, start):
     out = _call_procedure_for_single(
         'read_metadata_for_value_write', obj_id, type_, start)
     interval_length = out['interval_length']
-    previous_time = _set_previous_time(out['previous_time'])
-    extra_parameters = out['extra_parameters']
+    previous_time = _set_previous_time(out)
+    extra_parameters = _set_extra_params(out)
     return interval_length, previous_time, extra_parameters
 
 

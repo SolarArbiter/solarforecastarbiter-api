@@ -5,7 +5,8 @@ import pytest
 from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_FORECAST_JSON, copy_update,
                               VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV,
-                              VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON)
+                              VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON,
+                              ADJ_FX_VALUE_JSON)
 
 
 INVALID_NAME = copy_update(VALID_FORECAST_JSON, 'name', 'Bad semicolon;')
@@ -167,6 +168,37 @@ def test_post_forecast_values_valid_json(api, forecast_id, mock_previous,
                    base_url=BASE_URL,
                    json=vals)
     assert res.status_code == 201
+
+
+def test_post_forecast_values_valid_json_with_restriction(
+        api, forecast_id, mock_previous, restrict_fx_upload):
+    mock_previous.return_value = pd.Timestamp('2019-11-01T06:55Z')
+    restrict_fx_upload.return_value = pd.Timestamp('2019-11-01T05:59Z')
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=ADJ_FX_VALUE_JSON)
+    assert res.status_code == 201
+
+
+def test_post_forecast_values_valid_json_restricted(
+        api, forecast_id, mock_previous, restrict_fx_upload):
+    mock_previous.return_value = pd.Timestamp('2019-11-01T06:55Z')
+    restrict_fx_upload.return_value = pd.Timestamp('2019-11-01T06:59Z')
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=ADJ_FX_VALUE_JSON)
+    assert res.status_code == 400
+
+
+def test_post_forecast_values_valid_json_restricted_val(
+        api, forecast_id, mock_previous, restrict_fx_upload):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T06:55Z')
+    restrict_fx_upload.return_value = pd.Timestamp('2019-01-22T05:59Z')
+    # init should be 07:00Z, but not for valid fx json
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_FX_VALUE_JSON)
+    assert res.status_code == 400
 
 
 @pytest.fixture()

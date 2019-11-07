@@ -391,7 +391,7 @@ def restrict_forecast_upload_window(extra_parameters, get_forecast,
         return
 
     try:
-        fx_dict = get_forecast()
+        fx_dict = get_forecast().copy()
     except (StorageAuthError, NotFoundException):
         raise NotFoundException(errors={
             '404': 'Cannot read forecast or forecast does not exist'})

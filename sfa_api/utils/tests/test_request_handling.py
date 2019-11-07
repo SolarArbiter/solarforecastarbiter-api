@@ -3,7 +3,8 @@ import pandas.testing as pdt
 import pytest
 
 
-from sfa_api.conftest import VALID_FORECAST_JSON
+from sfa_api.conftest import (
+    VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON, demo_forecasts)
 from sfa_api.utils import request_handling
 from sfa_api.utils.errors import (
     BadAPIRequest, StorageAuthError, NotFoundException)
@@ -345,6 +346,37 @@ def test_restrict_upload_window_noop():
 ])
 def test_restrict_upload_window(mocker, now, first):
     fxd = VALID_FORECAST_JSON.copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+@pytest.mark.parametrize('now,first', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    # the fx specification does not allow for forecasts from midnight to noon
+    pytest.param(
+        pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T01:00Z'),
+        marks=pytest.mark.xfail
+    ),
+    (pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T22:01Z'), pd.Timestamp('2019-11-02T00:00Z')),
+])
+def test_restrict_upload_window_freq(mocker, now, first):
+    fxd = demo_forecasts['f8dd49fa-23e2-48a0-862b-ba0af6dec276'].copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+def test_restrict_upload_window_cdf_dict(mocker):
+    now = pd.Timestamp('2019-11-01T11:59Z')
+    first = pd.Timestamp('2019-11-01T13:00Z')
+    fxd = VALID_CDF_FORECAST_JSON.copy()
     ep = '{"restrict_upload": true}'
     mocker.patch(
         'sfa_api.utils.request_handling._current_utc_timestamp',
