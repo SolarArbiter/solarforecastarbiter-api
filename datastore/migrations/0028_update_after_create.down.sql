@@ -45,3 +45,30 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE store_cdf_forecasts_group TO 'insert_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE store_cdf_forecasts_group TO 'apiuser'@'%';
+
+
+
+
+DROP PROCEDURE store_report;
+CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report (
+    IN auth0id VARCHAR(32), IN strid CHAR(36), IN name VARCHAR(64),
+    IN report_parameters JSON)
+MODIFIES SQL DATA SQL SECURITY DEFINER
+COMMENT 'Store report metadata'
+BEGIN
+    DECLARE orgid BINARY(16);
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    SET allowed = (SELECT user_can_create(auth0id, 'reports'));
+    IF allowed THEN
+        SELECT get_user_organization(auth0id) INTO orgid;
+        INSERT INTO arbiter_data.reports (
+            id, organization_id, name, report_parameters
+        ) VALUES (
+            UUID_TO_BIN(strid, 1), orgid, name, report_parameters);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create reports"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE store_report TO 'insert_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE store_report TO 'apiuser'@'%';

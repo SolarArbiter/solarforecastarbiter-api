@@ -462,6 +462,40 @@ def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
     assert dictcursor.fetchone()['can']
 
 
+def test_store_cdf_forecast_no_update(
+        dictcursor, cdf_fx_callargs, allow_read_sites,
+        allow_read_aggregate, allow_create,
+        insertuser):
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], cdf_fx_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
+    dictcursor.callproc('store_cdf_forecasts_group',
+                        list(cdf_fx_callargs.values()))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.cdf_forecasts_groups WHERE '
+        'id = UUID_TO_BIN(%s, 1)',
+        (cdf_fx_callargs['strid'],))
+    res = dictcursor.fetchall()[0]
+    if cdf_fx_callargs['references_site']:
+        assert bin_to_uuid(res['site_id']) == cdf_fx_callargs['site_or_agg_id']
+        assert res['aggregate_id'] is None
+    else:
+        assert bin_to_uuid(res['aggregate_id']) == cdf_fx_callargs[
+            'site_or_agg_id']
+        assert res['site_id'] is None
+    for key in ('variable', 'name', 'interval_label', 'interval_length',
+                'interval_value_type', 'issue_time_of_day', 'run_length',
+                'lead_time_to_start', 'extra_parameters', 'axis'):
+        assert res[key] == cdf_fx_callargs[key]
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], cdf_fx_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
+
+
 def test_store_cdf_forecast_denied_cant_create(
         dictcursor, cdf_fx_callargs, allow_read_aggregate, allow_read_sites):
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -1050,7 +1084,13 @@ def test_add_role_to_user_no_tou(
     assert e.value.args[0] == 1142
 
 
-def test_store_report(dictcursor, report_callargs, allow_create, insertuser):
+def test_store_report(dictcursor, report_callargs, allow_create,
+                      default_user_role, insertuser):
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], report_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
     dictcursor.callproc('store_report', list(report_callargs.values()))
     dictcursor.execute(
         'SELECT * FROM arbiter_data.reports WHERE id = UUID_TO_BIN(%s, 1)',
@@ -1060,6 +1100,34 @@ def test_store_report(dictcursor, report_callargs, allow_create, insertuser):
     res_params = json.loads(res['report_parameters'])
     set_params = json.loads(report_callargs['report_parameters'])
     assert res_params == set_params
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], report_callargs['strid'])
+    )
+    assert dictcursor.fetchone()['can']
+
+
+def test_store_report_no_default(dictcursor, report_callargs, allow_create,
+                                 insertuser):
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], report_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
+    dictcursor.callproc('store_report', list(report_callargs.values()))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.reports WHERE id = UUID_TO_BIN(%s, 1)',
+        (report_callargs['strid'],))
+    res = dictcursor.fetchall()[0]
+    assert res['name'] == report_callargs['name']
+    res_params = json.loads(res['report_parameters'])
+    set_params = json.loads(report_callargs['report_parameters'])
+    assert res_params == set_params
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (insertuser[0]['auth0_id'], report_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
 
 
 def test_store_report_denied(dictcursor, report_callargs, insertuser):
