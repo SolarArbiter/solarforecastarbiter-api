@@ -430,7 +430,13 @@ def test_store_forecast_values_cant_write_cant_delete(
 
 
 def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
-                            allow_read_aggregate, allow_create):
+                            allow_read_aggregate, allow_create,
+                            default_user_role):
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (default_user_role['auth0_id'], cdf_fx_callargs['strid'])
+    )
+    assert not dictcursor.fetchone()['can']
     dictcursor.callproc('store_cdf_forecasts_group',
                         list(cdf_fx_callargs.values()))
     dictcursor.execute(
@@ -449,6 +455,11 @@ def test_store_cdf_forecast(dictcursor, cdf_fx_callargs, allow_read_sites,
                 'interval_value_type', 'issue_time_of_day', 'run_length',
                 'lead_time_to_start', 'extra_parameters', 'axis'):
         assert res[key] == cdf_fx_callargs[key]
+    dictcursor.execute(
+        "SELECT can_user_perform_action(%s, UUID_TO_BIN(%s, 1), 'update') as can",  # NOQA
+        (default_user_role['auth0_id'], cdf_fx_callargs['strid'])
+    )
+    assert dictcursor.fetchone()['can']
 
 
 def test_store_cdf_forecast_denied_cant_create(

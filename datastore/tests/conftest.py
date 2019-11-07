@@ -494,3 +494,12 @@ def new_unaffiliated_user(cursor, unaffiliated_organization):
             '(%s, %s, %s)', list(out.values()))
         return out
     return fnc
+
+
+@pytest.fixture()
+def default_user_role(cursor, valueset):
+    org = valueset[0][0]
+    user = valueset[1][0]
+    cursor.execute('CALL create_default_user_role(%s, %s)',
+                   (user['id'], org['id']))
+    return user
