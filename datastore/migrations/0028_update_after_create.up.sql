@@ -5,23 +5,15 @@ READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binuserid BINARY(16);
     DECLARE possiblerole BINARY(16);
-    DECLARE rolepresent BOOLEAN DEFAULT FALSE;
     SET binuserid = (SELECT id FROM arbiter_data.users WHERE auth0_id = auth0id);
     SET possiblerole = (
         SELECT id from arbiter_data.roles WHERE name =
-            CONCAT('DEFAULT User role ', BIN_TO_UUID(binuserid, 1)));
-    IF ISNULL(possiblerole) THEN
-        RETURN NULL;
-    ELSE
-        SET rolepresent = EXISTS(
-            SELECT 1 FROM arbiter_data.user_role_mapping
-            WHERE role_id = possiblerole AND user_id = binuserid);
-        IF rolepresent THEN
-            RETURN possiblerole;
-        ELSE
-            RETURN NULL;
-        END IF;
-    END IF;
+            CONCAT('DEFAULT User role ', BIN_TO_UUID(binuserid, 1))
+        AND id IN (
+            SELECT role_id FROM arbiter_data.user_role_mapping WHERE
+            user_id = binuserid)
+        );
+    RETURN possiblerole;
 END;
 
 GRANT EXECUTE ON FUNCTION get_default_user_role TO 'select_rbac'@'localhost';
@@ -42,7 +34,7 @@ from the user */
     DECLARE permid BINARY(16) DEFAULT UUID_TO_BIN(UUID(), 1);
     SET userrole = get_default_user_role(auth0id);
     SET userorg = get_user_organization(auth0id);
-    IF objectorg = userorg AND NOT ISNULL(userrole) THEN
+    IF objectorg = userorg AND NOT ISNULL(userrole) AND action != 'create' THEN
         INSERT INTO arbiter_data.permissions(
             id, description, organization_id, action, object_type, applies_to_all)
         VALUES (
