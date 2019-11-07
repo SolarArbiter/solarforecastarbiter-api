@@ -1,14 +1,18 @@
 from collections import defaultdict
 from io import StringIO
 import json
+import re
 
 
 from flask import request
 import numpy as np
 import pandas as pd
+from solarforecastarbiter.datamodel import Forecast
+from solarforecastarbiter.reference_forecasts import utils as fx_utils
 
 
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import (
+    BadAPIRequest, NotFoundException, StorageAuthError)
 
 
 def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
@@ -370,3 +374,34 @@ def validate_forecast_values(forecast_df):
         raise BadAPIRequest(errors)
 
 
+def _restrict_in_extra(extra_params):
+    match = re.search('"restrict_upload(["\\s\\:]*)true',
+                      extra_params, re.I)
+    return match is not None
+
+
+def _current_utc_timestamp():
+    # for easier testing
+    return pd.Timestamp.now(tz='UTC')
+
+
+def restrict_forecast_upload_window(extra_parameters, get_forecast,
+                                    first_time):
+    if not _restrict_in_extra(extra_parameters):
+        return
+
+    try:
+        fx_dict = get_forecast()
+    except (StorageAuthError, NotFoundException):
+        raise NotFoundException(errors={
+            '404': 'Cannot read forecast or forecast does not exist'})
+    # we don't care about the axis or constant values for probabilistic
+    fx_dict['site'] = ''
+    fx = Forecast.from_dict(fx_dict)
+    next_issue_time = fx_utils.get_next_issue_time(
+        fx, _current_utc_timestamp())
+    issue_time_of_values = first_time - fx.lead_time_to_start
+    if issue_time_of_values != next_issue_time:
+        raise BadAPIRequest(errors={'issue_time': (
+            f'Currently only accepting forecasts issued for {next_issue_time}'
+        )})
