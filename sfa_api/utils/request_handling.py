@@ -331,3 +331,42 @@ def validate_index_period(index, interval_length, previous_time):
                 f'{previous_time.isoformat()}.')
     if errors:
         raise BadAPIRequest({'timestamp': errors})
+
+
+def validate_forecast_values(forecast_df):
+    """Validates that posted values are parseable and of the expectedtypes.
+
+    Parameters
+    ----------
+    forecast_df: Pandas DataFrame
+
+    Raises
+    ------
+    BadAPIRequestError
+        If an expected field is missing or contains an entry of incorrect
+        type.
+    """
+    errors = {}
+    try:
+        forecast_df['value'] = pd.to_numeric(forecast_df['value'],
+                                             downcast='float')
+    except ValueError:
+        error = ('Invalid item in "value" field. Ensure that all values '
+                 'are integers, floats, empty, NaN, or NULL.')
+        errors.update({'value': [error]})
+    except KeyError:
+        errors.update({'value': ['Missing "value" field.']})
+    try:
+        forecast_df['timestamp'] = pd.to_datetime(
+            forecast_df['timestamp'],
+            utc=True)
+    except ValueError:
+        error = ('Invalid item in "timestamp" field. Ensure that '
+                 'timestamps are ISO8601 compliant')
+        errors.update({'timestamp': [error]})
+    except KeyError:
+        errors.update({'timestamp': ['Missing "timestamp" field.']})
+    if errors:
+        raise BadAPIRequest(errors)
+
+
