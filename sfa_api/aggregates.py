@@ -322,7 +322,7 @@ class AggregateForecasts(MethodView):
         ---
         summary: Get aggregate forecasts.
         description: >
-          Get metadata for all Forecasts associated with aggregate
+          Get metadata for all Forecasts associated with the aggregate
           that the user has access to.
         tags:
         - Aggregates
