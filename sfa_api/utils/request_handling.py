@@ -387,6 +387,32 @@ def _current_utc_timestamp():
 
 def restrict_forecast_upload_window(extra_parameters, get_forecast,
                                     first_time):
+    """
+    Check that the first_time falls within the window before the
+    next initialization time of the forecast from the current time.
+    Accounts for forecast lead_time_to_start and interval_label.
+    Requires 'read' permission on the forecast in question.
+
+    Parameters
+    ----------
+    extra_parameters : str
+        The extra_parameters string for the forecast. If
+        '"restrict_upload": true' is not found in the string, no restriction
+        occurs and this function returns immediately.
+    get_forecast : func
+        Function to get the forecast from the database.
+    first_time : datetime-like
+        First timestamp in the posted forecast timeseries.
+
+    Raises
+    ------
+    NotFoundException
+        When the user does not have 'read' permission for the forecast or
+        it doesn't exist.
+    BadAPIRequest
+        If the first_time of the timeseries is not consistent for the
+        next initaliziation time of the forecast.
+    """
     if not _restrict_in_extra(extra_parameters):
         return
 
