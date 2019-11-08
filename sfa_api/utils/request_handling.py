@@ -400,8 +400,11 @@ def restrict_forecast_upload_window(extra_parameters, get_forecast,
     fx = Forecast.from_dict(fx_dict)
     next_issue_time = fx_utils.get_next_issue_time(
         fx, _current_utc_timestamp())
-    issue_time_of_values = first_time - fx.lead_time_to_start
-    if issue_time_of_values != next_issue_time:
+    expected_start = next_issue_time + fx.lead_time_to_start
+    if fx.interval_label == 'ending':
+        expected_start += fx.interval_length
+    if first_time != expected_start:
         raise BadAPIRequest(errors={'issue_time': (
-            f'Currently only accepting forecasts issued for {next_issue_time}'
+            f'Currently only accepting forecasts issued for {next_issue_time}.'
+            f' Expecting forecast series to start at {expected_start}.'
         )})

@@ -420,3 +420,25 @@ def test_restrict_upload_window_bad(mocker, now, first):
         request_handling.restrict_forecast_upload_window(
             ep, lambda: fxd, first)
     assert 'only accepting' in err.value.errors['issue_time'][0]
+
+
+@pytest.mark.parametrize('now,first,label', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+     'beginning'),
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+     'instant'),
+    (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:05Z'),
+     'ending'),
+    pytest.param(
+        pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+        'ending', marks=pytest.mark.xfail
+    ),
+])
+def test_restrict_upload_interval_label(mocker, now, first, label):
+    fxd = VALID_FORECAST_JSON.copy()
+    fxd['interval_label'] = label
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
