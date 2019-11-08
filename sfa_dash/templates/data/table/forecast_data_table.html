@@ -1,0 +1,25 @@
+<div class="tools {{ table_type }}-tools mt-1">
+  {% block tools %}
+  <input type="text" placeholder="Search" class="search">
+  {% endblock %}
+</div> 
+<table class="{{ table_type }}-table table results">
+  <thead class="{{ table_type }}-thead">
+    <tr>
+      <th class="name-column" scope="col">Name</th>
+      <th scope="col">Variable</th>
+      <th scope="col" id="provider-header">
+          <button type="button" class="btn btn-th dropdown-toggle" data-toggle="collapse" data-target="#org-filters" >Provider</button>
+      </th>
+      <th scope="col">Site/Aggregate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td>
+    </tr>
+	{% for row in table_rows %}
+	  {{ table_macro.tr(row) }}
+	{% endfor %}
+  </tbody>
+</table>

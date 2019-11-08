@@ -1,0 +1,16 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+{% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
+<form action="{{ url_for('forms.create_aggregate_' + data_type, uuid=aggregate_metadata['aggregate_id'] ) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+  <div class="form-group">
+    {% block fields %}
+    {% endblock %}
+    {{ form.token() }}
+  </div>
+</form>
+<button type="submit" form="{{ data_type }}-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}
+

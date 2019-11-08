@@ -1,0 +1,57 @@
+{% import "forms/form_macros.jinja" as form %}
+{% extends "dash/data.html" %}
+{% block content %}
+{{ metadata | safe }}
+{% include "sections/notifications.html" %}
+<h3>Create New Aggregate</h3>
+<form action="{{ url_for('forms.create_aggregate') }}" method="post" id="aggregate-form">
+  <div class="form-group">
+      {% if form_data is not defined %} {% set form_data = {} %}{% endif %}
+     <div class="form-element full-width">
+       {{ form.input('Name', 'text', 'name', 'Name of the Aggregate.', form_data=form_data) }}
+     </div>
+     <div class="form-element full-width">
+        <label>Description</label><br/>
+        <input type="text" class="form-control" name="description">
+     </div>
+     <div class="form-element">
+       {{ form.select('Interval Label', 'interval_label',
+                      {'beginning': 'Beginning',
+                       'ending': 'Ending',
+                       'instant': 'Instant'},
+                       'Indicates if a time labels the start or the end of an interval of the aggregate values. Constituent observations will be normalized.') }}
+     </div>
+     <div class="form-element">
+       {{ form.timedelta('Interval length', 'interval_length',
+                         'The length of time that each data point represents. All observations that make up the aggregate must have an interval length shorter than or equal to this value.',
+                         form_data=form_data) }}
+     </div>
+     <div class="form-element">
+       {{ form.select('Variable', 'variable',
+                      variable_options,
+                      form_data=form_data,
+                      help_text='Variable described by the aggregate. All observations that make up the Aggregate must also have this variable.') }}
+     </div>
+     <div class="form-element">
+       {{ form.select('Timezone', 'timezone',
+                      timezone_options,
+                      required=True, form_data=form_data)}}
+     </div>
+    <div class="form-element">
+       {{ form.select('Aggregation Type', 'aggregate_type',
+                      {'sum': 'Sum',
+                       'mean': 'Mean',
+                       'median': 'Median',
+                       'max': 'Max',
+                       'min': 'Min'},
+                       'Type of aggregation to perform.') }}
+     </div>
+     <div class="form-element full-width">
+       <label>Extra Parameters</label>
+       <textarea name="extra_parameters" cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
+     </div>
+    {{ form.token() }}
+  </div>
+</form>
+<button type="submit" form="aggregate-form" value="Submit" class="btn btn-primary">Submit</button>
+{% endblock %}

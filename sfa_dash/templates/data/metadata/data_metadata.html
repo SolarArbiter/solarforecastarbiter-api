@@ -8,8 +8,13 @@
       {{ macro.li('Name', name) }}
       {% if site_link is defined %}
         {{ macro.li('Site', site_link )}}
-      {% else %}
-        {{ macro.li('Site', site_id)}}
+      {% elif location_link is defined %}
+        {% if site_id is not none %}
+        {% set location_label = 'Site' %}
+        {% else %}
+        {% set location_label = 'Aggregate' %}
+        {% endif %}
+        {{ macro.li(location_label, location_link) }}
       {% endif %}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-sm-12">

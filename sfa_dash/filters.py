@@ -13,6 +13,7 @@ data_type_mapping = {
     'cdf_forecast': 'Probabilistic Forecast',
     'cdf_forecast_group': 'Probabilistic Forecast Group',
     'report': 'Report',
+    'aggregate': 'Aggregate',
 }
 
 

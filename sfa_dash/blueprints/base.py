@@ -1,12 +1,74 @@
 from collections import OrderedDict
 
 
-from flask import url_for, render_template
+from flask import url_for, render_template, request
 from flask.views import MethodView
+import pandas as pd
+
+from sfa_dash.errors import DataRequestException
+from sfa_dash.blueprints.util import handle_response, timeseries_adapter
 
 
 class BaseView(MethodView):
     subnav_format = {}
+
+    def insert_plot(self, uuid, start, end):
+        """Generate a plot and bokeh script for the data between
+        start and end. Note that the core library requires a 'site'
+        key with the full site metadata to create a plot.
+
+        This inserts the rendered plot html and bokeh script into
+        the temp_args keys plot and bokeh_script respectively.
+        """
+        try:
+            values = handle_response(self.api_handle.get_values(
+                uuid, params={'start': start, 'end': end}))
+        except DataRequestException as e:
+            if e.status_code == 422:
+                self.temp_args.update({'warnings': e.errors})
+            else:
+                self.temp_args.update({'warnings': {
+                    'Value Access': [
+                        f'{self.human_label} values inaccessible.']},
+                })
+        else:
+            script_plot = timeseries_adapter(
+                self.plot_type, self.metadata, values)
+            if script_plot is None:
+                self.temp_args.update({
+                    'messages': {
+                        'Data': [
+                            (f"No data available for this {self.human_label} "
+                             "during this period.")]},
+                })
+            else:
+                self.temp_args.update({
+                    'plot': script_plot[1],
+                    'bokeh_script': script_plot[0]
+                })
+
+    def parse_start_end_from_querystring(self):
+        """Attempts to find the start and end query parameters. If not found,
+        returns defaults spanning the last three days. Used for setting
+        reasonable defaults for requesting data for plots.
+
+        Returns
+        -------
+        start,end
+            Tuple of ISO 8601 datetime strings representing the start, end.
+        """
+        # set default arg to an invalid timestamp, to trigger ValueError
+        start_arg = request.args.get('start', 'x')
+        end_arg = request.args.get('end', 'x')
+        try:
+            start = pd.Timestamp(start_arg)
+        except ValueError:
+            start = pd.Timestamp.utcnow() - pd.Timedelta('3days')
+        try:
+            end = pd.Timestamp(end_arg)
+        except ValueError:
+            end = pd.Timestamp.utcnow()
+        return start.isoformat(), end.isoformat()
 
     def generate_site_link(self, metadata):
         """Generate html for a link to a site page from an observation,

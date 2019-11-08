@@ -70,7 +70,10 @@ class DataListingView(BaseView):
         template_args['subnav'] = self.format_subnav(**subnav_kwargs)
         template_args['data_table'] = self.table_function(**kwargs)
         template_args['current_path'] = request.path
-        template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
+        if uuid is not None:
+            template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
+        else:
+            template_args['page_title'] = 'Forecasts and Observations'
         return template_args
 
     def get(self, **kwargs):

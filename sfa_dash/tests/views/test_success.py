@@ -51,3 +51,8 @@ def test_permission_id_routes(client, permission_id_route, permission_id):
 def test_role_id_routes(client, role_id_route, role_id):
     resp = client.get(role_id_route(role_id), base_url=BASE_URL)
     assert resp.status_code == 200
+
+
+def test_aggregate_id_routes(client, aggregate_id_route, aggregate_id):
+    resp = client.get(aggregate_id_route(aggregate_id), base_url=BASE_URL)
+    assert resp.status_code == 200

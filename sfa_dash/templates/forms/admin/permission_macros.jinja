@@ -1,8 +1,10 @@
 {% macro data_row(data_type, row_values, index) %}
 {% if data_type == 'observation' %}
   {% set uuid = row_values['observation_id'] %}
-{% else %}
+{% elif data_type == 'forecast' %}
   {% set uuid = row_values['forecast_id'] %}
+{% elif data_type == 'aggregate' %}
+  {% set uuid = row_values['aggregate_id'] %}
 {% endif %}
 <tr visible="true">
   <td><input type="checkbox" name="objects-list-{{ index }}" value="{{ uuid }}"></td>

@@ -1,0 +1,69 @@
+{% extends "forms/base/aggregate_object_creation_form.html" %}
+{% import "forms/form_macros.jinja" as form %}
+{% set page_title = 'Create CDF Forecast' %}
+{% set data_type, form_enc = 'cdf_forecast_group', 'application/json' %}
+{% if form_data is not defined %}
+{% set form_data = {} %}
+{% endif %}
+{% block fields %}
+<input type="hidden" name="aggregate_id" value="{{ aggregate_metadata['aggregate_id'] }}">
+<input type="hidden" name="variable" value="{{ aggregate_metadata['variable'] }}">
+
+<div class="form-element">
+  {{ form.input('Name', 'text', 'name', 'Name for the Forecast',
+                required=True, form_data=form_data) }}
+</div>
+<div class="form-element">
+  {{ form.time_of_day('Issue time of day', 'issue_time',
+                      'The time of day that a forecast run is issued specified in UTC and in HH:MM format, e.g. 00:30. For forecast runs issued multiple times within one day (e.g. hourly), this specifies the first issue time of day. Additional issue times are uniquely determined by the first issue time and the run length & issue frequency attribute.') }}
+</div>
+<div class="form-element">
+    {{ form.timedelta('Lead time to start', 'lead_time',
+                      'The difference between the issue time and the start of the first forecast interval. Values must be integers.')}}
+</div>
+<div class="form-element">
+  {{ form.timedelta('Run length/Issue frequency', 'run_length',
+                    'The total length of a single issued forecast run. To enforce a continuous, non-overlapping sequence, this is equal to the forecast run issue frequency. Values must be integers.') }}
+</div>
+<div class="form-element">
+  {{ form.timedelta('Interval length', 'interval_length',
+                    'The length of time that each data point represents. Values must be integers.') }}
+</div>
+<div class="form-element">
+  {{ form.select('Interval Label', 'interval_label',
+                 {'beginning': 'Beginning',
+                  'ending': 'Ending',
+                  'instant': 'Instant'},
+                  'Indicates if a time labels the start or the end of an interval.') }}
+</div>
+<div class="form-element">
+  {{ form.select('Interval Value Type', 'interval_value_type',
+                  {"interval_mean": "Mean",
+				   "interval_min": "Min",
+                   "interval_max": "Max",
+                   "interval_median": "Median",
+                   "percentile": "Percentile",
+                   "instantaneous": "Instantaneous"},
+                   form_data=form_data) }}
+</div>
+<div class="form-element">
+  {{ form.radio('Axis', 'axis',
+                {"x": "x: variable value",
+                 "y": "y: percentile"},
+                'The axis on which the constant values of the CDF is specified. The axis can be either x (constant variable values) or y (constant percentiles). The axis is fixed and the same for all forecasts in the probabilistic forecast.',
+                required=True,
+                form_data=form_data)  }}
+</div>
+<div class="form-element">
+    <label>Constant Values</label>
+    <div class="input-wrapper">
+    <input type="text" name="constant_values" class="form-control constant_values-field" pattern="((\d+)(\.\d+)?)(,\s*\d+(\.\d+)?)*">
+    </div>
+    {{ form.help_button('constant_values') }}
+    <span class="help-text text-muted  constant_values-help-text collapse">A comma-separated list of variable values or percentiles for the set of forecasts in the probabilistic forecast. Each value can be a non-negative float or integer. e.g. "5.0,20.0,50.0,80.0,95.0"</span>
+</div>
+<div class="form-element full-width">
+  <label>Extra Parameters</label>
+  <textarea cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
+</div>
+{% endblock %}

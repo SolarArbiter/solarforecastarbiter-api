@@ -6,13 +6,15 @@ from flask import Blueprint, render_template, url_for, request
 
 from sfa_dash.api_interface import (observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
+from sfa_dash.blueprints.aggregates import (AggregatesView, AggregateView,
+                                            DeleteAggregateView)
 from sfa_dash.blueprints.dash import DataDashView
 from sfa_dash.blueprints.data_listing import DataListingView
 from sfa_dash.blueprints.delete import DeleteConfirmation
 from sfa_dash.blueprints.reports import (ReportsView, ReportView,
                                          DeleteReportView)
 from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
-from sfa_dash.blueprints.util import timeseries_adapter, handle_response
+from sfa_dash.blueprints.util import handle_response
 from sfa_dash.errors import DataRequestException
 from sfa_dash.filters import human_friendly_datatype
 
@@ -38,16 +40,16 @@ class SingleObjectView(DataDashView):
             self.metadata_template = 'data/metadata/forecast_metadata.html'
             self.id_key = 'forecast_id'
             self.plot_type = 'forecast'
-        elif data_type == 'observation':
-            self.api_handle = observations
-            self.metadata_template = 'data/metadata/observation_metadata.html'
-            self.id_key = 'observation_id'
-            self.plot_type = 'observation'
         elif data_type == 'cdf_forecast':
             self.api_handle = cdf_forecasts
             self.metadata_template = 'data/metadata/cdf_forecast_metadata.html'
             self.id_key = 'forecast_id'
             self.plot_type = 'forecast'
+        elif data_type == 'observation':
+            self.api_handle = observations
+            self.metadata_template = 'data/metadata/observation_metadata.html'
+            self.id_key = 'observation_id'
+            self.plot_type = 'observation'
         else:
             raise ValueError('Invalid data_type.')
         self.human_label = human_friendly_datatype(self.data_type)
@@ -60,7 +62,7 @@ class SingleObjectView(DataDashView):
             listing_view = 'cdf_forecast_groups'
         else:
             listing_view = f'{self.data_type}s'
-        # Insert site link if available
+        # Insert site/aggregate link if available
         if self.metadata.get('site') is not None:
             breadcrumb_dict['Sites'] = url_for('data_dashboard.sites')
             breadcrumb_dict[self.metadata['site']['name']] = url_for(
@@ -69,6 +71,15 @@ class SingleObjectView(DataDashView):
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.{listing_view}',
                 uuid=self.metadata['site_id'])
+        elif self.metadata.get('aggregate') is not None:
+            breadcrumb_dict['Aggregates'] = url_for(
+                'data_dashboard.aggregates')
+            breadcrumb_dict[self.metadata['aggregate']['name']] = url_for(
+                'data_dashboard.aggregate_view',
+                uuid=self.metadata['aggregate_id'])
+            breadcrumb_dict[f'{self.human_label}s'] = url_for(
+                f'data_dashboard.{listing_view}',
+                uuid=self.metadata['aggregate_id'])
         else:
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.{listing_view}')
@@ -107,37 +118,6 @@ class SingleObjectView(DataDashView):
                 f'data_dashboard.delete_{self.data_type}',
                 uuid=self.metadata[self.id_key])
 
-    def insert_plot(self, uuid, start, end):
-        """Generate a plot and bokeh script for the data between
-        start and end. Note that the core library requires a 'site'
-        key with the full site metadata to create a plot.
-
-        This inserts the rendered plot html and bokeh script into
-        the temp_args keys plot and bokeh_script respectively.
-        """
-        try:
-            values = handle_response(self.api_handle.get_values(
-                uuid, params={'start': start, 'end': end}))
-        except DataRequestException:
-            self.temp_args.update({'warnings': {
-                'Value Access': [f'{self.human_label} values inaccessible.']},
-            })
-        else:
-            script_plot = timeseries_adapter(
-                self.plot_type, self.metadata, values)
-            if script_plot is None:
-                self.temp_args.update({
-                    'messages': {
-                        'Data': [
-                            (f"No data available for this {self.human_label} "
-                             "during this period.")]},
-                })
-            else:
-                self.temp_args.update({
-                    'plot': script_plot[1],
-                    'bokeh_script': script_plot[0]
-                })
-
     def get(self, uuid, **kwargs):
         self.temp_args = {}
         start, end = self.parse_start_end_from_querystring()
@@ -151,30 +131,24 @@ class SingleObjectView(DataDashView):
             self.temp_args.update({'errors': e.errors})
         else:
             try:
-                self.metadata['site'] = self.get_site_metadata(
-                    self.metadata['site_id'])
+                self.set_site_or_aggregate_metadata()
             except DataRequestException:
-                self.temp_args.update({
-                    'warnings': {
-                        'Site Access': [
-                            'Site inaccessible. Plots will not be displayed.']
-                    },
-                    'plot': None,
-                })
+                self.temp_args.update({'plot': None})
             else:
-                # If site data is available, try to create a plot
                 self.insert_plot(uuid, start, end)
             finally:
-                self.metadata['site_link'] = self.generate_site_link(
-                    self.metadata)
+                self.set_site_or_aggregate_link()
                 self.set_template_args(**kwargs)
         return render_template(self.template, **self.temp_args)
 
 
-class SingleCDFForecastGroupView(DataDashView):
+class SingleCDFForecastGroupView(SingleObjectView):
     template = 'data/cdf_forecast.html'
     metadata_template = 'data/metadata/cdf_forecast_group_metadata.html'
     human_label = human_friendly_datatype('cdf_forecast')
+
+    def __init__(self):
+        pass
 
     def get_breadcrumb_dict(self, **kwargs):
         """See BaseView.get_breadcrumb_dict.
@@ -190,6 +164,15 @@ class SingleCDFForecastGroupView(DataDashView):
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 'data_dashboard.cdf_forecast_groups',
                 uuid=self.metadata['site_id'])
+        elif self.metadata.get('aggregate') is not None:
+            breadcrumb_dict['Aggregates'] = url_for(
+                'data_dashboard.aggregates')
+            breadcrumb_dict[self.metadata['aggregate']['name']] = url_for(
+                'data_dashboard.aggregate_view',
+                uuid=self.metadata['aggregate_id'])
+            breadcrumb_dict[f'{self.human_label}s'] = url_for(
+                f'data_dashboard.cdf_forecast_groups',
+                uuid=self.metadata['aggregate_id'])
         else:
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 'data_dashboard.cdf_forecast_groups')
@@ -208,7 +191,6 @@ class SingleCDFForecastGroupView(DataDashView):
             self.get_breadcrumb_dict())
         self.temp_args['metadata'] = render_template(self.metadata_template,
                                                      **self.metadata)
-        self.metadata['site_link'] = self.generate_site_link(self.metadata)
         self.temp_args['constant_values'] = self.metadata['constant_values']
         self.temp_args['delete_link'] = url_for(
             f'data_dashboard.delete_cdf_forecast_group',
@@ -223,12 +205,11 @@ class SingleCDFForecastGroupView(DataDashView):
             self.temp_args.update({'errors': e.errors})
         else:
             try:
-                self.metadata['site'] = self.get_site_metadata(
-                    self.metadata['site_id'])
+                self.set_site_or_aggregate_metadata()
             except DataRequestException:
-                self.temp_args.update({'warnings': {
-                    'Site Access': ['Site inaccessible.']}})
+                pass
         finally:
+            self.set_site_or_aggregate_link()
             self.set_template_args()
         return render_template(self.template, **self.temp_args)
 
@@ -242,7 +223,7 @@ class TrialsView(DataDashView):
 
 
 # Url Rule Registration
-# The url roles here are broken into sections based on their function.
+# The url rules here are broken into sections based on their function.
 # For instance, all views that display a tabulated listing of metadata
 # are grouped under 'Listing pages'. The view names for each section
 # follow a pattern that you should follow when adding new views. The
@@ -268,6 +249,9 @@ data_dash_blp.add_url_rule(
 data_dash_blp.add_url_rule(
     '/reports/',
     view_func=ReportsView.as_view('reports'))
+data_dash_blp.add_url_rule(
+    '/aggregates/',
+    view_func=AggregatesView.as_view('aggregates'))
 
 # Views for a single piece of metadata
 # view name pattern: '<data_type>_view'
@@ -292,6 +276,9 @@ data_dash_blp.add_url_rule(
 data_dash_blp.add_url_rule(
     '/reports/<uuid>',
     view_func=ReportView.as_view('report_view'))
+data_dash_blp.add_url_rule(
+    '/aggregates/<uuid>',
+    view_func=AggregateView.as_view('aggregate_view'))
 
 # Deletion forms
 # View name pattern: 'delete_<data_type>'
@@ -313,3 +300,6 @@ data_dash_blp.add_url_rule(
 data_dash_blp.add_url_rule(
     '/reports/<uuid>/delete',
     view_func=DeleteReportView.as_view('delete_report'))
+data_dash_blp.add_url_rule(
+    '/aggregates/<uuid>/delete',
+    view_func=DeleteAggregateView.as_view('delete_aggregate'))

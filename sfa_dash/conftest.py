@@ -94,6 +94,7 @@ no_arg_routes_list = [
     '/forecasts/single/',
     '/forecasts/cdf/',
     '/reports/',
+    '/aggregates/',
 ]
 
 
@@ -172,6 +173,7 @@ def permission_id_route(request):
 create_form_routes_list = [
     '/sites/create',
     '/reports/create',
+    '/aggregates/create',
 ]
 
 
@@ -220,10 +222,10 @@ def observation_id_route(request):
 
 
 forecast_id_route_list = [
-    '/forecasts/single/<uuid>',
-    '/forecasts/single/<uuid>/upload',
-    '/forecasts/single/<uuid>/download',
-    '/forecasts/single/<uuid>/delete',
+    '/forecasts/single/{forecast_id}',
+    '/forecasts/single/{forecast_id}/upload',
+    '/forecasts/single/{forecast_id}/download',
+    '/forecasts/single/{forecast_id}/delete',
 ]
 
 
@@ -240,14 +242,29 @@ cdf_forecast_id_route_list = [
 ]
 
 
-@pytest.fixture(params=forecast_id_route_list)
+@pytest.fixture(params=cdf_forecast_id_route_list)
 def cdf_forecast_id_route(request):
     def fn(forecast_id):
         return request.param.format(forecast_id=forecast_id)
     return fn
 
 
+aggregate_id_route_list = [
+    '/aggregates/{aggregate_id}',
+    '/aggregates/{aggregate_id}/delete',
+    '/aggregates/{aggregate_id}/add',
+]
+
+
+@pytest.fixture(params=aggregate_id_route_list)
+def aggregate_id_route(request):
+    def fn(aggregate_id):
+        return request.param.format(aggregate_id=aggregate_id)
+    return fn
+
+
 test_metadata_dict = {
+    'aggregate': {},
     'observation': {},
     'forecast': {},
     'cdf_forecast': {},
@@ -301,6 +318,11 @@ def test_orgid():
 @pytest.fixture()
 def user_id():
     return '0c90950a-7cca-11e9-a81f-54bf64606445'
+
+
+@pytest.fixture()
+def aggregate_id():
+    return '458ffc27-df0b-11e9-b622-62adb5fd6af0'
 
 
 @pytest.fixture()

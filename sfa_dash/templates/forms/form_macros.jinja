@@ -53,8 +53,8 @@
 {% macro timedelta(label, name, help_text=None, form_data={}) %}
   <label>{{ label }}</label><br/>
   <div class="input-wrapper">
-  <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} required class="form-control time-field {{name }}-field">
-  <select required name="{{ name }}_units" class="form-control time-field">
+  <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} required class="form-control time-field {{name }}-value-field">
+  <select required name="{{ name }}_units" class="form-control time-field {{ name }}-units-field">
     <option value="minutes">Minutes</option>
     <option value="hours">Hours</option>
     <option value="days">Days</option>

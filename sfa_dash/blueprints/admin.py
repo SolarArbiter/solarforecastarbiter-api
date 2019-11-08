@@ -3,7 +3,7 @@ from flask import (Blueprint, render_template, request,
 from sfa_dash.api_interface import (
     sites, observations, forecasts,
     cdf_forecast_groups, roles, users,
-    permissions, reports
+    permissions, reports, aggregates
 )
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import filter_form_fields, handle_response
@@ -34,6 +34,8 @@ class AdminView(BaseView):
             api_handler = roles
         elif object_type == 'reports':
             api_handler = reports
+        elif object_type == 'aggregates':
+            api_handler = aggregates
         else:
             raise ValueError('Invalid object_type')
         return api_handler
@@ -490,7 +492,7 @@ class PermissionsCreation(AdminView):
     template = "forms/admin/permissions_form.html"
     allowed_data_types = ['site', 'observation',
                           'forecast', 'cdf_forecast_group',
-                          'report']
+                          'report', 'aggregate']
 
     def __init__(self, data_type):
         if data_type not in self.allowed_data_types:
@@ -506,6 +508,8 @@ class PermissionsCreation(AdminView):
                 self.api_handle = cdf_forecast_groups
             elif data_type == 'report':
                 self.api_handle = reports
+            elif data_type == 'aggregate':
+                self.api_handle = aggregates
             self.data_type = data_type
 
     def get(self, **kwargs):
