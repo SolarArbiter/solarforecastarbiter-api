@@ -6,7 +6,7 @@ from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_FORECAST_JSON, copy_update,
                               VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV,
                               VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON,
-                              ADJ_FX_VALUE_JSON)
+                              ADJ_FX_VALUE_JSON, demo_forecasts)
 
 
 INVALID_NAME = copy_update(VALID_FORECAST_JSON, 'name', 'Bad semicolon;')
@@ -107,6 +107,17 @@ def test_get_forecast_links(api, forecast_id):
     response = r.get_json()
     assert 'forecast_id' in response
     assert '_links' in response
+
+
+@pytest.mark.parametrize('fx_id', demo_forecasts.keys())
+def test_get_forecast_metadata_links(api, fx_id):
+    r = api.get(f'/forecasts/single/{fx_id}/metadata',
+                base_url=BASE_URL)
+    response = r.get_json()
+    assert 'forecast_id' in response
+    assert '_links' in response
+    assert 'site' in response['_links']
+    assert 'aggregate' in response['_links']
 
 
 def test_get_forecast_404(api, missing_id):

@@ -183,7 +183,7 @@ class SiteForecasts(MethodView):
              $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        forecasts = storage.list_forecasts(site_id)
+        forecasts = storage.list_forecasts(site_id=site_id)
         return jsonify(ForecastSchema(many=True).dump(forecasts))
 
 

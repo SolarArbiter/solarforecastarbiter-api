@@ -359,3 +359,17 @@ def test_get_aggregate_values_404(api, missing_id):
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
     assert res.status_code == 404
+
+
+def test_get_aggregate_forecasts(api, aggregate_id):
+    res = api.get(f'/aggregates/{aggregate_id}/forecasts/single',
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+
+
+def test_get_aggregate_cdf_forecast_groups(api, aggregate_id):
+    res = api.get(f'/aggregates/{aggregate_id}/forecasts/cdf',
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)

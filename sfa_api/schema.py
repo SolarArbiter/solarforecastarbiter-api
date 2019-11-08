@@ -52,12 +52,12 @@ ORGANIZATION_ID = ma.UUID(
 CREATED_AT = ISODateTime(
     title="Creation time",
     description="ISO 8601 Datetime when object was created",
-    )
+)
 
 MODIFIED_AT = ISODateTime(
     title="Last Modification Time",
     description="ISO 8601 Datetime when object was last modified",
-    )
+)
 
 INTERVAL_LABEL = ma.String(
     title='Interval Label',
@@ -68,10 +68,10 @@ INTERVAL_LABEL = ma.String(
     required=True)
 
 INTERVAL_LENGTH = ma.Integer(
-        title='Interval length',
-        description=('The length of time that each data point represents in'
-                     'minutes, e.g. 5 for 5 minutes.'),
-        required=True)
+    title='Interval length',
+    description=('The length of time that each data point represents in'
+                 'minutes, e.g. 5 for 5 minutes.'),
+    required=True)
 
 INTERVAL_VALUE_TYPE = ma.String(
     title='Interval Value Type',
@@ -467,8 +467,10 @@ class ForecastSchema(ForecastPostSchema):
         {
             'site': ma.AbsoluteURLFor('sites.single',
                                       site_id='<site_id>'),
+            'aggregate': ma.AbsoluteURLFor('aggregates.single',
+                                           aggregate_id='<aggregate_id>')
         },
-        description="Contains a link to the associated site."
+        description="Contains a link to the associated site or aggregate."
     )
     forecast_id = ma.UUID()
     provider = ma.String()
