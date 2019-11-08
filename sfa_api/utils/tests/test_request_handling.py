@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.testing as pdt
 import pytest
+import pytz
 
 
 from sfa_api.conftest import (
@@ -331,6 +332,12 @@ def test_validate_index_period_previous(index, interval_length, previous_time):
 ])
 def test__restrict_in_extra(ep, res):
     assert request_handling._restrict_in_extra(ep) is res
+
+
+def test__current_utc_timestamp():
+    t = request_handling._current_utc_timestamp()
+    assert isinstance(t, pd.Timestamp)
+    assert t.tzinfo == pytz.utc
 
 
 def test_restrict_upload_window_noop():
