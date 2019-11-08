@@ -138,6 +138,29 @@ VALID_FX_VALUE_JSON = {
          'value': 3.0}
     ]
 }
+ADJ_FX_VALUE_JSON = {
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'timestamp': "2019-11-01T07:00:00+00:00",
+         'value': 1.0},
+        {'timestamp': "2019-11-01T07:05:00+00:00",
+         'value': 32.0},
+        {'timestamp': "2019-11-01T07:10:00+00:00",
+         'value': 3.0}
+    ]
+}
+
+UNSORTED_FX_VALUE_JSON = {
+    'id': '123e4567-e89b-12d3-a456-426655440000',
+    'values': [
+        {'timestamp': "2019-01-22T17:59:00+00:00",
+         'value': 32.0},
+        {'timestamp': "2019-01-22T17:54:00+00:00",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T18:04:00+00:00",
+         'value': 3.0}
+    ]
+}
 FORECAST_CSV = (
     'timestamp,value\n'
     '20190122T12:05:00+0000,7.0\n'
@@ -355,6 +378,17 @@ def mock_previous(mocker):
         new=meta)
     meta.return_value = None
     return meta
+
+
+@pytest.fixture()
+def restrict_fx_upload(mocker):
+    mocker.patch(
+        'sfa_api.utils.storage_interface._set_extra_params',
+        return_value='{"restrict_upload": true}')
+    cut = mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+    )
+    return cut
 
 
 demo_sites = {

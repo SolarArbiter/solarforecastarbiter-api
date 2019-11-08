@@ -1,10 +1,14 @@
 import pandas as pd
 import pandas.testing as pdt
 import pytest
+import pytz
 
 
+from sfa_api.conftest import (
+    VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON, demo_forecasts)
 from sfa_api.utils import request_handling
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import (
+    BadAPIRequest, StorageAuthError, NotFoundException)
 
 
 @pytest.mark.parametrize('start,end', [
@@ -212,6 +216,12 @@ def test_parse_to_timestamp_error(dt_string):
                        '2019-09-01T0020Z']),
      7,
      pd.Timestamp('2019-08-31T2352Z')),
+    # out of order
+    pytest.param(
+        pd.DatetimeIndex(['2019-09-01T0013Z', '2019-09-01T0006Z',
+                          '2019-09-01T0020Z']),
+        7,
+        pd.Timestamp('2019-08-31T2352Z'), marks=pytest.mark.xfail),
     (pd.date_range(start='2019-03-10 00:00', end='2019-03-10 05:00',
                    tz='America/Denver', freq='1h'),
      60, None),  # DST transition
@@ -308,3 +318,127 @@ def test_validate_index_period_previous(index, interval_length, previous_time):
     errs = e.value.errors['timestamp']
     assert len(errs) == 1
     assert 'previous time' in errs[0]
+
+
+@pytest.mark.parametrize('ep,res', [
+    ('{"restrict_upload": true}', True),
+    ('{"restrict_upload": true, "other_key": 1}', True),
+    ('{"restrict_upload" : true}', True),
+    ('{"restrict_upload" : True}', True),
+    ('{"restrict_upload": 1}', False),
+    ('{"restrict_upload": false}', False),
+    ('{"restrict_uploa": true}', False),
+    ('{"upload_restrict_upload": true}', False),
+])
+def test__restrict_in_extra(ep, res):
+    assert request_handling._restrict_in_extra(ep) is res
+
+
+def test__current_utc_timestamp():
+    t = request_handling._current_utc_timestamp()
+    assert isinstance(t, pd.Timestamp)
+    assert t.tzinfo == pytz.utc
+
+
+def test_restrict_upload_window_noop():
+    assert request_handling.restrict_forecast_upload_window(
+        '', None, None) is None
+
+
+@pytest.mark.parametrize('now,first', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T12:01Z'), pd.Timestamp('2019-11-02T13:00Z')),
+])
+def test_restrict_upload_window(mocker, now, first):
+    fxd = VALID_FORECAST_JSON.copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+@pytest.mark.parametrize('now,first', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    # the fx specification does not allow for forecasts from midnight to noon
+    pytest.param(
+        pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T01:00Z'),
+        marks=pytest.mark.xfail
+    ),
+    (pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T22:01Z'), pd.Timestamp('2019-11-02T00:00Z')),
+])
+def test_restrict_upload_window_freq(mocker, now, first):
+    fxd = demo_forecasts['f8dd49fa-23e2-48a0-862b-ba0af6dec276'].copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+def test_restrict_upload_window_cdf_dict(mocker):
+    now = pd.Timestamp('2019-11-01T11:59Z')
+    first = pd.Timestamp('2019-11-01T13:00Z')
+    fxd = VALID_CDF_FORECAST_JSON.copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+def test_restrict_upload_window_cant_get(mocker):
+    now = pd.Timestamp('2019-11-01T11:59Z')
+    first = pd.Timestamp('2019-11-01T13:00Z')
+
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    get = mocker.MagicMock(side_effect=StorageAuthError)
+    with pytest.raises(NotFoundException):
+        request_handling.restrict_forecast_upload_window(ep, get, first)
+
+
+@pytest.mark.parametrize('now,first', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T14:00Z')),
+    (pd.Timestamp('2019-11-01T12:00:00.000001Z'),
+     pd.Timestamp('2019-11-01T13:00Z')),
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-02T13:00Z')),
+])
+def test_restrict_upload_window_bad(mocker, now, first):
+    fxd = VALID_FORECAST_JSON.copy()
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    with pytest.raises(BadAPIRequest) as err:
+        request_handling.restrict_forecast_upload_window(
+            ep, lambda: fxd, first)
+    assert 'only accepting' in err.value.errors['issue_time'][0]
+
+
+@pytest.mark.parametrize('now,first,label', [
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+     'beginning'),
+    (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+     'instant'),
+    (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:05Z'),
+     'ending'),
+    pytest.param(
+        pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z'),
+        'ending', marks=pytest.mark.xfail
+    ),
+])
+def test_restrict_upload_interval_label(mocker, now, first, label):
+    fxd = VALID_FORECAST_JSON.copy()
+    fxd['interval_label'] = label
+    ep = '{"restrict_upload": true}'
+    mocker.patch(
+        'sfa_api.utils.request_handling._current_utc_timestamp',
+        return_value=now)
+    request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)

@@ -1,7 +1,8 @@
+from functools import partial
+
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
-import pandas as pd
 
 
 from sfa_api import spec
@@ -18,44 +19,9 @@ from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
-                                            validate_index_period)
-
-
-def validate_forecast_values(forecast_df):
-    """Validates that posted values are parseable and of the expectedtypes.
-
-    Parameters
-    ----------
-    forecast_df: Pandas DataFrame
-
-    Raises
-    ------
-    BadAPIRequestError
-        If an expected field is missing or contains an entry of incorrect
-        type.
-    """
-    errors = {}
-    try:
-        forecast_df['value'] = pd.to_numeric(forecast_df['value'],
-                                             downcast='float')
-    except ValueError:
-        error = ('Invalid item in "value" field. Ensure that all values '
-                 'are integers, floats, empty, NaN, or NULL.')
-        errors.update({'value': [error]})
-    except KeyError:
-        errors.update({'value': ['Missing "value" field.']})
-    try:
-        forecast_df['timestamp'] = pd.to_datetime(
-            forecast_df['timestamp'],
-            utc=True)
-    except ValueError:
-        error = ('Invalid item in "timestamp" field. Ensure that '
-                 'timestamps are ISO8601 compliant')
-        errors.update({'timestamp': [error]})
-    except KeyError:
-        errors.update({'timestamp': ['Missing "timestamp" field.']})
-    if errors:
-        raise BadAPIRequest(errors)
+                                            validate_index_period,
+                                            validate_forecast_values,
+                                            restrict_forecast_upload_window)
 
 
 class AllForecastsView(MethodView):
@@ -260,6 +226,8 @@ class ForecastValuesView(MethodView):
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -267,10 +235,16 @@ class ForecastValuesView(MethodView):
         """
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
-        forecast_df = forecast_df.set_index('timestamp')
+        forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time = storage.read_metadata_for_forecast_values(  # NOQA
-            forecast_id, forecast_df.index[0])
+        interval_length, previous_time, extra_params = (
+            storage.read_metadata_for_forecast_values(
+                forecast_id, forecast_df.index[0])
+        )
+        restrict_forecast_upload_window(
+            extra_params, partial(storage.read_forecast, forecast_id),
+            forecast_df.index[0]
+        )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
         stored = storage.store_forecast_values(forecast_id, forecast_df)
@@ -538,6 +512,8 @@ class CDFForecastValues(MethodView):
         responses:
           201:
             $ref: '#/components/responses/201-Created'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -545,10 +521,16 @@ class CDFForecastValues(MethodView):
         """
         forecast_df = validate_parsable_values()
         validate_forecast_values(forecast_df)
-        forecast_df = forecast_df.set_index('timestamp')
+        forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time = storage.read_metadata_for_cdf_forecast_values(  # NOQA
-            forecast_id, forecast_df.index[0])
+        interval_length, previous_time, extra_params = (
+            storage.read_metadata_for_cdf_forecast_values(
+                forecast_id, forecast_df.index[0])
+        )
+        restrict_forecast_upload_window(
+            extra_params, partial(storage.read_cdf_forecast, forecast_id),
+            forecast_df.index[0]
+        )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)

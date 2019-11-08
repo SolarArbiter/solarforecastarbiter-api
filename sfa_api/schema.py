@@ -419,7 +419,7 @@ class ForecastPostSchema(ma.Schema):
         required=True,
         validate=TimeFormat('%H:%M'),
         description=('The time of day that a forecast run is issued specified '
-                     'in the timezone of the site in HH:MM format, e.g. 00:30.'
+                     'in UTC in HH:MM format, e.g. 00:30.'
                      'For forecast runs issued multiple times within one day '
                      '(e.g. hourly), this specifies the first issue time of '
                      'day. Additional issue times are uniquely determined by '

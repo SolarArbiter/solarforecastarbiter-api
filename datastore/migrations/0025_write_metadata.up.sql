@@ -8,6 +8,7 @@ BEGIN
     DECLARE groupid BINARY(16);
     DECLARE il INT;
     DECLARE previous_time TIMESTAMP;
+    DECLARE extra TEXT;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     IF object_type IN ('observations', 'forecasts') THEN
         SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'write_values'));
@@ -21,16 +22,16 @@ BEGIN
 
     IF allowed THEN
         IF object_type = 'observations' THEN
-            SET il = (SELECT interval_length FROM arbiter_data.observations WHERE id = binid);
+            SELECT interval_length, extra_parameters INTO il, extra FROM arbiter_data.observations WHERE id = binid;
             SET previous_time = (SELECT MAX(timestamp) FROM arbiter_data.observations_values WHERE id = binid AND timestamp < start);
         ELSEIF object_type = 'forecasts' THEN
-            SET il = (SELECT interval_length FROM arbiter_data.forecasts WHERE id = binid);
+           SELECT interval_length, extra_parameters INTO il, extra FROM arbiter_data.forecasts WHERE id = binid;
             SET previous_time = (SELECT MAX(timestamp) FROM arbiter_data.forecasts_values WHERE id = binid AND timestamp < start);
         ELSEIF object_type = 'cdf_forecasts' THEN
-            SET il = (SELECT interval_length FROM arbiter_data.cdf_forecasts_groups WHERE id = groupid);
+            SELECT interval_length, extra_parameters INTO il, extra FROM arbiter_data.cdf_forecasts_groups WHERE id = groupid;
             SET previous_time = (SELECT MAX(timestamp) FROM arbiter_data.cdf_forecasts_values WHERE id = binid AND timestamp < start);
         END IF;
-        SELECT il as interval_length, previous_time;
+        SELECT il as interval_length, previous_time, extra as extra_parameters;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read metadata for value write"',
         MYSQL_ERRNO = 1142;

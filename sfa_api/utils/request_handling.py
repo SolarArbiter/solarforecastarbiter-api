@@ -1,14 +1,18 @@
 from collections import defaultdict
 from io import StringIO
 import json
+import re
 
 
 from flask import request
 import numpy as np
 import pandas as pd
+from solarforecastarbiter.datamodel import Forecast
+from solarforecastarbiter.reference_forecasts import utils as fx_utils
 
 
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import (
+    BadAPIRequest, NotFoundException, StorageAuthError)
 
 
 def validate_observation_values(observation_df, quality_flag_range=(0, 1)):
@@ -331,3 +335,102 @@ def validate_index_period(index, interval_length, previous_time):
                 f'{previous_time.isoformat()}.')
     if errors:
         raise BadAPIRequest({'timestamp': errors})
+
+
+def validate_forecast_values(forecast_df):
+    """Validates that posted values are parseable and of the expectedtypes.
+
+    Parameters
+    ----------
+    forecast_df: Pandas DataFrame
+
+    Raises
+    ------
+    BadAPIRequestError
+        If an expected field is missing or contains an entry of incorrect
+        type.
+    """
+    errors = {}
+    try:
+        forecast_df['value'] = pd.to_numeric(forecast_df['value'],
+                                             downcast='float')
+    except ValueError:
+        error = ('Invalid item in "value" field. Ensure that all values '
+                 'are integers, floats, empty, NaN, or NULL.')
+        errors.update({'value': [error]})
+    except KeyError:
+        errors.update({'value': ['Missing "value" field.']})
+    try:
+        forecast_df['timestamp'] = pd.to_datetime(
+            forecast_df['timestamp'],
+            utc=True)
+    except ValueError:
+        error = ('Invalid item in "timestamp" field. Ensure that '
+                 'timestamps are ISO8601 compliant')
+        errors.update({'timestamp': [error]})
+    except KeyError:
+        errors.update({'timestamp': ['Missing "timestamp" field.']})
+    if errors:
+        raise BadAPIRequest(errors)
+
+
+def _restrict_in_extra(extra_params):
+    match = re.search('"restrict_upload(["\\s\\:]*)true',
+                      extra_params, re.I)
+    return match is not None
+
+
+def _current_utc_timestamp():
+    # for easier testing
+    return pd.Timestamp.now(tz='UTC')
+
+
+def restrict_forecast_upload_window(extra_parameters, get_forecast,
+                                    first_time):
+    """
+    Check that the first_time falls within the window before the
+    next initialization time of the forecast from the current time.
+    Accounts for forecast lead_time_to_start and interval_label.
+    Requires 'read' permission on the forecast in question.
+
+    Parameters
+    ----------
+    extra_parameters : str
+        The extra_parameters string for the forecast. If
+        '"restrict_upload": true' is not found in the string, no restriction
+        occurs and this function returns immediately.
+    get_forecast : func
+        Function to get the forecast from the database.
+    first_time : datetime-like
+        First timestamp in the posted forecast timeseries.
+
+    Raises
+    ------
+    NotFoundException
+        When the user does not have 'read' permission for the forecast or
+        it doesn't exist.
+    BadAPIRequest
+        If the first_time of the timeseries is not consistent for the
+        next initaliziation time of the forecast.
+    """
+    if not _restrict_in_extra(extra_parameters):
+        return
+
+    try:
+        fx_dict = get_forecast().copy()
+    except (StorageAuthError, NotFoundException):
+        raise NotFoundException(errors={
+            '404': 'Cannot read forecast or forecast does not exist'})
+    # we don't care about the axis or constant values for probabilistic
+    fx_dict['site'] = ''
+    fx = Forecast.from_dict(fx_dict)
+    next_issue_time = fx_utils.get_next_issue_time(
+        fx, _current_utc_timestamp())
+    expected_start = next_issue_time + fx.lead_time_to_start
+    if fx.interval_label == 'ending':
+        expected_start += fx.interval_length
+    if first_time != expected_start:
+        raise BadAPIRequest(errors={'issue_time': (
+            f'Currently only accepting forecasts issued for {next_issue_time}.'
+            f' Expecting forecast series to start at {expected_start}.'
+        )})
