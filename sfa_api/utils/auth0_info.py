@@ -1,0 +1,193 @@
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+import logging
+
+
+from flask import current_app
+from jose import jwt, jwk
+import requests
+
+
+from sfa_api.utils.queuing import make_redis_connection
+
+
+def token_redis_connection():
+    """Make a connection to Redis and the database specified by
+    config['AUTH0_REDIS_DB']. The connection is stored on the
+    application for reuse.
+    """
+    if not hasattr(current_app, 'auth0_redis_conn'):
+        config = current_app.config.copy()
+        config['REDIS_DB'] = config['AUTH0_REDIS_DB']
+        # return everything as strings
+        config['REDIS_DECODE_RESPONSES'] = True
+        if config.get('USE_FAKE_REDIS', False):
+            from fakeredis import FakeStrictRedis
+            conn = FakeStrictRedis(decode_responses=True)
+        else:
+            conn = make_redis_connection(config)
+        setattr(current_app, 'auth0_redis_conn', conn)
+    return getattr(current_app, 'auth0_redis_conn')
+
+
+def get_fresh_auth0_management_token():
+    """Request an access token for the Auth0 Management API based on the
+    AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET in the config.
+    """
+    if (
+        current_app.config['AUTH0_CLIENT_ID'] == '' or
+        current_app.config['AUTH0_CLIENT_SECRET'] == ''
+    ):
+        raise ValueError('Auth0 client ID or secret not specified')
+
+    payload = {'client_id': current_app.config['AUTH0_CLIENT_ID'],
+               'client_secret': current_app.config['AUTH0_CLIENT_SECRET'],
+               'audience': current_app.config['AUTH0_BASE_URL'] + '/api/v2/',
+               'grant_type': 'client_credentials'
+               }
+    req = requests.post(current_app.config['AUTH0_BASE_URL'] + '/oauth/token',
+                        headers={'content-type': 'application/json'},
+                        json=payload)
+    req.raise_for_status()
+    token = req.json()['access_token']
+    return token
+
+
+def check_if_token_is_valid(token):
+    """
+    Check if the JSON web token is valid.
+
+    Parameters
+    ----------
+    token : str
+        The JSON web token to check.
+
+    Returns
+    -------
+    boolean or None
+        Returns None if the token is None, otherwise returns whether
+        the token is a valid, unexpired JWT issued by Auth0 for the
+        Auth0 management API.
+    """
+    if token is None:
+        return
+    try:
+        jwt.decode(
+            token,
+            key=current_app.config['JWT_KEY'],
+            audience=current_app.config['AUTH0_BASE_URL'] + '/api/v2/',
+            issuer=current_app.config['AUTH0_BASE_URL'] + '/')
+    except (jwt.JWTError,
+            jwk.JWKError,
+            jwt.ExpiredSignatureError,
+            jwt.JWTClaimsError,
+            AttributeError,
+            AssertionError,
+            IndexError):
+        return False
+    else:
+        return True
+
+
+def auth0_token():
+    """
+    Get the auth0 management API access token from Redis,
+    if present, and validate the token is good.
+    Otherwise, get a new token and store it in Redis
+
+    Returns
+    -------
+    token : str
+    """
+    redis_conn = token_redis_connection()
+    token = redis_conn.get('auth0_token')
+    token_valid = check_if_token_is_valid(token)
+    if token is None or not token_valid:
+        token = get_fresh_auth0_management_token()
+        redis_conn.set('auth0_token', token)
+    return token
+
+
+def _verify_auth0_id(auth0_id):
+    if not auth0_id.startswith('auth0|'):
+        raise ValueError('Invalid auth0 ID')
+
+
+def _get_email_of_user(auth0_id, redis_conn, token,
+                       config):
+    # email is PII, but easy to clear db
+    email = redis_conn.get(auth0_id)
+    if email is None:
+        headers = {'content-type': 'application/json',
+                   'authorization': f'Bearer {token}'}
+        req = requests.get(
+            config['AUTH0_BASE_URL'] + '/api/v2/users/' + auth0_id,
+            params={'fields': 'email',
+                    'include_fields': 'true'},
+            headers=headers)
+        if req.status_code == 200:
+            email = req.json()['email']
+            # expire in 1 day
+            redis_conn.set(auth0_id, email, ex=86400)
+        else:
+            logging.error('Failed to retrieve email from Auth0: %s %s',
+                          req.status_code, req.text)
+            email = 'Unable to retrieve'
+    return email
+
+
+def get_email_of_user(auth0_id):
+    """
+    Get the email of a user given their auth0 ID
+
+    Parameters
+    ----------
+    auth0_id : str
+        The auth0 ID of the user
+
+    Returns
+    -------
+    str
+        The email if found, otherwise 'Unable to retrieve'
+
+    Raises
+    ------
+    ValueError
+        If the auth0_id is not valid
+    """
+    _verify_auth0_id(auth0_id)
+    return _get_email_of_user(
+        auth0_id, token_redis_connection(), auth0_token(),
+        current_app.config)
+
+
+def list_user_emails(auth0_ids):
+    """
+    Get the emails of all users with the given ids
+
+    Parameters
+    ----------
+    auth0_ids : list of str
+        The auth0 IDs of the users
+
+    Returns
+    -------
+    dict
+        With auth0_id keys and email values
+
+    Raises
+    ------
+    ValueError
+        If any auth0 ID is not valid
+    """
+
+    list(map(_verify_auth0_id, auth0_ids))
+    redis_conn = token_redis_connection()
+    token = auth0_token()
+    config = current_app.config
+    func = partial(_get_email_of_user, redis_conn=redis_conn,
+                   token=token, config=config)
+    with ThreadPoolExecutor(max_workers=4) as exc:
+        out = dict(zip(
+            auth0_ids, exc.map(func, auth0_ids)))
+    return out

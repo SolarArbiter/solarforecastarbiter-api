@@ -3,3 +3,4 @@ pytest-cov==2.6.1
 coverage==4.5.2
 pytest-mock==1.10.1
 flake8==3.7.7
+requests-mock==1.6.0
