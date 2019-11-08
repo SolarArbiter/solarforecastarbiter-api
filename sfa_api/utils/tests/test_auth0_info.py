@@ -110,6 +110,7 @@ def email():
 def email_in_redis(auth0id, email, running_app):
     r = auth0_info.token_redis_connection()
     r.set(auth0id, email)
+    r.set(email, auth0id)
 
 
 @pytest.fixture()
@@ -172,3 +173,41 @@ def test_list_user_emails_invalid(running_app, auth0id):
            'bad']
     with pytest.raises(ValueError):
         auth0_info.list_user_emails(ids)
+
+
+def test_get_auth0_id_of_user(
+        running_app, auth0id, email, requests_mock, token_set):
+    requests_mock.register_uri(
+        'GET',
+        re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=f'[{{"user_id": "{auth0id}"}}]'.encode())
+    out = auth0_info.get_auth0_id_of_user(email)
+    assert out == auth0id
+    r = auth0_info.token_redis_connection()
+    assert r.get(email) == auth0id
+    assert 90000 > r.ttl(email) > 80000
+
+
+def test_get_auth0_id_of_user_in_redis(running_app, auth0id, email,
+                                       email_in_redis, token_set):
+    assert auth0_info.get_auth0_id_of_user(email) == auth0id
+
+
+def test_get_auth0_id_of_user_http_err(running_app, email,
+                                       requests_mock, token_set):
+    requests_mock.register_uri(
+        'GET',
+        re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=401)
+    out = auth0_info.get_auth0_id_of_user(email)
+    assert out == 'Unable to retrieve'
+
+
+def test_get_auth0_id_of_user_empty(running_app, email,
+                                    requests_mock, token_set):
+    requests_mock.register_uri(
+        'GET',
+        re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'[]')
+    out = auth0_info.get_auth0_id_of_user(email)
+    assert out == 'Unable to retrieve'

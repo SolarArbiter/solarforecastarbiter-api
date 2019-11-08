@@ -191,3 +191,55 @@ def list_user_emails(auth0_ids):
         out = dict(zip(
             auth0_ids, exc.map(func, auth0_ids)))
     return out
+
+
+def _get_auth0_id_of_user(email, redis_conn, token,
+                          config):
+    # email is PII, but easy to clear db
+    user_id = redis_conn.get(email)
+    if user_id is None:
+        headers = {'content-type': 'application/json',
+                   'authorization': f'Bearer {token}'}
+        req = requests.get(
+            config['AUTH0_BASE_URL'] + '/api/v2/users-by-email',
+            params={'fields': 'user_id',
+                    'email': email,
+                    'include_fields': 'true'},
+            headers=headers)
+        if req.status_code == 200:
+            userjson = req.json()
+            if len(userjson) != 1:
+                # not found in auth0 at all
+                # or somehow more than 1?
+                user_id = 'Unable to retrieve'
+            else:
+                user_id = userjson[0]['user_id']
+                # expire in 1 day
+                redis_conn.set(email, user_id, ex=86400)
+        else:
+            logging.error('Failed to retrieve user_id from Auth0: %s %s',
+                          req.status_code, req.text)
+            user_id = 'Unable to retrieve'
+    return user_id
+
+
+def get_auth0_id_of_user(email):
+    """
+    Get the auth0 id of a user given their email.
+    To be used internally to match emails with database
+    user ids.
+
+    Parameters
+    ----------
+    email : str
+        The email to check the auth0 api for
+
+    Returns
+    -------
+    str
+        The auth0 id if found, otherwise 'Unable to retrieve'
+    """
+    return _get_auth0_id_of_user(email,
+                                 token_redis_connection(),
+                                 auth0_token(),
+                                 current_app.config)
