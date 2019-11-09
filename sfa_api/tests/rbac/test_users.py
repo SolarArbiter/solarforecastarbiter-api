@@ -5,37 +5,79 @@ from sfa_api.conftest import BASE_URL
 
 
 @pytest.fixture()
-def api(mocker, user_id, api):
+def mock_email_funcs(mocker, auth0id, user_email, external_auth0id,
+                     user_id):
+    def check(email):
+        if email == user_email:
+            return auth0id
+        elif email == 'reference@solarforecastarbiter.org':
+            return external_auth0id
+        elif email == 'unaffiliated@what.com':
+            return 'auth0|test_public'
+        else:
+            return 'Unable to retrieve'
+
+    mocker.patch('sfa_api.users.get_auth0_id_of_user',
+                 new=check)
     mocker.patch('sfa_api.users.get_email_of_user',
-                 return_value='testing@solarforecastarbiter.org')
+                 return_value=user_email)
     mocker.patch('sfa_api.users.list_user_emails',
-                 return_value={user_id: 'testing@solarforecastarbiter.org'})
+                 return_value={user_id: user_email})
+
+
+@pytest.fixture()
+def api(api, mock_email_funcs):
     return api
 
 
-def test_get_user(api, user_id):
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+@pytest.fixture(params=['id', 'email'])
+def both_paths(request):
+    def f(id_, email):
+        if request.param == 'id':
+            return f'/users/{id_}'
+        else:
+            return f'/users-by-email/{email}'
+    return f
+
+
+@pytest.fixture()
+def normal_paths(both_paths, user_id, user_email):
+    return both_paths(user_id, user_email)
+
+
+@pytest.fixture()
+def dne_paths(both_paths, missing_id):
+    return both_paths(missing_id, 'no@no.com')
+
+
+@pytest.fixture()
+def external_paths(both_paths, external_userid):
+    return both_paths(external_userid, 'reference@solarforecastarbiter.org')
+
+
+def test_get_user(api, user_id, user_email, normal_paths):
+    get_user = api.get(normal_paths, BASE_URL)
     assert get_user.status_code == 200
     user_fields = get_user.get_json()
-    assert 'user_id' in user_fields
+    assert user_fields['user_id'] == user_id
     assert 'organization' in user_fields
     assert 'created_at' in user_fields
     assert 'modified_at' in user_fields
     assert 'roles' in user_fields
-    assert 'email' in user_fields
+    assert user_fields['email'] == user_email
     assert 'auth0_id' not in user_fields
     assert user_fields['created_at'].endswith('+00:00')
     assert user_fields['modified_at'].endswith('+00:00')
 
 
-def test_get_user_dne(api, missing_id):
-    get_user = api.get(f'/users/{missing_id}', BASE_URL)
+def test_get_user_dne(api, dne_paths):
+    get_user = api.get(dne_paths, BASE_URL)
     assert get_user.status_code == 404
 
 
-def test_get_user_no_perms(api, user_id, external_userid, remove_perms):
+def test_get_user_no_perms(api, remove_perms, external_paths):
     remove_perms('read', 'users')
-    get_user = api.get(f'/users/{external_userid}', BASE_URL)
+    get_user = api.get(external_paths, BASE_URL)
     assert get_user.status_code == 404
 
 
@@ -58,82 +100,86 @@ def test_list_users_no_perm(api, remove_perms, user_id):
     assert the_user['user_id'] == user_id
 
 
-def test_add_role_to_user(api, user_id, new_role):
+def test_add_role_to_user(api, new_role, normal_paths):
     role_id = new_role()
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}',
+                        BASE_URL)
     assert add_role.status_code == 204
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     assert role_id in roles_on_user
 
 
-def test_add_role_to_user_user_dne(api, missing_id, new_role):
+def test_add_role_to_user_user_dne(api, new_role, dne_paths):
     role_id = new_role()
-    add_role = api.post(f'/users/{missing_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(dne_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
 
 
-def test_add_role_to_user_role_dne(api, user_id, missing_id):
-    add_role = api.post(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
+def test_add_role_to_user_role_dne(api, missing_id, normal_paths):
+    add_role = api.post(normal_paths + f'/roles/{missing_id}', BASE_URL)
     assert add_role.status_code == 404
 
 
-def test_add_role_to_user_no_perms(api, user_id, new_role, remove_perms):
+def test_add_role_to_user_no_perms(api, normal_paths, new_role, remove_perms):
     role_id = new_role()
     remove_perms('grant', 'roles')
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     assert role_id not in roles_on_user
 
 
+@pytest.mark.parametrize('path', ('/users/{id_}', '/users-by-email/{email}'))
 def test_add_role_to_user_no_tou(
-        api, unaffiliated_userid, new_role, remove_perms):
+        api, unaffiliated_userid, new_role, remove_perms, path):
     role_id = new_role()
     remove_perms('grant', 'roles')
     add_role = api.post(
-        f'/users/{unaffiliated_userid}/roles/{role_id}',
+        path.format(id_=unaffiliated_userid, email='unaffiliated@what.com') +
+        f'/roles/{role_id}',
         BASE_URL)
     assert add_role.status_code == 404
 
 
-def test_remove_role_from_user(api, user_id, new_role):
+def test_remove_role_from_user(api, new_role, normal_paths):
     role_id = new_role()
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
-    remove_role = api.delete(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    remove_role = api.delete(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert remove_role.status_code == 204
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     assert role_id not in roles_on_user
 
 
-def test_remove_role_from_user_user_dne(api, missing_id, new_role):
+def test_remove_role_from_user_user_dne(api, dne_paths, new_role):
     role_id = new_role()
-    add_role = api.delete(f'/users/{missing_id}/roles/{role_id}', BASE_URL)
-    assert add_role.status_code == 204
+    rm_role = api.delete(dne_paths + f'/roles/{role_id}', BASE_URL)
+    assert rm_role.status_code == 204
 
 
-def test_remove_role_from_user_role_dne(api, user_id, missing_id):
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+def test_remove_role_from_user_role_dne(api, normal_paths, missing_id):
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     assert missing_id not in roles_on_user
 
-    add_role = api.delete(f'/users/{user_id}/roles/{missing_id}', BASE_URL)
-    assert add_role.status_code == 404
+    rm_role = api.delete(normal_paths + f'/roles/{missing_id}', BASE_URL)
+    assert rm_role.status_code == 404
 
 
-def test_remove_role_from_user_no_perms(api, user_id, new_role, remove_perms):
+def test_remove_role_from_user_no_perms(api, normal_paths, new_role,
+                                        remove_perms):
     role_id = new_role()
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
     remove_perms('revoke', 'roles')
-    remove_role = api.delete(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    remove_role = api.delete(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert remove_role.status_code == 404
 
 
@@ -149,29 +195,29 @@ def test_current_user(api):
     assert user['user_id'] == '0c90950a-7cca-11e9-a81f-54bf64606445'
 
 
-def test_add_role_to_user_already_granted(api, user_id, new_role):
+def test_add_role_to_user_already_granted(api, new_role, normal_paths):
     role_id = new_role()
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     assert role_id in roles_on_user
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 400
     assert add_role.json == {"errors": {
         "user": ["User already granted role."]}}
 
 
 def test_add_role_to_user_already_granted_lost_perms(
-        api, user_id, new_role, remove_perms):
+        api, user_id, new_role, remove_perms, normal_paths):
     role_id = new_role()
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
-    get_user = api.get(f'/users/{user_id}', BASE_URL)
+    get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
     remove_perms('grant', 'roles')
     assert role_id in roles_on_user
-    add_role = api.post(f'/users/{user_id}/roles/{role_id}', BASE_URL)
+    add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404

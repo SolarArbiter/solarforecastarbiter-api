@@ -911,6 +911,9 @@ def remove_role_from_user(user_id, role_id):
         - If the calling user does not have the revoke permission on the role
         - If the calling user and role have different organizations
     """
+    # does not fail when user does not exist
+    # if a user has revoke role perm and this did fail on user dne,
+    # the user could use this to determine if a user_id exists
     _call_procedure('remove_role_from_user',
                     role_id, user_id)
 

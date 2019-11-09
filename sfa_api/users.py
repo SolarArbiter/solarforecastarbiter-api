@@ -6,6 +6,7 @@ from sfa_api import spec
 from sfa_api.schema import UserSchema
 from sfa_api.utils.auth0_info import (
     get_email_of_user, list_user_emails, get_auth0_id_of_user)
+from sfa_api.utils.errors import StorageAuthError
 from sfa_api.utils.storage import get_storage
 
 
@@ -66,8 +67,9 @@ class UserView(MethodView):
         user['email'] = get_email_of_user(user['auth0_id'])
         return jsonify(UserSchema().dump(user))
 
-    def delete(self, user_id):
+    def _delete(self, user_id):
         """
+        not implemented
         ---
         summary: Delete a User.
         parameters:
@@ -98,7 +100,7 @@ class UserRolesManagementView(MethodView):
           - Users
           - Roles
         responses:
-          200:
+          204:
             description: Role Added Successfully.
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -120,7 +122,7 @@ class UserRolesManagementView(MethodView):
           - Users
           - Roles
         responses:
-          200:
+          204:
             description: Role removed successfully..
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -170,7 +172,7 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
           - Users-By-Email
           - Roles
         responses:
-          200:
+          204:
             description: Role Added Successfully.
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -193,7 +195,7 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
           - Users-By-Email
           - Roles
         responses:
-          200:
+          204:
             description: Role removed successfully..
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -202,7 +204,10 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
-        user_id = storage.read_user_id(auth0_id)
+        try:
+            user_id = storage.read_user_id(auth0_id)
+        except StorageAuthError:
+            return '', 204
         return super().delete(user_id, role_id)
 
 
