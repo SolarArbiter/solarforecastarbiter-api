@@ -1,4 +1,16 @@
+import pytest
+
+
 from sfa_api.conftest import BASE_URL
+
+
+@pytest.fixture()
+def api(mocker, user_id, api):
+    mocker.patch('sfa_api.users.get_email_of_user',
+                 return_value='testing@solarforecastarbiter.org')
+    mocker.patch('sfa_api.users.list_user_emails',
+                 return_value={user_id: 'testing@solarforecastarbiter.org'})
+    return api
 
 
 def test_get_user(api, user_id):
@@ -10,6 +22,8 @@ def test_get_user(api, user_id):
     assert 'created_at' in user_fields
     assert 'modified_at' in user_fields
     assert 'roles' in user_fields
+    assert 'email' in user_fields
+    assert 'auth0_id' not in user_fields
     assert user_fields['created_at'].endswith('+00:00')
     assert user_fields['modified_at'].endswith('+00:00')
 
@@ -31,6 +45,7 @@ def test_list_users(api, user_id):
     user_list = get_users.json
     assert len(user_list) > 0
     assert user_id in [user['user_id'] for user in user_list]
+    assert all([user.get('email', False) for user in user_list])
 
 
 def test_list_users_no_perm(api, remove_perms, user_id):
@@ -125,7 +140,11 @@ def test_remove_role_from_user_no_perms(api, user_id, new_role, remove_perms):
 def test_current_user(api):
     user_req = api.get('/users/current', BASE_URL)
     user = user_req.json
-    assert user['auth0_id'] == 'auth0|5be343df7025406237820b85'
+    assert 'created_at' in user
+    assert 'modified_at' in user
+    assert 'roles' in user
+    assert 'email' in user
+    assert 'auth0_id' not in user
     assert user['organization'] == 'Organization 1'
     assert user['user_id'] == '0c90950a-7cca-11e9-a81f-54bf64606445'
 

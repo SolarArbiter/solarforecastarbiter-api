@@ -1407,6 +1407,7 @@ def store_report_status(report_id, status):
 
 def get_current_user_info():
     user_info = _call_procedure_for_single('get_current_user_info')
+    user_info['roles'] = json.loads(user_info['roles'])
     return user_info
 
 

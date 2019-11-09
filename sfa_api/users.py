@@ -4,6 +4,7 @@ from flask.views import MethodView
 
 from sfa_api import spec
 from sfa_api.schema import UserSchema
+from sfa_api.utils.auth0_info import get_email_of_user, list_user_emails
 from sfa_api.utils.storage import get_storage
 
 
@@ -61,6 +62,7 @@ class UserView(MethodView):
         """
         storage = get_storage()
         user = storage.read_user(user_id)
+        user['email'] = get_email_of_user(user['auth0_id'])
         return jsonify(UserSchema().dump(user))
 
     def delete(self, user_id):
@@ -79,7 +81,7 @@ class UserView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: no remove_user procedure
+        # PROCEDURE: move_user_to_unaffiliated
         pass
 
 
@@ -150,7 +152,9 @@ class CurrentUserView(MethodView):
         """
         storage = get_storage()
         user_info = storage.get_current_user_info()
-        return jsonify(user_info), 200
+        user_info['email'] = get_email_of_user(
+            user_info['auth0_id'])
+        return jsonify(UserSchema().dump(user_info))
 
 
 spec.components.parameter(
