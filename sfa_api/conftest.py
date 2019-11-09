@@ -209,6 +209,7 @@ def auth0id():
 def user_email():
     return 'testing@solarforecastarbiter.org'
 
+
 @pytest.fixture()
 def external_userid():
     return '4b436bee-8245-11e9-a81f-54bf64606445'
