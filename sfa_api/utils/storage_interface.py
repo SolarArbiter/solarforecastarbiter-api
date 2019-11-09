@@ -1713,3 +1713,25 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
         out[obs_id] = df.drop(columns='observation_id').set_index(
             'timestamp')
     return out
+
+
+def read_user_id(auth0_id):
+    """Gets the user id for a given auth0 id
+
+    Parameters
+    ----------
+    auth0_id : string
+        Auth0 id fo the user of interest
+
+    Returns
+    -------
+    str
+        User UUID
+
+    Raises
+    ------
+    StorageAuthError
+        If the calling user and user of interest have not both signed the TOU
+    """
+    return _call_procedure_for_single('read_user_id', auth0_id,
+                                      cursor_type='standard')[0]

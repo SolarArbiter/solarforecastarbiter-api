@@ -1117,3 +1117,20 @@ def test_read_aggregate_values_empty(sql_app, user, nocommit_cursor):
     out = storage_interface.read_aggregate_values(aggregate_id, start, end)
     assert isinstance(out, dict)
     assert not out
+
+
+def test_read_user_id(sql_app, user, nocommit_cursor, external_userid,
+                      external_auth0id):
+    out = storage_interface.read_user_id(external_auth0id)
+    assert out == external_userid
+
+
+def test_read_user_id_self(sql_app, user, nocommit_cursor, user_id,
+                           auth0id):
+    out = storage_interface.read_user_id(auth0id)
+    assert out == user_id
+
+
+def test_read_user_id_fail(sql_app, user, nocommit_cursor):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_user_id('auth0|random')

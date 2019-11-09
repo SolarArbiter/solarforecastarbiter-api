@@ -1434,3 +1434,26 @@ def test_read_metadata_for_value_write_invalid(cursor, insertuser):
                          'sites',
                          '2019-09-30 12:00'))
     assert e.value.args[0] == 1146
+
+
+def test_read_user_id(cursor, insertuser, new_user):
+    u2 = new_user()
+    cursor.callproc('read_user_id', (insertuser.auth0id, u2['auth0_id']))
+    u2id = cursor.fetchone()[0]
+    assert u2id == bin_to_uuid(u2['id'])
+
+
+def test_read_user_id_other_unaffiliated(cursor, insertuser,
+                                         new_unaffiliated_user):
+    u2 = new_unaffiliated_user()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_user_id', (insertuser.auth0id, u2['auth0_id']))
+    assert e.value.args[0] == 1142
+
+
+def test_read_user_id_caller_unaffiliated(cursor, insertuser,
+                                          new_unaffiliated_user):
+    u2 = new_unaffiliated_user()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_user_id', (u2['auth0_id'], insertuser.auth0id))
+    assert e.value.args[0] == 1142
