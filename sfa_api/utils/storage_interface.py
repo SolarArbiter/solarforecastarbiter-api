@@ -907,11 +907,9 @@ def remove_role_from_user(user_id, role_id):
     Raises
     ------
     StorageAuthError
-        - If the user or role does not exist
-        - If the calling user does not have
-          permissions to read role and user.
-        - If the calling user does not have
-          permission to update the user.
+        - If the role does not exist
+        - If the calling user does not have the revoke permission on the role
+        - If the calling user and role have different organizations
     """
     _call_procedure('remove_role_from_user',
                     role_id, user_id)
@@ -930,10 +928,12 @@ def add_role_to_user(user_id, role_id):
     ------
     StorageAuthError
         - If the user or role does not exist
-        - If the calling user does not have
-          permissions to read role and user.
-        - If the calling user does not have
-          permission to update the user.
+        - If the calling user org and the role org do not match
+        - If the user has not accepted the TOU
+        - If the user is not in an organization other than Unaffiliated
+        - If the calling user does not have the grant permission on the role
+        - If the role contains RBAC permissions and the user is in
+          a different organization
     BadAPIRequest
         - If the user has already been granted
           the role.
