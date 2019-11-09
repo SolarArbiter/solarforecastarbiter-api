@@ -31,38 +31,11 @@ class AllUsersView(MethodView):
         """
         storage = get_storage()
         users = storage.list_users()
+        emails = list_user_emails([u['auth0_id'] for u in users])
+        for u in users:
+            u['email'] = emails.get(
+                u['auth0_id'], 'Unable to retrieve')
         return jsonify(UserSchema(many=True).dump(users))
-
-    def post(self):
-        """
-        ---
-        summary: Create a new User
-        description: >-
-          Create a new User by posting metadata containing an auth0_id and
-          organization_id.
-        tags:
-          - Users
-        requestBody:
-          description: JSON containing fields to create new user.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPostSchema'
-        responses:
-          201:
-            description: Created the User successfully
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-        """
-        # PROCEDURE: create_user
-        pass
 
 
 class UserView(MethodView):
