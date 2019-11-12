@@ -1,2 +1,2 @@
-DROP PROCEDURE IF EXISTS read_user_id;
-DROP PROCEDURE IF EXISTS read_auth0id;
+DROP PROCEDURE read_user_id;
+DROP PROCEDURE read_auth0id;

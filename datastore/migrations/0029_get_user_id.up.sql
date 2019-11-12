@@ -23,6 +23,7 @@ GRANT EXECUTE ON PROCEDURE read_user_id TO 'apiuser'@'%';
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_auth0id (
     IN auth0id VARCHAR(32), IN struserid CHAR(36))
 COMMENT 'Read the auth0id of another user if both orgs have accepted tou'
+READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE caller_id BINARY(16);
