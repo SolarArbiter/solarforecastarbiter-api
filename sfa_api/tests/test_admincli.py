@@ -1,7 +1,8 @@
+from cryptography.fernet import Fernet
 import pytest
-
-
 import pymysql
+
+
 from sfa_api import admincli
 from sfa_api import create_app
 from sfa_api.conftest import _make_nocommit_cursor
@@ -316,3 +317,38 @@ def test_delete_user_user_dne(
         admincli.delete_user,
         [missing_id] + auth_args)
     assert result.output == (f'User does not exist\n')
+
+
+def test_create_job_user(app_cli_runner, mocker):
+    org = 'Organization 1'
+    create = mocker.patch('sfa_api.utils.auth0_info.create_user',
+                          return_value='auth0|createduser')
+
+    def call_return(proc, *args, **kwargs):
+        if proc == 'list_all_organizations':
+            return [{'name': 'Organization 1', 'id': 'orgid'}]
+        elif proc == 'store_token':
+            assert args[1].startswith(b'gAAAA')  # encrypted
+
+    mocker.patch('sfa_api.utils.storage_interface._call_procedure',
+                 new=call_return)
+    refresh = mocker.patch('sfa_api.utils.auth0_info.get_refresh_token',
+                           return_value='token')
+    res = app_cli_runner.invoke(
+        admincli.create_job_user,
+        ['--encryption-key', Fernet.generate_key()] + auth_args + [org])
+    assert res.exit_code == 0
+    assert 'job-execution@organization-1.solarforecastarbiter.org' in res.output  # NOQA
+    assert refresh.called
+    assert create.called
+
+
+def test_create_job_user_no_org(app_cli_runner, mocker):
+    org = 'Organization 1'
+    mocker.patch('sfa_api.utils.storage_interface._call_procedure',
+                 return_value=[])
+    res = app_cli_runner.invoke(
+        admincli.create_job_user,
+        ['--encryption-key', Fernet.generate_key()] + auth_args + [org])
+    assert res.exit_code == 1
+    assert 'Organization Organization 1 not found' in res.output
