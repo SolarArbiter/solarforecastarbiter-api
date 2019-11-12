@@ -495,7 +495,7 @@ def delete_forecast(forecast_id):
     _call_procedure('delete_forecast', forecast_id)
 
 
-def list_forecasts(site_id=None):
+def list_forecasts(site_id=None, aggregate_id=None):
     """Lists all Forecasts a user has access to.
 
     Parameters
@@ -503,6 +503,9 @@ def list_forecasts(site_id=None):
     site_id: string
         UUID of Site, when supplied returns only Forecasts
         made for this Site.
+    aggregate_id: string
+        UUID of the aggregate, when supplied returns only
+        forecasts made for this aggregate.
 
     Returns
     -------
@@ -511,9 +514,15 @@ def list_forecasts(site_id=None):
     """
     if site_id is not None:
         read_site(site_id)
+    if aggregate_id is not None:
+        read_aggregate(aggregate_id)
     forecasts = [_set_forecast_parameters(fx)
                  for fx in _call_procedure('list_forecasts')
-                 if site_id is None or fx['site_id'] == site_id]
+                 if (
+                     (site_id is None and aggregate_id is None) or
+                     (site_id and fx['site_id'] == site_id) or
+                     (aggregate_id and fx['aggregate_id'] == aggregate_id)
+    )]
     return forecasts
 
 
@@ -842,7 +851,7 @@ def delete_cdf_forecast_group(forecast_id):
     _call_procedure('delete_cdf_forecasts_group', forecast_id)
 
 
-def list_cdf_forecast_groups(site_id=None):
+def list_cdf_forecast_groups(site_id=None, aggregate_id=None):
     """Lists all CDF Forecast Groups a user has access to.
 
     Parameters
@@ -850,6 +859,9 @@ def list_cdf_forecast_groups(site_id=None):
     site_id: string
         UUID of Site, when supplied returns only CDF Forcast Groups
         made for this Site.
+    aggregate_id:
+        UUID of aggregate, when supplied returns only CDF Forecast
+        Groups made for this aggregate.
 
     Returns
     -------
@@ -858,9 +870,15 @@ def list_cdf_forecast_groups(site_id=None):
     """
     if site_id is not None:
         read_site(site_id)
+    if aggregate_id is not None:
+        read_aggregate(aggregate_id)
     forecasts = [_set_cdf_group_forecast_parameters(fx)
                  for fx in _call_procedure('list_cdf_forecasts_groups')
-                 if site_id is None or fx['site_id'] == site_id]
+                 if (
+                     (site_id is None and aggregate_id is None) or
+                     (site_id and fx['site_id'] == site_id) or
+                     (aggregate_id and fx['aggregate_id'] == aggregate_id)
+    )]
     return forecasts
 
 

@@ -6,7 +6,7 @@ import pytest
 
 from sfa_api.conftest import (
     BASE_URL, copy_update, variables, agg_types,
-    VALID_OBS_JSON)
+    VALID_OBS_JSON, demo_forecasts, demo_group_cdf)
 
 
 AGG_JSON = {
@@ -359,3 +359,29 @@ def test_get_aggregate_values_404(api, missing_id):
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
     assert res.status_code == 404
+
+
+def test_get_aggregate_forecasts(api, aggregate_id):
+    res = api.get(f'/aggregates/{aggregate_id}/forecasts/single',
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+    agg_forecasts = res.get_json()
+    assert len(agg_forecasts) == 1
+    agg_fx = agg_forecasts[0]
+    expected = list(demo_forecasts.values())[-1]
+    assert agg_fx['forecast_id'] == expected['forecast_id']
+    assert agg_fx['aggregate_id'] == aggregate_id
+
+
+def test_get_aggregate_cdf_forecast_groups(api, aggregate_id):
+    res = api.get(f'/aggregates/{aggregate_id}/forecasts/cdf',
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert isinstance(res.get_json(), list)
+    agg_cdf_forecasts = res.get_json()
+    assert len(agg_cdf_forecasts) == 1
+    agg_cdf = agg_cdf_forecasts[0]
+    expected = list(demo_group_cdf.values())[-1]
+    assert agg_cdf['forecast_id'] == expected['forecast_id']
+    assert agg_cdf['aggregate_id'] == aggregate_id

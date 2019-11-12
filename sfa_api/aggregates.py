@@ -16,7 +16,9 @@ from sfa_api.schema import (AggregateSchema,
                             AggregatePostSchema,
                             AggregateValuesSchema,
                             AggregateLinksSchema,
-                            AggregateUpdateSchema)
+                            AggregateUpdateSchema,
+                            ForecastSchema,
+                            CDFForecastGroupSchema)
 
 
 class AllAggregatesView(MethodView):
@@ -314,6 +316,64 @@ class AggregateMetadataView(MethodView):
         return aggregate_id, 200
 
 
+class AggregateForecasts(MethodView):
+    def get(self, aggregate_id):
+        """
+        ---
+        summary: Get aggregate forecasts.
+        description: >
+          Get metadata for all Forecasts associated with the aggregate
+          that the user has access to.
+        tags:
+        - Aggregates
+        parameters:
+        - aggregate_id
+        responses:
+          200:
+            description: Successfully retrieved aggregate forecasts.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ForecastMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        forecasts = storage.list_forecasts(aggregate_id=aggregate_id)
+        return jsonify(ForecastSchema(many=True).dump(forecasts))
+
+
+class AggregateCDFForecastGroups(MethodView):
+    def get(self, aggregate_id):
+        """
+        ---
+        summary: Get aggregate probabilistic forecasts.
+        description: >
+          Get metadata for all Probabilistic Forecasts associated with
+          the aggregate that the user has access to.
+        tags:
+        - Aggregates
+        parameters:
+        - aggregate_id
+        responses:
+          200:
+            description: Successfully retrieved aggregate cdf forecast groups.
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/CDFForecastGroupMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        forecasts = storage.list_cdf_forecast_groups(aggregate_id=aggregate_id)
+        return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
+
+
 # Add path parameters used by these endpoints to the spec.
 spec.components.parameter(
     'aggregate_id', 'path',
@@ -339,3 +399,9 @@ agg_blp.add_url_rule(
 agg_blp.add_url_rule(
     '/<aggregate_id>/metadata',
     view_func=AggregateMetadataView.as_view('metadata'))
+agg_blp.add_url_rule(
+    '/<aggregate_id>/forecasts/single',
+    view_func=AggregateForecasts.as_view('forecasts'))
+agg_blp.add_url_rule(
+    '/<aggregate_id>/forecasts/cdf',
+    view_func=AggregateCDFForecastGroups.as_view('cdf_forecasts'))

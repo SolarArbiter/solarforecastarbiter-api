@@ -295,6 +295,27 @@ def test_list_forecasts_invalid_site(sql_app, user):
         storage_interface.list_forecasts(str(uuid.uuid1()))
 
 
+@pytest.fixture()
+def site_id_with_forecasts(forecast_id):
+    return demo_forecasts[forecast_id]['site_id']
+
+
+def test_list_forecasts_filter_by_site(
+        sql_app, user, site_id_with_forecasts):
+    forecasts = storage_interface.list_forecasts(
+        site_id=site_id_with_forecasts)
+    assert len(forecasts) > 0
+    for fx in forecasts:
+        assert fx['site_id'] == site_id_with_forecasts
+
+
+def test_list_forecasts_filter_by_aggregate(sql_app, user, aggregate_id):
+    forecasts = storage_interface.list_forecasts(aggregate_id=aggregate_id)
+    assert len(forecasts) > 0
+    for fx in forecasts:
+        assert fx['aggregate_id'] == aggregate_id
+
+
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
 def test_read_forecast(sql_app, user, forecast_id):
     forecast = storage_interface.read_forecast(forecast_id)
@@ -699,7 +720,7 @@ def test_list_cdf_forecast_groups(sql_app, user):
 
 def test_list_cdf_forecast_groups_site(sql_app, user):
     site = list(demo_sites.keys())[0]
-    forecasts = storage_interface.list_cdf_forecast_groups(site)
+    forecasts = storage_interface.list_cdf_forecast_groups(site_id=site)
     for fx in forecasts:
         group = demo_group_cdf[fx['forecast_id']].copy()
         group['constant_values'] = {thing['forecast_id']: thing
@@ -718,6 +739,15 @@ def test_list_cdf_forecast_groups_invalid_user(sql_app, invalid_user):
 def test_list_cdf_forecast_groups_invalid_site(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.list_cdf_forecast_groups(str(uuid.uuid1()))
+
+
+def test_list_cdf_forecast_groups_filter_by_aggregate(
+        sql_app, user, aggregate_id):
+    forecasts = storage_interface.list_cdf_forecast_groups(
+        aggregate_id=aggregate_id)
+    assert len(forecasts) > 0
+    for fx in forecasts:
+        assert fx['aggregate_id'] == aggregate_id
 
 
 @pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
