@@ -334,7 +334,7 @@ def get_refresh_token(email, password):
             }
     req = requests.post(
         current_app.config['AUTH0_BASE_URL'] + '/oauth/token',
-        data=body
+        json=body
     )
     req.raise_for_status()
     return req.json()['refresh_token']
