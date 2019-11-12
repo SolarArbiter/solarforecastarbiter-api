@@ -1759,7 +1759,8 @@ def read_user_id(auth0_id):
 
 
 def read_auth0id(user_id):
-    """Read the auth0 id of another user. Only allowed if both users
+    """Read the auth0 id of another user. Only allowed if both users are affiliated
+        with organizations that have accepted the TOU.
 
     Parameters
     ----------
