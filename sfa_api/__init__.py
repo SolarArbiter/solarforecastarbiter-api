@@ -95,3 +95,16 @@ def create_app_with_metrics(config_name='ProductionConfig'):  # pragma: no cover
     app = create_app(config_name)
     GunicornPrometheusMetrics(app=app, group_by='url_rule')
     return app
+
+
+def __getattr__(name):  # pragma: no cover
+    """
+    Enable lazy evaluation of app creation while supporting running the app
+    with gunicorn like 'gunicorn sfa_api:app'
+    """
+    if name == 'app':
+        return create_app()
+    elif name == 'app_with_metrics':
+        return create_app_with_metrics()
+    else:
+        raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
