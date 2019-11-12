@@ -682,3 +682,43 @@ def test_set_org_accepted_tou_org_dne(dictcursor):
         dictcursor.callproc('set_org_accepted_tou', (str(bin_to_uuid(orgid)),))
     assert e.value.args[0] == 1305
     assert e.value.args[1] == "Organization does not exist"
+
+
+def test_store_token(dictcursor, new_user):
+    user = new_user()
+    dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens')
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'testtoken'
+
+    dictcursor.callproc('store_token', (user['auth0_id'], 'newtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens')
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'newtoken'
+
+
+def test_create_job_user(cursor, new_organization):
+    org = new_organization()
+    orgid = bin_to_uuid(org['id'])
+    auth0_id = 'auth0|testid'
+    cursor.callproc('create_job_user', (auth0_id, orgid))
+    user_id = cursor.fetchone()[0]
+    cursor.execute(
+        'SELECT 1 as one FROM users WHERE auth0_id = %s '
+        'AND organization_id = UUID_TO_BIN(%s, 1)',
+        (auth0_id, orgid))
+    assert cursor.fetchall()[0]
+    cursor.execute(
+        'SELECT name FROM roles WHERE id IN'
+        '(select role_id from user_role_mapping where '
+        'user_id = UUID_TO_BIN(%s, 1))',
+        (user_id,)
+    )
+    roles = [r[0] for r in cursor.fetchall()]
+    assert len(roles) == 2
+    assert 'Read Reference Data' in roles
+    assert f'DEFAULT User role {user_id}' in roles
