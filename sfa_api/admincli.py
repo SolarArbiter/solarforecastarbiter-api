@@ -3,7 +3,7 @@ import sys
 
 import click
 from flask import Flask
-from flask.cli import AppGroup
+from flask.cli import FlaskGroup
 import pymysql
 
 
@@ -11,9 +11,13 @@ from sfa_api.utils.errors import StorageAuthError
 
 
 app = Flask(__name__)
-admin_cli = AppGroup(
-    'admin',
-    help="Tool for administering the Solar Forecast Arbiter Framework")
+
+
+@click.group(cls=FlaskGroup, create_app=lambda: app,
+             add_default_commands=False)
+def admin_cli():
+    """Tool for administering the Solar Forecast Arbiter Framework"""
+    pass
 
 
 config_opt = click.option(
@@ -212,6 +216,3 @@ def delete_user(user_id, **kwargs):
             raise
     else:
         click.echo(f'User {user_id} deleted successfully.')
-
-
-app.cli.add_command(admin_cli)
