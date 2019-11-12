@@ -573,24 +573,13 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     modified_at = MODIFIED_AT
 
 
-@spec.define_schema('UserPostSchema')
-class UserPostSchema(ma.Schema):
-    auth0_id = ma.String(
-        title="Auth0 ID",
-        description="The User's unique Auth0 identifier.",
-    )
-    organization_id = ma.UUID(
-        title="Organization ID",
-        description="UUID of the Organization the User belongs to."
-    )
-
-
 @spec.define_schema('UserSchema')
 class UserSchema(ma.Schema):
     user_id = ma.UUID(
         title="User ID",
         description="Unique UUID of the User.",
     )
+    email = ma.Email(title="Email")
     organization = ma.String(title='Organization')
     created_at = CREATED_AT
     modified_at = MODIFIED_AT

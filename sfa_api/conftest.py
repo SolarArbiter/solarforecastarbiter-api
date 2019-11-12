@@ -201,8 +201,24 @@ def user_id():
 
 
 @pytest.fixture()
+def auth0id():
+    return 'auth0|5be343df7025406237820b85'
+
+
+@pytest.fixture()
+def user_email():
+    return 'testing@solarforecastarbiter.org'
+
+
+@pytest.fixture()
 def external_userid():
     return '4b436bee-8245-11e9-a81f-54bf64606445'
+
+
+@pytest.fixture()
+def external_auth0id():
+    return 'auth0|5ceed7c8a1536b1103699501'
+
 
 # User id of a permission-less unaffiliated user.
 @pytest.fixture()

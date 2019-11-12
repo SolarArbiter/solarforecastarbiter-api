@@ -9,6 +9,7 @@ def make_redis_connection(config):
     port = int(config.get('REDIS_PORT', '6379'))
     db = config.get('REDIS_DB', 0)
     passwd = config.get('REDIS_PASSWORD', None)
+    decode_resp = config.get('REDIS_DECODE_RESPONSES', False)
     socket_connect_timeout = config.get('REDIS_SOCKET_CONNECT_TIMEOUT', 15)
     ssl = config.get('REDIS_USE_SSL', False)
     ssl_ca_certs = config.get(
@@ -18,7 +19,8 @@ def make_redis_connection(config):
     r = Redis(host=host, port=port, db=db, password=passwd,
               socket_connect_timeout=socket_connect_timeout,
               ssl=ssl, ssl_ca_certs=ssl_ca_certs,
-              ssl_cert_reqs=ssl_cert_reqs)
+              ssl_cert_reqs=ssl_cert_reqs,
+              decode_responses=decode_resp)
     return r
 
 

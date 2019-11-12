@@ -12,6 +12,9 @@ class Config(object):
     REDOC_VERSION = os.getenv('REDOC_VERSION', 'next')
     AUTH0_BASE_URL = 'https://solarforecastarbiter.auth0.com'
     AUTH0_AUDIENCE = 'https://api.solarforecastarbiter.org'
+    AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '')
+    AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
+    AUTH0_REDIS_DB = os.getenv('AUTH0_REDIS_DB', 1)
     JWT_KEY = requests.get(
         AUTH0_BASE_URL + '/.well-known/jwks.json').json()
     MYSQL_HOST = os.getenv('MYSQL_HOST', '127.0.0.1')
@@ -40,6 +43,8 @@ class TestingConfig(Config):
     MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
     MYSQL_DATABASE = 'arbiter_data'
     USE_FAKE_REDIS = True
+    AUTH0_CLIENT_ID = 'clientid'
+    AUTH0_CLIENT_SECRET = 'secret'
 
 
 class AdminTestConfig(Config):

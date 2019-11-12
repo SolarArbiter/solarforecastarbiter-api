@@ -925,12 +925,13 @@ def remove_role_from_user(user_id, role_id):
     Raises
     ------
     StorageAuthError
-        - If the user or role does not exist
-        - If the calling user does not have
-          permissions to read role and user.
-        - If the calling user does not have
-          permission to update the user.
+        - If the role does not exist
+        - If the calling user does not have the revoke permission on the role
+        - If the calling user and role have different organizations
     """
+    # does not fail when user does not exist
+    # if a user has revoke role perm and this did fail on user dne,
+    # the user could use this to determine if a user_id exists
     _call_procedure('remove_role_from_user',
                     role_id, user_id)
 
@@ -948,10 +949,12 @@ def add_role_to_user(user_id, role_id):
     ------
     StorageAuthError
         - If the user or role does not exist
-        - If the calling user does not have
-          permissions to read role and user.
-        - If the calling user does not have
-          permission to update the user.
+        - If the calling user org and the role org do not match
+        - If the user has not accepted the TOU
+        - If the user is not in an organization other than Unaffiliated
+        - If the calling user does not have the grant permission on the role
+        - If the role contains RBAC permissions and the user is in
+          a different organization
     BadAPIRequest
         - If the user has already been granted
           the role.
@@ -1425,6 +1428,7 @@ def store_report_status(report_id, status):
 
 def get_current_user_info():
     user_info = _call_procedure_for_single('get_current_user_info')
+    user_info['roles'] = json.loads(user_info['roles'])
     return user_info
 
 
@@ -1730,3 +1734,25 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
         out[obs_id] = df.drop(columns='observation_id').set_index(
             'timestamp')
     return out
+
+
+def read_user_id(auth0_id):
+    """Gets the user id for a given auth0 id
+
+    Parameters
+    ----------
+    auth0_id : string
+        Auth0 id fo the user of interest
+
+    Returns
+    -------
+    str
+        User UUID
+
+    Raises
+    ------
+    StorageAuthError
+        If the calling user and user of interest have not both signed the TOU
+    """
+    return _call_procedure_for_single('read_user_id', auth0_id,
+                                      cursor_type='standard')[0]

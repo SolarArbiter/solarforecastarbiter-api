@@ -4,6 +4,9 @@ from flask.views import MethodView
 
 from sfa_api import spec
 from sfa_api.schema import UserSchema
+from sfa_api.utils.auth0_info import (
+    get_email_of_user, list_user_emails, get_auth0_id_of_user)
+from sfa_api.utils.errors import StorageAuthError
 from sfa_api.utils.storage import get_storage
 
 
@@ -31,38 +34,11 @@ class AllUsersView(MethodView):
         """
         storage = get_storage()
         users = storage.list_users()
+        emails = list_user_emails([u['auth0_id'] for u in users])
+        for u in users:
+            u['email'] = emails.get(
+                u['auth0_id'], 'Unable to retrieve')
         return jsonify(UserSchema(many=True).dump(users))
-
-    def post(self):
-        """
-        ---
-        summary: Create a new User
-        description: >-
-          Create a new User by posting metadata containing an auth0_id and
-          organization_id.
-        tags:
-          - Users
-        requestBody:
-          description: JSON containing fields to create new user.
-          required: True
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserPostSchema'
-        responses:
-          201:
-            description: Created the User successfully
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
-          401:
-            $ref: '#/components/responses/401-Unauthorized'
-        """
-        # PROCEDURE: create_user
-        pass
 
 
 class UserView(MethodView):
@@ -88,10 +64,12 @@ class UserView(MethodView):
         """
         storage = get_storage()
         user = storage.read_user(user_id)
+        user['email'] = get_email_of_user(user['auth0_id'])
         return jsonify(UserSchema().dump(user))
 
-    def delete(self, user_id):
+    def _delete(self, user_id):
         """
+        not implemented
         ---
         summary: Delete a User.
         parameters:
@@ -106,7 +84,7 @@ class UserView(MethodView):
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
-        # PROCEDURE: no remove_user procedure
+        # PROCEDURE: move_user_to_unaffiliated
         pass
 
 
@@ -122,7 +100,7 @@ class UserRolesManagementView(MethodView):
           - Users
           - Roles
         responses:
-          200:
+          204:
             description: Role Added Successfully.
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -144,7 +122,7 @@ class UserRolesManagementView(MethodView):
           - Users
           - Roles
         responses:
-          200:
+          204:
             description: Role removed successfully..
           404:
             $ref: '#/components/responses/404-NotFound'
@@ -177,7 +155,89 @@ class CurrentUserView(MethodView):
         """
         storage = get_storage()
         user_info = storage.get_current_user_info()
-        return jsonify(user_info), 200
+        user_info['email'] = get_email_of_user(
+            user_info['auth0_id'])
+        return jsonify(UserSchema().dump(user_info))
+
+
+class UserRolesManagementByEmailView(UserRolesManagementView):
+    def post(self, email, role_id):
+        """
+        ---
+        summary: Add a Role to a User by email.
+        parameters:
+        - email
+        - role_id
+        tags:
+          - Users-By-Email
+          - Roles
+        responses:
+          204:
+            description: Role Added Successfully.
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        auth0_id = get_auth0_id_of_user(email)
+        user_id = storage.read_user_id(auth0_id)
+        return super().post(user_id, role_id)
+
+    def delete(self, email, role_id):
+        """
+        ---
+        summary: Remove a role from a User by email.
+        parameters:
+        - email
+        - role_id
+        tags:
+          - Users-By-Email
+          - Roles
+        responses:
+          204:
+            description: Role removed successfully..
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        auth0_id = get_auth0_id_of_user(email)
+        try:
+            user_id = storage.read_user_id(auth0_id)
+        except StorageAuthError:
+            return '', 204
+        return super().delete(user_id, role_id)
+
+
+class UserByEmailView(MethodView):
+    def get(self, email):
+        """
+        ---
+        summary: Get User Metadata by email.
+        parameters:
+        - email
+        tags:
+          - Users-By-Email
+        responses:
+          200:
+            description: User successully retrieved.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserSchema'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        auth0_id = get_auth0_id_of_user(email)
+        user_id = storage.read_user_id(auth0_id)
+        user = storage.read_user(user_id)
+        user['email'] = email
+        return jsonify(UserSchema().dump(user))
 
 
 spec.components.parameter(
@@ -191,6 +251,17 @@ spec.components.parameter(
         'required': 'true',
         'name': 'user_id'
     })
+spec.components.parameter(
+    'email', 'path',
+    {
+        'schema': {
+            'type': 'string',
+            'format': 'email'
+        },
+        'description': "The user's email address",
+        'required': 'true',
+        'name': 'email'
+    })
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
@@ -203,3 +274,14 @@ user_blp.add_url_rule(
 user_blp.add_url_rule(
     '/current',
     view_func=CurrentUserView.as_view('current_user'))
+
+
+user_email_blp = Blueprint(
+    'users-by-email', 'users-by-email', url_prefix='/users-by-email',
+)
+user_email_blp.add_url_rule(
+    '/<email>', view_func=UserByEmailView.as_view('single'))
+user_email_blp.add_url_rule(
+    '/<email>/roles/<role_id>',
+    view_func=UserRolesManagementByEmailView.as_view('user_roles_management')
+)
