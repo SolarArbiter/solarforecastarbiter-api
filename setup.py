@@ -47,7 +47,8 @@ setup(
         'pymysql',
         'solarforecastarbiter',
         'sentry_sdk',
-        'blinker'
+        'blinker',
+        'cryptography'
     ],
     extras_require=EXTRAS_REQUIRE,
     project_urls={

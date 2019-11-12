@@ -2,6 +2,7 @@ import sys
 
 
 import click
+from cryptography.fernet import Fernet
 from flask import Flask
 from flask.cli import FlaskGroup
 import pymysql
@@ -67,6 +68,47 @@ def create_organization(organization_name, **kwargs):
             raise
     else:
         click.echo(f'Created organization {organization_name}.')
+
+
+@admin_cli.command('create-job-user')
+@with_default_options
+@click.option(
+    '--encryption-key', prompt=False, required=True,
+    envvar='TOKEN_ENCRYPTION_KEY')
+@click.argument('organization_name', required=True)
+def create_job_user(organization_name, encryption_key, **kwargs):
+    """
+    Creates a new user in Auth0 to run background jobs for the organization
+    """
+    from sfa_api.utils import auth0_info
+    import sfa_api.utils.storage_interface as storage
+
+    org_id = None
+    for org in storage._call_procedure(
+            'list_all_organizations', with_current_user=False):
+        if org['name'] == organization_name:
+            org_id = org['id']
+            break
+    if org_id is None:
+        fail(f'Organization {organization_name} not found')
+
+    username = (
+        'job-execution@' +
+        organization_name.lower().replace(" ", "-") +
+        '.solarforecastarbiter.org'
+    )
+
+    passwd = auth0_info.random_password()
+    auth0_id = auth0_info.create_user(username, passwd, True)
+    # create user in db
+    storage._call_procedure('create_job_user', auth0_id, org_id,
+                            with_current_user=False)
+    refresh_token = auth0_info.get_refresh_token(username, passwd)
+    f = Fernet(encryption_key)
+    sec_token = f.encrypt(refresh_token.encode())
+    storage._call_procedure('store_token', auth0_id, sec_token,
+                            with_current_user=False)
+    click.echo(f'Created user {username}')
 
 
 @admin_cli.command('add-user-to-org')
