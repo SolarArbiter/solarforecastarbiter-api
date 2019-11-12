@@ -1457,3 +1457,26 @@ def test_read_user_id_caller_unaffiliated(cursor, insertuser,
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_user_id', (u2['auth0_id'], insertuser.auth0id))
     assert e.value.args[0] == 1142
+
+
+def test_read_auth0id(cursor, insertuser, new_user):
+    u2 = new_user()
+    cursor.callproc('read_auth0id', (insertuser.auth0id, bin_to_uuid(u2['id'])))
+    u2auth0id = cursor.fetchone()[0]
+    assert u2auth0id == u2['auth0_id']
+
+
+def test_read_auth0id_other_unaffiliated(cursor, insertuser,
+                                         new_unaffiliated_user):
+    u2 = new_unaffiliated_user()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_auth0id', (insertuser.auth0id, bin_to_uuid(u2['id'])))
+    assert e.value.args[0] == 1142
+
+
+def test_read_auth0id_caller_unaffiliated(cursor, insertuser,
+                                          new_unaffiliated_user):
+    u2 = new_unaffiliated_user()
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_auth0id', (u2['auth0_id'], bin_to_uuid(insertuser.user['id'])))
+    assert e.value.args[0] == 1142

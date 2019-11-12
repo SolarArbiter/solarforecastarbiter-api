@@ -160,6 +160,32 @@ class CurrentUserView(MethodView):
         return jsonify(UserSchema().dump(user_info))
 
 
+class UserIdToEmailView(MethodView):
+    def get(self, user_id):
+        """
+        ---
+        summary: Get user email from user id.
+        tags:
+          - Users
+        responses:
+          200:
+            description: The user's email.
+            content:
+              text/plain:
+                schema:
+                  type: string
+                  example: testing@solarforecastarbiter.org
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        auth0_id = storage.read_auth0id(user_id)
+        email = get_email_of_user(auth0_id)
+        return email
+
+
 class UserRolesManagementByEmailView(UserRolesManagementView):
     def post(self, email, role_id):
         """
@@ -274,6 +300,9 @@ user_blp.add_url_rule(
 user_blp.add_url_rule(
     '/current',
     view_func=CurrentUserView.as_view('current_user'))
+user_blp.add_url_rule(
+    '/<user_id>/email',
+    view_func=UserIdToEmailView.as_view('user_email'))
 
 
 user_email_blp = Blueprint(

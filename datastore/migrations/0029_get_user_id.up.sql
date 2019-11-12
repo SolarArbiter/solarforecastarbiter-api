@@ -19,3 +19,24 @@ END;
 
 GRANT EXECUTE ON PROCEDURE read_user_id TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE read_user_id TO 'apiuser'@'%';
+
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE read_auth0id (
+    IN auth0id VARCHAR(32), IN struserid CHAR(36))
+COMMENT 'Read the auth0id of another user if both orgs have accepted tou'
+BEGIN
+    DECLARE allowed BOOLEAN DEFAULT FALSE;
+    DECLARE caller_id BINARY(16);
+    DECLARE target_id BINARY(16);
+    SET caller_id = (SELECT id FROM arbiter_data.users WHERE auth0_id = auth0id);
+    SET target_id = UUID_TO_BIN(struserid, 1);
+    SET allowed = user_org_accepted_tou(caller_id) AND user_org_accepted_tou(target_id);
+    IF allowed THEN
+        SELECT auth0_id FROM arbiter_data.users WHERE id = target_id;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read auth0id"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT EXECUTE ON PROCEDURE read_auth0id TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE read_auth0id TO 'apiuser'@'%';
