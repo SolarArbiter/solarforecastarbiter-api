@@ -47,3 +47,76 @@ END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_job_user TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_job_user TO 'frameworkadmin'@'%';
+
+
+-- role for automatic report generation
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_report_creation_role(IN orgid BINARY(16))
+COMMENT 'Create a role that provides the necessary access to create reports from any fx/obs'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+   -- relying on default permissions already created on create organization
+   DECLARE roleid BINARY(16);
+   SET roleid = UUID_TO_BIN(UUID(), 1);
+   INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
+       'Create Reports', 'Create reports for any pairs of forecasts/prob. forecasts/observations/aggregates',
+       roleid, orgid);
+   INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id)
+     SELECT roleid, id FROM arbiter_data.permissions WHERE applies_to_all AND organization_id = orgid
+     AND description IN (
+       'Read all sites', 'Read all observations', 'Read all observation values', 'Read all forecasts',
+       'Read all forecast values', 'Read all probabilistic forecasts', 'Read all probabilistic forecast values',
+       'Read all aggregates', 'Read all aggregate values', 'Create reports');
+    SELECT BIN_TO_UUID(roleid, 1);
+END;
+
+GRANT SELECT(id, applies_to_all, description, organization_id) ON arbiter_data.permissions TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_report_creation_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_report_creation_role TO 'frameworkadmin'@'%';
+
+
+-- role for data validation
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_data_validation_role(IN orgid BINARY(16))
+COMMENT 'Create a role that provides the necessary access (read, read_values, write_values) to validate observations'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+   -- relying on default permissions already created on create organization
+   DECLARE roleid BINARY(16);
+   SET roleid = UUID_TO_BIN(UUID(), 1);
+   INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
+       'Validate observations', 'Enable observation data validation for all observations',
+       roleid, orgid);
+   INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id)
+     SELECT roleid, id FROM arbiter_data.permissions WHERE applies_to_all AND organization_id = orgid
+     AND description IN (
+       'Read all sites', 'Read all observations', 'Read all observation values',
+       'Submit values to all observations');
+    SELECT BIN_TO_UUID(roleid, 1);
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_data_validation_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_data_validation_role TO 'frameworkadmin'@'%';
+
+
+-- role for automatic forecast generation
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_forecast_generation_role(IN orgid BINARY(16))
+COMMENT 'Create a role that provides the necessary access to generate reference NWP or persistence forecast values'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+   -- relying on default permissions already created on create organization
+   DECLARE roleid BINARY(16);
+   SET roleid = UUID_TO_BIN(UUID(), 1);
+   INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
+       'Generate reference forecasts', 'Enable writing forecast values for automatic reference forecasts',
+       roleid, orgid);
+   INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id)
+     SELECT roleid, id FROM arbiter_data.permissions WHERE applies_to_all AND organization_id = orgid
+     AND description IN (
+       'Read all sites', 'Read all forecasts', 'Read all probabilistic forecasts', 'Read all aggregates',
+       -- for persistence
+       'Read all observations', 'Read all observation values', 'Read all aggregate values',
+       'Submit values to all forecasts', 'Submit values to all probabilistic forecasts');
+    SELECT BIN_TO_UUID(roleid, 1);
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_forecast_generation_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_forecast_generation_role TO 'frameworkadmin'@'%';

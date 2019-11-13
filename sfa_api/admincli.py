@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 @click.group(cls=FlaskGroup, create_app=lambda: app,
              add_default_commands=False)
-def admin_cli():
+def admin_cli():  # pragma: no cover
     """Tool for administering the Solar Forecast Arbiter Framework"""
     pass
 
