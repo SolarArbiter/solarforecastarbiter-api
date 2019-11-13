@@ -5,11 +5,13 @@
 <ul class="data-metadata-fields col-md-6 col-sm-12">
       {{ macro.li('Name', name) }}
       {{ macro.li('Description', description) }}
+      {{ macro.li('Timezone', timezone ) }}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-sm-12">
   {{ macro.li('Variable', variable)}}
   {{ macro.li('Interval label', interval_label ) }}
   {{ macro.li('Interval length', interval_length ) }}
   {{ macro.li('Value type', interval_value_type ) }}
+  {{ macro.li('Aggregate type', aggregate_type ) }}
 </ul>
 {% endblock %}
