@@ -1,3 +1,4 @@
+DROP PROCEDURE grant_job_role;
 DROP PROCEDURE create_forecast_generation_role;
 DROP PROCEDURE create_data_validation_role;
 DROP PROCEDURE create_report_creation_role;

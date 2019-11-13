@@ -58,7 +58,7 @@ BEGIN
    DECLARE roleid BINARY(16);
    SET roleid = UUID_TO_BIN(UUID(), 1);
    INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
-       'Create Reports', 'Create reports for any pairs of forecasts/prob. forecasts/observations/aggregates',
+       'Create reports', 'Create reports for any pairs of forecasts/prob. forecasts/observations/aggregates',
        roleid, orgid);
    INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id)
      SELECT roleid, id FROM arbiter_data.permissions WHERE applies_to_all AND organization_id = orgid
@@ -120,3 +120,35 @@ END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_forecast_generation_role TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.create_forecast_generation_role TO 'frameworkadmin'@'%';
+
+
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE grant_job_role (IN userstrid CHAR(36), IN role_name VARCHAR(32))
+COMMENT 'Grant one of the background job roles to a user'
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE userid BINARY(16);
+    DECLARE orgid BINARY(16);
+    DECLARE roleid BINARY(16) DEFAULT NULL;
+    SET userid = UUID_TO_BIN(userstrid, 1);
+    SET orgid = get_object_organization(userid, 'users');
+    SET roleid = (SELECT id FROM arbiter_data.roles WHERE organization_id = orgid AND name = role_name
+        AND name in ('Create reports', 'Validate observations', 'Generate reference forecasts'));
+    IF roleid IS NULL THEN
+        IF role_name = 'Create reports' THEN
+            CALL create_report_creation_role(orgid);
+        ELSEIF role_name = 'Validate observations' THEN
+            CALL create_data_validation_role(orgid);
+        ELSEIF role_name = 'Generate reference forecasts' THEN
+            CALL create_forecast_generation_role(orgid);
+        ELSE
+            SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Cannot create and assign job role',
+            MYSQL_ERRNO = 1142;
+        END IF;
+        SET roleid = (SELECT id FROM arbiter_data.roles WHERE organization_id = orgid AND name = role_name);
+    END IF;
+    INSERT INTO arbiter_data.user_role_mapping (user_id, role_id) VALUES (userid, roleid);
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.grant_job_role TO 'insert_rbac'@'localhost';
+GRANT SELECT(id, organization_id, name) ON arbiter_data.roles TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.grant_job_role TO 'frameworkadmin'@'%';

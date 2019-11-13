@@ -733,7 +733,7 @@ def test_create_report_creation_role(dictcursor):
 
     dictcursor.callproc('create_report_creation_role', (orgid,))
     dictcursor.execute(
-        'SELECT * FROM roles WHERE name = "Create Reports" and organization_id = %s',  # NOQA
+        'SELECT * FROM roles WHERE name = "Create reports" and organization_id = %s',  # NOQA
         orgid)
     create_roles = dictcursor.fetchall()
     assert len(create_roles) == 1
@@ -836,3 +836,26 @@ def test_create_forecast_generation_role(dictcursor):
             'Read all aggregate values',
             'Submit values to all forecasts',
             'Submit values to all probabilistic forecasts'} == set(perms.keys())
+
+
+@pytest.mark.parametrize('role,precreate', [
+    ('Create reports', None),
+    ('Validate observations', None),
+    ('Generate reference forecasts', None),
+    pytest.param('Read all', None, marks=pytest.mark.xfail),
+    ('Create reports', 'create_report_creation_role'),
+    ('Validate observations', 'create_report_creation_role'),
+    ('Validate observations', 'create_data_validation_role')
+])
+def test_grant_job_role(cursor, new_user, role, precreate):
+    user = new_user()
+    struserid = str(bin_to_uuid(user['id']))
+    if precreate is not None:
+        cursor.callproc(precreate, (user['organization_id'],))
+
+    cursor.callproc('grant_job_role', (struserid, role))
+    cursor.execute(
+        'SELECT 1 FROM user_role_mapping WHERE user_id = %s AND role_id = '
+        '(SELECT id FROM roles WHERE name = %s AND organization_id = %s)',
+        (user['id'], role, user['organization_id']))
+    assert cursor.fetchone()[0]
