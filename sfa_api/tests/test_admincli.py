@@ -352,3 +352,49 @@ def test_create_job_user_no_org(app_cli_runner, mocker):
         ['--encryption-key', Fernet.generate_key()] + auth_args + [org])
     assert res.exit_code == 1
     assert 'Organization Organization 1 not found' in res.output
+
+
+@pytest.mark.parametrize('role', [
+    'Create reports', 'Validate observations',
+    'Generate reference forecasts'
+])
+def test_add_job_role(app_cli_runner, user_id, role):
+    res = app_cli_runner.invoke(admincli.add_job_role,
+                                auth_args + [user_id, role])
+    assert res.exit_code == 0
+
+
+def test_add_job_role_bad_role(app_cli_runner, user_id):
+    res = app_cli_runner.invoke(admincli.add_job_role,
+                                auth_args + [user_id, 'Read all'])
+    assert res.exit_code != 0
+
+
+def test_add_job_role_multiple(app_cli_runner, user_id):
+    res = app_cli_runner.invoke(
+        admincli.add_job_role,
+        auth_args + [user_id, 'Create reports', 'Validate observations'])
+    assert res.exit_code == 0
+
+
+@pytest.mark.parametrize('role', [
+    'Create reports', 'Validate observations',
+    'Generate reference forecasts'
+])
+def test_add_job_role_already_present(app_cli_runner, user_id, role):
+    res = app_cli_runner.invoke(admincli.add_job_role,
+                                auth_args + [user_id, role])
+    assert res.exit_code == 0
+    res = app_cli_runner.invoke(admincli.add_job_role,
+                                auth_args + [user_id, role])
+    assert res.exit_code != 0
+
+
+@pytest.mark.parametrize('role', [
+    'Create reports', 'Validate observations',
+    'Generate reference forecasts'
+])
+def test_add_job_role_user_dne(app_cli_runner, missing_id, role):
+    res = app_cli_runner.invoke(admincli.add_job_role,
+                                auth_args + [missing_id, role])
+    assert res.exit_code != 0

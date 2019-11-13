@@ -108,7 +108,21 @@ def create_job_user(organization_name, encryption_key, **kwargs):
     sec_token = f.encrypt(refresh_token.encode())
     storage._call_procedure('store_token', auth0_id, sec_token,
                             with_current_user=False)
-    click.echo(f'Created user {username}')
+    click.echo(f'Created user {username} with Auth0 ID {auth0_id}')
+
+
+@admin_cli.command('add-job-role')
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+@click.argument('role_name', nargs=-1, type=click.Choice(
+    ['Create reports', 'Validate observations',
+     'Generate reference forecasts']))
+def add_job_role(user_id, role_name, **kwargs):
+    import sfa_api.utils.storage_interface as storage
+    for role in role_name:
+        storage._call_procedure('grant_job_role', str(user_id), role,
+                                with_current_user=False)
+        click.echo(f'Added role {role} to user {user_id}')
 
 
 @admin_cli.command('add-user-to-org')
