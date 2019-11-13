@@ -1756,3 +1756,26 @@ def read_user_id(auth0_id):
     """
     return _call_procedure_for_single('read_user_id', auth0_id,
                                       cursor_type='standard')[0]
+
+
+def read_auth0id(user_id):
+    """Read the auth0 id of another user. Only allowed if both users are affiliated
+        with organizations that have accepted the TOU.
+
+    Parameters
+    ----------
+    user_id: string
+        User id of the auth0id to read.
+
+    Returns
+    -------
+    str
+        The user's auth0 id.
+
+    Raises
+    ------
+    StorageAuthError
+        If either user's organization has not accepted the terms of use.
+    """
+    return _call_procedure_for_single('read_auth0id', user_id,
+                                      cursor_type='standard')[0]

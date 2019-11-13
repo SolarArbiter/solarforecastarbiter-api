@@ -221,3 +221,18 @@ def test_add_role_to_user_already_granted_lost_perms(
     assert role_id in roles_on_user
     add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
+
+
+def test_user_email(api, user_id):
+    res = api.get(f'/users/{user_id}/email', BASE_URL)
+    assert res.data.decode('utf-8') == 'testing@solarforecastarbiter.org'
+
+
+def test_user_email_user_dne(api, missing_id):
+    res = api.get(f'/users/{missing_id}/email', BASE_URL)
+    assert res.status_code == 404
+
+
+def test_user_email_user_unaffiliated(api, unaffiliated_userid):
+    res = api.get(f'/users/{unaffiliated_userid}/email', BASE_URL)
+    assert res.status_code == 404
