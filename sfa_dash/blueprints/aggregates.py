@@ -275,6 +275,11 @@ class AggregateView(BaseView):
     api_handle = aggregates
     plot_type = 'aggregate'
     human_label = 'Aggregate'
+    subnav_format = subnav_format = {
+        '{observations_url}': 'Observations',
+        '{forecasts_url}': 'Forecasts',
+        '{cdf_forecasts_url}': 'Probabilistic Forecasts',
+    }
 
     def get_breadcrumb_dict(self):
         breadcrumb_dict = OrderedDict()
@@ -292,6 +297,16 @@ class AggregateView(BaseView):
             'breadcrumb': self.breadcrumb_html(
                 self.get_breadcrumb_dict()),
             'aggregate': self.metadata,
+            'subnav': self.format_subnav(
+                observations_url=url_for(
+                    'data_dashboard.aggregate_view',
+                    uuid=self.metadata['aggregate_id']),
+                forecasts_url=url_for(
+                    'data_dashboard.forecasts',
+                    aggregate_id=self.metadata['aggregate_id']),
+                cdf_forecasts_url=url_for(
+                    'data_dashboard.cdf_forecast_groups',
+                    aggregate_id=self.metadata['aggregate_id']))
         })
 
     def template_args(self):
@@ -317,7 +332,7 @@ class AggregateView(BaseView):
                     self.observation_list.append(observation)
             self.insert_plot(uuid, start, end)
             self.set_template_args()
-        return super().get()
+        return render_template(self.template, **self.template_args())
 
 
 class DeleteAggregateView(BaseView):

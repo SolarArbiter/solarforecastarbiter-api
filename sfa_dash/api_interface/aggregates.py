@@ -14,7 +14,7 @@ def get_metadata(aggregate_id):
 
 
 def get_values(aggregate_id, **kwargs):
-    req = get_request(f'/aggregates/{aggregate_id}/values')
+    req = get_request(f'/aggregates/{aggregate_id}/values', **kwargs)
     return req
 
 

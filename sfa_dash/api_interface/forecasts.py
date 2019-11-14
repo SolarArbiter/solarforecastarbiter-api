@@ -11,9 +11,11 @@ def get_values(forecast_id, **kwargs):
     return req
 
 
-def list_metadata(site_id=None):
+def list_metadata(site_id=None, aggregate_id=None):
     if site_id is not None:
         req = get_request(f'/sites/{site_id}/forecasts/single')
+    elif aggregate_id is not None:
+        req = get_request(f'/aggregates/{aggregate_id}/forecasts/single')
     else:
         req = get_request('/forecasts/single/')
     return req

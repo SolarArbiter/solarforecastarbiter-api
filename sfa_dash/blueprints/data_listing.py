@@ -1,11 +1,14 @@
 """Flask endpoints for listing Observations, Forecasts and CDF Forecasts.
 Defers actual table creation and rendering to DataTables in the util module.
 """
+from collections import OrderedDict
 from flask import render_template, request, url_for
 
+
+from sfa_dash.api_interface import sites, aggregates
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import DataTables, handle_response
-from sfa_dash.api_interface import sites
+from sfa_dash.filters import human_friendly_datatype
 
 from sfa_dash.errors import DataRequestException
 
@@ -33,60 +36,92 @@ class DataListingView(BaseView):
             raise Exception
         self.data_type = data_type
 
-    def breadcrumb_html(self, site_id=None, organization=None, **kwargs):
-        breadcrumb_format = '/<a href="{url}">{text}</a>'
-        breadcrumb = ''
-        if self.data_type == 'cdf_forecast_group':
-            type_label = 'CDF Forecast'
-        else:
-            type_label = self.data_type.title()
-        if site_id is not None:
-            site_metadata = handle_response(
-                sites.get_metadata(site_id))
-            breadcrumb += breadcrumb_format.format(
-                url=url_for('data_dashboard.sites'),
-                text='Sites')
-            breadcrumb += breadcrumb_format.format(
-                url=url_for('data_dashboard.site_view', uuid=site_id),
-                text=site_metadata['name'])
-        breadcrumb += breadcrumb_format.format(
-            url=url_for(f'data_dashboard.{self.data_type}s', uuid=site_id),
-            text=type_label)
-        return breadcrumb
+    def get_breadcrumb_dict(self, location_metadata={}):
+        """Build the breadcrumb dictionary for the listing page.
+        Parameters
+        ----------
+        location_metadata:  dict
+            Dict of aggregate or site metadata to use for building
+            the breadcrumb.
+        """
+        breadcrumb_dict = OrderedDict()
+        human_label = human_friendly_datatype(self.data_type)
+        if 'site_id' in location_metadata:
+            breadcrumb_dict['Sites'] = url_for('data_dashboard.sites')
+            breadcrumb_dict[location_metadata['name']] = url_for(
+                'data_dashboard.site_view', uuid=location_metadata['site_id'])
+            breadcrumb_dict[f'{human_label}s'] = url_for(
+                f'data_dashboard.{self.data_type}s',
+                site_id=location_metadata['site_id'])
+        elif 'aggregate_id' in location_metadata:
+            breadcrumb_dict['Aggregates'] = url_for(
+                'data_dashboard.aggregates')
+            breadcrumb_dict[location_metadata['name']] = url_for(
+                'data_dashboard.aggregate_view',
+                uuid=location_metadata['aggregate_id'])
+            breadcrumb_dict[f'{human_label}s'] = url_for(
+                f'data_dashboard.{self.data_type}s',
+                aggregate_id=location_metadata['aggregate_id'])
+        return breadcrumb_dict
 
-    def get_template_args(self, **kwargs):
-        """Create a dictionary containing the required arguments for the template
+    def get_subnav_kwargs(self, site_id=None, aggregate_id=None):
+        """Creates a dict to be unpacked as arguments when calling the
+        BaseView.format_subnav function resulting dict is used to format the
+        fstring keys found in the DataListingView.subnav_format variable.
+        """
+        subnav_kwargs = {}
+        if aggregate_id is not None:
+            subnav_kwargs['observations_url'] = url_for(
+                'data_dashboard.aggregate_view', uuid=aggregate_id)
+        else:
+            subnav_kwargs['observations_url'] = url_for(
+                'data_dashboard.observations',
+                site_id=site_id, aggregate_id=aggregate_id)
+        subnav_kwargs['forecasts_url'] = url_for(
+            'data_dashboard.forecasts',
+            site_id=site_id, aggregate_id=aggregate_id)
+        subnav_kwargs['cdf_forecasts_url'] = url_for(
+            'data_dashboard.cdf_forecast_groups',
+            site_id=site_id, aggregate_id=aggregate_id)
+        return subnav_kwargs
+
+    def get_template_args(self, site_id=None, aggregate_id=None):
+        """Builds a dictionary of the appropriate template arguments.
         """
         template_args = {}
-        uuid = request.args.get('uuid')
-        subnav_kwargs = {
-            'observations_url': url_for('data_dashboard.observations',
-                                        uuid=uuid),
-            'forecasts_url': url_for('data_dashboard.forecasts',
-                                     uuid=uuid),
-            'cdf_forecasts_url': url_for('data_dashboard.cdf_forecast_groups',
-                                         uuid=uuid)
-        }
-        template_args['subnav'] = self.format_subnav(**subnav_kwargs)
-        template_args['data_table'] = self.table_function(**kwargs)
-        template_args['current_path'] = request.path
-        if uuid is not None:
-            template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
+        # If an id was passed in, set the breadcrumb. The request for location
+        # metadata may triggers an error if the object doesnt exist or the user
+        # does not have access. So we can handle with a 404 message instead of
+        # silently failing and listing all objects.
+        if site_id is not None or aggregate_id is not None:
+            if site_id is not None:
+                location_metadata = handle_response(
+                    sites.get_metadata(site_id))
+            else:
+                location_metadata = handle_response(
+                    aggregates.get_metadata(aggregate_id))
+            template_args['breadcrumb'] = self.breadcrumb_html(
+                self.get_breadcrumb_dict(location_metadata))
         else:
             template_args['page_title'] = 'Forecasts and Observations'
+
+        template_args['subnav'] = self.format_subnav(
+            **self.get_subnav_kwargs(site_id=site_id,
+                                     aggregate_id=aggregate_id))
+        template_args['data_table'] = self.table_function(
+            site_id, aggregate_id)
+        template_args['current_path'] = request.path
         return template_args
 
-    def get(self, **kwargs):
+    def get(self):
+        """This endpoints results in creating a table of the datatype passed to
+        __init__. A site_id or aggregate_id can passed to create a filtered
+        list of the given type for that site or aggregate.
         """
-        """
-        # Check for a uuid parameter indicating we should filter by site.
-        # otherwise, set the create key to pass as a query parameter to
-        # the site listing page.
-        uuid = request.args.get('uuid')
-        if uuid is not None:
-            kwargs.update({'site_id': uuid})
         try:
-            temp_args = self.get_template_args(**kwargs)
+            temp_args = self.get_template_args(
+                request.args.get('site_id'),
+                request.args.get('aggregate_id'))
         except DataRequestException as e:
             temp_args = {'errors': e.errors}
         return render_template(self.template, **temp_args)

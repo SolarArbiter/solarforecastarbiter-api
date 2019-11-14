@@ -7,7 +7,14 @@ def test_get_no_arg_routes(client, no_arg_route):
 
 
 def test_site_filtered_no_args(client, no_arg_route, site_id):
-    resp = client.get(no_arg_route, base_url=BASE_URL, data={'uuid': site_id})
+    resp = client.get(no_arg_route, base_url=BASE_URL,
+                      data={'site_id': site_id})
+    assert resp.status_code == 200
+
+
+def test_aggregate_filtered_no_args(client, no_arg_route, aggregate_id):
+    resp = client.get(no_arg_route, base_url=BASE_URL,
+                      data={'aggregate_id': aggregate_id})
     assert resp.status_code == 200
 
 

@@ -17,24 +17,18 @@ class SitesListingView(SiteDashView):
             text='Sites')
         return breadcrumb
 
-    def get_template_args(self, create=None, **kwargs):
+    def get_template_args(self):
         """Create a dictionary containing the required arguments for the template
         """
         template_args = {}
-        template_args['data_table'] = DataTables.get_site_table(create=create,
-                                                                **kwargs)
+        template_args['data_table'] = DataTables.get_site_table()
         template_args['current_path'] = request.path
-        if create is not None:
-            template_args['page_title'] = f"Select a Site"
-        else:
-            template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
+        template_args['breadcrumb'] = self.breadcrumb_html()
         return template_args
 
-    def get(self, **kwargs):
-        # Update kwargs with the create query parameter
-        kwargs.update({'create': request.args.get('create')})
+    def get(self):
         try:
-            temp_args = self.get_template_args(**kwargs)
+            temp_args = self.get_template_args()
         except DataRequestException as e:
             temp_args = {'errors': e.errors}
         return render_template(self.template, **temp_args)

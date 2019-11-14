@@ -23,7 +23,7 @@
         <td class="aggregates-table-name-column">
           <a href="{{ url_for('data_dashboard.aggregate_view', uuid=agg['aggregate_id']) }}">{{ agg['name'] }}</a>
         </td>
-        <td class="aggregates-table variable-column">{{ agg['variable'] }}</td>
+        <td class="aggregates-table variable-column">{{ agg['variable'] | convert_varname }}</td>
         <td class="aggregates-table provider-column">{{ agg['provider'] }}</td>
     </tr>
   {% endfor %}
