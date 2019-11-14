@@ -331,6 +331,9 @@ a.help-button{
 #provider-header{
     padding: 0;
 }
+#removal-header{
+    width: 6em;
+}
 .btn-th{
     color: #333;
     background-color: #fff;

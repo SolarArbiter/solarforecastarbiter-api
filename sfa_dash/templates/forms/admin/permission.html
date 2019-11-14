@@ -19,6 +19,9 @@
     <tr>
       <th scope="col">Name</th>
       <th scope="col">Date Added to Permission</th>
+      {% if not permission['applies_to_all'] %}
+      <th scope="col" id="removal-header"></th>
+      {% endif %}
     </tr>
   </thead>
   <tbody>

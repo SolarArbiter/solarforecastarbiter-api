@@ -216,6 +216,14 @@ class RoleListing(AdminView):
 class RoleView(AdminView):
     template = 'forms/admin/role.html'
 
+    def get_email(self, user_id):
+        try:
+            email = handle_response(users.get_email(user_id))
+        except DataRequestException:
+            return 'Email Unavailable'
+        else:
+            return email
+
     def get(self, uuid, **kwargs):
         role_table = request.args.get('table', 'permissions')
         try:
@@ -233,11 +241,19 @@ class RoleView(AdminView):
             user_list = users.list_metadata().json()
             user_map = {user['user_id']: user
                         for user in user_list}
-            role['users'] = {k: {'user_id': k,
-                                 'added_to_user': v,
-                                 'organization': user_map.get(
-                                     k, {}).get('organization', '')}
-                             for k, v in role['users'].items()}
+            role_users = {}
+            for uid, user in role['users'].items():
+                user_dict = user_map.get(uid, {})
+                email = user_dict.get('email', None)
+                if email is None:
+                    email = self.get_email(uid)
+                role_users[uid] = {
+                    'user_id': uid,
+                    'added_to_user': user,
+                    'email': email,
+                    'organization': user_dict.get(
+                        'organization', 'Organization Unavailable')}
+            role['users'] = role_users
         return render_template(self.template,
                                role=role,
                                role_table=role_table,
@@ -267,9 +283,10 @@ class RoleGrant(AdminView):
 
     def post(self, uuid):
         form_data = request.form
-        user_id = form_data.get('user_id', '')
-        grant_role_request = users.add_role(user_id, uuid)
-        if grant_role_request.status_code != 204:
+        user_email = form_data.get('user_email', '')
+        try:
+            handle_response(users.add_role_by_email(user_email, uuid))
+        except DataRequestException:
             role = roles.get_metadata(uuid).json()
             errors = {
                 'Error': ['Failed to grant role.'],

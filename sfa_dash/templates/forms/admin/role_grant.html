@@ -10,8 +10,8 @@
 <form action="{{ url_for('admin.role_grant', uuid=role['role_id']) }}" method="post" enctype="application/json" id="role-grant-form">
   <div class="form-group">
   <div class="form-element">
-    <label>User ID</label><br/>
-    <input type="text" class="form-control" name="user_id" placeholder="User ID">
+    <label>User Email</label><br/>
+    <input type="email" class="form-control" name="user_email" placeholder="Email">
   </div>
   {{ form.token() }}
   </div>
