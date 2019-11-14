@@ -682,3 +682,180 @@ def test_set_org_accepted_tou_org_dne(dictcursor):
         dictcursor.callproc('set_org_accepted_tou', (str(bin_to_uuid(orgid)),))
     assert e.value.args[0] == 1305
     assert e.value.args[1] == "Organization does not exist"
+
+
+def test_store_token(dictcursor, new_user):
+    user = new_user()
+    dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens')
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'testtoken'
+
+    dictcursor.callproc('store_token', (user['auth0_id'], 'newtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens')
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'newtoken'
+
+
+def test_create_job_user(cursor, new_organization):
+    org = new_organization()
+    orgid = bin_to_uuid(org['id'])
+    auth0_id = 'auth0|testid'
+    cursor.callproc('create_job_user', (auth0_id, orgid))
+    user_id = cursor.fetchone()[0]
+    cursor.execute(
+        'SELECT 1 as one FROM users WHERE auth0_id = %s '
+        'AND organization_id = UUID_TO_BIN(%s, 1)',
+        (auth0_id, orgid))
+    assert cursor.fetchall()[0]
+    cursor.execute(
+        'SELECT name FROM roles WHERE id IN'
+        '(select role_id from user_role_mapping where '
+        'user_id = UUID_TO_BIN(%s, 1))',
+        (user_id,)
+    )
+    roles = [r[0] for r in cursor.fetchall()]
+    assert len(roles) == 2
+    assert 'Read Reference Data' in roles
+    assert f'DEFAULT User role {user_id}' in roles
+
+
+def test_create_report_creation_role(dictcursor):
+    dictcursor.callproc('create_organization', ('test_org',))
+    dictcursor.execute('SELECT * FROM arbiter_data.organizations '
+                       'WHERE name = "test_org"')
+    org = dictcursor.fetchone()
+    orgid = org['id']
+
+    dictcursor.callproc('create_report_creation_role', (orgid,))
+    dictcursor.execute(
+        'SELECT * FROM roles WHERE name = "Create reports" and organization_id = %s',  # NOQA
+        orgid)
+    create_roles = dictcursor.fetchall()
+    assert len(create_roles) == 1
+    create_role = create_roles[0]
+    assert 'Create reports' in create_role['description']
+    assert create_role['organization_id'] == orgid
+    role_id = create_role['id']
+    dictcursor.execute(
+        'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
+        role_id)
+    permission_ids = dictcursor.fetchall()
+    assert len(permission_ids) == 10
+    perm_objects = []
+    for permid in [p['permission_id'] for p in permission_ids]:
+        dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
+        perm = dictcursor.fetchone()
+        perm_objects.append(perm)
+    perms = {p['description']: p for p in perm_objects}
+    for perm in perms.values():
+        assert perm['applies_to_all'] == 1
+        assert perm['organization_id'] == orgid
+    assert {'Read all sites', 'Read all observations',
+            'Read all observation values', 'Read all forecasts',
+            'Read all forecast values', 'Read all probabilistic forecasts',
+            'Read all probabilistic forecast values',
+            'Read all aggregates', 'Read all aggregate values',
+            'Create reports'} == set(perms.keys())
+
+
+def test_create_data_validation_role(dictcursor):
+    dictcursor.callproc('create_organization', ('test_org',))
+    dictcursor.execute('SELECT * FROM arbiter_data.organizations '
+                       'WHERE name = "test_org"')
+    org = dictcursor.fetchone()
+    orgid = org['id']
+
+    dictcursor.callproc('create_data_validation_role', (orgid,))
+    dictcursor.execute(
+        'SELECT * FROM roles WHERE name = "Validate observations" and organization_id = %s',  # NOQA
+        orgid)
+    create_roles = dictcursor.fetchall()
+    assert len(create_roles) == 1
+    create_role = create_roles[0]
+    assert 'Enable observation data validation' in create_role['description']
+    assert create_role['organization_id'] == orgid
+    role_id = create_role['id']
+    dictcursor.execute(
+        'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
+        role_id)
+    permission_ids = dictcursor.fetchall()
+    assert len(permission_ids) == 4
+    perm_objects = []
+    for permid in [p['permission_id'] for p in permission_ids]:
+        dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
+        perm = dictcursor.fetchone()
+        perm_objects.append(perm)
+    perms = {p['description']: p for p in perm_objects}
+    for perm in perms.values():
+        assert perm['applies_to_all'] == 1
+        assert perm['organization_id'] == orgid
+    assert {'Read all sites', 'Read all observations', 'Read all observation values',
+            'Submit values to all observations'} == set(perms.keys())
+
+
+def test_create_forecast_generation_role(dictcursor):
+    dictcursor.callproc('create_organization', ('test_org',))
+    dictcursor.execute('SELECT * FROM arbiter_data.organizations '
+                       'WHERE name = "test_org"')
+    org = dictcursor.fetchone()
+    orgid = org['id']
+
+    dictcursor.callproc('create_forecast_generation_role', (orgid,))
+    dictcursor.execute(
+        'SELECT * FROM roles WHERE name = "Generate reference forecasts" and organization_id = %s',  # NOQA
+        orgid)
+    create_roles = dictcursor.fetchall()
+    assert len(create_roles) == 1
+    create_role = create_roles[0]
+    assert 'Enable writing forecast values for ' in create_role['description']
+    assert create_role['organization_id'] == orgid
+    role_id = create_role['id']
+    dictcursor.execute(
+        'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
+        role_id)
+    permission_ids = dictcursor.fetchall()
+    assert len(permission_ids) == 9
+    perm_objects = []
+    for permid in [p['permission_id'] for p in permission_ids]:
+        dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
+        perm = dictcursor.fetchone()
+        perm_objects.append(perm)
+    perms = {p['description']: p for p in perm_objects}
+    for perm in perms.values():
+        assert perm['applies_to_all'] == 1
+        assert perm['organization_id'] == orgid
+
+    assert {'Read all sites', 'Read all forecasts',
+            'Read all probabilistic forecasts', 'Read all aggregates',
+            'Read all observations', 'Read all observation values',
+            'Read all aggregate values',
+            'Submit values to all forecasts',
+            'Submit values to all probabilistic forecasts'} == set(perms.keys())
+
+
+@pytest.mark.parametrize('role,precreate', [
+    ('Create reports', None),
+    ('Validate observations', None),
+    ('Generate reference forecasts', None),
+    pytest.param('Read all', None, marks=pytest.mark.xfail),
+    ('Create reports', 'create_report_creation_role'),
+    ('Validate observations', 'create_report_creation_role'),
+    ('Validate observations', 'create_data_validation_role')
+])
+def test_grant_job_role(cursor, new_user, role, precreate):
+    user = new_user()
+    struserid = str(bin_to_uuid(user['id']))
+    if precreate is not None:
+        cursor.callproc(precreate, (user['organization_id'],))
+
+    cursor.callproc('grant_job_role', (struserid, role))
+    cursor.execute(
+        'SELECT 1 FROM user_role_mapping WHERE user_id = %s AND role_id = '
+        '(SELECT id FROM roles WHERE name = %s AND organization_id = %s)',
+        (user['id'], role, user['organization_id']))
+    assert cursor.fetchone()[0]

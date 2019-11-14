@@ -223,3 +223,76 @@ def test_get_auth0_id_of_user_empty(running_app, email,
         content=b'[]')
     out = auth0_info.get_auth0_id_of_user(email)
     assert out == 'Unable to retrieve'
+
+
+def test_random_password():
+    p1 = auth0_info.random_password()
+    p2 = auth0_info.random_password()
+    assert p1 != p2
+    assert 32 <= len(p1) <= 48
+    assert 32 <= len(p2) <= 48
+
+
+def test_create_user(running_app, requests_mock, token_set):
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"user_id": "auth0|theuser"}')
+    out = auth0_info.create_user('anemail', 'password')
+    assert out == 'auth0|theuser'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['email'] == 'anemail'
+    assert req_json['password'] == 'password'
+    assert not req_json['email_verified']
+
+
+def test_create_user_fail(running_app, requests_mock, token_set):
+    requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=400)
+    with pytest.raises(requests.HTTPError):
+        auth0_info.create_user('anemail', 'password')
+
+
+def test_get_refresh_token(running_app, requests_mock, token_set):
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"refresh_token": "token"}')
+    out = auth0_info.get_refresh_token('anemail', 'password')
+    assert out == 'token'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['username'] == 'anemail'
+    assert req_json['password'] == 'password'
+    assert req_json['scope'] == 'offline_access'
+
+
+def test_get_refresh_token_fail(running_app, requests_mock, token_set):
+    requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=400)
+    with pytest.raises(requests.HTTPError):
+        auth0_info.get_refresh_token('anemail', 'password')
+
+
+def test_exchange_refresh_token(running_app, requests_mock, token_set):
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"access_token": "acctoken"}')
+    out = auth0_info.exchange_refresh_token('thetoken')
+    assert out == 'acctoken'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['grant_type'] == 'refresh_token'
+    assert req_json['refresh_token'] == 'thetoken'
+
+
+def test_exchange_refresh_token_fail(running_app, requests_mock, token_set):
+    requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=400)
+    with pytest.raises(requests.HTTPError):
+        auth0_info.exchange_refresh_token('token')

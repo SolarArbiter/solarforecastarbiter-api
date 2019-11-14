@@ -1,6 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 import logging
+import secrets
+import string
 
 
 from flask import current_app
@@ -249,3 +251,122 @@ def get_auth0_id_of_user(email):
                                  token_redis_connection(),
                                  auth0_token(),
                                  current_app.config)
+
+
+def random_password():
+    """
+    Generate a random password of letters, digits, punctuation, and whitespace
+    with a random length between 32 and 48 characters.
+    """
+    pass_len = secrets.choice(range(32, 49))
+    return ''.join(secrets.choice(string.printable)
+                   for _ in range(pass_len))
+
+
+def create_user(email, password, verified=False):
+    """
+    Create a new Auth0 user.
+
+    Parameters
+    ----------
+    email : str
+        The email address of the new user.
+    password : str
+        The password for the user.
+    verified : boolean, default False
+        Whether or not to set 'email_verified' with Auth0
+
+    Returns
+    -------
+    user_id : str
+        The Auth0 user id of the newly created user
+
+    Raises
+    ------
+    HTTPError
+        If the request to the Auth0 API fails
+    """
+    token = auth0_token()
+    config = current_app.config
+    body = {'email': email,
+            'password': password,
+            'email_verified': verified,
+            'connection': 'Username-Password-Authentication'}
+    headers = {'content-type': 'application/json',
+               'authorization': f'Bearer {token}'}
+    req = requests.post(
+        config['AUTH0_BASE_URL'] + '/api/v2/users',
+        json=body,
+        headers=headers)
+    req.raise_for_status()
+    user_id = req.json()['user_id']
+    return user_id
+
+
+def get_refresh_token(email, password):
+    """
+    Requests a refresh token from Auth0
+
+    Parameters
+    ----------
+    email : str
+        The email address of the new user.
+    password : str
+        The password for the user.
+
+    Returns
+    -------
+    refresh_token : str
+        The refresh token
+
+    Raises
+    ------
+    HTTPError
+        If the request to the Auth0 API fails
+    """
+    body = {'grant_type': 'password',
+            'username': email,
+            'password': password,
+            'client_id': current_app.config['AUTH0_CLIENT_ID'],
+            'client_secret': current_app.config['AUTH0_CLIENT_SECRET'],
+            'audience': current_app.config['AUTH0_AUDIENCE'],
+            'scope': 'offline_access'
+            }
+    req = requests.post(
+        current_app.config['AUTH0_BASE_URL'] + '/oauth/token',
+        json=body
+    )
+    req.raise_for_status()
+    return req.json()['refresh_token']
+
+
+def exchange_refresh_token(refresh_token):
+    """
+    Requests an access token from Auth0 from a refresh token
+
+    Parameters
+    ----------
+    refresh_token : str
+        The refresh token to use.
+
+    Returns
+    -------
+    access_token : str
+        The access token to be used to authenticate with the SFA API
+
+    Raises
+    ------
+    HTTPError
+        If the request to the Auth0 API fails
+    """
+    body = {'grant_type': 'refresh_token',
+            'client_id': current_app.config['AUTH0_CLIENT_ID'],
+            'client_secret': current_app.config['AUTH0_CLIENT_SECRET'],
+            'audience': current_app.config['AUTH0_AUDIENCE'],
+            'refresh_token': refresh_token
+            }
+    req = requests.post(
+        current_app.config['AUTH0_BASE_URL'] + '/oauth/token',
+        json=body)
+    req.raise_for_status()
+    return req.json()['access_token']
