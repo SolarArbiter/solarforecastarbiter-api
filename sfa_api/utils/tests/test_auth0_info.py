@@ -87,6 +87,18 @@ def test_auth0_token_not_in_redis(running_app, mocker):
     r.get('auth0_token') == 'atoken'
 
 
+@pytest.mark.parametrize('se', [ValueError, requests.HTTPError])
+def test_auth0_token_no_fresh(running_app, mocker, se):
+    log = mocker.patch('sfa_api.utils.auth0_info.logging.error')
+    mocker.patch(
+        'sfa_api.utils.auth0_info.get_fresh_auth0_management_token',
+        side_effect=se)
+    assert auth0_info.auth0_token() is None
+    r = auth0_info.token_redis_connection()
+    r.get('auth0_token') is None
+    assert log.called
+
+
 @pytest.mark.parametrize('val', [
     'no', 'auth0other',
     pytest.param('auth0|4882lxjlsd0', marks=pytest.mark.xfail)

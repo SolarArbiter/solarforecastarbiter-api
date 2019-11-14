@@ -97,13 +97,19 @@ def auth0_token():
 
     Returns
     -------
-    token : str
+    token : str or None
+        Returns None when could not retrieve a token to access the
+        Auth0 Management API
     """
     redis_conn = token_redis_connection()
     token = redis_conn.get('auth0_token')
     token_valid = check_if_token_is_valid(token)
     if token is None or not token_valid:
-        token = get_fresh_auth0_management_token()
+        try:
+            token = get_fresh_auth0_management_token()
+        except (ValueError, requests.HTTPError) as e:
+            logging.error('Failed to retrieve Auth0 token: %r', e)
+            return
         redis_conn.set('auth0_token', token)
     return token
 
