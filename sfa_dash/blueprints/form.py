@@ -443,6 +443,10 @@ class DownloadForm(BaseView):
             self.template = 'forms/cdf_forecast_download_form.html'
             self.metadata_template = 'data/metadata/cdf_forecast_metadata.html'
             self.api_handle = cdf_forecasts
+        elif data_type == 'aggregate':
+            self.template = 'forms/aggregate_download_form.html'
+            self.metadata_template = 'data/metadata/aggregate_metadata.html'
+            self.api_handle = aggregates
         else:
             raise ValueError(f'No Download form configured for {data_type}.')
 
@@ -507,7 +511,7 @@ class DownloadForm(BaseView):
                         uuid, headers=headers, params=params))
             except DataRequestException as e:
                 return render_template(
-                    self.template, **self.template_args, errors=e.errors)
+                    self.template, **self.template_args(uuid), errors=e.errors)
             else:
                 if form_data['format'] == 'application/json':
                     response = make_response(json.dumps(data))
@@ -562,6 +566,10 @@ forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/download',
                        view_func=DownloadForm.as_view(
                            'download_cdf_forecast_data',
                            data_type='cdf_forecast'))
+forms_blp.add_url_rule('/aggregates/<uuid>/download',
+                       view_func=DownloadForm.as_view(
+                           'download_aggregate_data',
+                           data_type='aggregate'))
 forms_blp.add_url_rule('/reports/create',
                        view_func=ReportForm.as_view('create_report'))
 forms_blp.add_url_rule('/aggregates/create',
