@@ -75,7 +75,8 @@ class ReportForm(BaseView):
         params = {}
         params['object_pairs'] = self.zip_object_pairs(form_data)
         params['metrics'] = self.parse_metrics(form_data)
-        params['filters'] = self.parse_filters(form_data)
+        # filters do not currently work in API
+        # params['filters'] = self.parse_filters(form_data)
         params['start'] = form_data['period-start']
         params['end'] = form_data['period-end']
         return params
