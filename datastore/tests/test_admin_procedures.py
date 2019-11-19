@@ -701,6 +701,21 @@ def test_store_token(dictcursor, new_user):
     assert out[0]['token'] == 'newtoken'
 
 
+def test_fetch_token(dictcursor, new_user):
+    user = new_user()
+    dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens')
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'testtoken'
+
+    dictcursor.callproc('fetch_token', (bin_to_uuid(user['id']),))
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['token'] == 'testtoken'
+
+
 def test_create_job_user(cursor, new_organization):
     org = new_organization()
     orgid = bin_to_uuid(org['id'])

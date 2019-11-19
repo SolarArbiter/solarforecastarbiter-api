@@ -797,3 +797,16 @@ def test_remove_user_facing_permissions_and_default_roles(
          'description = CONCAT("DEFAULT Read User Role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert cursor.fetchone() is None
+
+
+def test_delete_job(new_job, cursor):
+    job = new_job()
+    cursor.execute('select id from scheduled_jobs')
+    out = cursor.fetchall()
+    assert len(out) == 1
+    assert out[0][0] == job['id']
+
+    cursor.callproc('delete_job', (bin_to_uuid(job['id']),))
+    cursor.execute('select id from scheduled_jobs')
+    out = cursor.fetchall()
+    assert len(out) == 0

@@ -503,3 +503,26 @@ def default_user_role(cursor, valueset):
     cursor.execute('CALL create_default_user_role(%s, %s)',
                    (user['id'], org['id']))
     return user
+
+
+@pytest.fixture()
+def new_job(cursor, new_user):
+    def fnc(user=None, name='testjob'):
+        if user is None:
+            user = new_user()
+        out = OrderedDict(
+            id=newuuid(),
+            organization_id=user['organization_id'],
+            user_id=user['id'],
+            name=name,
+            job_type='daily_observation_validation',
+            parameters='{"start_td": "1h"}',
+            schedule='{"type": "cron", "cron_schedule": "* * * * *"}',
+            version=0
+        )
+        cursor.execute(
+            'INSERT INTO scheduled_jobs (id, organization_id, user_id, name, '
+            'job_type, parameters, schedule, version) VALUES'
+            ' (%s, %s, %s, %s, %s, %s, %s, %s)', list(out.values()))
+        return out
+    return fnc
