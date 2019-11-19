@@ -88,3 +88,13 @@ DELETE FROM arbiter_data.scheduled_jobs WHERE id = UUID_TO_BIN(jobid, 1);
 GRANT DELETE, SELECT(id) ON arbiter_data.scheduled_jobs TO 'delete_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_job TO 'delete_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_job TO 'frameworkadmin'@'%';
+
+
+INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parameters, schedule, version) VALUES (
+   UUID_TO_BIN('907a9340-0b11-11ea-9e88-f4939feddd82', 1),
+   UUID_TO_BIN('b76ab62e-4fe1-11e9-9e44-64006a511e6f', 1),
+   UUID_TO_BIN('0c90950a-7cca-11e9-a81f-54bf64606445', 1),
+   'Test Job',
+   'daily_observation_validation', '{"start_td": "-1d", "end_td": "0h", "base_url": "http://localhost:5000"}',
+   '{"type": "cron", "cron_string": "0 0 * * *"}',
+   0);
