@@ -78,7 +78,8 @@ def create_organization(organization_name, **kwargs):
 @click.argument('organization_name', required=True)
 def create_job_user(organization_name, encryption_key, **kwargs):
     """
-    Creates a new user in Auth0 to run background jobs for the organization
+    Creates a new user in Auth0 to run background jobs for the organization.
+    Make sure AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET are properly set.
     """
     from sfa_api.utils import auth0_info
     import sfa_api.utils.storage_interface as storage

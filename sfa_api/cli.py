@@ -13,9 +13,25 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 def cli():
     pass
 
+verbose_opt = click.option('-v', '--verbose', count=True,
+                           help='Increase logging verbosity')
+
+
+def _get_log_level(config, verbose):  # pragma: no cover
+    if 'LOG_LEVEL' in config:
+        loglevel = config['LOG_LEVEL']
+    else:
+        if verbose == 1:
+            loglevel = 'INFO'
+        elif verbose > 1:
+            loglevel = 'DEBUG'
+        else:
+            loglevel = 'WARNING'
+    return loglevel
+
 
 @cli.command()
-@click.option('-v', '--verbose', count=True, help='Increase logging verbosity')
+@verbose_opt
 @click.option('-q', '--queues', multiple=True, help='RQ queues',
               default=['default'])
 @click.argument('config_file')
@@ -35,15 +51,7 @@ def worker(verbose, queues, config_file):
     config = Config(Path.cwd())
     config.from_pyfile(config_file)
 
-    if 'LOG_LEVEL' in config:  # pragma: no cover
-        loglevel = config['LOG_LEVEL']
-    else:
-        if verbose == 1:
-            loglevel = 'INFO'
-        elif verbose > 1:
-            loglevel = 'DEBUG'
-        else:
-            loglevel = 'WARNING'
+    loglevel = _get_log_level(config, verbose)
 
     if 'QUEUES' in config:  # pragma: no cover
         queues = config['QUEUES']
@@ -66,6 +74,51 @@ def devserver(port, config_name):
     from sfa_api import create_app
     app = create_app(config_name)
     app.run(port=port)
+
+
+@cli.command()
+@verbose_opt
+@click.argument('config_file')
+def scheduled_worker(verbose, config_file):
+    """
+    Run an RQ worker for use with scheduled jobs, with config loaded
+    from CONFIG_FILE.
+    """
+    from sentry_sdk.integrations.rq import RqIntegration
+    sentry_sdk.init(send_default_pii=False,
+                    integrations=[RqIntegration()])
+
+    from sfa_api.jobs import make_job_app, run_worker
+    import solarforecastarbiter  # NOQA preload
+
+    with make_job_app(config_file) as (app, queue):
+        loglevel = _get_log_level(app.config, verbose)
+        run_worker(queue, loglevel)
+
+
+@cli.command()
+@verbose_opt
+@click.option('--interval', help='Interval to move scheduled jobs to queue',
+              default=60.0)
+@click.option('--burst', help='Move jobs once and exit',
+              default=False)
+@click.argument('config_file')
+def scheduler(verbose, config_file, interval, burst):
+    """
+    Run an RQ scheduler to send work on a schedule with config
+    loaded from CONFIG_FILE
+    """
+    from sentry_sdk.integrations.rq import RqIntegration
+    sentry_sdk.init(send_default_pii=False,
+                    integrations=[RqIntegration()])
+    from rq_scheduler.utils import setup_loghandlers
+    from sfa_api.jobs import make_job_app, run_scheduler
+    import solarforecastarbiter  # NOQA preload
+
+    with make_job_app(config_file) as (app, queue):
+        loglevel = _get_log_level(app.config, verbose)
+        setup_loghandlers(loglevel)
+        run_scheduler(queue, interval, burst)
 
 
 if __name__ == '__main__':  # pragma: no cover

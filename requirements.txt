@@ -16,6 +16,7 @@ pymysql
 sqlalchemy
 redis
 rq
+rq_scheduler
 fakeredis
 sentry_sdk
 blinker
