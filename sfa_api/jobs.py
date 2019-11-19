@@ -10,14 +10,14 @@ import json
 import logging
 
 
-from crytography.fernet import Fernet
+from cryptography.fernet import Fernet
 from flask import current_app, Flask
 import pandas as pd
 from solarforecastarbiter.io import nwp
 from solarforecastarbiter.io.utils import HiddenToken
-import solarforecastarbiter.reference_forecasts.main as reference_forecasts
+from solarforecastarbiter.reference_forecasts.main import make_latest_nwp_forecasts  # NOQA
 from solarforecastarbiter.reports.main import compute_report
-from solarforecastarbiter.validation import tasks as validation_tasks
+from solarforecastarbiter.validation.tasks import daily_observation_validation
 
 
 from sfa_api.utils.auth0_info import exchange_refresh_token
@@ -30,9 +30,12 @@ logger = logging.getLogger(__name__)
 
 def get_access_token(user_id):
     """requires app context"""
-    enc_token = storage._call_procedure_for_single(
-        'fetch_token', (user_id,), with_current_user=False,
-        )['token']
+    try:
+        enc_token = storage._call_procedure(
+            'fetch_token', (user_id,), with_current_user=False,
+        )[0]['token'].encode()
+    except IndexError:
+        raise KeyError(f'No token for {user_id} found')
     f = Fernet(current_app.config['TOKEN_ENCRYPTION_KEY'])
     refresh_token = f.decrypt(enc_token)
     access_token = exchange_refresh_token(refresh_token)
@@ -44,19 +47,18 @@ def utcnow():
 
 
 def execute_job(name, job_type, user_id, **kwargs):
-    logger.info('Running job %s', name)
+    logger.info('Running job %s of type %s', name, job_type)
     token = get_access_token(user_id)
     base_url = kwargs.get('base_url', None)
     if job_type == 'daily_observation_validation':
         start = utcnow() + pd.Timedelta(kwargs['start_td'])
         end = utcnow() + pd.Timedelta(kwargs['end_td'])
-        return validation_tasks.daily_observation_validation(
-            token, start, end, base_url)
+        return daily_observation_validation(token, start, end, base_url)
     elif job_type == 'reference_nwp':
         issue_buffer = pd.Timedelta(kwargs['issue_time_buffer'])
         run_time = utcnow()
         nwp.set_base_path(kwargs['nwp_directory'])
-        return reference_forecasts.make_latest_nwp_forecasts(
+        return make_latest_nwp_forecasts(
             token, run_time, issue_buffer, base_url)
     elif job_type == 'periodic_report':
         return compute_report(token, kwargs['report_id'], base_url)
@@ -65,11 +67,11 @@ def execute_job(name, job_type, user_id, **kwargs):
 
 
 def convert_sql_to_rq_job(sql_job, scheduler):
-    args = (sql_job[k] for k in ('name', 'job_type', 'user_id'))
+    args = [sql_job[k] for k in ('name', 'job_type', 'user_id')]
     kwargs = json.loads(sql_job['parameters'])
     schedule = json.loads(sql_job['schedule'])
     if schedule['type'] != 'cron':
-        raise NotImplementedError('Only cron job schedules are supported')
+        raise ValueError('Only cron job schedules are supported')
     scheduler.cron(
         schedule['cron_string'],
         func=execute_job,
@@ -81,12 +83,11 @@ def convert_sql_to_rq_job(sql_job, scheduler):
               'job_name': sql_job['name'],
               'org': sql_job['organization_id'],
               'last_modified_in_sql': sql_job['modified_at']},
-        use_local_timezone=False
     )
 
 
 def schedule_jobs(scheduler):
-    sql_jobs = storage._call_procedure('list_jobs',
+    sql_jobs = storage._call_procedure('list_jobs', (None, ),
                                        with_current_user=False)
     rq_jobs = scheduler.get_jobs()
 
@@ -97,14 +98,21 @@ def schedule_jobs(scheduler):
         scheduler.cancel(to_cancel)
 
     for job_id, sql_job in sql_dict.items():
-        if job_id not in rq_dict:
+        if job_id in rq_dict:
+            if (
+                    sql_job['modified_at'] !=
+                    rq_dict[job_id].meta['last_modified_in_sql']
+            ):
+                scheduler.cancel(job_id)
+            else:
+                continue
+        try:
             convert_sql_to_rq_job(sql_job, scheduler)
-        elif (
-                sql_job['modified_at'] !=
-                rq_dict[job_id].meta['last_modified_in_sql']
-        ):
-            scheduler.cancel(job_id)
-            convert_sql_to_rq_job(sql_job, scheduler)
+        except (ValueError, json.JSONDecodeError, KeyError) as e:
+            logger.error(
+                'Failed to schedule job %s with error %s',
+                sql_job, e)
+
 
 
 @contextmanager
@@ -116,14 +124,14 @@ def make_job_app(config_file):
         yield app, queue
 
 
-def run_worker(queue, loglevel):
+def run_worker(queue, loglevel):  # pragma: no cover
     from rq import Worker
 
     w = Worker(queue)
     w.work(logging_level=loglevel)
 
 
-def run_scheduler(queue, interval, burst=False):
+def run_scheduler(queue, interval, burst=False):  # pragma: no cover
     from rq_scheduler import Scheduler
 
     scheduler = Scheduler(queue=queue, interval=interval)
