@@ -125,9 +125,17 @@ INSERT INTO arbiter_data.forecasts (
     @orgid, @aggid,
     'GHI Aggregate FX', 'ghi', '06:00', 60, 'beginning', 5, 1440, 'interval_mean', '',
     TIMESTAMP('2019-03-01 11:55:37'), TIMESTAMP('2019-03-01 11:55:37')
-);
+),  (
+    UUID_TO_BIN('49220780-76ae-4b11-bef1-7a75bdc784e3', 1),
+    @orgid, @aggid,
+    'GHI Aggregate FX 60', 'ghi', '00:00', 0, 'beginning', 60, 1440, 'interval_mean', '',
+    TIMESTAMP('2019-03-01 11:55:37'), TIMESTAMP('2019-03-01 11:55:37')
+    );
 
 INSERT INTO arbiter_data.forecasts_values (id, timestamp, value) SELECT UUID_TO_BIN('39220780-76ae-4b11-bef1-7a75bdc784e3', 1), timestamp, value FROM arbiter_data.forecasts_values where id = UUID_TO_BIN('11c20780-76ae-4b11-bef1-7a75bdc784e3', 1);
+
+INSERT INTO arbiter_data.forecasts_values (id, timestamp, value) SELECT UUID_TO_BIN('49220780-76ae-4b11-bef1-7a75bdc784e3', 1), timestamp, value FROM arbiter_data.forecasts_values where id = UUID_TO_BIN('11c20780-76ae-4b11-bef1-7a75bdc784e3', 1) and MINUTE(timestamp) = 0;
+
 
 
 -- CDF Forecast modifications
