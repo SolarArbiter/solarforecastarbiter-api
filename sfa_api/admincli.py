@@ -5,6 +5,7 @@ import click
 from cryptography.fernet import Fernet
 from flask import Flask
 from flask.cli import FlaskGroup
+import pandas as pd
 import pymysql
 
 
@@ -69,61 +70,6 @@ def create_organization(organization_name, **kwargs):
     else:
         click.echo(f'Created organization {organization_name}.')
 
-
-@admin_cli.command('create-job-user')
-@with_default_options
-@click.option(
-    '--encryption-key', prompt=False, required=True,
-    envvar='TOKEN_ENCRYPTION_KEY')
-@click.argument('organization_name', required=True)
-def create_job_user(organization_name, encryption_key, **kwargs):
-    """
-    Creates a new user in Auth0 to run background jobs for the organization.
-    Make sure AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET are properly set.
-    """
-    from sfa_api.utils import auth0_info
-    import sfa_api.utils.storage_interface as storage
-
-    org_id = None
-    for org in storage._call_procedure(
-            'list_all_organizations', with_current_user=False):
-        if org['name'] == organization_name:
-            org_id = org['id']
-            break
-    if org_id is None:
-        fail(f'Organization {organization_name} not found')
-
-    username = (
-        'job-execution@' +
-        organization_name.lower().replace(" ", "-") +
-        '.solarforecastarbiter.org'
-    )
-
-    passwd = auth0_info.random_password()
-    auth0_id = auth0_info.create_user(username, passwd, True)
-    # create user in db
-    storage._call_procedure('create_job_user', auth0_id, org_id,
-                            with_current_user=False)
-    refresh_token = auth0_info.get_refresh_token(username, passwd)
-    f = Fernet(encryption_key)
-    sec_token = f.encrypt(refresh_token.encode())
-    storage._call_procedure('store_token', auth0_id, sec_token,
-                            with_current_user=False)
-    click.echo(f'Created user {username} with Auth0 ID {auth0_id}')
-
-
-@admin_cli.command('add-job-role')
-@with_default_options
-@click.argument('user_id', required=True, type=click.UUID)
-@click.argument('role_name', nargs=-1, type=click.Choice(
-    ['Create reports', 'Validate observations',
-     'Generate reference forecasts']))
-def add_job_role(user_id, role_name, **kwargs):
-    import sfa_api.utils.storage_interface as storage
-    for role in role_name:
-        storage._call_procedure('grant_job_role', str(user_id), role,
-                                with_current_user=False)
-        click.echo(f'Added role {role} to user {user_id}')
 
 
 @admin_cli.command('add-user-to-org')
@@ -273,3 +219,199 @@ def delete_user(user_id, **kwargs):
             raise
     else:
         click.echo(f'User {user_id} deleted successfully.')
+
+
+@admin_cli.group()
+def jobs():  # pragma: no cover
+    """Tools for administering the SFA jobs"""
+    pass
+
+
+@jobs.command('create-user')
+@with_default_options
+@click.option(
+    '--encryption-key', prompt=False, required=True,
+    envvar='TOKEN_ENCRYPTION_KEY')
+@click.argument('organization_name', required=True)
+def create_job_user(organization_name, encryption_key, **kwargs):
+    """
+    Creates a new user in Auth0 to run background jobs for the organization.
+    Make sure AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET are properly set.
+    """
+    from sfa_api.utils import auth0_info
+    import sfa_api.utils.storage_interface as storage
+
+    org_id = None
+    for org in storage._call_procedure(
+            'list_all_organizations', with_current_user=False):
+        if org['name'] == organization_name:
+            org_id = org['id']
+            break
+    if org_id is None:
+        fail(f'Organization {organization_name} not found')
+
+    username = (
+        'job-execution@' +
+        organization_name.lower().replace(" ", "-") +
+        '.solarforecastarbiter.org'
+    )
+
+    passwd = auth0_info.random_password()
+    auth0_id = auth0_info.create_user(username, passwd, True)
+    # create user in db
+    storage._call_procedure('create_job_user', auth0_id, org_id,
+                            with_current_user=False)
+    refresh_token = auth0_info.get_refresh_token(username, passwd)
+    f = Fernet(encryption_key)
+    sec_token = f.encrypt(refresh_token.encode())
+    storage._call_procedure('store_token', auth0_id, sec_token,
+                            with_current_user=False)
+    click.echo(f'Created user {username} with Auth0 ID {auth0_id}')
+
+
+@jobs.command('add-role')
+@with_default_options
+@click.argument('user_id', required=True, type=click.UUID)
+@click.argument('role_name', nargs=-1, type=click.Choice(
+    ['Create reports', 'Validate observations',
+     'Generate reference forecasts']))
+def add_job_role(user_id, role_name, **kwargs):
+    """
+    Add a job role(s) (ROLE_NAME) to a job execution user (USER_ID)
+    """
+    import sfa_api.utils.storage_interface as storage
+    for role in role_name:
+        storage._call_procedure('grant_job_role', str(user_id), role,
+                                with_current_user=False)
+        click.echo(f'Added role {role} to user {user_id}')
+
+
+@jobs.command('list')
+@with_default_options
+def list_jobs(**kwargs):
+    """
+    List information for all jobs
+    """
+    import pprint
+    import sfa_api.utils.storage_interface as storage
+    jobs = storage._call_procedure('list_jobs',
+                                   with_current_user=False)
+    # a table would be too wide, so pretty print instead
+    click.echo(pprint.pformat(jobs))
+
+
+@jobs.command('delete')
+@with_default_options
+@click.argument('job_id', required=True, type=click.UUID)
+def delete_job(job_id, **kwargs):
+    """
+    Delete JOB_ID from the database
+    """
+    import sfa_api.utils.storage_interface as storage
+    try:
+        storage._call_procedure(
+            'delete_job', str(job_id),
+            with_current_user=False)
+    except pymysql.err.InternalError as e:
+        if e.args[0] == 1305:
+            fail(e.args[1])
+        else:
+            raise
+    else:
+        click.echo(f'Job {job_id} deleted successfully.')
+
+
+@jobs.group('create')
+def create_jobs():  # pragma: no cover
+    """Create a job"""
+    pass
+
+
+class TimeDeltaParam(click.ParamType):
+    """Ensure a string can be parsed by pandas.Timedelta"""
+    name = 'TimeDeltaParam'
+
+    def convert(self, value, param, ctx):
+        try:
+            pd.Timedelta(value)
+        except ValueError:
+            self.fail(f'{value} cannot be converted into a pandas.Timedelta',
+                      param, ctx)
+        else:
+            return value
+
+
+base_url = click.option(
+    '--base-url', default='https://api.solarforecastarbiter.org')
+name_arg = click.argument('name')
+user_id_arg = click.argument('user_id', type=click.UUID)
+cron_string = click.argument('cron_string')
+
+
+@create_jobs.command('daily-validation',
+                     context_settings={"ignore_unknown_options": True})
+@with_default_options
+@base_url
+@name_arg
+@user_id_arg
+@cron_string
+@click.argument('start_td', type=TimeDeltaParam())
+@click.argument('end_td', type=TimeDeltaParam())
+def daily_validation_job(name, user_id, cron_string, start_td, end_td,
+                         base_url, **kwargs):
+    """
+    Create a daily observation validation job named NAME to be executed by
+    the USER_ID user on a scheduled according to CRON_STRING. Validation
+    is performed from job_time + START_TD to job_time + END_TD, so
+    both are likely negative.
+    """
+    from sfa_api.jobs import create_job
+    id_ = create_job(
+        'daily_observation_validation', name, user_id, cron_string,
+        start_td=start_td, end_td=end_td, base_url=base_url)
+    click.echo(f'Job created with id {id_}')
+
+
+@create_jobs.command('reference-nwp')
+@with_default_options
+@base_url
+@name_arg
+@user_id_arg
+@cron_string
+@click.argument('issue_time_buffer', type=TimeDeltaParam())
+def reference_nwp_job(name, user_id, cron_string, issue_time_buffer,
+                      base_url, **kwargs):
+    """
+    Create a reference nwp job named NAME to be executed by
+    USER_ID on a scheduled defined by CRON_STRING. ISSUE_TIME_BUFFER
+    is a timedelta added to the job run time to determine how far
+    in advance a forecast can be made relative to the expected
+    issue time the forecast.
+    """
+    from sfa_api.jobs import create_job
+    id_ = create_job(
+        'reference_nwp', name, user_id, cron_string,
+        issue_time_buffer=issue_time_buffer, base_url=base_url)
+    click.echo(f'Job created with id {id_}')
+
+
+
+@create_jobs.command('periodic-report')
+@with_default_options
+@base_url
+@name_arg
+@user_id_arg
+@cron_string
+@click.argument('report_id', type=click.UUID)
+def periodic_report_job(name, user_id, cron_string, report_id,
+                        base_url, **kwargs):
+    """
+    Create a job to periodically recreate a report given by REPORT_ID
+    with job name NAME executed by user USER_ID on a schedule defined
+    by CRON_STRING.
+    """
+    from sfa_api.jobs import create_job
+    id_ = create_job(
+        'reference_nwp', name, user_id, cron_string,
+        report_id=report_id, base_url=base_url)
+    click.echo(f'Job created with id {id_}')

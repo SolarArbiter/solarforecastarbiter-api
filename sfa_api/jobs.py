@@ -46,6 +46,32 @@ def utcnow():
     return pd.Timestamp.now(tz='UTC')
 
 
+def create_job(job_type, name, user_id, cron_string, **kwargs):
+    logger.info('Creating %s job', job_type)
+
+    if job_type == 'daily_observation_validation':
+        keys = ('start_td', 'end_td')
+    elif job_type == 'reference_nwp':
+        keys = ('issue_time_buffer',)
+    elif job_type == 'periodic_report':
+        # report must already exist
+        keys = ('report_id',)
+    else:
+        raise ValueError(f'Job type {job_type} is not supported')
+    params = {}
+    if 'base_url' in kwargs:
+        params['base_url'] = kwargs['base_url']
+    for k in keys:
+        params[k] = kwargs[k]
+
+    schedule = {'type': 'cron', 'cron_string': cron_string}
+    id_ = storage.generate_uuid()
+    storage._call_procedure(
+        'store_job', (id_, user_id, name, job_type, json.dumps(params),
+                      json.dumps(schedule), 0))
+    return id_
+
+
 def execute_job(name, job_type, user_id, **kwargs):
     logger.info('Running job %s of type %s', name, job_type)
     token = get_access_token(user_id)
@@ -57,7 +83,7 @@ def execute_job(name, job_type, user_id, **kwargs):
     elif job_type == 'reference_nwp':
         issue_buffer = pd.Timedelta(kwargs['issue_time_buffer'])
         run_time = utcnow()
-        nwp.set_base_path(kwargs['nwp_directory'])
+        nwp.set_base_path(kwargs.get('nwp_directory', '/data'))
         return make_latest_nwp_forecasts(
             token, run_time, issue_buffer, base_url)
     elif job_type == 'periodic_report':
