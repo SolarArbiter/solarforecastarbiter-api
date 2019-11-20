@@ -421,6 +421,6 @@ def periodic_report_job(name, user_id, cron_string, report_id,
     """
     from sfa_api.jobs import create_job
     id_ = create_job(
-        'reference_nwp', name, user_id, cron_string,
-        report_id=report_id, base_url=base_url)
+        'periodic_report', name, user_id, cron_string,
+        report_id=str(report_id), base_url=base_url)
     click.echo(f'Job created with id {id_}')
