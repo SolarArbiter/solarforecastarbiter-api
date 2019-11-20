@@ -144,19 +144,28 @@ def move_user_to_unaffiliated(user_id, **kwargs):
 def list_users(**kwargs):
     """
     Prints a table of user information including auth0 id, user id,
-    organization and organization id.
+    organization and organization id. AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET
+    must be properly set to retrieve emails.
     """
     import sfa_api.utils.storage_interface as storage
+    from sfa_api.utils.auth0_info import list_user_emails
+    import logging
+    logging.getLogger('sfa_api.utils.auth0_info').setLevel('CRITICAL')
     users = storage._call_procedure('list_all_users', with_current_user=False)
-    table_format = '{:<34}|{:<38}|{:<34}|{:<38}'
+    emails = list_user_emails([u['auth0_id'] for u in users])
+
+    table_format = '{:<34}|{:<38}|{:<44}|{:<34}|{:<38}'
     headers = table_format.format(
-        'auth0_id', 'User ID', 'Organization Name', 'Organization ID')
+        'auth0_id', 'User ID', 'User Email', 'Organization Name',
+        'Organization ID'
+    )
     click.echo(headers)
     click.echo('-' * len(headers))
     for user in users:
         click.echo(table_format.format(
-            user['auth0_id'], user['id'], user['organization_name'],
-            user['organization_id']))
+            user['auth0_id'], user['id'], emails[user['auth0_id']],
+            user['organization_name'], user['organization_id']))
+
 
 
 @admin_cli.command('list-organizations')
