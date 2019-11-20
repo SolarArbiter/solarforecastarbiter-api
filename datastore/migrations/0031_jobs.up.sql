@@ -57,22 +57,14 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.store_job TO 'insert_objects'@'localhost
 GRANT EXECUTE ON PROCEDURE arbiter_data.store_job TO 'frameworkadmin'@'%';
 
 
-CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_jobs (IN orgid CHAR(36))
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_jobs ()
 COMMENT 'List the jobs of an organization'
 READS SQL DATA SQL SECURITY DEFINER
-BEGIN
-    DECLARE binid BINARY(16);
-    SET binid = UUID_TO_BIN(orgid, 1);
-    IF binid IS NULL THEN
-        SELECT BIN_TO_UUID(id, 1) as id, BIN_TO_UUID(organization_id, 1) as organization_id,
-          BIN_TO_UUID(user_id, 1) as user_id, name, job_type, parameters, schedule, version,
-          created_at, modified_at FROM arbiter_data.scheduled_jobs;
-    ELSE
-        SELECT BIN_TO_UUID(id, 1) as id, BIN_TO_UUID(organization_id, 1) as organization_id,
-          BIN_TO_UUID(user_id, 1) as user_id, name, job_type, parameters, schedule, version,
-          created_at, modified_at FROM arbiter_data.scheduled_jobs WHERE organization_id = binid;
-    END IF;
-END;
+SELECT BIN_TO_UUID(id, 1) as id, get_organization_name(organization_id) as organization_name,
+    BIN_TO_UUID(organization_id, 1) as organization_id,
+    BIN_TO_UUID(user_id, 1) as user_id, name, job_type, parameters, schedule, version,
+    created_at, modified_at FROM arbiter_data.scheduled_jobs;
+
 
 GRANT SELECT ON arbiter_data.scheduled_jobs TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_jobs TO 'select_objects'@'localhost';

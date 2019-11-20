@@ -687,14 +687,14 @@ def test_set_org_accepted_tou_org_dne(dictcursor):
 def test_store_token(dictcursor, new_user):
     user = new_user()
     dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
-    dictcursor.execute('SELECT * FROM job_tokens')
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
     out = dictcursor.fetchall()
     assert len(out) == 1
     assert out[0]['id'] == user['id']
     assert out[0]['token'] == 'testtoken'
 
     dictcursor.callproc('store_token', (user['auth0_id'], 'newtoken'))
-    dictcursor.execute('SELECT * FROM job_tokens')
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
     out = dictcursor.fetchall()
     assert len(out) == 1
     assert out[0]['id'] == user['id']
@@ -704,7 +704,7 @@ def test_store_token(dictcursor, new_user):
 def test_fetch_token(dictcursor, new_user):
     user = new_user()
     dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
-    dictcursor.execute('SELECT * FROM job_tokens')
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
     out = dictcursor.fetchall()
     assert len(out) == 1
     assert out[0]['id'] == user['id']

@@ -1480,30 +1480,3 @@ def test_read_auth0id_caller_unaffiliated(cursor, insertuser,
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_auth0id', (u2['auth0_id'], bin_to_uuid(insertuser.user['id'])))
     assert e.value.args[0] == 1142
-
-
-def test_list_jobs(dictcursor, new_job, new_user):
-    user = new_user()
-    job0 = new_job(user, 'job0')
-    job1 = new_job(user, 'job1')
-    job2 = new_job(user, 'job2')
-    job3 = new_job(None, 'job3')
-
-    dictcursor.callproc('list_jobs', (None,))
-    out = dictcursor.fetchall()
-    keys = {'id', 'organization_id', 'user_id', 'name',
-            'job_type', 'parameters', 'schedule',
-            'version', 'created_at', 'modified_at'}
-    assert keys == set(out[0].keys())
-
-    out_job_ids = {o['id'] for o in out}
-    for j in (job0, job1, job2, job3):
-        assert bin_to_uuid(j['id']) in out_job_ids
-
-    dictcursor.callproc('list_jobs', (bin_to_uuid(user['organization_id']),))
-    out = dictcursor.fetchall()
-    out_job_ids = {o['id'] for o in out}
-    for j in (job0, job1, job2):
-        assert bin_to_uuid(j['id']) in out_job_ids
-
-    assert bin_to_uuid(job3['id']) not in out_job_ids

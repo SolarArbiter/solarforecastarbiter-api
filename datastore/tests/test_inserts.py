@@ -1388,7 +1388,8 @@ def test_store_job(dictcursor, new_user):
         version=0
     )
     dictcursor.callproc('store_job', list(args.values()))
-    dictcursor.execute('SELECT * from scheduled_jobs')
+    dictcursor.execute('SELECT * from scheduled_jobs where user_id = %s',
+                       (user['id'],))
     out = dictcursor.fetchone()
     for k, v in args.items():
         if k in ('user_id', 'id'):

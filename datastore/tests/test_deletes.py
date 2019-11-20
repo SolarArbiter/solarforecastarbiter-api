@@ -801,12 +801,12 @@ def test_remove_user_facing_permissions_and_default_roles(
 
 def test_delete_job(new_job, cursor):
     job = new_job()
-    cursor.execute('select id from scheduled_jobs')
+    cursor.execute('select id from scheduled_jobs where id = %s', (job['id'],))
     out = cursor.fetchall()
     assert len(out) == 1
     assert out[0][0] == job['id']
 
     cursor.callproc('delete_job', (bin_to_uuid(job['id']),))
-    cursor.execute('select id from scheduled_jobs')
+    cursor.execute('select id from scheduled_jobs where id = %s', (job['id'],))
     out = cursor.fetchall()
     assert len(out) == 0
