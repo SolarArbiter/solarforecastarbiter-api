@@ -1,10 +1,3 @@
-"""
-Required keys: TOKEN_ENCRYPTION_KEY, SCHEDULER_QUEUE, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_BASE_URL, AUTH0_AUDIENCE, MYSQL_HOST, MYSQL_DATABASE, MYSQL_PASSWORD, MYSQL_USER
-optional: REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD,
-REDIS_DECODE_RESPONSES, REDIS_SOCKET_CONNECT_TIMEOUT,
-REDIS_USE_SSL, REDIS_CA_CERTS, REDIS_CERT_REQS,
-LOG_LEVEL
-"""
 from contextlib import contextmanager
 import json
 import logging
@@ -29,7 +22,28 @@ logger = logging.getLogger(__name__)
 
 
 def get_access_token(user_id):
-    """requires app context"""
+    """
+    Get the refresh token from MySQL for the user_id, decrypt it, and
+    exchange it for an access token. This requires the same
+    TOKEN_ENCRYPTION_KEY that was used to encrypt the token along with
+    the same AUTH0_CLIENT_ID and AUTH0_CLIENT_SECRET to do anything
+    useful with the refresh token.
+
+    Parameters
+    ----------
+    user_id : str
+        Retrieve an access token for this user
+
+    Returns
+    -------
+    HiddenToken
+        The access token that can be accessed at the .token property
+
+    Raises
+    ------
+    KeyError
+        If no token is found for user_id
+    """
     try:
         enc_token = storage._call_procedure(
             'fetch_token', (user_id,), with_current_user=False,
@@ -37,16 +51,38 @@ def get_access_token(user_id):
     except IndexError:
         raise KeyError(f'No token for {user_id} found')
     f = Fernet(current_app.config['TOKEN_ENCRYPTION_KEY'])
-    refresh_token = f.decrypt(enc_token)
+    refresh_token = f.decrypt(enc_token).decode()
     access_token = exchange_refresh_token(refresh_token)
     return HiddenToken(access_token)
 
 
-def utcnow():
-    return pd.Timestamp.now(tz='UTC')
-
-
 def create_job(job_type, name, user_id, cron_string, **kwargs):
+    """
+    Create a job in the database
+
+    Parameters
+    ----------
+    job_type : str
+        Type of background job. This determines what kwargs are expected
+    name : str
+        Name for the job
+    user_id : str
+        ID of the user to execute this job
+    cron_string : str
+        Crontab string to schedule job
+    **kwargs
+        Keyword arguments that will be passed along when the job is executed
+
+    Returns
+    -------
+    str
+        ID of the MySQL job
+
+    Raises
+    ------
+    ValueError
+        If the job type is not supported
+    """
     logger.info('Creating %s job', job_type)
 
     if job_type == 'daily_observation_validation':
@@ -67,12 +103,34 @@ def create_job(job_type, name, user_id, cron_string, **kwargs):
     schedule = {'type': 'cron', 'cron_string': cron_string}
     id_ = storage.generate_uuid()
     storage._call_procedure(
-        'store_job', (id_, user_id, name, job_type, json.dumps(params),
-                      json.dumps(schedule), 0))
+        'store_job', id_, str(user_id), name, job_type, json.dumps(params),
+        json.dumps(schedule), 0, with_current_user=False)
     return id_
 
 
+def utcnow():
+    return pd.Timestamp.now(tz='UTC')
+
+
 def execute_job(name, job_type, user_id, **kwargs):
+    """
+    Function that should be given to RQ to execute the
+    proper code depending on job type
+
+    Parameters
+    ----------
+    job_type : str
+        The type of job to determine which code path to run
+    user_id : str
+        The ID of the user that this job should execute as
+    **kwargs
+        Additional keyword arguments passed to the execution code
+
+    Raises
+    ------
+    ValueError
+        If the job type is unsupported
+    """
     logger.info('Running job %s of type %s', name, job_type)
     token = get_access_token(user_id)
     base_url = kwargs.get('base_url', None)
@@ -93,6 +151,24 @@ def execute_job(name, job_type, user_id, **kwargs):
 
 
 def convert_sql_to_rq_job(sql_job, scheduler):
+    """
+    Convert between a job as stored in MySQL and a job for
+    RQ scheduler to execute.
+
+    Parameters
+    ----------
+    sql_job : dict
+        Definition of the job as returned from MySQL with keys including
+        id, name, job_type, user_id, parameters, schedule, organization_id,
+        modified_at
+    scheduler : rq_schduler.Scheduler
+        Scheduler instance where a new scheduled job will be created
+
+    Raises
+    ------
+    ValueError
+        If the type of scheduling is not cron
+    """
     args = [sql_job[k] for k in ('name', 'job_type', 'user_id')]
     kwargs = json.loads(sql_job['parameters'])
     schedule = json.loads(sql_job['schedule'])
@@ -115,8 +191,18 @@ def convert_sql_to_rq_job(sql_job, scheduler):
 
 
 def schedule_jobs(scheduler):
+    """
+    Sync jobs between MySQL and RQ scheduler, adding new jobs
+    from MySQL, updating jobs if they have changed, and remove
+    RQ jobs that have been removed from MySQL
+
+    Parameters
+    ----------
+    scheduler : rq_scheduler.Scheduler
+        The scheduler instance to compare MySQL jobs with
+    """
     logger.debug('Syncing MySQL and RQ jobs...')
-    sql_jobs = storage._call_procedure('list_jobs', (None, ),
+    sql_jobs = storage._call_procedure('list_jobs',
                                        with_current_user=False)
     rq_jobs = scheduler.get_jobs()
 
@@ -127,6 +213,8 @@ def schedule_jobs(scheduler):
         logger.info('Removing extra RQ jobs %s',
                     rq_dict[to_cancel].meta.get('job_name', to_cancel))
         scheduler.cancel(to_cancel)
+        # make sure job removed from redis
+        rq_dict[to_cancel].delete()
 
     for job_id, sql_job in sql_dict.items():
         if job_id in rq_dict:
@@ -148,6 +236,26 @@ def schedule_jobs(scheduler):
 
 @contextmanager
 def make_job_app(config_file):
+    """
+    Context-manager to make a Flask app and RQ Queue for running the RQ
+    scheduler and workers
+
+    Parameters
+    ----------
+    config_file : file-path
+        Path to a python configuration file. Important parameters include
+        the Redis connection keys, the Auth0 connection parameters, and
+        the MySQL connection parameters.
+
+    Yields
+    ------
+    app
+        The Flask app, which has a running context for access to
+        flask.current_app
+    queue
+        The RQ queue, using app.config['SCHEDULER_QUEUE'], with an active
+        Redis connection
+    """
     app = Flask('scheduled_jobs')
     app.config.from_pyfile(config_file)
     with app.app_context():

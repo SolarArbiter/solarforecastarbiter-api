@@ -115,7 +115,6 @@ def scheduler(verbose, config_file, interval, burst):
     sentry_sdk.init(send_default_pii=False,
                     integrations=[RqIntegration()])
     from rq_scheduler import Scheduler
-    from rq_scheduler.utils import setup_loghandlers
     from rq.utils import ColorizingStreamHandler
     from sfa_api.jobs import make_job_app, UpdateMixin
     import solarforecastarbiter  # NOQA preload
