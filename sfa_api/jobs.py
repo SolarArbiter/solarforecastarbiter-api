@@ -225,7 +225,7 @@ def schedule_jobs(scheduler):
                 logger.info('Removing job %s', sql_job['name'])
                 scheduler.cancel(job_id)
             else:
-                continue
+                continue  # pragma: no cover
         try:
             convert_sql_to_rq_job(sql_job, scheduler)
         except (ValueError, json.JSONDecodeError, KeyError) as e:

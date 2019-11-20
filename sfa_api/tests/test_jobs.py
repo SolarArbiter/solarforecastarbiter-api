@@ -68,6 +68,7 @@ def test_make_job_app(mocker):
 
 def test_schedule_jobs(mocker, queue, jobid):
     sch = Scheduler(queue=queue, connection=queue.connection)
+    sch.cancel = mocker.MagicMock()
     jobs.schedule_jobs(sch)
     assert jobid in sch
     assert len(list(sch.get_jobs())) == 1
@@ -75,6 +76,7 @@ def test_schedule_jobs(mocker, queue, jobid):
     jobs.schedule_jobs(sch)
     assert jobid in sch
     assert len(list(sch.get_jobs())) == 1
+    assert not sch.cancel.called
 
 
 def noop():
@@ -198,3 +200,18 @@ def test_full_run_through(app, queue, mocker):
     w = SimpleWorker([queue], connection=queue.connection)
     w.work(burst=True)
     assert validate.called
+
+
+@pytest.mark.parametrize('jt,kwargs', [
+    ('daily_observation_validation', {'start_td': '1h', 'end_td': '1h'}),
+    ('reference_nwp', {'issue_time_buffer': '1h', 'base_url': 'hhtp'}),
+    ('periodic_report', {'report_id': 'id'}),
+    pytest.param('badtype', {}, marks=pytest.mark.xfail(
+        strict=True, raises=ValueError)),
+    pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(
+        strict=True, raises=KeyError))
+])
+def test_create_job(mocker, app, jt, kwargs):
+    store = mocker.patch('sfa_api.jobs.storage._call_procedure')
+    jobs.create_job(jt, 'testjob', 'userid', 'cronstr', **kwargs)
+    assert store.call_args[0][2:5] == ('userid', 'testjob', jt)
