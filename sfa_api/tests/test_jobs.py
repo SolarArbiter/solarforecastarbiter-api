@@ -183,7 +183,11 @@ def test_full_run_through(app, queue, mocker):
     mocker.patch('sfa_api.jobs.get_access_token', return_value='token')
     validate = mocker.patch('sfa_api.jobs.daily_observation_validation')
     gjq = mocker.patch('rq_scheduler.Scheduler.get_jobs_to_queue')
-    sch = Scheduler(queue=queue, connection=queue.connection)
+
+    class US(jobs.UpdateMixin, Scheduler):
+        pass
+
+    sch = US(queue=queue, connection=queue.connection)
     jobs.schedule_jobs(sch)
     (job, exc_time) = list(sch.get_jobs(with_times=True))[0]
     assert exc_time == dt.datetime.utcnow().replace(

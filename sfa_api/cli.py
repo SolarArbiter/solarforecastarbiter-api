@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 
@@ -12,6 +13,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.group(context_settings=CONTEXT_SETTINGS)
 def cli():
     pass
+
 
 verbose_opt = click.option('-v', '--verbose', count=True,
                            help='Increase logging verbosity')
@@ -87,13 +89,14 @@ def scheduled_worker(verbose, config_file):
     from sentry_sdk.integrations.rq import RqIntegration
     sentry_sdk.init(send_default_pii=False,
                     integrations=[RqIntegration()])
-
-    from sfa_api.jobs import make_job_app, run_worker
+    from rq import Worker
+    from sfa_api.jobs import make_job_app
     import solarforecastarbiter  # NOQA preload
 
     with make_job_app(config_file) as (app, queue):
         loglevel = _get_log_level(app.config, verbose)
-        run_worker(queue, loglevel)
+        w = Worker(queue, connection=queue.connection)
+        w.work(logging_level=loglevel)
 
 
 @cli.command()
@@ -111,14 +114,27 @@ def scheduler(verbose, config_file, interval, burst):
     from sentry_sdk.integrations.rq import RqIntegration
     sentry_sdk.init(send_default_pii=False,
                     integrations=[RqIntegration()])
+    from rq_scheduler import Scheduler
     from rq_scheduler.utils import setup_loghandlers
-    from sfa_api.jobs import make_job_app, run_scheduler
+    from rq.utils import ColorizingStreamHandler
+    from sfa_api.jobs import make_job_app, UpdateMixin
     import solarforecastarbiter  # NOQA preload
+
+    root_logger = logging.getLogger()
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    handler = ColorizingStreamHandler()
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+
+    class UpdateScheduler(UpdateMixin, Scheduler):
+        pass
 
     with make_job_app(config_file) as (app, queue):
         loglevel = _get_log_level(app.config, verbose)
-        setup_loghandlers(loglevel)
-        run_scheduler(queue, interval, burst)
+        root_logger.setLevel(loglevel)
+        scheduler = UpdateScheduler(queue=queue, interval=interval,
+                                    connection=queue.connection)
+        scheduler.run(burst=burst)
 
 
 if __name__ == '__main__':  # pragma: no cover

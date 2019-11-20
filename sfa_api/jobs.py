@@ -1,5 +1,5 @@
 """
-Required keys: TOKEN_ENCRYPTION_KEY, SCHEDULER_QUEUE, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_BASE_URL, AUTH0_AUDIENCE
+Required keys: TOKEN_ENCRYPTION_KEY, SCHEDULER_QUEUE, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_BASE_URL, AUTH0_AUDIENCE, MYSQL_HOST, MYSQL_DATABASE, MYSQL_PASSWORD, MYSQL_USER
 optional: REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD,
 REDIS_DECODE_RESPONSES, REDIS_SOCKET_CONNECT_TIMEOUT,
 REDIS_USE_SSL, REDIS_CA_CERTS, REDIS_CERT_REQS,
@@ -72,6 +72,8 @@ def convert_sql_to_rq_job(sql_job, scheduler):
     schedule = json.loads(sql_job['schedule'])
     if schedule['type'] != 'cron':
         raise ValueError('Only cron job schedules are supported')
+    logger.info('Adding job %s with schedule %s', sql_job['name'],
+                schedule['cron_string'])
     scheduler.cron(
         schedule['cron_string'],
         func=execute_job,
@@ -87,6 +89,7 @@ def convert_sql_to_rq_job(sql_job, scheduler):
 
 
 def schedule_jobs(scheduler):
+    logger.debug('Syncing MySQL and RQ jobs...')
     sql_jobs = storage._call_procedure('list_jobs', (None, ),
                                        with_current_user=False)
     rq_jobs = scheduler.get_jobs()
@@ -95,6 +98,8 @@ def schedule_jobs(scheduler):
     rq_dict = {j.id: j for j in rq_jobs}
 
     for to_cancel in set(rq_dict.keys()) - set(sql_dict.keys()):
+        logger.info('Removing extra RQ jobs %s',
+                    rq_dict[to_cancel].meta.get('job_name', to_cancel))
         scheduler.cancel(to_cancel)
 
     for job_id, sql_job in sql_dict.items():
@@ -103,6 +108,7 @@ def schedule_jobs(scheduler):
                     sql_job['modified_at'] !=
                     rq_dict[job_id].meta['last_modified_in_sql']
             ):
+                logger.info('Removing job %s', sql_job['name'])
                 scheduler.cancel(job_id)
             else:
                 continue
@@ -114,7 +120,6 @@ def schedule_jobs(scheduler):
                 sql_job, e)
 
 
-
 @contextmanager
 def make_job_app(config_file):
     app = Flask('scheduled_jobs')
@@ -124,16 +129,11 @@ def make_job_app(config_file):
         yield app, queue
 
 
-def run_worker(queue, loglevel):  # pragma: no cover
-    from rq import Worker
-
-    w = Worker(queue)
-    w.work(logging_level=loglevel)
-
-
-def run_scheduler(queue, interval, burst=False):  # pragma: no cover
-    from rq_scheduler import Scheduler
-
-    scheduler = Scheduler(queue=queue, interval=interval)
-    schedule_jobs(scheduler)
-    scheduler.run(burst=burst)
+class UpdateMixin:
+    """
+    Simple Mixin for rq_scheduler.Scheduler to sync SQL and RQ jobs
+    each time the Scheduler moves jobs to the run queue.
+    """
+    def enqueue_jobs(self):
+        schedule_jobs(self)
+        return super().enqueue_jobs()
