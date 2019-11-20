@@ -33,3 +33,30 @@ def test_isodatetime_serialize(inp, out, iso_schema):
 ])
 def test_isodatetime_deserialize(inp, out, iso_schema):
     assert iso_schema().loads('{"isodt": "' + inp + '"}')['isodt'] == out
+
+
+@pytest.mark.parametrize('inp', [
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+     '"observation": "123e4567-e89b-12d3-a456-426655440000"}'),
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+     '"aggregate": "458ffc27-df0b-11e9-b622-62adb5fd6af0"}')
+])
+def test_object_pair_deserialization(inp):
+    deserialized = schema.ReportObjectPair().loads(inp)
+    assert 'forecast' in deserialized
+    assert (bool('observation' in deserialized) != 
+            bool('aggregate' in deserialized))
+
+@pytest.mark.parametrize('inp', [
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+     '"observation": "123e4567-e89b-12d3-a456-426655440000",'
+     '"aggregate": "458ffc27-df0b-11e9-b622-62adb5fd6af0"}'),
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3"}'),
+    ('{"forecast": "notauuid",'
+     '"aggregate": "458ffc27-df0b-11e9-b622-62adb5fd6af0"}'),
+    ('{"forecast": "458ffc27-df0b-11e9-b622-62adb5fd6af0",'
+     '"aggregate": "notauuid"}'),
+])
+def test_object_pair_test_validation(inp):
+    with pytest.raises(marshmallow.exceptions.ValidationError):
+        deserialized = schema.ReportObjectPair().loads(inp)
