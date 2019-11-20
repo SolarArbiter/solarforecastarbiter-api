@@ -34,7 +34,7 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.fetch_token TO 'job_executor'@'%';
 
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_job (
-    IN strid CHAR(36), IN userstrid CHAR(36), IN name VARCHAR(32), IN job_type VARCHAR(16),
+    IN strid CHAR(36), IN userstrid CHAR(36), IN name VARCHAR(64), IN job_type VARCHAR(64),
     IN parameters JSON, IN schedule JSON, IN version TINYINT)
 COMMENT 'Create a scheduled job object'
 MODIFIES SQL DATA SQL SECURITY DEFINER
