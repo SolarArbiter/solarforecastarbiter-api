@@ -73,7 +73,8 @@ REPORT_VALUESET = [
 @pytest.mark.parametrize('values', REPORT_VALUESET)
 def test_post_report_values(api, new_report, values):
     report_id = new_report()
-    obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0]
+    object_pairs = REPORT_POST_JSON['report_parameters']['object_pairs']
+    obj_id = object_pairs[0]['observation']
     report_values = {
         'object_id': obj_id,
         'processed_values': values,
@@ -109,7 +110,9 @@ def test_post_report_values_bad_uuid(api, new_report, values):
 @pytest.mark.parametrize('values', REPORT_VALUESET)
 def test_read_report_values(api, new_report, values):
     report_id = new_report()
-    obj_id = REPORT_POST_JSON['report_parameters']['object_pairs'][0][0]
+    object_pairs = REPORT_POST_JSON['report_parameters']['object_pairs']
+    obj_id = object_pairs[0]['observation']
+
     report_values = {
         'object_id': obj_id,
         'processed_values': values,
@@ -172,8 +175,16 @@ def test_list_reports(api, new_report):
      '["Not a valid datetime."]'),
     ('end', 'invalid_date',
      '["Not a valid datetime."]'),
-    ('object_pairs', '[("wrongtuple"),()]',
-     '["Not a valid list."]'),
+    ('object_pairs', '[{"wrongtuple"},{}]',
+     '["Invalid type."]'),
+    ('object_pairs', [{"observation": "x", "forecast": "y"}],
+     '{"0":{"forecast":["Not a valid UUID."],"observation":["Not a valid UUID."]}}'),
+    ('object_pairs', [{"observation": "123e4567-e89b-12d3-a456-426655440000",
+                       "forecast": "123e4567-e89b-12d3-a456-426655440000",
+                       "aggregate": "123e4567-e89b-12d3-a456-426655440000"}],
+     '{"0":{"_schema":["Only specify one of observation or aggregate"]}}'),
+    ('object_pairs', [{"forecast": "123e4567-e89b-12d3-a456-426655440000"}],
+     '{"0":{"_schema":["Specify one of observation or aggregate"]}}'),
     ('filters', 'not a list',
      '["Not a valid list."]'),
     ('metrics', ["bad"],
@@ -188,8 +199,3 @@ def test_post_report_invalid_report_params(
     expected = ('{"errors":{"report_parameters":[{"%s":%s}]}}\n' %
                 (key, error))
     assert res.get_data(as_text=True) == expected
-
-
-def test_post_report_values_invalid_params(api):
-    # add tests after format is decided
-    pass
