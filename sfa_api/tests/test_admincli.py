@@ -223,15 +223,20 @@ def test_promote_to_admin_org_dne(
     assert result.output == 'Cannot promote admin from outside organization.\n'
 
 
-def test_list_all_users(app_cli_runner, dict_cursor):
+def test_list_all_users(app_cli_runner, dict_cursor, mocker):
+    email = mocker.MagicMock()
+    email.__getitem__ = lambda x, y: 'email'
+    mocker.patch('sfa_api.utils.auth0_info.list_user_emails',
+                 return_value=email)
     result = app_cli_runner.invoke(
         admincli.list_users,
         auth_args)
+    assert result.exit_code == 0
     output_lines = result.output.split('\n')
     assert len(output_lines) == 9
     for line in output_lines[2:-1]:
         assert line.startswith('auth0|')
-        assert len(line.split('|')) == 5
+        assert len(line.split('|')) == 6
 
 
 def test_list_all_organizations(app_cli_runner, dict_cursor):
@@ -411,6 +416,7 @@ def test_delete_job(app_cli_runner, jobid):
     result = app_cli_runner.invoke(
         admincli.delete_job,
         [jobid] + auth_args)
+    assert result.exit_code == 0
     assert result.output == (f'Job {jobid} deleted successfully.\n')
 
 
@@ -418,6 +424,7 @@ def test_delete_job_job_dne(app_cli_runner, missing_id):
     result = app_cli_runner.invoke(
         admincli.delete_job,
         [missing_id] + auth_args)
+    assert result.exit_code != 0
     assert result.output == (f'Job does not exist\n')
 
 
@@ -432,6 +439,7 @@ def test_daily_validation_job(app_cli_runner, mocker, user_id):
     result = app_cli_runner.invoke(
         admincli.daily_validation_job,
         ['Val Job', user_id, '* * * * *', '-1d', '0h'] + auth_args)
+    assert result.exit_code == 0
     assert result.output == 'Job created with id jobid\n'
 
 
@@ -440,6 +448,7 @@ def test_reference_nwp_job(app_cli_runner, mocker, user_id):
     result = app_cli_runner.invoke(
         admincli.reference_nwp_job,
         ['Val Job', user_id, '* * * * *', '10min'] + auth_args)
+    assert result.exit_code == 0
     assert result.output == 'Job created with id jobid\n'
 
 
@@ -449,4 +458,5 @@ def test_periodic_report_job(app_cli_runner, mocker, user_id,
     result = app_cli_runner.invoke(
         admincli.periodic_report_job,
         ['Val Job', user_id, '* * * * *', missing_id] + auth_args)
+    assert result.exit_code == 0
     assert result.output == 'Job created with id jobid\n'
