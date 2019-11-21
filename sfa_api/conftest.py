@@ -644,6 +644,23 @@ demo_forecasts = {
         "interval_value_type": "interval_mean",
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37)),
         "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37))
+    },
+    '49220780-76ae-4b11-bef1-7a75bdc784e3': {
+        "extra_parameters": "",
+        "forecast_id": "49220780-76ae-4b11-bef1-7a75bdc784e3",
+        "name": "GHI Aggregate FX 60",
+        "provider": "Organization 1",
+        "site_id": None,
+        "aggregate_id": "458ffc27-df0b-11e9-b622-62adb5fd6af0",
+        "variable": "ghi",
+        "issue_time_of_day": "00:00",
+        "run_length": 1440,
+        "interval_length": 60,
+        "interval_label": "beginning",
+        "lead_time_to_start": 0,
+        "interval_value_type": "interval_mean",
+        "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37)),
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37))
     }
 }
 
@@ -898,9 +915,11 @@ def generate_randoms(freq):
     """
     if freq == 1:
         length = 4320
-    else:
-        # assume 5 minutes
+    elif freq == 5:
         length = 864
+    else:
+        # assume 60 min
+        length = 72
     index = pd.date_range(start=pd.Timestamp('20190414T07:00'),
                           periods=length, freq=f'{freq}min', tz='UTC')
     values = np.random.normal(50, 5, size=length)

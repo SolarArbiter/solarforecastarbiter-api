@@ -369,8 +369,7 @@ def test_get_aggregate_forecasts(api, aggregate_id):
     agg_forecasts = res.get_json()
     assert len(agg_forecasts) == 2
     agg_fx = agg_forecasts[0]
-    expected = list(demo_forecasts.values())[-1]
-    assert agg_fx['forecast_id'] == expected['forecast_id']
+    assert agg_fx['forecast_id'] in demo_forecasts
     assert agg_fx['aggregate_id'] == aggregate_id
 
 

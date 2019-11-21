@@ -19,6 +19,7 @@ from sfa_api.utils import storage_interface
 TESTINDICES = {
     1: generate_randoms(1)[0].to_series(keep_tz=True),
     5: generate_randoms(5)[0].to_series(keep_tz=True),
+    60: generate_randoms(60)[0].to_series(keep_tz=True),
 }
 
 
