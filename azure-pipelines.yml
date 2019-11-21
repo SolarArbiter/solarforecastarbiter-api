@@ -53,22 +53,25 @@ jobs:
   - script: |
       flake8 sfa_api
     displayName: 'flake8'
+    condition: always()
 
   - task: PublishTestResults@2
     inputs:
       testResultsFiles: '**/test-results.xml'
       testRunTitle: 'Python $(python.version)'
-    condition: succeededOrFailed()
+    condition: always()
 
   - task: PublishCodeCoverageResults@1
     inputs:
       codeCoverageTool: Cobertura
       summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
       reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+    condition: always()
 
   - script: |
       bash <(curl https://codecov.io/bash) -t 8c76f562-08c0-4ad6-be35-026cceabcc1e -f coverage.xml -F adder -F subtractor
     displayName: 'codecov'
+    condition: always()
 
 - job: 'Publish'
   dependsOn: 'Test'
