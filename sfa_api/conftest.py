@@ -375,8 +375,18 @@ def aggregate_id():
 
 
 @pytest.fixture()
-def test_orgid():
+def orgid():
     return 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
+
+
+@pytest.fixture()
+def userid():
+    return '0c90950a-7cca-11e9-a81f-54bf64606445'
+
+
+@pytest.fixture()
+def jobid():
+    return '907a9340-0b11-11ea-9e88-f4939feddd82'
 
 
 @pytest.fixture()

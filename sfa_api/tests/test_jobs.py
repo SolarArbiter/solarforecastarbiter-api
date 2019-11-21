@@ -30,20 +30,6 @@ def queue(app):
     return get_queue(app.config['SCHEDULER_QUEUE'])
 
 
-@pytest.fixture()
-def orgid():
-    return 'b76ab62e-4fe1-11e9-9e44-64006a511e6f'
-
-@pytest.fixture()
-def userid():
-    return '0c90950a-7cca-11e9-a81f-54bf64606445'
-
-
-@pytest.fixture()
-def jobid():
-    return '907a9340-0b11-11ea-9e88-f4939feddd82'
-
-
 def test_get_access_token(mocker, app, userid):
     exchange = mocker.patch('sfa_api.jobs.exchange_refresh_token',
                             return_value='access')

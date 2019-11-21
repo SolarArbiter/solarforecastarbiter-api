@@ -65,7 +65,7 @@ def create_organization(organization_name, **kwargs):
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
             fail(f'Organization {organization_name} already exists.')
-        else:
+        else:  # pragma: no cover
             raise
     else:
         click.echo(f'Created organization {organization_name}.')
@@ -90,7 +90,7 @@ def add_user_to_org(
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1452:
             fail('Organization does not exist')
-        else:
+        else:  # pragma: no cover
             raise
     except StorageAuthError as e:
         fail(e.args[0])
@@ -115,7 +115,7 @@ def promote_to_admin(user_id, organization_id, **kwargs):
     except pymysql.err.IntegrityError as e:
         if e.args[0] == 1062:
             fail('User already granted admin permissions.')
-        else:
+        else:  # pragma: no cover
             raise
     except StorageAuthError as e:
         click.echo(e.args[0])
@@ -202,7 +202,7 @@ def set_org_accepted_tou(organization_id, **kwargs):
     except pymysql.err.InternalError as e:
         if e.args[0] == 1305:
             fail(e.args[1])
-        else:
+        else:  # pragma: no cover
             raise
     else:
         click.echo(f'Organization {organization_id} has been marked '
@@ -224,7 +224,7 @@ def delete_user(user_id, **kwargs):
     except pymysql.err.InternalError as e:
         if e.args[0] == 1305:
             fail(e.args[1])
-        else:
+        else:  # pragma: no cover
             raise
     else:
         click.echo(f'User {user_id} deleted successfully.')
@@ -324,7 +324,7 @@ def delete_job(job_id, **kwargs):
     except pymysql.err.InternalError as e:
         if e.args[0] == 1305:
             fail(e.args[1])
-        else:
+        else:  # pragma: no cover
             raise
     else:
         click.echo(f'Job {job_id} deleted successfully.')
