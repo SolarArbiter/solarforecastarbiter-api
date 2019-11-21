@@ -2,7 +2,7 @@ import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid
+from conftest import bin_to_uuid, newuuid
 
 
 @pytest.fixture()
@@ -810,3 +810,10 @@ def test_delete_job(new_job, cursor):
     cursor.execute('select id from scheduled_jobs where id = %s', (job['id'],))
     out = cursor.fetchall()
     assert len(out) == 0
+
+
+def test_delete_job_job_dne(dictcursor):
+    with pytest.raises(pymysql.err.InternalError) as e:
+        dictcursor.callproc('delete_job', (str(bin_to_uuid(newuuid())),))
+    assert e.value.args[0] == 1305
+    assert e.value.args[1] == "Job does not exist"

@@ -75,7 +75,16 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_jobs TO 'job_executor'@'%';
 CREATE DEFINER = 'delete_objects'@'localhost' PROCEDURE delete_job (IN jobid CHAR(36))
 COMMENT 'Delete a job'
 MODIFIES SQL DATA SQL SECURITY DEFINER
-DELETE FROM arbiter_data.scheduled_jobs WHERE id = UUID_TO_BIN(jobid, 1);
+BEGIN
+    DECLARE binid BINARY(16);
+    SET binid = UUID_TO_BIN(jobid, 1);
+    IF EXISTS(SELECT 1 FROM arbiter_data.scheduled_jobs WHERE id = binid) THEN
+        DELETE FROM arbiter_data.scheduled_jobs WHERE id = UUID_TO_BIN(jobid, 1);
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Job does not exist',
+        MYSQL_ERRNO = 1305;
+    END IF;
+END;
 
 GRANT DELETE, SELECT(id) ON arbiter_data.scheduled_jobs TO 'delete_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_job TO 'delete_objects'@'localhost';
