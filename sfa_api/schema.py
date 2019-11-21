@@ -665,10 +665,10 @@ class ReportObjectPair(ma.Schema):
     def validate_object_pair(self, data, **kwargs):
         if 'observation' in data and 'aggregate' in data:
             raise ValidationError(
-                "Only specify one of 'observation' or 'aggregate'")
+                "Only specify one of observation or aggregate")
         elif 'observation' not in data and 'aggregate' not in data:
             raise ValidationError(
-                "Specify one of 'observation' or 'aggregate'")
+                "Specify one of observation or aggregate")
 
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
@@ -878,11 +878,11 @@ class AggregateUpdateSchema(ma.Schema):
     def validate_from_until(self, data, **kwargs):
         for obs in data['observations']:
             if 'effective_from' in obs and 'effective_until' in obs:
-                raise ValidationError("Only specify one of 'effective_from' "
-                                      "or effective_until'")
+                raise ValidationError("Only specify one of effective_from "
+                                      "or effective_until")
             elif 'effective_from' not in obs and 'effective_until' not in obs:
                 raise ValidationError(
-                    "Specify one of 'effective_from' or 'effective_until'")
+                    "Specify one of effective_from or effective_until")
 
 
 @spec.define_schema('AggregateMetadata')
