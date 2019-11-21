@@ -760,7 +760,7 @@ def test_create_report_creation_role(dictcursor):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 10
+    assert len(permission_ids) == 12
     perm_objects = []
     for permid in [p['permission_id'] for p in permission_ids]:
         dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
@@ -775,6 +775,7 @@ def test_create_report_creation_role(dictcursor):
             'Read all forecast values', 'Read all probabilistic forecasts',
             'Read all probabilistic forecast values',
             'Read all aggregates', 'Read all aggregate values',
+            'Read all reports', 'Read all report values',
             'Create reports'} == set(perms.keys())
 
 

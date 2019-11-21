@@ -65,7 +65,7 @@ BEGIN
      AND description IN (
        'Read all sites', 'Read all observations', 'Read all observation values', 'Read all forecasts',
        'Read all forecast values', 'Read all probabilistic forecasts', 'Read all probabilistic forecast values',
-       'Read all aggregates', 'Read all aggregate values', 'Read all reports', 'Read all report values'
+       'Read all aggregates', 'Read all aggregate values', 'Read all reports', 'Read all report values',
        'Create reports');
     SELECT BIN_TO_UUID(roleid, 1);
 END;
