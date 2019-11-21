@@ -7,7 +7,7 @@ import re
 from flask import request
 import numpy as np
 import pandas as pd
-from solarforecastarbiter.datamodel import Forecast
+from solarforecastarbiter.datamodel import Forecast, Site
 from solarforecastarbiter.reference_forecasts import utils as fx_utils
 
 
@@ -422,7 +422,7 @@ def restrict_forecast_upload_window(extra_parameters, get_forecast,
         raise NotFoundException(errors={
             '404': 'Cannot read forecast or forecast does not exist'})
     # we don't care about the axis or constant values for probabilistic
-    fx_dict['site'] = ''
+    fx_dict['site'] = Site('name', 0, 0, 0, 'UTC')
     fx = Forecast.from_dict(fx_dict)
     next_issue_time = fx_utils.get_next_issue_time(
         fx, _current_utc_timestamp())
