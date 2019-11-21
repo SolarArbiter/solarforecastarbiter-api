@@ -71,7 +71,6 @@ def create_organization(organization_name, **kwargs):
         click.echo(f'Created organization {organization_name}.')
 
 
-
 @admin_cli.command('add-user-to-org')
 @with_default_options
 @click.argument('user_id', required=True, type=click.UUID)
@@ -165,7 +164,6 @@ def list_users(**kwargs):
         click.echo(table_format.format(
             user['auth0_id'], user['id'], emails[user['auth0_id']],
             user['organization_name'], user['organization_id']))
-
 
 
 @admin_cli.command('list-organizations')
@@ -402,7 +400,6 @@ def reference_nwp_job(name, user_id, cron_string, issue_time_buffer,
         'reference_nwp', name, user_id, cron_string,
         issue_time_buffer=issue_time_buffer, base_url=base_url)
     click.echo(f'Job created with id {id_}')
-
 
 
 @create_jobs.command('periodic-report')
