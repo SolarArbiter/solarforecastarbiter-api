@@ -660,6 +660,21 @@ class RoleSchema(RolePostSchema):
     modified_at = MODIFIED_AT
 
 
+class ReportObjectPair(ma.Schema):
+    @validates_schema
+    def validate_object_pair(self, data, **kwargs):
+        if 'observation' in data and 'aggregate' in data:
+            raise ValidationError(
+                "Only specify one of observation or aggregate")
+        elif 'observation' not in data and 'aggregate' not in data:
+            raise ValidationError(
+                "Specify one of observation or aggregate")
+
+    forecast = ma.UUID(title="Forecast UUID", required=True)
+    observation = ma.UUID(title="Observation UUID")
+    aggregate = ma.UUID(title="Aggregate UUID")
+
+
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
     start = ISODateTime(
@@ -675,12 +690,7 @@ class ReportParameters(ma.Schema):
             " Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
     )
-    # Tuple is a new addition to marshmallow fields in v3.0.0rc4, and hasn't
-    # been added to apispec, so this will not render correctly right now
-    # Issue: https://github.com/marshmallow-code/apispec/issues/399
-    object_pairs = ma.List(ma.Tuple(
-        (ma.UUID(title="Observation UUID"), ma.UUID(title="Forecast UUID")),
-        many=True))
+    object_pairs = ma.Nested(ReportObjectPair, many=True)
     filters = ma.List(
         ma.String(),
         title="Filters",
@@ -868,11 +878,11 @@ class AggregateUpdateSchema(ma.Schema):
     def validate_from_until(self, data, **kwargs):
         for obs in data['observations']:
             if 'effective_from' in obs and 'effective_until' in obs:
-                raise ValidationError("Only specify one of 'effective_from' "
-                                      "or effective_until'")
+                raise ValidationError("Only specify one of effective_from "
+                                      "or effective_until")
             elif 'effective_from' not in obs and 'effective_until' not in obs:
                 raise ValidationError(
-                    "Specify one of 'effective_from' or 'effective_until'")
+                    "Specify one of effective_from or effective_until")
 
 
 @spec.define_schema('AggregateMetadata')
