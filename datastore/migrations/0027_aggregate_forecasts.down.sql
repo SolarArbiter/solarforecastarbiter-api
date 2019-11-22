@@ -1,4 +1,5 @@
 DELETE FROM arbiter_data.forecasts WHERE id = UUID_TO_BIN('39220780-76ae-4b11-bef1-7a75bdc784e3', 1);
+DELETE FROM arbiter_data.forecasts WHERE id = UUID_TO_BIN('49220780-76ae-4b11-bef1-7a75bdc784e3', 1);
 ALTER TABLE arbiter_data.forecasts DROP FOREIGN KEY forecasts_sites_fk,
     DROP FOREIGN KEY forecasts_aggregates_fk,
     ADD FOREIGN KEY forecasts_ibfk_2 (site_id) REFERENCES sites(id) ON DELETE RESTRICT ON UPDATE RESTRICT;
