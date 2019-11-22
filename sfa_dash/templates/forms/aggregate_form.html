@@ -15,7 +15,7 @@
         <input type="text" class="form-control" name="description">
      </div>
      <div class="form-element">
-       {{ form.select('Interval Label', 'interval_label',
+       {{ form.select('Interval label', 'interval_label',
                       {'beginning': 'Beginning',
                        'ending': 'Ending',
                        'instant': 'Instant'},
@@ -38,7 +38,7 @@
                       required=True, form_data=form_data)}}
      </div>
     <div class="form-element">
-       {{ form.select('Aggregation Type', 'aggregate_type',
+       {{ form.select('Aggregation type', 'aggregate_type',
                       {'sum': 'Sum',
                        'mean': 'Mean',
                        'median': 'Median',
@@ -46,11 +46,8 @@
                        'min': 'Min'},
                        'Type of aggregation to perform.') }}
      </div>
-     <div class="form-element full-width">
-       <label>Extra Parameters</label>
-       <textarea name="extra_parameters" cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
-     </div>
-    {{ form.token() }}
+     {{ form.extra_parameters() }}
+     {{ form.token() }}
   </div>
 </form>
 <button type="submit" form="aggregate-form" value="Submit" class="btn btn-primary">Submit</button>

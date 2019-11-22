@@ -30,14 +30,14 @@
                     'The length of time that each data point represents. Values must be integers.') }}
 </div>
 <div class="form-element">
-  {{ form.select('Interval Label', 'interval_label',
+  {{ form.select('Interval label', 'interval_label',
                  {'beginning': 'Beginning',
                   'ending': 'Ending',
                   'instant': 'Instant'},
                   'Indicates if a time labels the start or the end of an interval.') }}
 </div>
 <div class="form-element">
-  {{ form.select('Interval Value Type', 'interval_value_type',
+  {{ form.select('Interval value type', 'interval_value_type',
                   {"interval_mean": "Mean",
 				   "interval_min": "Min",
                    "interval_max": "Max",
@@ -46,8 +46,5 @@
                    "instantaneous": "Instantaneous"},
                    form_data=form_data) }}
 </div>
-<div class="form-element full-width">
-  <label>Extra Parameters</label>
-  <textarea cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
-</div>
+{{ form.extra_parameters() }}
 {% endblock %}

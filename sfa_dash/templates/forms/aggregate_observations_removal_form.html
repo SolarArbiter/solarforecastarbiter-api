@@ -9,7 +9,7 @@
 <form action="{{ url_for('forms.remove_aggregate_observations', uuid=aggregate['aggregate_id'], observation_id=observation['observation_id']) }}" method="post" enctype="application/json" id="remove-aggregate-observations-form">
   <div class="form-group">
     <div class="form-element full-width">
-    <label for="end">Effective Until</label><br/>
+    <label for="end">Effective until (UTC):</label><br/>
     <input type="date" id="effective-until-date" name="effective-until-date" {% if form_data is defined %}value="{{form_data['effective-until-date']}}"{% endif %}required>
     <input type="time" id="effective-until-time" name="effective-until-time" {% if form_data is defined %}value="{{form_data['effective-until-time']}}"{% else %} value="00:00"{% endif %} required>
     {{ form.help_button('effective-until') }}

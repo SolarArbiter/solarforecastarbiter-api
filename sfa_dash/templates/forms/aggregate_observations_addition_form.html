@@ -8,7 +8,7 @@
 <form action="{{ url_for('forms.add_aggregate_observations', uuid=aggregate['aggregate_id']) }}" method="post" enctype="application/json" id="update-aggregate-observations-form">
   <div class="form-group">
   <div class="form-element full-width">
-    <label for="effective-from-date">Effective From</label><br/>
+    <label for="effective-from-date">Effective from (UTC):</label><br/>
     <p>Set the date that the observations will begin to contribute to the aggregate.</p>
     <input type="date" id="effective-from-date" name="effective-from-date" {% if form_data is defined %}value="{{form_data['effective-from-date']}}"{% endif %}required>
     <input type="time" id="effective-from-time" name="effective-from-time" {% if form_data is defined %}value="{{form_data['effective-from-time']}}"{% else %} value="00:00"{% endif %} required>

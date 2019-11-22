@@ -11,22 +11,22 @@
 </ul>
 <ul class="data-metadata-fields col-md-6 col-xs-12">
   {% if modeling_parameters and modeling_parameters['ac_capacity'] is not none %}
-    <li><b>Modeling Parameters:</b>
+    <li><b>Modeling parameters:</b>
       <div class="data-metadata-field-modeling-parameters pl-2">
         <ul class="data-metadata-fields">
-        {{ macro.li('AC Capacity', modeling_parameters['ac_capacity'], 'MW') }}
-        {{ macro.li('DC Capacity', modeling_parameters['dc_capacity'], 'MW') }}
-        {{ macro.li('AC Loss Factor', modeling_parameters['ac_loss_factor'], '&percnt;') }}
-        {{ macro.li('DC Loss Factor', modeling_parameters['dc_loss_factor'], '&percnt;') }}
-        {{ macro.li('Temperatue Coefficient', modeling_parameters['temperature_coefficient'], '1/C')}}
-        {{ macro.li('Tracking Type', modeling_parameters['tracking_type']) }}
-        {{ macro.li('Surface Tilt', modeling_parameters['surface_tilt'], '&deg;') }}
-        {{ macro.li('Surface Azimuth', modeling_parameters['surface_azimuth'], '&deg;') }}
-        {{ macro.li('Axis Tilt', modeling_parameters['axis_tilt'], '&deg;') }}
-        {{ macro.li('Axis Azimuth', modeling_parameters['axis_azimuth'], '&deg;') }}
-        {{ macro.li('Ground Coverage Ratio', modeling_parameters['ground_coverage_ratio']) }}
+        {{ macro.li('AC capacity', modeling_parameters['ac_capacity'], 'MW') }}
+        {{ macro.li('DC capacity', modeling_parameters['dc_capacity'], 'MW') }}
+        {{ macro.li('AC loss factor', modeling_parameters['ac_loss_factor'], '&percnt;') }}
+        {{ macro.li('DC loss factor', modeling_parameters['dc_loss_factor'], '&percnt;') }}
+        {{ macro.li('Temperatue coefficient', modeling_parameters['temperature_coefficient'], '1/C')}}
+        {{ macro.li('Tracking type', modeling_parameters['tracking_type']) }}
+        {{ macro.li('Surface tilt', modeling_parameters['surface_tilt'], '&deg;') }}
+        {{ macro.li('Surface azimuth', modeling_parameters['surface_azimuth'], '&deg;') }}
+        {{ macro.li('Axis tilt', modeling_parameters['axis_tilt'], '&deg;') }}
+        {{ macro.li('Axis azimuth', modeling_parameters['axis_azimuth'], '&deg;') }}
+        {{ macro.li('Ground coverage ratio', modeling_parameters['ground_coverage_ratio']) }}
         {{ macro.li('Backtrack', modeling_parameters['backtrack']) }}
-        {{ macro.li('Max Rotation Angle', modeling_parameters['max_rotation_angle'], '&deg;') }}
+        {{ macro.li('Max rotation angle', modeling_parameters['max_rotation_angle'], '&deg;') }}
         
         </ul>
       </div>

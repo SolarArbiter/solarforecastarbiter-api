@@ -30,14 +30,14 @@
                     'The length of time that each data point represents. Values must be integers.') }}
 </div>
 <div class="form-element">
-  {{ form.select('Interval Label', 'interval_label',
+  {{ form.select('Interval label', 'interval_label',
                  {'beginning': 'Beginning',
                   'ending': 'Ending',
                   'instant': 'Instant'},
                   'Indicates if a time labels the start or the end of an interval.') }}
 </div>
 <div class="form-element">
-  {{ form.select('Interval Value Type', 'interval_value_type',
+  {{ form.select('Interval value type', 'interval_value_type',
                   {"interval_mean": "Mean",
 				   "interval_min": "Min",
                    "interval_max": "Max",
@@ -55,15 +55,12 @@
                 form_data=form_data)  }}
 </div>
 <div class="form-element">
-    <label>Constant Values</label>
+    <label>Constant values</label>
     <div class="input-wrapper">
     <input type="text" name="constant_values" class="form-control constant_values-field" pattern="((\d+)(\.\d+)?)(,\s*\d+(\.\d+)?)*">
     </div>
     {{ form.help_button('constant_values') }}
     <span class="help-text text-muted  constant_values-help-text collapse">A comma-separated list of variable values or percentiles for the set of forecasts in the probabilistic forecast. Each value can be a non-negative float or integer. e.g. "5.0,20.0,50.0,80.0,95.0"</span>
 </div>
-<div class="form-element full-width">
-  <label>Extra Parameters</label>
-  <textarea cols="40" rows="5" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
-</div>
+{{ form.extra_parameters() }}
 {% endblock %}
