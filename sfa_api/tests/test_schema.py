@@ -44,8 +44,9 @@ def test_isodatetime_deserialize(inp, out, iso_schema):
 def test_object_pair_deserialization(inp):
     deserialized = schema.ReportObjectPair().loads(inp)
     assert 'forecast' in deserialized
-    assert (bool('observation' in deserialized) != 
+    assert (bool('observation' in deserialized) !=
             bool('aggregate' in deserialized))
+
 
 @pytest.mark.parametrize('inp', [
     ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
@@ -59,4 +60,4 @@ def test_object_pair_deserialization(inp):
 ])
 def test_object_pair_test_validation(inp):
     with pytest.raises(marshmallow.exceptions.ValidationError):
-        deserialized = schema.ReportObjectPair().loads(inp)
+        schema.ReportObjectPair().loads(inp)

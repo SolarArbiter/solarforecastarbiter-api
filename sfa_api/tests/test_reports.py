@@ -178,7 +178,8 @@ def test_list_reports(api, new_report):
     ('object_pairs', '[{"wrongtuple"},{}]',
      '["Invalid type."]'),
     ('object_pairs', [{"observation": "x", "forecast": "y"}],
-     '{"0":{"forecast":["Not a valid UUID."],"observation":["Not a valid UUID."]}}'),
+     '{"0":{"forecast":["Not a valid UUID."],'
+     '"observation":["Not a valid UUID."]}}'),
     ('object_pairs', [{"observation": "123e4567-e89b-12d3-a456-426655440000",
                        "forecast": "123e4567-e89b-12d3-a456-426655440000",
                        "aggregate": "123e4567-e89b-12d3-a456-426655440000"}],

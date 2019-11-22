@@ -10,15 +10,15 @@ from sfa_api.conftest import (
 
 
 AGG_JSON = {
-        "name": "Test Aggregate ghi",
-        "variable": "ghi",
-        "interval_label": "ending",
-        "interval_length": 60,
-        "aggregate_type": "sum",
-        "extra_parameters": "extra",
-        "description": "ghi agg",
-        "timezone": "America/Denver"
-    }
+    "name": "Test Aggregate ghi",
+    "variable": "ghi",
+    "interval_label": "ending",
+    "interval_length": 60,
+    "aggregate_type": "sum",
+    "extra_parameters": "extra",
+    "description": "ghi agg",
+    "timezone": "America/Denver"
+}
 
 
 def test_get_all_aggregates(api):
@@ -271,7 +271,7 @@ def test_update_aggregate_remove_obs_no_obs(api, missing_id, aggregate_id):
         {'observation_id': '123e4567-e89b-12d3-a456-426655440000',
          'effective_until': 'notatime'}
     ]},
-     '1'),
+        '1'),
     ({}, '"observations":["Missing data for required field."]')
 ])
 def test_update_aggregate_bad_req(api, aggregate_id, payload, intext):
