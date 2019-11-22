@@ -687,18 +687,33 @@ def test_set_org_accepted_tou_org_dne(dictcursor):
 def test_store_token(dictcursor, new_user):
     user = new_user()
     dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
-    dictcursor.execute('SELECT * FROM job_tokens')
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
     out = dictcursor.fetchall()
     assert len(out) == 1
     assert out[0]['id'] == user['id']
     assert out[0]['token'] == 'testtoken'
 
     dictcursor.callproc('store_token', (user['auth0_id'], 'newtoken'))
-    dictcursor.execute('SELECT * FROM job_tokens')
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
     out = dictcursor.fetchall()
     assert len(out) == 1
     assert out[0]['id'] == user['id']
     assert out[0]['token'] == 'newtoken'
+
+
+def test_fetch_token(dictcursor, new_user):
+    user = new_user()
+    dictcursor.callproc('store_token', (user['auth0_id'], 'testtoken'))
+    dictcursor.execute('SELECT * FROM job_tokens where id = %s', (user['id'],))
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['id'] == user['id']
+    assert out[0]['token'] == 'testtoken'
+
+    dictcursor.callproc('fetch_token', (bin_to_uuid(user['id']),))
+    out = dictcursor.fetchall()
+    assert len(out) == 1
+    assert out[0]['token'] == 'testtoken'
 
 
 def test_create_job_user(cursor, new_organization):
@@ -745,7 +760,7 @@ def test_create_report_creation_role(dictcursor):
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 10
+    assert len(permission_ids) == 12
     perm_objects = []
     for permid in [p['permission_id'] for p in permission_ids]:
         dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
@@ -760,6 +775,7 @@ def test_create_report_creation_role(dictcursor):
             'Read all forecast values', 'Read all probabilistic forecasts',
             'Read all probabilistic forecast values',
             'Read all aggregates', 'Read all aggregate values',
+            'Read all reports', 'Read all report values',
             'Create reports'} == set(perms.keys())
 
 

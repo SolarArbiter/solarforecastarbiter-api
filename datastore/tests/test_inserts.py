@@ -1374,3 +1374,29 @@ def test_create_user_if_not_exist(dictcursor, valueset_org):
     perm_role_ids = dictcursor.fetchall()
     assert len(perm_role_ids) == 1
     assert perm_role_ids[0]['object_id'] == default_role['id']
+
+
+def test_store_job(dictcursor, new_user):
+    user = new_user()
+    args = OrderedDict(
+        id=bin_to_uuid(newuuid()),
+        user_id=bin_to_uuid(user['id']),
+        name='testjob',
+        job_type='jobtype',
+        parameters='{"start_td": "1h"}',
+        schedule='{"type": "cron", "cron_schedule": "* * * * *"}',
+        version=0
+    )
+    dictcursor.callproc('store_job', list(args.values()))
+    dictcursor.execute('SELECT * from scheduled_jobs where user_id = %s',
+                       (user['id'],))
+    out = dictcursor.fetchone()
+    for k, v in args.items():
+        if k in ('user_id', 'id'):
+            assert bin_to_uuid(out[k]) == v
+        else:
+            assert out[k] == v
+
+    assert out['organization_id'] == user['organization_id']
+    assert 'created_at' in out
+    assert 'modified_at' in out

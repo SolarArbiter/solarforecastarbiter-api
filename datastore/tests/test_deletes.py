@@ -2,7 +2,7 @@ import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid
+from conftest import bin_to_uuid, newuuid
 
 
 @pytest.fixture()
@@ -797,3 +797,23 @@ def test_remove_user_facing_permissions_and_default_roles(
          'description = CONCAT("DEFAULT Read User Role ", %s)'),
         str(bin_to_uuid(user['id'])))
     assert cursor.fetchone() is None
+
+
+def test_delete_job(new_job, cursor):
+    job = new_job()
+    cursor.execute('select id from scheduled_jobs where id = %s', (job['id'],))
+    out = cursor.fetchall()
+    assert len(out) == 1
+    assert out[0][0] == job['id']
+
+    cursor.callproc('delete_job', (bin_to_uuid(job['id']),))
+    cursor.execute('select id from scheduled_jobs where id = %s', (job['id'],))
+    out = cursor.fetchall()
+    assert len(out) == 0
+
+
+def test_delete_job_job_dne(dictcursor):
+    with pytest.raises(pymysql.err.InternalError) as e:
+        dictcursor.callproc('delete_job', (str(bin_to_uuid(newuuid())),))
+    assert e.value.args[0] == 1305
+    assert e.value.args[1] == "Job does not exist"

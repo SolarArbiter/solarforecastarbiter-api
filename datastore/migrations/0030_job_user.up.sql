@@ -65,7 +65,8 @@ BEGIN
      AND description IN (
        'Read all sites', 'Read all observations', 'Read all observation values', 'Read all forecasts',
        'Read all forecast values', 'Read all probabilistic forecasts', 'Read all probabilistic forecast values',
-       'Read all aggregates', 'Read all aggregate values', 'Create reports');
+       'Read all aggregates', 'Read all aggregate values', 'Read all reports', 'Read all report values',
+       'Create reports');
     SELECT BIN_TO_UUID(roleid, 1);
 END;
 
@@ -152,3 +153,6 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.grant_job_role TO 'insert_rbac'@'localhost';
 GRANT SELECT(id, organization_id, name) ON arbiter_data.roles TO 'insert_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.grant_job_role TO 'frameworkadmin'@'%';
+
+
+INSERT INTO job_tokens (id, token) VALUES (UUID_TO_BIN('0c90950a-7cca-11e9-a81f-54bf64606445', 1), 'gAAAAABd1FW6XEIHNukUg459WHrP4wohBDuO7kA3idZu9G0nI8HYKR3GcnrwZM2jH5oI09ihmkOSO7ZJKThPtd2Nfs0w088qeQ==');

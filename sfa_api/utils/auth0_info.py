@@ -13,6 +13,9 @@ import requests
 from sfa_api.utils.queuing import make_redis_connection
 
 
+logger = logging.getLogger(__name__)
+
+
 def token_redis_connection():
     """Make a connection to Redis and the database specified by
     config['AUTH0_REDIS_DB']. The connection is stored on the
@@ -110,7 +113,7 @@ def auth0_token():
         try:
             token = get_fresh_auth0_management_token()
         except (ValueError, requests.HTTPError) as e:
-            logging.error('Failed to retrieve Auth0 token: %r', e)
+            logger.error('Failed to retrieve Auth0 token: %r', e)
             return
         redis_conn.set('auth0_token', token)
     return token
@@ -138,8 +141,8 @@ def _get_email_of_user(auth0_id, redis_conn, token,
             # expire in 1 day
             redis_conn.set(auth0_id, email, ex=86400)
         else:
-            logging.error('Failed to retrieve email from Auth0: %s %s',
-                          req.status_code, req.text)
+            logger.error('Failed to retrieve email from Auth0: %s %s',
+                         req.status_code, req.text)
             email = 'Unable to retrieve'
     return email
 
@@ -225,8 +228,8 @@ def _get_auth0_id_of_user(email, redis_conn, token,
                 # expire in 1 day
                 redis_conn.set(email, user_id, ex=86400)
         else:
-            logging.error('Failed to retrieve user_id from Auth0: %s %s',
-                          req.status_code, req.text)
+            logger.error('Failed to retrieve user_id from Auth0: %s %s',
+                         req.status_code, req.text)
             user_id = 'Unable to retrieve'
     return user_id
 

@@ -1,3 +1,4 @@
+import click
 from cryptography.fernet import Fernet
 import pytest
 import pymysql
@@ -74,25 +75,25 @@ def test_create_org_name_too_long(mocker, app_cli_runner):
 
 
 def test_add_user_to_org(
-        app_cli_runner, unaffiliated_userid, test_orgid,
+        app_cli_runner, unaffiliated_userid, orgid,
         dict_cursor):
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
-        [unaffiliated_userid, test_orgid] + auth_args)
+        [unaffiliated_userid, orgid] + auth_args)
     assert (f'Added user {unaffiliated_userid} to organization '
-            f'{test_orgid}\n') == result.output
+            f'{orgid}\n') == result.output
     with dict_cursor as cursor:
         cursor.callproc('list_all_users')
         users = user_dict(cursor.fetchall())
         assert unaffiliated_userid in users
-        assert users[unaffiliated_userid]['organization_id'] == test_orgid
+        assert users[unaffiliated_userid]['organization_id'] == orgid
 
 
 def test_add_user_to_org_affiliated_user(
-        app_cli_runner, user_id, test_orgid):
+        app_cli_runner, user_id, orgid):
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
-        [user_id, test_orgid] + auth_args)
+        [user_id, orgid] + auth_args)
     assert 'Cannot add affiliated user to organization\n' == result.output
 
 
@@ -106,19 +107,19 @@ def test_add_user_to_org_invalid_orgid(
 
 
 def test_add_user_to_org_invalid_userid(
-        app_cli_runner, test_orgid):
+        app_cli_runner, orgid):
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
-        ['baduuid', test_orgid] + auth_args)
+        ['baduuid', orgid] + auth_args)
     assert ('Error: Invalid value for "USER_ID": baduuid is '
             'not a valid UUID value') in result.output
 
 
 def test_add_user_to_org_user_dne(
-        app_cli_runner, missing_id, test_orgid):
+        app_cli_runner, missing_id, orgid):
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
-        [missing_id, test_orgid] + auth_args)
+        [missing_id, orgid] + auth_args)
     assert 'Cannot add affiliated user to organization\n' == result.output
 
 
@@ -222,15 +223,20 @@ def test_promote_to_admin_org_dne(
     assert result.output == 'Cannot promote admin from outside organization.\n'
 
 
-def test_list_all_users(app_cli_runner, dict_cursor):
+def test_list_all_users(app_cli_runner, dict_cursor, mocker):
+    email = mocker.MagicMock()
+    email.__getitem__ = lambda x, y: 'email'
+    mocker.patch('sfa_api.utils.auth0_info.list_user_emails',
+                 return_value=email)
     result = app_cli_runner.invoke(
         admincli.list_users,
         auth_args)
+    assert result.exit_code == 0
     output_lines = result.output.split('\n')
     assert len(output_lines) == 9
     for line in output_lines[2:-1]:
         assert line.startswith('auth0|')
-        assert len(line.split('|')) == 5
+        assert len(line.split('|')) == 6
 
 
 def test_list_all_organizations(app_cli_runner, dict_cursor):
@@ -398,3 +404,59 @@ def test_add_job_role_user_dne(app_cli_runner, missing_id, role):
     res = app_cli_runner.invoke(admincli.add_job_role,
                                 auth_args + [missing_id, role])
     assert res.exit_code != 0
+
+
+def test_list_jobs(app_cli_runner):
+    res = app_cli_runner.invoke(admincli.list_jobs,
+                                auth_args)
+    assert res.exit_code == 0
+
+
+def test_delete_job(app_cli_runner, jobid):
+    result = app_cli_runner.invoke(
+        admincli.delete_job,
+        [jobid] + auth_args)
+    assert result.exit_code == 0
+    assert result.output == (f'Job {jobid} deleted successfully.\n')
+
+
+def test_delete_job_job_dne(app_cli_runner, missing_id):
+    result = app_cli_runner.invoke(
+        admincli.delete_job,
+        [missing_id] + auth_args)
+    assert result.exit_code != 0
+    assert result.output == (f'Job does not exist\n')
+
+
+def test_TimeDeltaParam():
+    assert '1h' == admincli.TimeDeltaParam()('1h')
+    with pytest.raises(click.exceptions.BadParameter):
+        admincli.TimeDeltaParam()('what')
+
+
+def test_daily_validation_job(app_cli_runner, mocker, user_id):
+    mocker.patch('sfa_api.jobs.create_job', return_value='jobid')
+    result = app_cli_runner.invoke(
+        admincli.daily_validation_job,
+        ['Val Job', user_id, '* * * * *', '-1d', '0h'] + auth_args)
+    assert result.exit_code == 0
+    assert result.output == 'Job created with id jobid\n'
+
+
+def test_reference_nwp_job(app_cli_runner, mocker, user_id):
+    mocker.patch('sfa_api.jobs.create_job', return_value='jobid')
+    result = app_cli_runner.invoke(
+        admincli.reference_nwp_job,
+        ['Val Job', user_id, '* * * * *', '10min'] + auth_args)
+    assert result.exit_code == 0
+    assert result.output == 'Job created with id jobid\n'
+
+
+def test_periodic_report_job(app_cli_runner, mocker, user_id,
+                             missing_id):
+    mocker.patch('sfa_api.jobs.create_job', return_value='jobid')
+    result = app_cli_runner.invoke(
+        admincli.periodic_report_job,
+        ['Val Job', user_id, '* * * * *', missing_id] + auth_args)
+    assert result.exit_code == 0
+    assert result.output == 'Job created with id jobid\n'

@@ -89,7 +89,7 @@ def test_auth0_token_not_in_redis(running_app, mocker):
 
 @pytest.mark.parametrize('se', [ValueError, requests.HTTPError])
 def test_auth0_token_no_fresh(running_app, mocker, se):
-    log = mocker.patch('sfa_api.utils.auth0_info.logging.error')
+    log = mocker.patch('sfa_api.utils.auth0_info.logger.error')
     mocker.patch(
         'sfa_api.utils.auth0_info.get_fresh_auth0_management_token',
         side_effect=se)

@@ -47,7 +47,7 @@ class TestingConfig(Config):
     AUTH0_CLIENT_SECRET = 'secret'
 
 
-class AdminTestConfig(Config):
+class AdminTestConfig(TestingConfig):
     MYSQL_USER = 'frameworkadmin'
     MYSQL_PASSWORD = 'thisisaterribleandpublicpassword'
     MYSQL_DATABASE = 'arbiter_data'

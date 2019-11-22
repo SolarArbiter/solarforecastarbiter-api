@@ -224,3 +224,23 @@ def test_list_aggregates(dictcursor, twosets):
     assert ([str(bin_to_uuid(o['id'])) for a in agg for o in a['obs_list']] ==
             [b['observation_id'] for r in res for b in
              json.loads(r['observations'])])
+
+
+def test_list_jobs(dictcursor, new_job, new_user):
+    user = new_user()
+    job0 = new_job(user, 'job0')
+    job1 = new_job(user, 'job1')
+    job2 = new_job(user, 'job2')
+    job3 = new_job(None, 'job3')
+
+    dictcursor.callproc('list_jobs')
+    out = dictcursor.fetchall()
+    keys = {'id', 'organization_id', 'organization_name',
+            'user_id', 'name',
+            'job_type', 'parameters', 'schedule',
+            'version', 'created_at', 'modified_at'}
+    assert keys == set(out[0].keys())
+
+    out_job_ids = {o['id'] for o in out}
+    for j in (job0, job1, job2, job3):
+        assert bin_to_uuid(j['id']) in out_job_ids
