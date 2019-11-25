@@ -121,6 +121,7 @@ BEGIN
         ) VALUES (
             binid, orgid, name, report_parameters);
         CALL add_object_permission_to_default_user_role(auth0id, orgid, binid, 'reports', 'update');
+        CALL add_object_permission_to_default_user_role(auth0id, orgid, binid, 'reports', 'write_values');
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "create reports"',
         MYSQL_ERRNO = 1142;
