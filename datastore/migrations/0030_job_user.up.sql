@@ -50,29 +50,37 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.create_job_user TO 'frameworkadmin'@'%';
 
 
 -- role for automatic report generation
-CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_report_creation_role(IN orgid BINARY(16))
-COMMENT 'Create a role that provides the necessary access to create reports from any fx/obs'
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE recompute_report_creation_role(IN orgid BINARY(16))
+COMMENT 'Create a role that provides the necessary access to recompute reports'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
    -- relying on default permissions already created on create organization
    DECLARE roleid BINARY(16);
+   DECLARE updateperm BOOLEAN;
    SET roleid = UUID_TO_BIN(UUID(), 1);
+   SET updateperm = EXISTS(SELECT 1 FROM arbiter_data.permissions WHERE applies_to_all
+       AND organization_id = orgid AND description = 'Update all reports');
    INSERT INTO arbiter_data.roles (name, description, id, organization_id) VALUES (
-       'Create reports', 'Create reports for any pairs of forecasts/prob. forecasts/observations/aggregates',
-       roleid, orgid);
+       'Recompute reports', 'Recompute any existing report, but not create new', roleid, orgid);
+   -- add update report if necessary
+   IF NOT updateperm THEN
+      INSERT INTO arbiter_data.permissions (
+          description, organization_id, applies_to_all, action, object_type) VALUES (
+          'Update all reports', orgid, TRUE, 'update', 'reports');
+   END IF;
    INSERT INTO arbiter_data.role_permission_mapping (role_id, permission_id)
      SELECT roleid, id FROM arbiter_data.permissions WHERE applies_to_all AND organization_id = orgid
      AND description IN (
        'Read all sites', 'Read all observations', 'Read all observation values', 'Read all forecasts',
        'Read all forecast values', 'Read all probabilistic forecasts', 'Read all probabilistic forecast values',
        'Read all aggregates', 'Read all aggregate values', 'Read all reports', 'Read all report values',
-       'Create reports');
+       'Update all reports', 'Submit values to all reports');
     SELECT BIN_TO_UUID(roleid, 1);
 END;
 
 GRANT SELECT(id, applies_to_all, description, organization_id) ON arbiter_data.permissions TO 'insert_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.create_report_creation_role TO 'insert_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE arbiter_data.create_report_creation_role TO 'frameworkadmin'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.recompute_report_creation_role TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.recompute_report_creation_role TO 'frameworkadmin'@'%';
 
 
 -- role for data validation
@@ -133,10 +141,10 @@ BEGIN
     SET userid = UUID_TO_BIN(userstrid, 1);
     SET orgid = get_object_organization(userid, 'users');
     SET roleid = (SELECT id FROM arbiter_data.roles WHERE organization_id = orgid AND name = role_name
-        AND name in ('Create reports', 'Validate observations', 'Generate reference forecasts'));
+        AND name in ('Recompute reports', 'Validate observations', 'Generate reference forecasts'));
     IF roleid IS NULL THEN
-        IF role_name = 'Create reports' THEN
-            CALL create_report_creation_role(orgid);
+        IF role_name = 'Recompute reports' THEN
+            CALL recompute_report_creation_role(orgid);
         ELSEIF role_name = 'Validate observations' THEN
             CALL create_data_validation_role(orgid);
         ELSEIF role_name = 'Generate reference forecasts' THEN
