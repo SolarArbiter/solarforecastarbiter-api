@@ -9,7 +9,8 @@
   <div class="form-group">
       {% if form_data is not defined %} {% set form_data = {} %}{% endif %}
      <div class="form-element full-width">
-       {{ form.input('Name', 'text', 'name', 'Name of the Report.', form_data=form_data) }}
+       {{ form.input('Name', 'text', 'name', 'Name of the Report.',
+                     required=True, form_data=form_data) }}
      </div>
 	 <div class="form-element">
        <label for="start">Start (UTC):</label><br/>
@@ -36,7 +37,7 @@
 
      <h5>Observation, Forecast pairs</h5>
 	 <div class="form-element full-width border" style="border-radius:10px;margin:.5em 1em;">
-       <div class="form-element">Forecasts</div><div class="form-element">Observations</div>
+       <div class="form-element">Forecasts</div><div class="form-element">Observations/Aggregates</div>
        <div class="object-pair-list">
          <div class="empty-reports-list alert alert-warning">No Pairs Selected</div>
        </div>

@@ -44,7 +44,7 @@ class DeleteConfirmation(DataDashView):
             self.metadata = handle_response(
                 self.api_handle.get_metadata(uuid))
         except DataRequestException as e:
-            return render_template(self.template, errors=e.errors)
+            return render_template(self.template, uuid=uuid, errors=e.errors)
         else:
             self.temp_args = {}
             try:

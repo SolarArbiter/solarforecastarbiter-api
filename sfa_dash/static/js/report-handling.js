@@ -50,7 +50,6 @@ $(document).ready(function() {
         return variable_select
     }
 
-
     function searchSelect(inputSelector, selectSelector, offset=0){
         /*
          * Retrieves the value the <input> element identified by inputSelector and
@@ -63,15 +62,15 @@ $(document).ready(function() {
         return $(selectSelector + " option").slice(offset).not(":containsi('" + searchSplit + "')");
     }
 
-
-    function addPair(obsName, obsId, fxName, fxId){
+    function addPair(truthType, truthName, truthId, fxName, fxId){
         /*
-         * Returns a Jquery object containing 4 input elements representing a forecast,
+         * Returns a Jquery object containing 5 input elements representing a forecast,
          * observation pair:
          *  forecast-name-<index>
          *  forecast-id-<index>
-         *  observation-name-<indeX>
-         *  observation-id-<indeX>
+         *  truth-name-<indeX>
+         *  truth-id-<indeX>
+         *  truth-type-<index>
          *  where index associates the pairs with eachother for easier parsing when the form
          *  is submitted.
          */
@@ -82,8 +81,9 @@ $(document).ready(function() {
                     <input type="hidden" class="form-control forecast-field" name="forecast-id-${pair_index}" required value="${fxId}"/>
                   </div>
                   <div class="col-md-6">
-                    <input type="text" class="form-control observation-field" name="observation-name-${pair_index}"  required disabled value="${obsName}"/>
-                    <input type="hidden" class="form-control observation-field" name="observation-id-${pair_index}" required value="${obsId}"/>
+                    <input type="text" class="form-control truth-field" name="truth-name-${pair_index}"  required disabled value="${truthName}"/>
+                    <input type="hidden" class="form-control truth-field" name="truth-id-${pair_index}" required value="${truthId}"/>
+                    <input type="hidden" class="form-control truth-field" name="truth-type-${pair_index}" required value="${truthType}"/>
                   </div>
                  </div>
                  <a role="button" class="object-pair-delete-button">x</a>
@@ -111,7 +111,7 @@ $(document).ready(function() {
                       <div class="report-field-filters"><input id="${field_type}-option-search" class="form-control half-width" placeholder="Search by ${field_type} name"/></div><br>
                     <div class="input-wrapper">
                       <select id="${field_type}-select" class="form-control ${field_type}-field" name="${field_type}-select" size="5">
-                      ${depends_on ? `<option id="no-${depends_on}-selection" disabled> Please select a ${depends_on}.</option>` : ""}
+                      ${depends_on ? `<option id="no-${field_type}-${depends_on}-selection" disabled> Please select a ${depends_on}.</option>` : ""}
                       <option id="no-${field_type}s" disabled hidden>No matching ${field_type}s</option>
                     </select>
                     </div>
@@ -145,43 +145,120 @@ $(document).ready(function() {
             toHide.attr('hidden', true);
         }
 
+        function determineWidgets(){
+            /*
+             * Based on the value of the observation-aggregate-radio button,
+             * display the correct select lists and set up the correct
+             * parsing of values into object-pairs.
+             */
+            compareTo = $(`[name=observation-aggregate-radio]:checked`).val();
+            if (compareTo == 'observation'){
+                // hide aggregates
+                // show sites & observations
+                $('.aggregate-select-wrapper').attr('hidden', true);
+                $('.site-select-wrapper').removeAttr('hidden');
+                $('.observation-select-wrapper').removeAttr('hidden');
+                $('#aggregate-select').val('');
+                $("#add-obs-object-pair").removeAttr('hidden');
+                $("#add-agg-object-pair").attr('hidden', true);
+                filterForecasts();
+            } else {
+                // hide sites & observations
+                // show aggregates
+                $('.site-select-wrapper').attr('hidden', true);
+                $('.observation-select-wrapper').attr('hidden', true);
+                $('.aggregate-select-wrapper').removeAttr('hidden');
+                $('#site-select').val('');
+                $("#add-agg-object-pair").removeAttr('hidden');
+                $("#add-obs-object-pair").attr('hidden', true);
+
+                filterForecasts();
+            }
+            return compareTo
+
+        }
 
         function filterForecasts(){
             /*
              * Hide options in the forecast selector based on the currently selected
              * site and variable.
              */
+            // Show all Forecasts
             forecasts = $('#forecast-select option').slice(2);
             forecasts.removeAttr('hidden');
 
-            selectedSite = $('#site-select :selected');
-            site_id = selectedSite.attr('data-site-id');
-            $('#no-site-selection').attr('hidden', true);
+            toHide = searchSelect('#forecast-option-search', '#forecast-select', 2);
             variable_select = $('#variable-select');
             variable = variable_select.val();
-
-            // create a set of elements to hide from selected site, variable and search
-            var toHide = forecasts.not(`[data-site-id=${site_id}]`);
             if (variable){
                 toHide = toHide.add(forecasts.not(`[data-variable=${variable}]`));
             }
-            toHide = toHide.add(searchSelect('#forecast-option-search', '#forecast-select', 2));
-            toHide.attr('hidden', 'true');
+            // Determine if we need to filter by site or aggregate
+            compareTo = $(`[name=observation-aggregate-radio]:checked`).val();
+            if (compareTo == 'observation'){
+                selectedSite = $('#site-select :selected');
+                site_id = selectedSite.data('site-id');
+                if (site_id){
+                    $('#no-forecast-site-selection').attr('hidden', true);
+                } else {
+                    $('#no-forecast-site-selection').removeAttr('hidden');
+                }
+                // create a set of elements to hide from selected site, variable and search
+                toHide = toHide.add(forecasts.not(`[data-site-id=${site_id}]`));
+            } else {
 
+                toHide = toHide.add(forecasts.not('[data-aggregate-id]'));
+                $('#no-forecast-site-selection').attr('hidden', true);
+            }
             // if current forecast selection is invalid, deselect
             if (toHide.filter(':selected').length){
                 forecast_select.val('');
             }
+            toHide.attr('hidden', 'true');
             // if all options are hidden, show "no matching forecasts"
             if (toHide.length == forecasts.length){
                 forecast_select.val('');
-                $('#no-forecasts').removeAttr('hidden');
+                //
+                if ($('#no-forecast-site-selection').attr('hidden') || compareTo == 'aggregate'){
+                    $('#no-forecasts').removeAttr('hidden');
+                }
             } else {
                 $('#no-forecasts').attr('hidden', true);
             }
-            filterObservations();
+            if (compareTo == 'observation'){
+                filterObservations();
+            } else {
+                filterAggregates();
+            }
         }
 
+        function filterAggregates(){
+            /*
+             * Filter aggregate options based on radio buttons
+             */
+            aggregates = aggregateSelector.find('option').slice(2);
+            aggregates.removeAttr('hidden');
+            selectedForecast = $('#forecast-select :selected');
+            if (selectedForecast.length){
+                aggregate_id = selectedForecast.data('aggregate-id');
+                toHide = searchSelect('#aggregate-option-search', '#aggregate-select', 1);
+                toHide = toHide.add(aggregates.not(`[data-aggregate-id=${aggregate_id}]`));
+                current_interval = selectedForecast.data('interval-length');
+                toHide = toHide.add(aggregates.filter(function(){
+                    return parseInt(this.dataset['intervalLength']) > current_interval;
+                }));
+                if ((toHide.length == aggregates.length) && aggregate_id){
+                    $('#no-aggregates').removeAttr('hidden');
+                } else {
+                    $('#no-aggregates').attr('hidden', true);
+                }
+                $('#no-aggregate-forecast-selection').attr('hidden', true);
+            } else {
+                toHide = aggregates;
+                $('#no-aggregate-forecast-selection').removeAttr('hidden');
+            }
+            toHide.attr('hidden', true);
+        }
 
         function filterObservations(){
             observations = $('#observation-select option').slice(2);
@@ -191,15 +268,19 @@ $(document).ready(function() {
                 // Show all of the observations
                 observations.removeAttr('hidden');
                 // retrieve the current site id and variable from the selected forecast
-                site_id = selectedForecast.attr('data-site-id');
-                variable = selectedForecast.attr('data-variable');
-                $('#no-forecast-selection').attr('hidden', true);
+                site_id = selectedForecast.data('site-id');
+                variable = selectedForecast.data('variable');
+                $('#no-observation-forecast-selection').attr('hidden', true);
 
                 // Build the list of optiosn to hide by creating a set from
                 // the lists of elements to hide from search, site id and variable
                 var toHide = searchSelect('#observation-option-search', '#observation-select', 2);
                 toHide = toHide.add(observations.not(`[data-site-id=${site_id}]`));
                 toHide = toHide.add(observations.not(`[data-variable=${variable}]`));
+                current_interval = selectedForecast.data('interval-length');
+                toHide = toHide.add(observations.filter(function(){
+                    return parseInt(this.dataset['intervalLength']) > current_interval
+                }));
                 toHide.attr('hidden', true);
                 // if the current selection is hidden, deselect it
                 if (toHide.filter(':selected').length){
@@ -212,40 +293,60 @@ $(document).ready(function() {
                 }
             } else {
                 observations.attr('hidden', true);
-                $('#no-forecast-selection').removeAttr('hidden');
+                $('#no-observation-forecast-selection').removeAttr('hidden');
             }
         }
 
         // Declare handles to each field's input widgets, and insert a variable select
         // widget for Forecast filtering.
         var widgetContainer = $('<div class="pair-selector-wrapper collapse"></div>');
+        var aggregateSelector = newSelector("aggregate", "forecast");
         var siteSelector = newSelector("site");
         var obsSelector = newSelector("observation", "forecast");
         var fxSelector = newSelector("forecast", "site");
         var fxVariableSelector = createVariableSelect();
         fxSelector.find('.report-field-filters').append(fxVariableSelector);
-        var addButton = $('<a role="button" class="btn btn-primary" id="add-object-pair" style="padding-left: 1em">Add a Forecast, Observation pair</a>');
+        var addObsButton = $('<a role="button" class="btn btn-primary" id="add-obs-object-pair" style="padding-left: 1em">Add a Forecast, Observation pair</a>');
+        var addAggButton = $('<a role="button" class="btn btn-primary" id="add-agg-object-pair" style="padding-left: 1em">Add a Forecast, Aggregate pair</a>');
+
+
+        // Radio button for selecting between an aggregate or site
+        var obsAggRadio = $(`<div><b>Compare Forecast to&colon;</b>
+                             <input type="radio" name="observation-aggregate-radio" value="observation" checked> Observation
+                             <input type="radio" name="observation-aggregate-radio" value="aggregate">Aggregate<br/></div>`);
+        widgetContainer.append(obsAggRadio);
+        radio_inputs = obsAggRadio.find('input[type=radio]');
+        radio_inputs.change(determineWidgets);
 
         // Add the elements to the widget Container, so that the single container may
         // be inserted into the DOM
         widgetContainer.append(siteSelector);
         widgetContainer.append(fxSelector);
         widgetContainer.append(obsSelector);
-        widgetContainer.append(addButton);
+        widgetContainer.append(aggregateSelector);
+        widgetContainer.append(addObsButton);
+        widgetContainer.append(addAggButton);
+
+        // hide aggregate controls by default
+        addAggButton.attr('hidden', true);
+        aggregateSelector.attr('hidden', true);
 
         // Register callback functions
         siteSelector.find('#site-option-search').keyup(filterSites);
         obsSelector.find('#observation-option-search').keyup(filterObservations);
         fxSelector.find('#forecast-option-search').keyup(filterForecasts);
+        aggregateSelector.find('#aggregate-option-search').keyup(filterAggregates);
 
         // create variables pointing to the specific select elements
         var observation_select = obsSelector.find('#observation-select');
         var forecast_select = fxSelector.find('#forecast-select');
         var site_select = siteSelector.find('#site-select');
+        var aggregate_select = aggregateSelector.find('#aggregate-select');
         
         site_select.change(filterForecasts);
         variable_select.change(filterForecasts);
         forecast_select.change(filterObservations);
+        forecast_select.change(filterAggregates);
 
         // insert options from page_data into the select elements
         $.each(page_data['sites'], function(){
@@ -262,6 +363,7 @@ $(document).ready(function() {
                     .val(this.observation_id)
                     .attr('hidden', true)
                     .attr('data-site-id', this.site_id)
+                    .attr('data-interval-length', this.interval_length)
                     .attr('data-variable', this.variable));
         });
         $.each(page_data['forecasts'], function(){
@@ -271,10 +373,22 @@ $(document).ready(function() {
                     .val(this.forecast_id)
                     .attr('hidden', true)
                     .attr('data-site-id', this.site_id)
+                    .attr('data-aggregate-id', this.aggregate_id)
+                    .attr('data-interval-length', this.interval_length)
+                    .attr('data-variable', this.variable));
+        });
+        $.each(page_data['aggregates'], function(){
+            aggregate_select.append(
+                $('<option></option>')
+                    .html(this.name)
+                    .val(this.aggregate_id)
+                    .attr('hidden', true)
+                    .attr('data-aggregate-id', this.aggregate_id)
+                    .attr('data-interval-length', this.interval_length)
                     .attr('data-variable', this.variable));
         });
         
-        addButton.click(function(){
+        addObsButton.click(function(){
             /*
              * 'Add a Forecast, Observation pair button on button click
              *
@@ -285,7 +399,8 @@ $(document).ready(function() {
                 // If both inputs contain valid data, create a pair and add it to the DOM
                 var selected_observation = observation_select.find('option:selected')[0];
                 var selected_forecast = forecast_select.find('option:selected')[0];
-                pair = addPair(selected_observation.text,
+                pair = addPair('observation',
+                               selected_observation.text,
                                selected_observation.value,
                                selected_forecast.text,
                                selected_forecast.value);
@@ -305,6 +420,34 @@ $(document).ready(function() {
                 }
             }
         });
+        addAggButton.click(function(){
+            /*
+             * Add a forecast, aggregate pair
+             */
+            if (aggregate_select.val() && forecast_select.val()){
+                var selected_aggregate = aggregate_select.find('option:selected')[0];
+                var selected_forecast = forecast_select.find('option:selected')[0];
+                pair = addPair('aggregate',
+                               selected_aggregate.text,
+                               selected_aggregate.value,
+                               selected_forecast.text,
+                               selected_forecast.value);
+                pair_container.append(pair);
+                pair_index++;
+                $(".empty-reports-list")[0].hidden = true;
+                forecast_select.css('border', '');
+                observation_select.css('border', '');
+            } else {
+                // Otherwise apply a red border to alert the user to need of input
+                if (forecast_select.val() == null){
+                    forecast_select.css('border', '2px solid #F99');
+                }
+                if (observation_select.val() == null){
+                    observation_select.css('border', '2px solid #F99');
+                }
+            }
+
+        });
         return widgetContainer;
     }
     /*
@@ -319,7 +462,7 @@ $(document).ready(function() {
     pair_index = 0;
     // call the function to initialize the pair creation widget and insert it into the DOM
     pair_selector = createPairSelector();
-    pair_control_container.append($('<a role="button" class="full-width object-pair-button collapsed" data-toggle="collapse" data-target=".pair-selector-wrapper">Create Forecast Observation pairs</a>'));
+    pair_control_container.append($('<a role="button" class="full-width object-pair-button collapsed" data-toggle="collapse" data-target=".pair-selector-wrapper">Create Forecast Evaluation pairs</a>'));
     pair_control_container.append(pair_selector);
     registerDatetimeValidator('period-start');
     registerDatetimeValidator('period-end')
