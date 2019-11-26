@@ -361,7 +361,7 @@ def test_create_job_user_no_org(app_cli_runner, mocker):
 
 
 @pytest.mark.parametrize('role', [
-    'Create reports', 'Validate observations',
+    'Recompute reports', 'Validate observations',
     'Generate reference forecasts'
 ])
 def test_add_job_role(app_cli_runner, user_id, role):
@@ -379,12 +379,12 @@ def test_add_job_role_bad_role(app_cli_runner, user_id):
 def test_add_job_role_multiple(app_cli_runner, user_id):
     res = app_cli_runner.invoke(
         admincli.add_job_role,
-        auth_args + [user_id, 'Create reports', 'Validate observations'])
+        auth_args + [user_id, 'Recompute reports', 'Validate observations'])
     assert res.exit_code == 0
 
 
 @pytest.mark.parametrize('role', [
-    'Create reports', 'Validate observations',
+    'Recompute reports', 'Validate observations',
     'Generate reference forecasts'
 ])
 def test_add_job_role_already_present(app_cli_runner, user_id, role):
@@ -397,7 +397,7 @@ def test_add_job_role_already_present(app_cli_runner, user_id, role):
 
 
 @pytest.mark.parametrize('role', [
-    'Create reports', 'Validate observations',
+    'Recompute reports', 'Validate observations',
     'Generate reference forecasts'
 ])
 def test_add_job_role_user_dne(app_cli_runner, missing_id, role):

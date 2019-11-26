@@ -739,28 +739,28 @@ def test_create_job_user(cursor, new_organization):
     assert f'DEFAULT User role {user_id}' in roles
 
 
-def test_create_report_creation_role(dictcursor):
+def test_recompute_report_creation_role(dictcursor):
     dictcursor.callproc('create_organization', ('test_org',))
     dictcursor.execute('SELECT * FROM arbiter_data.organizations '
                        'WHERE name = "test_org"')
     org = dictcursor.fetchone()
     orgid = org['id']
 
-    dictcursor.callproc('create_report_creation_role', (orgid,))
+    dictcursor.callproc('recompute_report_creation_role', (orgid,))
     dictcursor.execute(
-        'SELECT * FROM roles WHERE name = "Create reports" and organization_id = %s',  # NOQA
+        'SELECT * FROM roles WHERE name = "Recompute reports" and organization_id = %s',  # NOQA
         orgid)
     create_roles = dictcursor.fetchall()
     assert len(create_roles) == 1
     create_role = create_roles[0]
-    assert 'Create reports' in create_role['description']
+    assert 'Recompute any existing report' in create_role['description']
     assert create_role['organization_id'] == orgid
     role_id = create_role['id']
     dictcursor.execute(
         'SELECT permission_id FROM role_permission_mapping WHERE role_id = %s',
         role_id)
     permission_ids = dictcursor.fetchall()
-    assert len(permission_ids) == 12
+    assert len(permission_ids) == 13
     perm_objects = []
     for permid in [p['permission_id'] for p in permission_ids]:
         dictcursor.execute('SELECT * FROM permissions WHERE id = %s', permid)
@@ -776,7 +776,8 @@ def test_create_report_creation_role(dictcursor):
             'Read all probabilistic forecast values',
             'Read all aggregates', 'Read all aggregate values',
             'Read all reports', 'Read all report values',
-            'Create reports'} == set(perms.keys())
+            'Update all reports', 'Submit values to all reports'
+            } == set(perms.keys())
 
 
 def test_create_data_validation_role(dictcursor):
@@ -855,12 +856,12 @@ def test_create_forecast_generation_role(dictcursor):
 
 
 @pytest.mark.parametrize('role,precreate', [
-    ('Create reports', None),
+    ('Recompute reports', None),
     ('Validate observations', None),
     ('Generate reference forecasts', None),
     pytest.param('Read all', None, marks=pytest.mark.xfail),
-    ('Create reports', 'create_report_creation_role'),
-    ('Validate observations', 'create_report_creation_role'),
+    ('Recompute reports', 'recompute_report_creation_role'),
+    ('Validate observations', 'recompute_report_creation_role'),
     ('Validate observations', 'create_data_validation_role')
 ])
 def test_grant_job_role(cursor, new_user, role, precreate):

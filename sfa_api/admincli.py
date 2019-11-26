@@ -280,7 +280,7 @@ def create_job_user(organization_name, encryption_key, **kwargs):
 @with_default_options
 @click.argument('user_id', required=True, type=click.UUID)
 @click.argument('role_name', nargs=-1, type=click.Choice(
-    ['Create reports', 'Validate observations',
+    ['Recompute reports', 'Validate observations',
      'Generate reference forecasts']))
 def add_job_role(user_id, role_name, **kwargs):
     """
