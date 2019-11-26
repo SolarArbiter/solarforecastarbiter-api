@@ -6,7 +6,8 @@ import pytz
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
-from solarforecastarbiter.datamodel import ALLOWED_VARIABLES
+from solarforecastarbiter.datamodel import ALLOWED_VARIABLES, ALLOWED_CATEGORIES
+from solarforecastarbiter.metrics.deterministic import _MAP
 
 
 class ISODateTime(ma.AwareDateTime):
@@ -29,7 +30,8 @@ class ISODateTime(ma.AwareDateTime):
 # variable: units we just want the variable names here
 VARIABLES = ALLOWED_VARIABLES.keys()
 
-ALLOWED_METRICS = ['mae', 'mbe', 'rmse']  # TODO: get from core
+ALLOWED_REPORT_METRICS = list(_MAP.keys())
+ALLOWED_REPORT_CATEGORIES = list(ALLOWED_CATEGORIES.keys())
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
@@ -704,10 +706,17 @@ class ReportParameters(ma.Schema):
     )
     metrics = ma.List(
         ma.String(
-            validate=validate.OneOf(ALLOWED_METRICS)
+            validate=validate.OneOf(ALLOWED_REPORT_METRICS)
         ),
         title='Metrics',
         description=('The metrics to include in the report.'),
+        required=True
+    )
+    categories = ma.List(
+        ma.String(
+            validate=validate.OneOf(ALLOWED_REPORT_CATEGORIES)),
+        title="Categories",
+        description="List of categories with which to group metrics.",
         required=True
     )
 
