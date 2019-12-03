@@ -3,6 +3,7 @@ import math
 import uuid
 
 
+from cryptography.fernet import Fernet
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
@@ -10,9 +11,10 @@ import pytest
 import pymysql
 
 
+from sfa_api import create_app
 from sfa_api.conftest import (
     demo_sites, demo_observations, demo_forecasts, demo_single_cdf,
-    demo_group_cdf, demo_aggregates, generate_randoms)
+    demo_group_cdf, demo_aggregates, generate_randoms, _make_nocommit_cursor)
 from sfa_api.utils import storage_interface
 
 
@@ -1165,3 +1167,33 @@ def test_read_user_id_self(sql_app, user, nocommit_cursor, user_id,
 def test_read_user_id_fail(sql_app, user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_user_id('auth0|random')
+
+
+def test_create_job_user(mocker, orgid):
+    app = create_app('AdminTestConfig')
+    create = mocker.patch('sfa_api.utils.auth0_info.create_user',
+                          return_value='auth0|testuser')
+    mocker.patch('sfa_api.utils.auth0_info.get_refresh_token',
+                 return_value='token')
+    with app.app_context():
+        try:
+            storage_interface.mysql_connection()
+        except pymysql.err.OperationalError:
+            pytest.skip('No connection to test database')
+        with _make_nocommit_cursor(mocker):
+            uid, aid = storage_interface.create_job_user(
+                'testuser', 'testpw', orgid, Fernet.generate_key())
+    assert aid == 'auth0|testuser'
+    assert uid
+    assert create.call_args[0] == ('testuser', 'testpw', True)
+
+
+def test_create_job_user_bad_sql_user(
+        sql_app, nocommit_cursor, mocker, orgid):
+    mocker.patch('sfa_api.utils.auth0_info.create_user',
+                 return_value='auth0|testuser')
+    mocker.patch('sfa_api.utils.auth0_info.get_refresh_token',
+                 return_value='token')
+    with pytest.raises(pymysql.err.InternalError):
+        storage_interface.create_job_user(
+            'testuser', 'testpw', orgid, Fernet.generate_key())

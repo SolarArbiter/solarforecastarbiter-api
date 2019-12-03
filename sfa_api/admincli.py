@@ -2,7 +2,6 @@ import sys
 
 
 import click
-from cryptography.fernet import Fernet
 from flask import Flask
 from flask.cli import FlaskGroup
 import pandas as pd
@@ -264,15 +263,8 @@ def create_job_user(organization_name, encryption_key, **kwargs):
     )
 
     passwd = auth0_info.random_password()
-    auth0_id = auth0_info.create_user(username, passwd, True)
-    # create user in db
-    storage._call_procedure('create_job_user', auth0_id, org_id,
-                            with_current_user=False)
-    refresh_token = auth0_info.get_refresh_token(username, passwd)
-    f = Fernet(encryption_key)
-    sec_token = f.encrypt(refresh_token.encode())
-    storage._call_procedure('store_token', auth0_id, sec_token,
-                            with_current_user=False)
+    user_id, auth0_id = storage.create_job_user(
+        username, passwd, org_id, encryption_key)
     click.echo(f'Created user {username} with Auth0 ID {auth0_id}')
 
 

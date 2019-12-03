@@ -12,6 +12,7 @@ import random
 import uuid
 
 
+from cryptography.fernet import Fernet
 from flask import current_app
 import pandas as pd
 import pymysql
@@ -22,6 +23,7 @@ from sqlalchemy.pool import QueuePool
 
 
 from sfa_api import schema, json
+from sfa_api.utils import auth0_info
 from sfa_api.utils.auth import current_user
 from sfa_api.utils.errors import (StorageAuthError, DeleteRestrictionError,
                                   BadAPIRequest)
@@ -1779,3 +1781,38 @@ def read_auth0id(user_id):
     """
     return _call_procedure_for_single('read_auth0id', user_id,
                                       cursor_type='standard')[0]
+
+
+def create_job_user(username, passwd, org_id, encryption_key):
+    """
+    Create a job user in Auth0 and in the database. Only works
+    with the framework admin user.
+
+    Parameters
+    ----------
+    username : str
+        Auth0 username/email
+    passwd : str
+        Password for the new user
+    org_id : uuid
+        Organization to create job user for
+    encryption_key : bytes
+        Encryption key to store refresh token in the database
+
+    Returns
+    -------
+    user_id : str
+        UUID of the newly created user
+    auth0_id : str
+        Auth0 ID of the newly create user
+    """
+    auth0_id = auth0_info.create_user(username, passwd, True)
+    # create user in db
+    user_id = _call_procedure('create_job_user', auth0_id, org_id,
+                              with_current_user=False)
+    refresh_token = auth0_info.get_refresh_token(username, passwd)
+    f = Fernet(encryption_key)
+    sec_token = f.encrypt(refresh_token.encode())
+    _call_procedure('store_token', auth0_id, sec_token,
+                    with_current_user=False)
+    return user_id, auth0_id
