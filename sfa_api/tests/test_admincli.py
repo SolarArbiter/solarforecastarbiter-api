@@ -335,6 +335,8 @@ def test_create_job_user(app_cli_runner, mocker):
             return [{'name': 'Organization 1', 'id': 'orgid'}]
         elif proc == 'store_token':
             assert args[1].startswith(b'gAAAA')  # encrypted
+        elif proc == 'create_job_user':
+            return [['user-id']]
 
     mocker.patch('sfa_api.utils.storage_interface._call_procedure',
                  new=call_return)
