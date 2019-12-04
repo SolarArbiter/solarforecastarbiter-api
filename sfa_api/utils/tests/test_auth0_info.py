@@ -277,6 +277,27 @@ def test_get_refresh_token_fail(running_app, requests_mock, token_set):
         auth0_info.get_refresh_token('anemail', 'password')
 
 
+def test_get_access_token(running_app, requests_mock, token_set):
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"access_token": "token"}')
+    out = auth0_info.get_access_token('anemail', 'password')
+    assert out == 'token'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['username'] == 'anemail'
+    assert req_json['password'] == 'password'
+
+
+def test_get_access_token_fail(running_app, requests_mock, token_set):
+    requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=400)
+    with pytest.raises(requests.HTTPError):
+        auth0_info.get_access_token('anemail', 'password')
+
+
 def test_exchange_refresh_token(running_app, requests_mock, token_set):
     mocked = requests_mock.register_uri(
         'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),

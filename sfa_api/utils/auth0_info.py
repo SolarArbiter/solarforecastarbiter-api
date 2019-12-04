@@ -343,6 +343,42 @@ def get_refresh_token(email, password):
     return req.json()['refresh_token']
 
 
+def get_access_token(email, password):
+    """
+    Requests an access token from Auth0
+
+    Parameters
+    ----------
+    email : str
+        The email address of the new user.
+    password : str
+        The password for the user.
+
+    Returns
+    -------
+    access_token : str
+        The access token
+
+    Raises
+    ------
+    HTTPError
+        If the request to the Auth0 API fails
+    """
+    body = {'grant_type': 'password',
+            'username': email,
+            'password': password,
+            'client_id': current_app.config['AUTH0_CLIENT_ID'],
+            'client_secret': current_app.config['AUTH0_CLIENT_SECRET'],
+            'audience': current_app.config['AUTH0_AUDIENCE'],
+            }
+    req = requests.post(
+        current_app.config['AUTH0_BASE_URL'] + '/oauth/token',
+        json=body
+    )
+    req.raise_for_status()
+    return req.json()['access_token']
+
+
 def exchange_refresh_token(refresh_token):
     """
     Requests an access token from Auth0 from a refresh token
