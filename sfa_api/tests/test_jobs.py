@@ -30,17 +30,17 @@ def queue(app):
     return get_queue(app.config['SCHEDULER_QUEUE'])
 
 
-def test_get_access_token(mocker, app, userid):
+def test_exchange_token(mocker, app, userid):
     exchange = mocker.patch('sfa_api.jobs.exchange_refresh_token',
                             return_value='access')
-    out = jobs.get_access_token(userid)
+    out = jobs.exchange_token(userid)
     assert out.token == 'access'
     assert exchange.called_with('token')
 
 
-def test_get_access_token_dne(app):
+def test_exchange_token_dne(app):
     with pytest.raises(KeyError):
-        jobs.get_access_token('1190950a-7cca-11e9-a81f-54bf64606445')
+        jobs.exchange_token('1190950a-7cca-11e9-a81f-54bf64606445')
 
 
 def test_make_job_app(mocker):
@@ -160,7 +160,7 @@ def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
         marks=pytest.mark.xfail(strict=True, raises=ValueError))
 ])
 def test_execute_job_daily_obs(jtype, params, func, mocker, userid):
-    mocker.patch('sfa_api.jobs.get_access_token',
+    mocker.patch('sfa_api.jobs.exchange_token',
                  return_value='token')
     ret = mocker.patch(func)
     jobs.execute_job('test', jtype, userid, **params)
@@ -168,7 +168,7 @@ def test_execute_job_daily_obs(jtype, params, func, mocker, userid):
 
 
 def test_full_run_through(app, queue, mocker):
-    mocker.patch('sfa_api.jobs.get_access_token', return_value='token')
+    mocker.patch('sfa_api.jobs.exchange_token', return_value='token')
     validate = mocker.patch('sfa_api.jobs.daily_observation_validation')
     gjq = mocker.patch('rq_scheduler.Scheduler.get_jobs_to_queue')
 
