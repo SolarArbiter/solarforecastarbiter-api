@@ -1184,7 +1184,7 @@ def test_create_job_user(mocker, orgid):
             uid, aid = storage_interface.create_job_user(
                 'testuser', 'testpw', orgid, Fernet.generate_key())
     assert aid == 'auth0|testuser'
-    assert uid
+    assert isinstance(uid, str)
     assert create.call_args[0] == ('testuser', 'testpw', True)
 
 

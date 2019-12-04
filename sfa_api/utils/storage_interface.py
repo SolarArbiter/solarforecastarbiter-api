@@ -1809,7 +1809,8 @@ def create_job_user(username, passwd, org_id, encryption_key):
     auth0_id = auth0_info.create_user(username, passwd, True)
     # create user in db
     user_id = _call_procedure('create_job_user', auth0_id, org_id,
-                              with_current_user=False)
+                              with_current_user=False,
+                              cursor_type='standard')[0][0]
     refresh_token = auth0_info.get_refresh_token(username, passwd)
     f = Fernet(encryption_key)
     sec_token = f.encrypt(refresh_token.encode())
