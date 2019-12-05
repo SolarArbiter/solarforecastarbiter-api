@@ -21,7 +21,7 @@ import sfa_api.utils.storage_interface as storage
 logger = logging.getLogger(__name__)
 
 
-def get_access_token(user_id):
+def exchange_token(user_id):
     """
     Get the refresh token from MySQL for the user_id, decrypt it, and
     exchange it for an access token. This requires the same
@@ -132,7 +132,7 @@ def execute_job(name, job_type, user_id, **kwargs):
         If the job type is unsupported
     """
     logger.info('Running job %s of type %s', name, job_type)
-    token = get_access_token(user_id)
+    token = exchange_token(user_id)
     base_url = kwargs.get('base_url', None)
     if job_type == 'daily_observation_validation':
         start = utcnow() + pd.Timedelta(kwargs['start_td'])

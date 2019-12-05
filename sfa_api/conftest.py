@@ -182,7 +182,13 @@ REPORT_POST_JSON = {
         'start': '2019-04-01T07:00:00Z',
         'end': '2019-06-01T06:59:00Z',
         'metrics': ['mae', 'rmse'],
-        'filters': [],
+        'filters': [
+            {'quality_flags': ['USER FLAGGED']}
+        ],
+        'categories': [
+            'Total',
+            'Date'
+        ],
         'object_pairs': [
             {'observation': '123e4567-e89b-12d3-a456-426655440000',
              'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],

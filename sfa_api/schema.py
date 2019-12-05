@@ -29,7 +29,7 @@ class ISODateTime(ma.AwareDateTime):
 # variable: units we just want the variable names here
 VARIABLES = ALLOWED_VARIABLES.keys()
 
-ALLOWED_METRICS = ['mae', 'mbe', 'rmse']
+ALLOWED_METRICS = ['mae', 'mbe', 'rmse']  # TODO: get from core
 INTERVAL_LABELS = ['beginning', 'ending', 'instant']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
@@ -691,10 +691,16 @@ class ReportParameters(ma.Schema):
         validate=TimeLimitValidator()
     )
     object_pairs = ma.Nested(ReportObjectPair, many=True)
+    # TODO: Validate with options from core
     filters = ma.List(
-        ma.String(),
+        ma.Dict(),
         title="Filters",
-        description="List of Filters Applied to the data in the report"
+        description="List of Filters applied to the data in the report"
+    )
+    categories = ma.List(
+        ma.String(),
+        title='Categories',
+        description='Categories to group data by'
     )
     metrics = ma.List(
         ma.String(

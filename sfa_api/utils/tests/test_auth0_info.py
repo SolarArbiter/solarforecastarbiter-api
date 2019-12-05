@@ -277,6 +277,27 @@ def test_get_refresh_token_fail(running_app, requests_mock, token_set):
         auth0_info.get_refresh_token('anemail', 'password')
 
 
+def test_get_access_token(running_app, requests_mock, token_set):
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"access_token": "token"}')
+    out = auth0_info.get_access_token('anemail', 'password')
+    assert out == 'token'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['username'] == 'anemail'
+    assert req_json['password'] == 'password'
+
+
+def test_get_access_token_fail(running_app, requests_mock, token_set):
+    requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        status_code=400)
+    with pytest.raises(requests.HTTPError):
+        auth0_info.get_access_token('anemail', 'password')
+
+
 def test_exchange_refresh_token(running_app, requests_mock, token_set):
     mocked = requests_mock.register_uri(
         'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
@@ -296,3 +317,18 @@ def test_exchange_refresh_token_fail(running_app, requests_mock, token_set):
         status_code=400)
     with pytest.raises(requests.HTTPError):
         auth0_info.exchange_refresh_token('token')
+
+
+def test_get_password_reset_link(running_app, requests_mock, token_set,
+                                 mocker):
+    mocker.patch('sfa_api.utils.auth0_info.get_auth0_id_of_user',
+                 return_value='auth0|testuser')
+    mocked = requests_mock.register_uri(
+        'POST', re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
+        content=b'{"ticket": "resetlink"}')
+    link = auth0_info.get_password_reset_link('atlorenzo@email.arizona.edu')
+    assert link == 'resetlink'
+    hist = mocked.request_history
+    assert len(hist) == 1
+    req_json = hist[0].json()
+    assert req_json['user_id'] == 'auth0|testuser'
