@@ -4,6 +4,8 @@ import pytest
 from copy import deepcopy
 import json
 from sfa_api.conftest import BASE_URL, REPORT_POST_JSON
+from solarforecastarbiter.datamodel import ALLOWED_CATEGORIES
+from solarforecastarbiter.metrics.deterministic import _MAP
 
 
 @pytest.fixture()
@@ -170,6 +172,10 @@ def test_list_reports(api, new_report):
     assert len(reports_list) == 3
 
 
+metrics_list = ", ".join(list(_MAP.keys()))
+categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
+
+
 @pytest.mark.parametrize('key,value,error', [
     ('start', 'invalid_date',
      '["Not a valid datetime."]'),
@@ -189,7 +195,9 @@ def test_list_reports(api, new_report):
     ('filters', 'not a list',
      '["Not a valid list."]'),
     ('metrics', ["bad"],
-        '{"0":["Must be one of: mae, mbe, rmse."]}'),
+        f'{{"0":["Must be one of: {metrics_list}."]}}'),
+    ('categories', ["bad"],
+        f'{{"0":["Must be one of: {categories_list}."]}}'),
 ])
 def test_post_report_invalid_report_params(
         api, key, value, error, report_json):
