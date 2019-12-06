@@ -699,11 +699,6 @@ class ReportParameters(ma.Schema):
         title="Filters",
         description="List of Filters applied to the data in the report"
     )
-    categories = ma.List(
-        ma.String(),
-        title='Categories',
-        description='Categories to group data by'
-    )
     metrics = ma.List(
         ma.String(
             validate=validate.OneOf(ALLOWED_REPORT_METRICS)
