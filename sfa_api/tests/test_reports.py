@@ -4,8 +4,8 @@ import pytest
 from copy import deepcopy
 import json
 from sfa_api.conftest import BASE_URL, REPORT_POST_JSON
-from solarforecastarbiter.datamodel import ALLOWED_CATEGORIES
-from solarforecastarbiter.metrics.deterministic import _MAP
+from solarforecastarbiter.datamodel import (
+    ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
 
 
 @pytest.fixture()
@@ -172,7 +172,7 @@ def test_list_reports(api, new_report):
     assert len(reports_list) == 3
 
 
-metrics_list = ", ".join(list(_MAP.keys()))
+metrics_list = ", ".join(list(ALLOWED_DETERMINISTIC_METRICS.keys()))
 categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
 
 
