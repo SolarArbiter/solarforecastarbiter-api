@@ -6,7 +6,8 @@ import pytz
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
-from solarforecastarbiter.datamodel import ALLOWED_VARIABLES, ALLOWED_CATEGORIES
+from solarforecastarbiter.datamodel import (
+    ALLOWED_VARIABLES, ALLOWED_CATEGORIES)
 from solarforecastarbiter.metrics.deterministic import _MAP
 
 
