@@ -186,8 +186,8 @@ REPORT_POST_JSON = {
             {'quality_flags': ['USER FLAGGED']}
         ],
         'categories': [
-            'Total',
-            'Date'
+            'total',
+            'date'
         ],
         'object_pairs': [
             {'observation': '123e4567-e89b-12d3-a456-426655440000',
