@@ -69,13 +69,6 @@ class ReportForm(BaseView):
                  for i, f in enumerate(fx)]
         return pairs
 
-    def parse_metrics(self, form_data):
-        """Collect the keys (name attributes) of the form elements with a value
-        attribute of metrics. These elements are checkbox inputs, and are only
-        included in the form data when selected.
-        """
-        return [k.lower() for k, v in form_data.items() if v == 'metrics']
-
     def parse_filters(self, form_data):
         """Return an empty array until we know more about how we want
         to configure these filters
@@ -85,7 +78,8 @@ class ReportForm(BaseView):
     def parse_report_parameters(self, form_data):
         params = {}
         params['object_pairs'] = self.zip_object_pairs(form_data)
-        params['metrics'] = self.parse_metrics(form_data)
+        params['metrics'] = request.form.getlist('metrics')
+        params['categories'] = request.form.getlist('categories')
         # filters do not currently work in API
         # params['filters'] = self.parse_filters(form_data)
         params['start'] = form_data['period-start']
@@ -107,19 +101,18 @@ class ReportForm(BaseView):
                 'error': [('Must include at least 1 Forecast, Observation '
                            'pair.')],
             }
-            return super().get(form_data=form_data, errors=errors)
+            return super().get(form_data=api_payload, errors=errors)
         try:
             reports.post_metadata(api_payload)
         except HTTPError as e:
             if e.response.status_code == 400:
                 # flatten error response to handle nesting
                 errors = e.response.json()['errors']
-                return super().get(form_data=form_data, errors=errors)
             elif e.response.status_code == 404:
                 errors = {'error': ['Permission to create report denied.']}
             else:
                 errors = {'error': ['An unrecoverable error occured.']}
-            return super().get(form_data=form_data, errors=errors)
+            return super().get(form_data=api_payload, errors=errors)
         return redirect(url_for(
             'data_dashboard.reports',
             messages={'creation': 'successful'}))

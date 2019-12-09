@@ -203,6 +203,7 @@ a.object-pair-delete-button{
 }
 .form-element{
   display: inline-block;
+  vertical-align: top;
   box-sizing: border-box;
   padding: .5em 1em;
   position: relative;

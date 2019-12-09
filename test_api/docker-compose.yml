@@ -23,7 +23,7 @@ services:
       - mysql
     volumes:
       - ./solarforecastarbiter-api/datastore/migrations:/migrations
-    entrypoint: sh ./wait-for -t 60 mysql:3306 -- /migrate -path=/migrations/ -database mysql://root:testpassword@tcp(mysql:3306)/arbiter_data goto 29
+    entrypoint: sh ./wait-for -t 60 mysql:3306 -- /migrate -path=/migrations/ -database mysql://root:testpassword@tcp(mysql:3306)/arbiter_data goto 39
 
   api:
     build: .

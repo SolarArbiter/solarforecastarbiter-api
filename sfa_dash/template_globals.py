@@ -6,6 +6,9 @@ import pytz
 
 import sfa_dash
 from sfa_dash import filters
+from solarforecastarbiter.datamodel import (
+    ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
+
 
 TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -14,7 +17,11 @@ TIMEZONES = pytz.country_timezones('US') + list(
 VARIABLE_OPTIONS = {key: f'{value} ({filters.api_varname_to_units(key)})'
                     for key, value in filters.variable_mapping.items()}
 
+
 TIMEZONE_OPTIONS = {tz: tz.replace('_', ' ') for tz in TIMEZONES}
+
+
+DEFAULT_METRICS = ['mae', 'mbe', 'rmse']
 
 
 def template_variables():
@@ -22,4 +29,7 @@ def template_variables():
         'dashboard_version': sfa_dash.__version__,
         'variable_options': VARIABLE_OPTIONS,
         'timezone_options': TIMEZONE_OPTIONS,
+        'metric_categories': ALLOWED_CATEGORIES,
+        'deterministic_metrics': ALLOWED_DETERMINISTIC_METRICS,
+        'default_metrics': DEFAULT_METRICS,
     }
