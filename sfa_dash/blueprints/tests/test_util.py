@@ -14,7 +14,7 @@ def mock_response(mocker):
         resp = mocker.Mock()
         resp.status_code = status_code
         resp.ok = False
-        resp.json = lambda: {str(status_code): 'error'}
+        resp.json = lambda: {'errors': {str(status_code): 'error'}}
         resp.raise_for_status = raise_for
         return resp
     return fn

@@ -1,6 +1,6 @@
-{% macro data_row(row_values, index) %}
+{% macro data_row(row_values, index, checked=false) %}
 <tr visible="true">
-  <td><input type="checkbox" name="role-permission-{{ index }}" value="{{ row_values['permission_id'] }}"></td>
+  <td><input type="checkbox" name="role-permission-{{ index }}" value="{{ row_values['permission_id'] }}" {% if checked %}checked{%endif%}></td>
   <td>{{ row_values['description'] }}</td>
   <td>{{ row_values['action']}}</td>
   <td>{{ row_values['object_type']}}</td>

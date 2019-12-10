@@ -342,7 +342,7 @@ a.help-button{
     padding: .75rem;
 }
 .scrollbox{
-    height: 400px;
+    max-height: 400px;
     overflow: scroll;
 }
 

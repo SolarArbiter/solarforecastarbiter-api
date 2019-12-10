@@ -307,11 +307,7 @@ class RoleCreation(AdminView):
     template = "/forms/admin/role_form.html"
 
     def get(self, **kwargs):
-        list_request = permissions.list_metadata()
-        table_data = list_request.json()
-        table_data = self.filter_by_org(table_data, 'organization')
-        return render_template(self.template, table_data=table_data,
-                               **self.template_args(), **kwargs)
+        return render_template(self.template, **self.template_args(), **kwargs)
 
     def post(self):
         form_data = request.form
@@ -322,25 +318,10 @@ class RoleCreation(AdminView):
         try:
             role_id = handle_response(roles.post_metadata(role))
         except DataRequestException as e:
-            return self.get(errors=e.errors)
-        errors = {}
-        messages = {}
-        permissions = filter_form_fields('role-permission-', form_data)
-        for perm_id in permissions:
-            try:
-                handle_response(
-                    roles.add_permission(role_id, perm_id))
-            except DataRequestException:
-                errors[perm_id] = [
-                    f'Failed to add permission {perm_id} to role.']
-            else:
-                messages[perm_id] = [
-                    f'Successfully added permission {perm_id} to role.']
-        if errors:
-            return self.get(
-                form_data=form_data, errors=errors, messages=messages)
+            return self.get(errors=e.errors, form_data=form_data)
         messages = {'Success': f'Role {role["name"]} created.'}
-        return redirect(url_for('admin.roles',
+        return redirect(url_for('admin.role_view',
+                                uuid=role_id,
                                 messages=messages))
 
 

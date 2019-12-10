@@ -2,51 +2,22 @@
 {% set page_title = 'Create New Role' %}
 {% import "forms/form_macros.jinja" as form %}
 {% import "forms/admin/role_macros.jinja" as table_macros %}
+{% if form_data is not defined %}
+{% set form_data = {} %}
+{% endif %}
 {% block content %}
 {% include "sections/notifications.html" %}
+<p>Create a new role with a name and description. You may add permissions to
+the role and grant the role to users after creation.</p>
 <form action="{{ url_for('admin.create_role') }}" method="post" enctype="application/json" id="role-form">
   <div class="form-group">
   <div class="form-element full-width">
     <label>Name</label><br/>
-    <input type="text" class="form-control" name="name">
+    <input type="text" class="form-control" name="name" value={{ form_data['name'] }}>
   </div>
   <div class="form-element full-width">
     <label>Description</label><br/>
-    <input type="text" class="form-control" name="description">
-  </div>
-  <div class="form-element full-width collapse show" id="object-selector">
-    <div class="permissions-object-table">
-      <label>Permissions</label>
-      <p>Select the permissions for this Role.</p>
-      <div class="tools permissions-objects-table mt-1">
-        <input type="text" placeholder="Search" class="search">
-        <button type='button' class="btn-sm btn-primary mt-1" id='check-button'>Check All</button>
-        <button type='button' class="btn-sm btn-primary mt-1" id='uncheck-button'>Uncheck All</button>
-      </div>
-      <div class="scrollbox">
-        <table class="table results" id='permission-table'>
-          <thead>
-            <th class="selection-column" scope="col"></th>
-            <th scope="col">Description</th>
-            <th scope="col">Action</th>
-            <th scope="col">Object Type</th>
-            <th scope="col">UUID</th>
-          </thead>
-          <tbody>
-            <tr class="warning no-result">
-              <td>
-                <i class="fa fa-warning"></i>
-                No Result
-              </td>
-            </tr> 
-            {% for i in range(table_data | length) %}
-              {% set row = table_data[i] %}
-              {{ table_macros.data_row(row, i) }}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <input type="text" class="form-control" name="description" value={{ form_data['description']}}>
   </div>
   {{ form.token() }}
   </div>

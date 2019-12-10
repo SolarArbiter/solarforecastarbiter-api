@@ -5,7 +5,7 @@
 {% if user is defined %}
 {% include "data/metadata/user_metadata.html" %}
 <a href="{{ url_for('admin.user_role_update', uuid=user['user_id']) }}" class="btn btn-primary">Add Roles</a>
-<h3>Roles</h3>
+<h3 class="my-3">Roles</h3>
 <div class="tools {{ table_type }}-tools mt-1">
    {% block tools %}
    <input type="text" placeholder="Search" class="search">

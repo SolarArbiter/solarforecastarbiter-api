@@ -13,6 +13,9 @@
 {% elif data_type == 'report' %}
   {% set row_macro = table_macros.report_row %}
 {% else %}
+{% if form_data is not defined %}
+  {% set form_data = {} %}
+{% endif %}
 {% set row_macro = table_macros.data_row %}
 {% endif %}
 {% block fields %}
@@ -26,7 +29,9 @@
   <p>Select the action this permission will allow.</p>
   <input type="radio" name="action" value="create" required>Create
   <input type="radio" name="action" value="read">Read
+  {% if data_type not in ['forecast', 'observation', 'site'] %}
   <input type="radio" name="action" value="update">Update 
+  {% endif %}
   <input type="radio" name="action" value="delete">Delete
   {% if data_type != "site" %}
   <input type="radio" name="action" value="read_values">Read Values
@@ -37,7 +42,7 @@
 <div class="form-element full-width">
   <label>Applies to all</label>
   <input type="checkbox" name="applies-to-all" data-toggle="collapse" data-target="#object-selector">
-  <p>Check to allow the action on all {{ data_type }} in your organization.</p>
+  <p>Check to allow the action on all {{ data_type }}s in your organization. This permission will also apply to all new {{ data_type }}s as they are added.</p>
 </div>
 <div class="form-element full-width collapse show" id="object-selector">
   <div class="permissions-object-table">
@@ -66,7 +71,7 @@
             </td>
           </tr> 
           {% for i in range(table_data | length) %}
-          {{ row_macro(data_type, table_data[i], i) }}
+          {{ row_macro(data_type, table_data[i], i, "objects-list" + i |string in form_data ) }}
           {% endfor %}
         </tbody>
       </table>
