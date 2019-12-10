@@ -83,7 +83,6 @@ INTERVAL_VALUE_TYPE = ma.String(
     validate=validate.OneOf(INTERVAL_VALUE_TYPES),
     required=True)
 
-
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
@@ -594,7 +593,7 @@ class PermissionPostSchema(ma.Schema):
         title='Desctription',
         required=True,
         description="Description of the purpose of a permission.",
-        validate=validate.Length(max=255)
+        validate=validate.Length(max=64)
     )
     action = ma.String(
         title='Action',
