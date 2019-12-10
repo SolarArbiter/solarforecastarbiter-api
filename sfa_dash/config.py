@@ -16,6 +16,8 @@ class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI',
                                         'sqlite:////tmp/test.db')
+    GPG_KEY_ID = os.getenv('GPG_KEY_ID', '')
+    GPG_PASSPHRASE_FILE = os.getenv('GPG_PASSPHRASE_FILE', '')
 
 
 class LocalConfig(BaseConfig):
