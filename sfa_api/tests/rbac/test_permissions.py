@@ -102,6 +102,33 @@ def test_add_object_to_permission(api, new_perm, new_observation):
     assert new_obs in objects_on_perm.keys()
 
 
+def test_add_object_to_permission_object_already_exists(
+        api, new_perm, new_observation):
+    perm_id = new_perm()
+    new_obs = new_observation()
+    add_to_perm = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
+                           BASE_URL)
+    assert add_to_perm.status_code == 204
+    add_to_perm_failure = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
+                                   BASE_URL)
+    assert add_to_perm_failure.status_code == 400
+    response = add_to_perm_failure.json['errors']
+    assert response['permission'] == ['Permission already acts upon object.']
+
+
+def test_add_object_to_permission_no_permission_object_already_exists(
+        api, new_perm, new_observation, remove_perms):
+    perm_id = new_perm()
+    new_obs = new_observation()
+    add_to_perm = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
+                           BASE_URL)
+    assert add_to_perm.status_code == 204
+    remove_perms('update', 'permissions')
+    add_to_perm_failure = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
+                                   BASE_URL)
+    assert add_to_perm_failure.status_code == 404
+
+
 @pytest.mark.parametrize('action,object_type', [
     ('update', 'permissions'),
     ('read', 'observations'),

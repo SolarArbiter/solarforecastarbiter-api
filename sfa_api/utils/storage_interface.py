@@ -1006,7 +1006,13 @@ def store_role(role):
     role_id = generate_uuid()
     name = role['name']
     description = role['description']
-    role = _call_procedure('create_role', role_id, name, description)
+    try:
+        role = _call_procedure('create_role', role_id, name, description)
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                role=f"Role '{name}' already exists.")
     return role_id
 
 
@@ -1207,8 +1213,14 @@ def add_object_to_permission(permission_id, uuid):
         - If the user does not have permission to update
           the permission.
     """
-    _call_procedure('add_object_to_permission',
-                    permission_id, uuid)
+    try:
+        _call_procedure('add_object_to_permission',
+                        permission_id, uuid)
+    except pymysql.err.IntegrityError as e:
+        ecode = e.args[0]
+        if ecode == 1062:
+            raise BadAPIRequest(
+                permission="Permission already acts upon object.")
 
 
 def remove_object_from_permission(permission_id, uuid):
