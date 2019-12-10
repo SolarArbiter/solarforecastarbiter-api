@@ -65,6 +65,14 @@ def test_create_role_name_exists(api):
     assert response['role'] == ["Role 'test created role' already exists."]
 
 
+def test_create_role_name_exists_no_permissions(api, remove_perms):
+    new_role_id = api.post('/roles/', BASE_URL, json=ROLE)
+    assert new_role_id.status_code == 201
+    remove_perms('create', 'roles')
+    role_failure = api.post('/roles/', BASE_URL, json=ROLE)
+    assert role_failure.status_code == 404
+
+
 @pytest.mark.parametrize('role,error', [
     ({'name': 'brad'}, '{"description":["Missing data for required field."]}'),
     ({'description': 'brad role'},
