@@ -30,11 +30,7 @@
     </tr>
     {% for perm_id, perm in role['permissions'].items() %}
       <tr>
-          {% if perm['object_type'] == 'aggregates' %}
-            <td>{{ perm['description'] }}</td>
-          {% else %}
           <td><a href="{{ url_for('admin.permission_view', uuid=perm_id) }}">{{ perm['description'] }}</a></td>
-          {% endif %}
           <td>{{ perm['added_to_role'] | format_datetime}}</td>
           <td><a role="button" class="role-permission-delete-button" href="{{ url_for('admin.role_perm_removal', uuid=role['role_id'], permission_id=perm['permission_id']) }}">Remove</a></td>
       </tr>
