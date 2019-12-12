@@ -13,26 +13,25 @@ of the <a href="{{url_for('auth0.login') }}">log in form.</a> See
 <a href="https://solarforecastarbiter.org/documentation/dashboard/#getting-started">
 Getting Started</a> for more information.</p>
 {% else %}
-<p>Use the links on the left to access your data.</p>
+<p>Use the links on the left to access data.</p>
 
-<p>The <b>Sites</b> link will list the sites available to you.
-From this menu, you explore Sites and their associated data. Selecting
-a Site will display its metadata and present options to list or create
-Observations, Forecasts and Probabilistic Forecasts associated with the
-Site.</p>
+<p>The <b>Sites</b> link lists the Sites available to you. From this menu, you
+explore Sites and their associated data. Selecting a Site will display its
+metadata and present options to list or create Observations, Forecasts and
+Probabilistic Forecasts associated with the Site.</p>
 
-<p>The <b>Aggregates</b> link will list Aggregates available to you. From
+<p>The <b>Aggregates</b> link lists Aggregates available to you. From
 the aggregates menu, you will be able to create new aggregates, associate
 existing observations with an aggregate and view aggregate data.</p>
 
-<p>The <b>Reports</b> link will list Reports available to you and allow you
+<p>The <b>Reports</b> link lists Reports available to you and allow you
 to create new reports.</p>
 
-<p>The <b>Observations and Observations</b> link contains pages that will
+<p>The <b>Forecasts and Observations</b> link contains pages that will
 list all of the observations, forecasts and probabilistic forecasts you
 have access to regardless of their site or aggregate association.</p>
 
-<p>See <a href="https://solarforecastarbiter.org/documentation/dashboard/">documentation</a> for more details</p>
+<p>See <a href="https://solarforecastarbiter.org/documentation/dashboard/">documentation</a> for more details.</p>
  
 {% endif %}
 {% include "dash/subnav.html" %}
