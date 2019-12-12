@@ -81,8 +81,7 @@ def request_user_info():
     adapter = requests.adapters.HTTPAdapter(max_retries=retries)
     session.mount(base_url, adapter)
 
-    info_request = session.get(
-        current_app.config['AUTH0_BASE_URL'] + '/userinfo', timeout=3.0)
+    info_request = session.get(base_url + '/userinfo', timeout=3.0)
 
     info_request.raise_for_status()
     user_info = info_request.json()
