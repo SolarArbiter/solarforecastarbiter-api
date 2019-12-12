@@ -1,6 +1,7 @@
 import pytest
 from json.decoder import JSONDecodeError
 
+from requests.exceptions import HTTPError
 
 from sfa_api.utils import auth
 
@@ -132,9 +133,27 @@ def test_request_user_info(sql_app, auth_token, user_id):
     ctx.pop()
 
 
-def test_request_user_info_failure(sql_app, user_id):
+def test_request_user_info_401_failure(sql_app, user_id):
     ctx = sql_app.test_request_context()
     ctx.push()
     user_info = auth.request_user_info()
     assert user_info == {}
     ctx.pop()
+
+
+@pytest.mark.parametrize('status_code', [400, 404, 422, 500])
+def test_request_user_info_401_failure(sql_app, user_id, mocker, status_code):
+    mocked_response = mocker.Mock()
+    mocked_response.status_code == status_code
+    raise_for_status = mocker.Mock()
+    raise_for_status.side_effect = HTTPError(response=mocked_response)
+    mocked_response.raise_for_status = raise_for_status
+    mocked_get = mocker.patch('sfa_api.utils.auth.requests.get',
+                              return_value=mocked_response)
+
+    ctx = sql_app.test_request_context()
+    ctx.push()
+    user_info = auth.request_user_info()
+    assert user_info == {}
+    ctx.pop()
+    assert mocked_get.call_count == 6

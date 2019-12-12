@@ -76,7 +76,7 @@ def request_user_info(retries=5):
         if info_request.status_code == 401:
             # User is not authorized
             return {}
-        return request_user_info(retries-1)
+        return request_user_info(retries - 1)
     user_info = info_request.json()
     return user_info
 
