@@ -142,7 +142,8 @@ def test_request_user_info_401_failure(sql_app, user_id):
 
 
 @pytest.mark.parametrize('status_code', [400, 404, 422, 500])
-def test_request_user_info_401_failure(sql_app, user_id, mocker, status_code):
+def test_request_user_info_maximum_failures(
+        sql_app, user_id, mocker, status_code):
     mocked_response = mocker.Mock()
     mocked_response.status_code == status_code
     raise_for_status = mocker.Mock()
