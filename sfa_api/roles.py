@@ -48,7 +48,15 @@ class AllRolesView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/RoleSchema'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created role.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created role.
           400:
             $ref: '#/components/responses/400-BadRequest'
           404:

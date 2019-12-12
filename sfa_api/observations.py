@@ -67,7 +67,15 @@ class AllObservationsView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ObservationMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created observation.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created observation.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:

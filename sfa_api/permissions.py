@@ -50,8 +50,20 @@ class AllPermissionsView(MethodView):
               schema:
                 $ref: '#/components/schemas/PermissionPostSchema'
         responses:
-          200:
+          201:
             description: Permission created successfully.
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the created permission.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created permission.
           400:
             $ref: '#/components/responses/400-BadRequest'
           404:
