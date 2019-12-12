@@ -83,7 +83,6 @@ INTERVAL_VALUE_TYPE = ma.String(
     validate=validate.OneOf(INTERVAL_VALUE_TYPES),
     required=True)
 
-
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
@@ -204,7 +203,7 @@ class SiteSchema(ma.Schema):
         title='Name',
         description="Name of the Site",
         required=True,
-        validate=UserstringValidator())
+        validate=[UserstringValidator(), validate.Length(max=64)])
     latitude = ma.Float(
         title='Latitude',
         description="Latitude in degrees North",
@@ -293,7 +292,7 @@ class ObservationPostSchema(ma.Schema):
         title='Name',
         description='Human friendly name for the observation',
         required=True,
-        validate=UserstringValidator())
+        validate=[UserstringValidator(), validate.Length(max=64)])
     interval_label = INTERVAL_LABEL
     interval_length = INTERVAL_LENGTH
     interval_value_type = INTERVAL_VALUE_TYPE
@@ -414,7 +413,7 @@ class ForecastPostSchema(ma.Schema):
         title='Name',
         description="Human friendly name for forecast",
         required=True,
-        validate=UserstringValidator())
+        validate=[UserstringValidator(), validate.Length(max=64)])
     variable = VARIABLE_FIELD
     issue_time_of_day = ma.String(
         title='Issue Time of Day',
@@ -594,6 +593,7 @@ class PermissionPostSchema(ma.Schema):
         title='Desctription',
         required=True,
         description="Description of the purpose of a permission.",
+        validate=validate.Length(max=64)
     )
     action = ma.String(
         title='Action',
@@ -637,13 +637,14 @@ class RolePostSchema(ma.Schema):
         title='Name',
         description="Name of the Role",
         required=True,
-        validate=UserstringValidator()
+        validate=[UserstringValidator(), validate.Length(max=64)]
     )
     # Perhaps this needs some validation?
     description = ma.String(
         title='Description',
         description="A description of the responsibility of the role.",
         required=True,
+        validate=validate.Length(max=255)
     )
 
 
@@ -747,7 +748,7 @@ class ReportPostSchema(ma.Schema):
     name = ma.String(
         title="Name",
         required=True,
-        validate=UserstringValidator()
+        validate=[UserstringValidator(), validate.Length(max=64)]
     )
     report_parameters = ma.Nested(ReportParameters,
                                   required=True)
@@ -809,7 +810,7 @@ class AggregatePostSchema(ma.Schema):
         title='Name',
         description="Human friendly name for aggregate",
         required=True,
-        validate=UserstringValidator())
+        validate=[UserstringValidator(), validate.Length(max=64)])
     variable = VARIABLE_FIELD
     interval_label = ma.String(
         title='Interval Label',
