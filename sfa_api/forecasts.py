@@ -70,7 +70,15 @@ class AllForecastsView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ForecastMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created forecast.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -330,7 +338,15 @@ class AllCDFForecastGroupsView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/CDFForecastGroupMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created probabilistic forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created probabilistic forecast.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:

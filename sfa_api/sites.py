@@ -57,7 +57,15 @@ class AllSitesView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/SiteMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created site.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created site.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:

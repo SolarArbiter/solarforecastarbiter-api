@@ -68,7 +68,15 @@ class AllAggregatesView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/AggregateMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created aggregate.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created aggregate.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:

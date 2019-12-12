@@ -59,7 +59,15 @@ class AllReportsView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ReportMetadata'
+                  type: string
+                  format: uuid
+                  description: The uuid of the created report.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the created report.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
