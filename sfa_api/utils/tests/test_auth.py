@@ -130,3 +130,11 @@ def test_request_user_info(sql_app, auth_token, user_id):
     assert user_info['name'] == 'testing@solarforecastarbiter.org'
     assert user_info['sub'] == 'auth0|5be343df7025406237820b85'
     ctx.pop()
+
+
+def test_request_user_info_failure(sql_app, user_id):
+    ctx = sql_app.test_request_context()
+    ctx.push()
+    user_info = auth.request_user_info()
+    assert user_info == {}
+    ctx.pop()

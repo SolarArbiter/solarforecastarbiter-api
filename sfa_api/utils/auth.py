@@ -51,23 +51,32 @@ def verify_access_token():
         return validate_user_existence()
 
 
-def request_user_info():
+def request_user_info(retries=5):
     """Makes a user info request to check if the user exists
     and is verified.
     Returns
     -------
     unser_info: dict
-        Dict of user information provided by auth0 or None on failure
+        Dict of user information provided by auth0 or empty dict on failure.
     Raises
     ------
     json.decoder.JSONDecodeError
-        If the user info request fails.
+        If the user info request returns some invalid json.
     """
+    if retries < 0:
+        return {}
     info_request = requests.get(
         current_app.config['AUTH0_BASE_URL'] + '/userinfo',
         headers={
             'Authorization': f'Bearer {current_access_token}',
         })
+    try:
+        info_request.raise_for_status()
+    except requests.exceptions.HTTPError:
+        if info_request.status_code == 401:
+            # User is not authorized
+            return {}
+        return request_user_info(retries-1)
     user_info = info_request.json()
     return user_info
 
