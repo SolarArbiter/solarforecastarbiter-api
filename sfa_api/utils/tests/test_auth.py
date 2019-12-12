@@ -1,6 +1,8 @@
 import pytest
 from json.decoder import JSONDecodeError
 
+from requests.exceptions import HTTPError
+
 from sfa_api.utils import auth
 
 
@@ -134,6 +136,6 @@ def test_request_user_info(sql_app, auth_token, user_id):
 def test_request_user_info_failure(sql_app, user_id):
     ctx = sql_app.test_request_context()
     ctx.push()
-    user_info = auth.request_user_info()
-    assert user_info == {}
+    with pytest.raises(HTTPError):
+        auth.request_user_info()
     ctx.pop()
