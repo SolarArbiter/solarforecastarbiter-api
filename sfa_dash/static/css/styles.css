@@ -301,14 +301,14 @@ a.help-button{
 }
 
 /* Organization filters */
-#org-filters {
+.table-filters {
     position: absolute;
     background-color: white;
     border: 1px solid #000;
     border-radius: 5px;
     padding: .5rem;
 }
-#org-filter-collapse{
+.table-option-collapse{
     font-family: monospace;
     color: #000;
     border: 1px solid black;
@@ -325,11 +325,11 @@ a.help-button{
     content: "\00d7";
     font-size: 1rem;
 }
-.org-filter-options{
+.table-filter-options{
     list-style: none;
     padding-left: 0;
 }
-#provider-header{
+.filterable-header{
     padding: 0;
 }
 #removal-header{
@@ -339,7 +339,9 @@ a.help-button{
     color: #333;
     background-color: #fff;
     font-weight: bold;
-    padding: .75rem;
+    padding: 0;
+    width: 100%;
+    text-align: left;
 }
 .scrollbox{
     max-height: 400px;

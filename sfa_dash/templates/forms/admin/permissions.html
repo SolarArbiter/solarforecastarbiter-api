@@ -23,9 +23,9 @@
   <thead>
     <tr>
       <th scope="col">Description</th>
-      <th scope="col">Action</th>
-      <th scope="col">Object Type</th>
-      <th scope="col">Applies to all</th>
+      <th scope="col" id="action-header" class="filterable-header">Action</th>
+      <th scope="col" id="object-type-header" class="filterable-header">Object Type</th>
+      <th scope="col" id="applies-to-all-header" class="filterable-header">Applies to all</th>
     </tr>
   </thead>
   <tbody>
@@ -38,10 +38,10 @@
             <td>
               <a href="{{ url_for('admin.permission_view', uuid=perm['permission_id'])}}">{{ perm["description"] }}</a>
             </td>
-            <td>{{ perm["action"] }}</td>
-            <td>{{ perm["object_type"] }} </td>
+            <td class="action-column">{{ perm["action"] }}</td>
+            <td class="object-type-column">{{ perm["object_type"] }} </td>
 
-            <td>{% if perm["applies_to_all"] %}&#10004;{% endif %} </td>
+            <td class="applies-to-all-column">{% if perm["applies_to_all"] %}&#10004;{% endif %} </td>
         </tr>
       {% endfor %}
     {% endif %}
