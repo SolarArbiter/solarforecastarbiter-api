@@ -1,57 +1,65 @@
 [![Build Status](https://dev.azure.com/solararbiter/solarforecastarbiter/_apis/build/status/SolarArbiter.solarforecastarbiter_dashboard?branchName=master)](https://dev.azure.com/solararbiter/solarforecastarbiter/_build/latest?definitionId=3&branchName=master)
 
+## Contents
+- [Introduction](#solar-forecast-arbiter-dashboard)
+- [Installation](#installation)
+- [Acknowledgements](#acknowledgements)
+
 # Solar Forecast Arbiter Dashboard
-The front end [Flask](http://flask.pocoo.org/) application for the Solar Forecast Arbiter.
 
-### Usage/ Installation
+The [Solar Forecast Arbiter dashboard](https://dashboard.solarforecastarbiter.org)
+if the [Flask](http://flask.pocoo.org/) based web front-end to the 
+[Solar Forecast Arbiter Framework](https://solarforecastarbiter.org/documentation/framework/).
 
-Currently the dashboard is hardcoded to utilize a local development api instance. These instructions will guide you through running it locally.
+## Installation
 
-**You will need to set the environment variables `AUTH0_CLIENT_SECRET` and `AUTH0_CLIENT_ID` for authentication to operate correctly.**
+Installing the dashboard in development mode can be achieved using pip with the
+following command:
 
-- Install the [Solar Forecast Arbiter API](https://github.com/SolarArbiter/solarforecastarbiter-api) and run it with the `SFA_API_STATIC_DATA=true` option and `port` set to 5000.
+`pip install -r requirements.txt && pip install -e .`
 
-- Install dashboard with `pip install -e .`
+### Prerequisites
+The Solar Forecast Arbiter dashboard relies on the
+[Solar Forecast Arbiter API](https://github.com/SolarArbiter/solarforecastarbiter-api).
+Starting an instance of the API locally at port 5000 is necessary to use the
+dashboard's local development instance.
 
-- Run the script with `python sfa_dash/serve.py`
+
+### Running
+
+**Required Environment Variables**
+
+- `AUTH0_CLIENT_SECRET` and `AUTH0_CLIENT_ID`: These environment variables
+  tell the dashboard which [AUTH0](https://auth0.com/) application to use for
+  authentication.
+
+**Running the dashboard**
+- Start the dashboard with the following command:
+  `FLASK_APP='sfa_dash:create_app("sfa_dash.config.LocalConfig"' flask run -p 8080`
 
 - Open [http://localhost:8080/](http://localhost:8080/) in a browser to view the dashboard.
 
+## Acknowledgements
 
-### Template Layout
+The Solar Forecat Arbiter Dashboard utilizes the following open source projects.
 
-base.html
+- [Flask](https://flask.palletsprojects.com/en/1.1.x/)
+- [Flask SeaSurf](https://flask-seasurf.readthedocs.io/en/latest/)
+- [Flask Dance](https://flask-dance.readthedocs.io/en/latest/)
+- [Flask SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/en/2.x/)
+- [Bokeh](http://docs.bokeh.org/en/1.3.2/index.html)
+- [Gunicorn](https://gunicorn.org/)
+- [Gevent](http://www.gevent.org/)
+- [PyMySQL](https://pymysql.readthedocs.io/en/latest/)
+- [SQLAlchemy](https://www.sqlalchemy.org/)
+- [Requests](https://requests.readthedocs.io/en/master/)
+- [Python-JOSE](https://python-jose.readthedocs.io/en/latest/)
+- [Blinker](https://pythonhosted.org/blinker/)
+- [Cryptography](https://cryptography.io/en/latest/)
+- [PyTables](https://www.pytables.org/usersguide/tutorials.html)
+- [Pandas](https://pandas.pydata.org/)
 
- - Basic html structure, includes navbar, footer and head. Will conditionally include sidebar if `sidebar` variable is defined.
+Authenication services for the Solar Forecast Arbiter by provided by [Auth0](https://auth0.com/)
 
-navbar.html
-
- - Includes header for logo/site name and main navigation.
-
-head.html
-
- - The <head> html element.
-
-sidebar.html
-
- - Left sidebar html to be included when the sidebar variable is defined either in a template or passed into the render() function.
-
-footer.html
-
- - Site footer.
-
-dash/
-
- - Dash includes secondary nav content and anything else that may be section-wide.
-
-data/
-
- - Templates extending the `dash/data.html` dashboard.
-
-org/
-
- - Templates extending the `dash/org.html` dashboard.
-
-sections/
-
- - Templates to be included in others. I.E. a notifications section.
+Centralized error reporting for the Solar Forecast Arbiter framework is provided by
+[Sentry](https://sentry.io).
