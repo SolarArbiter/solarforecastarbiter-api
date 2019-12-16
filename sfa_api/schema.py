@@ -763,11 +763,12 @@ class ReportSchema(ReportPostSchema):
         ordered = True
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
-    metrics = ma.Dict(
+    metrics = ma.List(
+        ma.Dict(),
         title='Calculated Metrics',
         description='Metrics calculated over the '
                     'analysis period of the report.')
-    raw_report = ma.String(
+    raw_report = ma.Dict(
         title="Raw Report",
         description="A Markdown template with rendered metrics, and a block "
                     "for inserting timeseries plots")
@@ -789,11 +790,12 @@ class SingleReportSchema(ReportSchema):
 class ReportMetricsSchema(ma.Schema):
     """Parses metrics and raw_report out of a single object.
     """
-    metrics = ma.Dict(
+    metrics = ma.List(
+        ma.Dict(),
         title="Calculated Metrics",
         Description="calculated metrics of the field",
         required=True)
-    raw_report = ma.String(
+    raw_report = ma.Dict(
         title="Raw Report",
         description=("A Markdown template with rendered metrics, and a block "
                      "for inserting timeseries plots"),

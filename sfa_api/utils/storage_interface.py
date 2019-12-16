@@ -76,6 +76,7 @@ def _make_sql_connection_partial():
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
     conv[converters.FIELD_TYPE.TIMESTAMP] = convert_datetime_utc
     conv[converters.FIELD_TYPE.DATETIME] = convert_datetime_utc
+    conv[converters.FIELD_TYPE.JSON] = json.loads
     conv[pd.Timestamp] = escape_timestamp
     conv[dt.datetime] = escape_datetime
     conv[float] = escape_float_with_nan
@@ -1246,7 +1247,6 @@ def remove_object_from_permission(permission_id, uuid):
 
 
 def _decode_report_parameters(report):
-    report['report_parameters'] = json.loads(report['report_parameters'])
     dt_start = pd.Timestamp(report['report_parameters']['start'])
     dt_end = pd.Timestamp(report['report_parameters']['end'])
     report['report_parameters']['start'] = dt_start
@@ -1407,9 +1407,9 @@ def store_report_metrics(report_id, metrics, raw_report):
     ----------
     report_id: str
         UUID of the report associated with the data.
-    metrics: dict
+    metrics: list of dict
         A dict containing the metrics and metadata
-    raw_report: bytes
+    raw_report: dict
         byte representation of the rereport template.
 
     Raises
@@ -1418,8 +1418,9 @@ def store_report_metrics(report_id, metrics, raw_report):
         If the user does not have permission to update the report
     """
     json_metrics = json.dumps(metrics)
+    json_report = json.dumps(raw_report)
     _call_procedure('store_report_metrics', report_id,
-                    json_metrics, raw_report)
+                    json_metrics, json_report)
 
 
 def store_report_status(report_id, status):
@@ -1597,7 +1598,7 @@ def _set_aggregate_parameters(aggregate_dict):
     for key in schema.AggregateSchema().fields.keys():
         if key == 'observations':
             out[key] = []
-            for obs in json.loads(aggregate_dict['observations']):
+            for obs in aggregate_dict['observations']:
                 for tkey in ('created_at', 'observation_deleted_at',
                              'effective_until', 'effective_from'):
                     if obs[tkey] is not None:
