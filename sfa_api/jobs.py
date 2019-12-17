@@ -56,7 +56,7 @@ def exchange_token(user_id):
     return HiddenToken(access_token)
 
 
-def create_job(job_type, name, user_id, cron_string, **kwargs):
+def create_job(job_type, name, user_id, cron_string, timeout=None, **kwargs):
     """
     Create a job in the database
 
@@ -70,6 +70,9 @@ def create_job(job_type, name, user_id, cron_string, **kwargs):
         ID of the user to execute this job
     cron_string : str
         Crontab string to schedule job
+    timeout : str
+        Maximum runtime before the job is killed. An integer default units is
+        seconds, otherwise, can specify the unit e.g. 1h, 2m, 10s
     **kwargs
         Keyword arguments that will be passed along when the job is executed
 
@@ -101,6 +104,8 @@ def create_job(job_type, name, user_id, cron_string, **kwargs):
         params[k] = kwargs[k]
 
     schedule = {'type': 'cron', 'cron_string': cron_string}
+    if timeout is not None:
+        schedule['timeout'] = timeout
     id_ = storage.generate_uuid()
     storage._call_procedure(
         'store_job', id_, str(user_id), name, job_type, json.dumps(params),
@@ -182,6 +187,7 @@ def convert_sql_to_rq_job(sql_job, scheduler):
         args=args,
         kwargs=kwargs,
         repeat=schedule.get('repeat', None),
+        timeout=schedule.get('timeout', None),
         id=sql_job['id'],
         meta={'sql_job': sql_job['id'],
               'job_name': sql_job['name'],
