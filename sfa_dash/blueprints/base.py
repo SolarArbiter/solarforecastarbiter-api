@@ -44,6 +44,7 @@ class BaseView(MethodView):
             else:
                 self.temp_args.update({
                     'plot': script_plot[1],
+                    'includes_bokeh': True,
                     'bokeh_script': script_plot[0]
                 })
 

@@ -128,7 +128,7 @@ class ReportView(BaseView):
     def template_args(self):
         report_template = report_to_html_body(self.metadata)
         return {'report': report_template,
-                'bokeh_script': True}
+                'includes_bokeh': True}
 
     def get(self, uuid):
         try:

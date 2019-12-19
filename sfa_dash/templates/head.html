@@ -15,8 +15,7 @@
 
 <!-- Custom styles for this template -->
 <link href="/static/css/styles.css" type="text/css" rel="stylesheet">
-{% if bokeh_script is defined %}
-{# if a script is provided, load bokeh.js #}
+{% if includes_bokeh %}
 <link
     href="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.css"
     rel="stylesheet" type="text/css">
@@ -29,7 +28,6 @@
 <script src="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.js"></script>
 <script src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-1.2.0.min.js"></script>
 <script src="https://cdn.pydata.org/bokeh/release/bokeh-tables-1.2.0.min.js"></script>
-{{ bokeh_script | safe }}
 {% endif %}
 
 <script src="/static/js/table-search.js"></script>
