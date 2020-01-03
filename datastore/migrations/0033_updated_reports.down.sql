@@ -1,9 +1,9 @@
-ALTER TABLE arbiter_data.reports MODIFY COLUMN raw_report JSON;
+ALTER TABLE arbiter_data.reports MODIFY COLUMN raw_report LONGBLOB;
 
 DROP PROCEDURE store_report_metrics;
 
 CREATE DEFINER = 'insert_objects'@'localhost' PROCEDURE store_report_metrics(
-IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON, IN new_raw_report JSON)
+    IN auth0id VARCHAR(31), IN strid CHAR(36), IN new_metrics JSON, IN new_raw_report LONGBLOB)
 COMMENT 'Update metrics field with json and raw_report with binary data'
 BEGIN
     DECLARE binid BINARY(16);
