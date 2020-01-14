@@ -10,30 +10,43 @@ in the core documentation's [what's new](https://solarforecastarbiter-core.readt
 
 ### Added
 
-- Report form now includes all deterministic metrics options identified by
-  stakeholders.
+- Dashboard report form now includes all deterministic metrics options
+  identified by stakeholders.
 
-- Report form now includes options to calculate metrics by categories Total,
-  Year, Month, Date, and Hour of Day.
+- Dashboard report form now includes options to calculate metrics by categories
+  Total, Year, Month, Date, and Hour of Day.
 
 - Ability to analyze forecasts of aggregated observations in reports.
 
-- Reports may be downloaded in HTML format at
+- Reports may be downloaded in HTML format from the dashboard at
   `/reports/<report_id>/downloads/html`.
 
 - The API report schema's `object_pair` json objects have been updated to
   support pairing forecasts with either observations or aggregates. See the
   [api documentation](https://api.solarforecastarbiter.org/#tag/Reports/paths/~1reports~1{report_id}/get) for details.
 
-- Report downloads contain a GPG signed report as well as md5, sha1 and sha256
-  checksums for validation.
+- Dashboard report downloads contain a GPG signed report as well as md5, sha1
+  and sha256 checksums for validation.
 
 - CHANGELOG.md (this file) for tracking and communicating changes.
 
+- Dashboard tables now allow for filtering on multiple columns. e.g. Variable,
+  Provider and Site for Observation and Forecast tables. 
+
 ### Fixed
 
-- Permissions acting on aggregates are now accessible via a Role's permission
-  listing.
+- Permissions acting on aggregates are now accessible on the dashboard via a
+  Role's permission listing.
+
+- Removed dashboard functionality to create ineffectual permissions granting
+  `update` action on forecasts, sites, observations and probabilistic
+  forecasts.
+
+- Removed permissions listing from the dashboard role creation form. Users
+  will now add permissions after the Role has been created.
+
+- Updated dashboard role and permission forms to retain checklist selections
+  in the event of an error. 
 
 ## [1.0beta2] - 2019-11-18
 
