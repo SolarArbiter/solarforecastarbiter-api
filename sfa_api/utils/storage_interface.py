@@ -1401,26 +1401,23 @@ def read_report_values(report_id):
     return values
 
 
-def store_report_metrics(report_id, metrics, raw_report):
+def store_raw_report(report_id, metrics, raw_report):
     """
     Parameters
     ----------
     report_id: str
         UUID of the report associated with the data.
-    metrics: list of dict
-        A dict containing the metrics and metadata
     raw_report: dict
-        byte representation of the rereport template.
+        dict representation of the raw report.
 
     Raises
     ------
     StorageAuthError
         If the user does not have permission to update the report
     """
-    json_metrics = json.dumps(metrics)
-    json_report = json.dumps(raw_report)
-    _call_procedure('store_report_metrics', report_id,
-                    json_metrics, json_report)
+    json_raw_report = json.dumps(raw_report)
+    _call_procedure('store_raw_report', report_id,
+                    json_raw_report)
 
 
 def store_report_status(report_id, status):

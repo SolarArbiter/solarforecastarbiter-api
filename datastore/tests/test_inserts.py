@@ -208,7 +208,6 @@ def report_callargs(insertuser, new_report):
     report_args = new_report()
     del report_args['id']
     del report_args['organization_id']
-    del report_args['metrics']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(report_args)
     return callargs
@@ -1230,38 +1229,34 @@ def test_store_report_values_no_write_report(
     assert e.value.args[0] == 1142
 
 
-def test_store_report_metrics(
+def test_store_raw_report(
         dictcursor, insertuser, allow_read_reports,
         allow_update_reports):
     user, _, _, obs, org, role, _, report, _ = insertuser
-    metrics = {"a": "b", "c": "d"}
-    raw_report = b'\x00\x0F\xFF'
+    raw_report = {"a": "b", "c": "d"}
     dictcursor.callproc(
-        'store_report_metrics',
+        'store_raw_report',
         (user['auth0_id'],
          str(bin_to_uuid(report['id'])),
-         json.dumps(metrics),
-         raw_report)
+         json.dumps(raw_report))
     )
     dictcursor.execute(
         'SELECT * FROM arbiter_data.reports WHERE id = %s',
         (report['id'],))
     res = dictcursor.fetchall()[0]
-    assert json.loads(res['metrics']) == metrics
+    assert json.loads(res['raw_report']) == raw_report
 
 
-def test_store_report_metrics_no_update(
+def test_store_raw_report_no_update(
         dictcursor, insertuser, allow_read_reports):
     user, _, _, obs, org, role, _, report, _ = insertuser
-    metrics = {"a": "b", "c": "d"}
-    raw_report = b'\x00\x0F\xFF'
+    raw_report = {"a": "b", "c": "d"}
     with pytest.raises(pymysql.err.OperationalError) as e:
         dictcursor.callproc(
-            'store_report_metrics',
+            'store_raw_report',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
-             json.dumps(metrics),
-             raw_report)
+             json.dumps(raw_report))
         )
     assert e.value.args[0] == 1142
 
