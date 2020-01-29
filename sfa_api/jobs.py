@@ -190,11 +190,6 @@ def convert_sql_to_rq_job(sql_job, scheduler):
     )
 
 
-def list_sql_jobs():
-    return storage._call_procedure('list_jobs',
-                                   with_current_user=False)
-
-
 def schedule_jobs(scheduler):
     """
     Sync jobs between MySQL and RQ scheduler, adding new jobs
@@ -207,7 +202,8 @@ def schedule_jobs(scheduler):
         The scheduler instance to compare MySQL jobs with
     """
     logger.debug('Syncing MySQL and RQ jobs...')
-    sql_jobs =  list_sql_jobs()
+    sql_jobs = storage._call_procedure('list_jobs',
+                                       with_current_user=False)
     rq_jobs = scheduler.get_jobs()
 
     sql_dict = {k['id']: k for k in sql_jobs}

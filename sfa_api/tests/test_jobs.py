@@ -192,6 +192,17 @@ def test_full_run_through(app, queue, mocker):
     assert validate.called
 
 
+@pytest.fixture()
+def adminapp(mocker):
+    with _make_sql_app() as app:
+        app.config.update(
+            MYSQL_USER='frameworkadmin',
+            MYSQL_PASSWORD='thisisaterribleandpublicpassword'
+        )
+        with _make_nocommit_cursor(mocker):
+            yield app
+
+
 @pytest.mark.parametrize('jt,kwargs', [
     ('daily_observation_validation', {'start_td': '1h', 'end_td': '1h'}),
     ('reference_nwp', {'issue_time_buffer': '1h', 'base_url': 'hhtp'}),
@@ -201,11 +212,11 @@ def test_full_run_through(app, queue, mocker):
     pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(
         strict=True, raises=KeyError))
 ])
-def test_create_job(mocker, app, jt, kwargs):
-    store = mocker.patch('sfa_api.jobs.storage._call_procedure')
-    jobs.create_job(jt, 'testjob', 'userid', 'cronstr', **kwargs)
-    assert store.call_args[0][2:5] == ('userid', 'testjob', jt)
-
-
-def test_list_sql_jobs():
-    assert False
+def test_create_job(adminapp, jt, kwargs, nocommit_cursor, user_id):
+    jobs.create_job(jt, 'testcreatejob', user_id, 'cronstr', **kwargs)
+    jlist = jobs.storage._call_procedure('list_jobs', with_current_user=False)
+    assert len(jlist) == 2
+    job = [j for j in jlist if j['name'] == 'testcreatejob'][0]
+    assert job['schedule'] == {'type': 'cron', 'cron_string': 'cronstr'}
+    assert job['job_type'] == jt
+    assert job['parameters'] == kwargs
