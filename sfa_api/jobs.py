@@ -170,8 +170,8 @@ def convert_sql_to_rq_job(sql_job, scheduler):
         If the type of scheduling is not cron
     """
     args = [sql_job[k] for k in ('name', 'job_type', 'user_id')]
-    kwargs = json.loads(sql_job['parameters'])
-    schedule = json.loads(sql_job['schedule'])
+    kwargs = sql_job['parameters']
+    schedule = sql_job['schedule']
     if schedule['type'] != 'cron':
         raise ValueError('Only cron job schedules are supported')
     logger.info('Adding job %s with schedule %s', sql_job['name'],
@@ -190,6 +190,11 @@ def convert_sql_to_rq_job(sql_job, scheduler):
     )
 
 
+def list_sql_jobs():
+    return storage._call_procedure('list_jobs',
+                                   with_current_user=False)
+
+
 def schedule_jobs(scheduler):
     """
     Sync jobs between MySQL and RQ scheduler, adding new jobs
@@ -202,8 +207,7 @@ def schedule_jobs(scheduler):
         The scheduler instance to compare MySQL jobs with
     """
     logger.debug('Syncing MySQL and RQ jobs...')
-    sql_jobs = storage._call_procedure('list_jobs',
-                                       with_current_user=False)
+    sql_jobs =  list_sql_jobs()
     rq_jobs = scheduler.get_jobs()
 
     sql_dict = {k['id']: k for k in sql_jobs}

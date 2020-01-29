@@ -92,8 +92,12 @@ def sql_job(userid, orgid, jobid):
         'organization_id': orgid,
         'name': 'Test job',
         'job_type': 'daily_observation_validation',
-        'parameters': '{"start_td": "-1d", "end_td": "0h", "base_url": "http://localhost:5000"}',  # NOQA
-        'schedule': '{"type": "cron", "cron_string": "0 0 * * *"}',
+        'parameters': {
+            "start_td": "-1d",
+            "end_td": "0h",
+            "base_url": "http://localhost:5000"
+        },
+        'schedule': {"type": "cron", "cron_string": "0 0 * * *"},
         'version': 0,
         'created_at': dt.datetime(2019, 1, 1, 12, tzinfo=dt.timezone.utc),
         'modified_at': dt.datetime(2019, 1, 1, 12, tzinfo=dt.timezone.utc)
@@ -120,7 +124,7 @@ def test_schedule_jobs_modified(mocker, queue, sql_job):
 
 def test_schedule_jobs_err(mocker, queue, sql_job):
     job = sql_job.copy()
-    job['schedule'] = '{}'
+    job['schedule'] = {}
     mocker.patch('sfa_api.jobs.storage._call_procedure',
                  return_value=[job])
     log = mocker.patch('sfa_api.jobs.logger')
@@ -138,7 +142,7 @@ def test_convert_sql_job_to_rq_job(sql_job, mocker):
 
 def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
     job = sql_job.copy()
-    job['schedule'] = '{"type": "enqueue_at"}'
+    job['schedule'] = {"type": "enqueue_at"}
     scheduler = mocker.MagicMock()
     with pytest.raises(ValueError):
         jobs.convert_sql_to_rq_job(job, scheduler)
@@ -201,3 +205,7 @@ def test_create_job(mocker, app, jt, kwargs):
     store = mocker.patch('sfa_api.jobs.storage._call_procedure')
     jobs.create_job(jt, 'testjob', 'userid', 'cronstr', **kwargs)
     assert store.call_args[0][2:5] == ('userid', 'testjob', jt)
+
+
+def test_list_sql_jobs():
+    assert False

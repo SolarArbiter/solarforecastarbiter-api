@@ -809,7 +809,7 @@ def _set_cdf_group_forecast_parameters(forecast_dict):
             continue
         elif key == 'constant_values':
             out[key] = []
-            constant_vals = json.loads(forecast_dict['constant_values'])
+            constant_vals = forecast_dict['constant_values']
             for single_id, val in constant_vals.items():
                 out[key].append({'forecast_id': single_id,
                                  'constant_value': val})
@@ -893,8 +893,6 @@ def list_users():
         List of dictionaries of user information.
     """
     users = _call_procedure('list_users')
-    for user in users:
-        user['roles'] = json.loads(user['roles'])
     return users
 
 
@@ -912,7 +910,6 @@ def read_user(user_id):
         Dictionary of user information.
     """
     user = _call_procedure_for_single('read_user', user_id)
-    user['roles'] = json.loads(user['roles'])
     return user
 
 
@@ -981,8 +978,6 @@ def list_roles():
         List of dictionaries of Role information.
     """
     roles = _call_procedure('list_roles')
-    for role in roles:
-        role['permissions'] = json.loads(role['permissions'])
     return roles
 
 
@@ -1036,8 +1031,6 @@ def read_role(role_id):
         the role does not exist.
     """
     role = _call_procedure_for_single('read_role', role_id)
-    role['permissions'] = json.loads(role['permissions'])
-    role['users'] = json.loads(role['users'])
     return role
 
 
@@ -1126,7 +1119,6 @@ def read_permission(permission_id):
 
     """
     permission = _call_procedure_for_single('read_permission', permission_id)
-    permission['objects'] = json.loads(permission['objects'])
     return permission
 
 
@@ -1160,8 +1152,6 @@ def list_permissions():
         If the User does not have permission to list permissions.
     """
     permissions = _call_procedure('list_permissions')
-    for permission in permissions:
-        permission['objects'] = json.loads(permission['objects'])
     return permissions
 
 
@@ -1446,7 +1436,6 @@ def store_report_status(report_id, status):
 
 def get_current_user_info():
     user_info = _call_procedure_for_single('get_current_user_info')
-    user_info['roles'] = json.loads(user_info['roles'])
     return user_info
 
 
