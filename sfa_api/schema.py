@@ -680,6 +680,11 @@ class ReportObjectPair(ma.Schema):
 
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
+    name = ma.String(
+        title="Name",
+        required=True,
+        validate=[UserstringValidator(), validate.Length(max=64)]
+    )
     start = ISODateTime(
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601"
@@ -745,13 +750,58 @@ class ReportValuesSchema(ReportValuesPostSchema):
 # Currently, the marshmallow API Spec
 @spec.define_schema('ReportMetadata')
 class ReportPostSchema(ma.Schema):
-    name = ma.String(
-        title="Name",
-        required=True,
-        validate=[UserstringValidator(), validate.Length(max=64)]
-    )
     report_parameters = ma.Nested(ReportParameters,
                                   required=True)
+
+
+@spec.define_schema('RawReportSchema')
+class RawReportSchema(ma.Schema):
+    """Parses metrics and raw_report out of a single object.
+    """
+    generated_at = ISODateTime(
+        title="Generation time",
+        description="ISO 8601 Datetime when raw report was generated",
+        required=True
+    )
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone for report figures/metrics",
+        required=True,
+        validate=TimezoneValidator())
+    versions = ma.Dict(
+        title="Package Versions",
+        description=(
+            "Versions of the packages used to generate this raw report"
+        ),
+        required=True
+    )
+    plots = ma.Dict(
+        title="Raw Plots",
+        required=True
+    )
+    metrics = ma.List(
+        ma.Dict(),
+        title="Calculated Metrics",
+        description="calculated metrics of the field",
+        required=True)
+    processed_forecasts_observations = ma.List(
+        ma.Dict(),
+        title="Processed Objects",
+        description="Resampled and aligned forecast/observation data",
+        required=True
+    )
+    messages = ma.List(
+        ma.Dict(),
+        title="Report Messages",
+        description="Messages emitted while generating raw report"
+    )
+    data_checksum = ma.String(
+        title="Data Checksum",
+        description=(
+            "SHA-256 checksum of the data used to generate this raw report"
+        ),
+        missing=None
+    )
 
 
 @spec.define_schema('ReportSchema')
@@ -768,10 +818,7 @@ class ReportSchema(ReportPostSchema):
         title='Calculated Metrics',
         description='Metrics calculated over the '
                     'analysis period of the report.')
-    raw_report = ma.Dict(
-        title="Raw Report",
-        description="A Markdown template with rendered metrics, and a block "
-                    "for inserting timeseries plots")
+    raw_report = ma.Nested(RawReportSchema())
     status = ma.String(validate=validate.OneOf(
         ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
@@ -784,23 +831,6 @@ class SingleReportSchema(ReportSchema):
     """
     values = ma.List(ma.Nested(ReportValuesSchema()),
                      many=True)
-
-
-@spec.define_schema('ReportMetricsSchema')
-class ReportMetricsSchema(ma.Schema):
-    """Parses metrics and raw_report out of a single object.
-    """
-    metrics = ma.List(
-        ma.Dict(),
-        title="Calculated Metrics",
-        Description="calculated metrics of the field",
-        required=True)
-    raw_report = ma.Dict(
-        title="Raw Report",
-        description=("A Markdown template with rendered metrics, and a block "
-                     "for inserting timeseries plots"),
-        required=True
-    )
 
 
 @spec.define_schema('AggregateDefinition')

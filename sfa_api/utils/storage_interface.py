@@ -1251,6 +1251,12 @@ def _decode_report_parameters(report):
     dt_end = pd.Timestamp(report['report_parameters']['end'])
     report['report_parameters']['start'] = dt_start
     report['report_parameters']['end'] = dt_end
+    if (
+            report.get('raw_report', None) is not None and
+            'generated_at' in report['raw_report']
+    ):
+        report['raw_report']['generated_at'] = pd.Timestamp(
+            report['raw_report']['generated_at'])
     return report
 
 
@@ -1293,7 +1299,7 @@ def store_report(report):
     _call_procedure(
         'store_report',
         report_id,
-        report['name'],
+        report['report_parameters']['name'],
         json.dumps(report['report_parameters']),
     )
     return report_id
@@ -1401,7 +1407,7 @@ def read_report_values(report_id):
     return values
 
 
-def store_raw_report(report_id, metrics, raw_report):
+def store_raw_report(report_id, raw_report):
     """
     Parameters
     ----------

@@ -12,7 +12,7 @@ from sfa_api.utils.queuing import get_queue
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
                             ReportSchema, SingleReportSchema,
-                            ReportMetricsSchema)
+                            RawReportSchema)
 
 
 REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
@@ -167,30 +167,26 @@ class ReportStatusView(MethodView):
         return '', 204
 
 
-class ReportMetricsView(MethodView):
+class RawReportView(MethodView):
     def post(self, report_id):
         """
         ---
-        summary: Store Report metrics
+        summary: Store Raw Report
         tags:
           - Reports
         requestBody:
-          description: JSON object containing metrics and raw report.
+          description: JSON object containing the raw report.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportMetricsSchema'
+                $ref: '#/components/schemas/RawReportSchema'
         parameters:
           - report_id
         """
-        raw_metrics_report = request.get_json()
-        metrics_report = ReportMetricsSchema().load(raw_metrics_report)
-        # dump metrics back to a JSON object, and keep the raw report
-        # template as a string
-        raw_metrics = metrics_report['metrics']
-        raw_report = metrics_report['raw_report']
+        raw_report_dict = request.get_json()
+        raw_report = RawReportSchema().load(raw_report_dict)
         storage = get_storage()
-        storage.store_report_metrics(report_id, raw_metrics, raw_report)
+        storage.store_raw_report(report_id, raw_report)
         return '', 204
 
 
@@ -296,8 +292,8 @@ reports_blp.add_url_rule(
     view_func=ReportStatusView.as_view('status')
 )
 reports_blp.add_url_rule(
-    '/<report_id>/metrics',
-    view_func=ReportMetricsView.as_view('metrics')
+    '/<report_id>/raw',
+    view_func=RawReportView.as_view('metrics')
 )
 reports_blp.add_url_rule(
     '/<report_id>/values',

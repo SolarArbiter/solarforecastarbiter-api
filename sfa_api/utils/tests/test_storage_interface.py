@@ -1197,3 +1197,35 @@ def test_create_job_user_bad_sql_user(
     with pytest.raises(pymysql.err.InternalError):
         storage_interface.create_job_user(
             'testuser', 'testpw', orgid, Fernet.generate_key())
+
+
+def test_list_reports():
+    pass
+
+
+def test_store_report():
+    pass
+
+
+def test_read_report():
+    pass
+
+
+def test_delete_report():
+    pass
+
+
+def test_store_report_values():
+    pass
+
+
+def test_read_report_values():
+    pass
+
+
+def test_store_raw_report():
+    pass
+
+
+def test_store_report_status():
+    pass

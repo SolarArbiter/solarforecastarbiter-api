@@ -176,24 +176,41 @@ VALID_CDF_VALUE_CSV = (
     '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
     '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
     f'{FORECAST_CSV}')
-REPORT_POST_JSON = {
-    'name': 'NREL MIDC OASIS GHI Forecast Analysis',
-    'report_parameters': {
-        'start': '2019-04-01T07:00:00Z',
-        'end': '2019-06-01T06:59:00Z',
-        'metrics': ['mae', 'rmse'],
-        'filters': [
-            {'quality_flags': ['USER FLAGGED']}
-        ],
-        'categories': [
-            'total',
-            'date'
-        ],
-        'object_pairs': [
-            {'observation': '123e4567-e89b-12d3-a456-426655440000',
-             'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],
+
+
+@pytest.fixture()
+def report_post_json():
+    return {
+        'report_parameters': {
+            'name': 'NREL MIDC OASIS GHI Forecast Analysis',
+            'start': '2019-04-01T07:00:00Z',
+            'end': '2019-06-01T06:59:00Z',
+            'metrics': ['mae', 'rmse'],
+            'filters': [
+                {'quality_flags': ['USER FLAGGED']}
+            ],
+            'categories': [
+                'total',
+                'date'
+            ],
+            'object_pairs': [
+                {'observation': '123e4567-e89b-12d3-a456-426655440000',
+                 'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],
+        }
     }
-}
+
+
+@pytest.fixture()
+def raw_report_json():
+    return {
+        'generated_at': '2019-07-01T12:00:00+00:00',
+        'timezone': 'Etc/GMT+8',
+        'versions': {},
+        'plots': {},
+        'metrics': [{'a': 1}],
+        'processed_forecasts_observations': [{'pfx': 0}],
+        'messages': [],
+    }
 
 
 def copy_update(json, key, value):
