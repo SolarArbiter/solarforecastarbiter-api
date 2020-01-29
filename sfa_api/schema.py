@@ -728,22 +728,14 @@ class ReportValuesPostSchema(ma.Schema):
         title="Object ID",
         description="UUID of the original object"
     )
-    # maybe custom field for binary data?
     processed_values = ma.String()
 
 
 @spec.define_schema('ReportValuesSchema')
 class ReportValuesSchema(ReportValuesPostSchema):
-    # Not sure how this dict should be structured. Nested
-    # Forecast/ObservationValueSchema?
-    # we definitely want the uuid:values mapping
     id = ma.UUID(
         title="Report Value ID",
         description="UUID for this set of processed values",
-    )
-    report_id = ma.UUID(
-        title="Report ID",
-        description="UUID of the associated report"
     )
 
 
@@ -781,9 +773,9 @@ class RawReportSchema(ma.Schema):
     )
     metrics = ma.List(
         ma.Dict(),
-        title="Calculated Metrics",
-        description="calculated metrics of the field",
-        required=True)
+        title='Calculated Metrics',
+        description='Metrics calculated over the '
+                    'analysis period of the report.')
     processed_forecasts_observations = ma.List(
         ma.Dict(),
         title="Processed Objects",
@@ -813,11 +805,6 @@ class ReportSchema(ReportPostSchema):
         ordered = True
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
-    metrics = ma.List(
-        ma.Dict(),
-        title='Calculated Metrics',
-        description='Metrics calculated over the '
-                    'analysis period of the report.')
     raw_report = ma.Nested(RawReportSchema())
     status = ma.String(validate=validate.OneOf(
         ['pending', 'complete', 'failed']))

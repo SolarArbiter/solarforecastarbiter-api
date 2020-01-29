@@ -5,6 +5,7 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+from copy import deepcopy
 import datetime as dt
 from functools import partial
 import math
@@ -1237,17 +1238,18 @@ def remove_object_from_permission(permission_id, uuid):
 
 
 def _decode_report_parameters(report):
+    out = deepcopy(report)
     dt_start = pd.Timestamp(report['report_parameters']['start'])
     dt_end = pd.Timestamp(report['report_parameters']['end'])
-    report['report_parameters']['start'] = dt_start
-    report['report_parameters']['end'] = dt_end
+    out['report_parameters']['start'] = dt_start.to_pydatetime()
+    out['report_parameters']['end'] = dt_end.to_pydatetime()
     if (
             report.get('raw_report', None) is not None and
             'generated_at' in report['raw_report']
     ):
-        report['raw_report']['generated_at'] = pd.Timestamp(
-            report['raw_report']['generated_at'])
-    return report
+        out['raw_report']['generated_at'] = pd.Timestamp(
+            report['raw_report']['generated_at']).to_pydatetime()
+    return out
 
 
 def list_reports():
@@ -1282,15 +1284,16 @@ def store_report(report):
           or the user lacks permissions to read the data.
     """
     report_id = generate_uuid()
-    iso_start = report['report_parameters']['start'].isoformat()
-    iso_end = report['report_parameters']['end'].isoformat()
-    report['report_parameters']['start'] = iso_start
-    report['report_parameters']['end'] = iso_end
+    rep = deepcopy(report)
+    iso_start = rep['report_parameters']['start'].isoformat()
+    iso_end = rep['report_parameters']['end'].isoformat()
+    rep['report_parameters']['start'] = iso_start
+    rep['report_parameters']['end'] = iso_end
     _call_procedure(
         'store_report',
         report_id,
-        report['report_parameters']['name'],
-        json.dumps(report['report_parameters']),
+        rep['report_parameters']['name'],
+        json.dumps(rep['report_parameters']),
     )
     return report_id
 

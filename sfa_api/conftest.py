@@ -183,7 +183,7 @@ def report_post_json():
     return {
         'report_parameters': {
             'name': 'NREL MIDC OASIS GHI Forecast Analysis',
-            'start': '2019-04-01T07:00:00Z',
+            'start': "2019-04-01T07:00:00Z",
             'end': '2019-06-01T06:59:00Z',
             'metrics': ['mae', 'rmse'],
             'filters': [
@@ -201,6 +201,16 @@ def report_post_json():
 
 
 @pytest.fixture()
+def report_parameters(report_post_json):
+    out = report_post_json['report_parameters'].copy()
+    out['start'] = dt.datetime(2019, 4, 1, 7,
+                               tzinfo=pytz.utc)
+    out['end'] = dt.datetime(2019, 6, 1, 6, 59,
+                             tzinfo=pytz.utc)
+    return out
+
+
+@pytest.fixture()
 def raw_report_json():
     return {
         'generated_at': '2019-07-01T12:00:00+00:00',
@@ -210,7 +220,43 @@ def raw_report_json():
         'metrics': [{'a': 1}],
         'processed_forecasts_observations': [{'pfx': 0}],
         'messages': [],
+        'data_checksum': None
     }
+
+
+@pytest.fixture()
+def reportid():
+    return '9f290dd4-42b8-11ea-abdf-f4939feddd82'
+
+
+@pytest.fixture()
+def report_values():
+    values = {
+        'object_id': '123e4567-e89b-12d3-a456-426655440000',
+        'processed_values': 'superencodedvalues'
+    }
+    return values
+
+
+@pytest.fixture()
+def report(report_parameters, raw_report_json, reportid, report_values):
+    rv = report_values.copy()
+    rv['id'] = 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+    out = {
+        'report_parameters': report_parameters,
+        'name': report_parameters['name'],
+        'report_id': reportid,
+        'provider': 'Organization 1',
+        'created_at': dt.datetime(2020, 1, 22, 13, 48, tzinfo=pytz.utc),
+        'modified_at': dt.datetime(2020, 1, 22, 13, 50,
+                                   tzinfo=pytz.utc),
+        'raw_report': raw_report_json,
+        'status': 'complete',
+        'values': [rv]
+    }
+    out['raw_report']['generated_at'] = dt.datetime(2019, 7, 1, 12,
+                                                    tzinfo=pytz.utc)
+    return out
 
 
 def copy_update(json, key, value):

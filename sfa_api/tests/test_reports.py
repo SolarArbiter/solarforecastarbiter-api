@@ -2,7 +2,6 @@ import pytest
 
 
 from copy import deepcopy
-import json
 from sfa_api.conftest import BASE_URL
 from solarforecastarbiter.datamodel import (
     ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
@@ -158,7 +157,8 @@ def test_list_reports(api, new_report):
     new_report()
     reports = api.get('/reports/', base_url=BASE_URL)
     reports_list = reports.get_json()
-    assert len(reports_list) == 3
+    # one more as test already in db
+    assert len(reports_list) == 4
 
 
 metrics_list = ", ".join(list(ALLOWED_DETERMINISTIC_METRICS.keys()))

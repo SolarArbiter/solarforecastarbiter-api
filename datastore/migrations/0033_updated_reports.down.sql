@@ -59,3 +59,32 @@ READS SQL DATA SQL SECURITY DEFINER
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_reports TO 'apiuser'@'%';
+
+DROP PROCEDURE read_report_values;
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_report_values (
+IN auth0id VARCHAR(32), IN strid CHAR(36))
+COMMENT 'Read processed report values of a single object'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE binid BINARY(16);
+    DECLARE allowed boolean DEFAULT FALSE;
+    SET binid = (SELECT UUID_TO_BIN(strid, 1));
+    SET allowed = can_user_perform_action(auth0id, binid, 'read_values');
+    IF allowed THEN
+        SELECT BIN_TO_UUID(id,1) as id, BIN_TO_UUID(report_id, 1) as report_id,
+            BIN_TO_UUID(object_id, 1) as object_id, processed_values
+        FROM arbiter_data.report_values WHERE report_id = binid AND (
+            SELECT can_user_perform_action(auth0id, object_id, 'read_values'));
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read report values"',
+        MYSQL_ERRNO = 1142;
+    END IF;
+END;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_report_values TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_report_values TO 'apiuser'@'%';
+
+
+
+DELETE FROM arbiter_data.permissions WHERE description like 'TESTREPORT %';
+DELETE FROM arbiter_data.reports WHERE id = UUID_TO_BIN('9f290dd4-42b8-11ea-abdf-f4939feddd82', 1);

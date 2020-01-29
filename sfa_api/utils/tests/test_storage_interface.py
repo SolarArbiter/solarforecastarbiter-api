@@ -1,5 +1,6 @@
 import datetime as dt
 import math
+import os
 import uuid
 
 
@@ -28,6 +29,20 @@ TESTINDICES = {
 def remove_reference(obj_list):
     return [obj for obj in obj_list
             if obj['provider'] != 'Reference']
+
+
+@pytest.fixture(scope='session')
+def root_cursor():
+    connection = pymysql.connect(
+        host=os.getenv('MYSQL_HOST', '127.0.0.1'),
+        port=int(os.getenv('MYSQL_PORT', '3306')),
+        user='root',
+        password='testpassword',
+        database='arbiter_data',
+        binary_prefix=True)
+    cursor = connection.cursor()
+    yield cursor
+    connection.rollback()
 
 
 @pytest.fixture(params=[0, 1, 2, 3, 4])
@@ -1199,33 +1214,110 @@ def test_create_job_user_bad_sql_user(
             'testuser', 'testpw', orgid, Fernet.generate_key())
 
 
-def test_list_reports():
-    pass
+def test_list_reports(sql_app, report, user):
+    out = storage_interface.list_reports()
+    assert len(out) == 1
+    exp = report.copy()
+    exp.pop('raw_report', None)
+    exp.pop('values', None)
+    assert out[0] == exp
 
 
-def test_store_report():
-    pass
+def test_list_reports_bad_user(sql_app, report, invalid_user):
+    out = storage_interface.list_reports()
+    assert len(out) == 0
 
 
-def test_read_report():
-    pass
+def test_store_report(sql_app, user, report_parameters, nocommit_cursor):
+    id_ = storage_interface.store_report(
+        {'report_parameters': report_parameters})
+    out = storage_interface.read_report(id_)
+    assert out['report_parameters'] == report_parameters
+    assert out['report_id'] == id_
+    assert out['status'] == 'pending'
 
 
-def test_delete_report():
-    pass
+def test_store_report_denied(sql_app, invalid_user, report_parameters):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_report(
+            {'report_parameters': report_parameters})
 
 
-def test_store_report_values():
-    pass
+def test_read_report(sql_app, report, user, reportid):
+    out = storage_interface.read_report(reportid)
+    assert out == report
 
 
-def test_read_report_values():
-    pass
+def test_read_report_denied(sql_app, invalid_user, reportid):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_report(reportid)
 
 
-def test_store_raw_report():
-    pass
+def test_delete_report(sql_app, user, nocommit_cursor, reportid):
+    storage_interface.delete_report(reportid)
+    assert len(storage_interface.list_reports()) == 0
 
 
-def test_store_report_status():
-    pass
+def test_delete_report_denied(sql_app, invalid_user,
+                              nocommit_cursor, reportid):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_report(reportid)
+
+
+def test_store_report_values(sql_app, user, reportid, report_values,
+                             nocommit_cursor):
+    newid = storage_interface.store_report_values(
+        reportid, report_values['object_id'],
+        report_values['processed_values'])
+    vals = storage_interface.read_report_values(reportid)
+    assert len(vals) == 2
+    assert newid in [v['id'] for v in vals]
+
+
+def test_store_report_values_denied(sql_app, invalid_user, reportid,
+                                    report_values):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_report_values(
+            reportid, report_values['object_id'],
+            report_values['processed_values'])
+
+
+def test_read_report_values(sql_app, user, reportid, report):
+    out = storage_interface.read_report_values(reportid)
+    assert out == report['values']
+
+
+def test_read_report_values_denied(sql_app, invalid_user, reportid):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_report_values(reportid)
+
+
+def test_store_raw_report(sql_app, user, nocommit_cursor, reportid,
+                          report, raw_report_json):
+    rr = raw_report_json.copy()
+    rr['messages'] = ['first']
+    storage_interface.store_raw_report(reportid, rr)
+    rep = storage_interface.read_report(reportid)
+    raw = rep['raw_report']
+    assert raw.pop('messages') == ['first']
+    exp = report['raw_report']
+    exp.pop('messages')
+    assert raw == exp
+
+
+def test_store_raw_report_denied(
+        sql_app, invalid_user, nocommit_cursor, reportid, raw_report_json):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_raw_report(reportid, raw_report_json)
+
+
+def test_store_report_status(sql_app, user, nocommit_cursor, reportid):
+    storage_interface.store_report_status(reportid, 'failed')
+    rep = storage_interface.read_report(reportid)
+    assert rep['status'] == 'failed'
+
+
+def test_store_report_status_denied(
+        sql_app, invalid_user, nocommit_cursor, reportid):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.store_report_status(reportid, 'failed')
