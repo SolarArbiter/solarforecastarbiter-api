@@ -760,7 +760,8 @@ class RawReportSchema(ma.Schema):
         description="IANA Timezone for report figures/metrics",
         required=True,
         validate=TimezoneValidator())
-    versions = ma.Dict(
+    versions = ma.List(
+        ma.Tuple((ma.String(), ma.String)),
         title="Package Versions",
         description=(
             "Versions of the packages used to generate this raw report"
