@@ -770,7 +770,8 @@ class RawReportSchema(ma.Schema):
     )
     plots = ma.Dict(
         title="Raw Plots",
-        required=True
+        required=True,
+        allow_none=True
     )
     metrics = ma.List(
         ma.Dict(),

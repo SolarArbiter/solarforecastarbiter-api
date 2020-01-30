@@ -215,11 +215,12 @@ def raw_report_json():
     return {
         'generated_at': '2019-07-01T12:00:00+00:00',
         'timezone': 'Etc/GMT+8',
-        'versions': {},
-        'plots': {},
-        'metrics': [{'a': 1}],
-        'processed_forecasts_observations': [{'pfx': 0}],
-        'messages': [],
+        'versions': [],
+        'plots': None,
+        'metrics': [],
+        'processed_forecasts_observations': [],
+        'messages': [{'step': 'dunno', 'level': 'error',
+                      'message': 'FAILED', 'function': 'fcn'}],
         'data_checksum': None
     }
 
@@ -251,7 +252,7 @@ def report(report_parameters, raw_report_json, reportid, report_values):
         'modified_at': dt.datetime(2020, 1, 22, 13, 50,
                                    tzinfo=pytz.utc),
         'raw_report': raw_report_json,
-        'status': 'complete',
+        'status': 'failed',
         'values': [rv]
     }
     out['raw_report']['generated_at'] = dt.datetime(2019, 7, 1, 12,
