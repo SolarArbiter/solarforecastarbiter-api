@@ -40,7 +40,7 @@ class UserstringValidator(Validator):
 
 
 ALLOWED_TIMEZONES = pytz.country_timezones('US') + list(
-    filter(lambda x: 'GMT' in x, pytz.all_timezones))
+    filter(lambda x: 'GMT' in x or 'UTC' in x, pytz.all_timezones))
 
 
 class TimezoneValidator(Validator):
