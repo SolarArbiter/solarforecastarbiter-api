@@ -14,12 +14,12 @@ pandas
 pyyaml
 pymysql
 sqlalchemy
-redis
+redis<3.4.0
 rq
 rq_scheduler
 fakeredis
 sentry_sdk
 blinker
 prometheus_flask_exporter
-git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
+#git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
 tables

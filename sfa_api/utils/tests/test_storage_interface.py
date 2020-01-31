@@ -796,7 +796,7 @@ def test_store_missing_values(
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
     missing_indices = obs_vals.index[range(0, obs_vals.index.size, 3)]
-    obs_vals.loc[missing_indices, 'value'] = pd.np.nan
+    obs_vals.loc[missing_indices, 'value'] = np.nan
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
     pdt.assert_frame_equal(stored, obs_vals)
