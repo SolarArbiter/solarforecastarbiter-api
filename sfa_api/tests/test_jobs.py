@@ -1,9 +1,11 @@
 import datetime as dt
 import tempfile
+import time
 
 
 import pytest
 from rq import SimpleWorker
+from rq.timeouts import JobTimeoutException
 from rq_scheduler import Scheduler
 
 
@@ -140,6 +142,15 @@ def test_convert_sql_job_to_rq_job(sql_job, mocker):
     assert scheduler.cron.call_args[0] == ('0 0 * * *',)
 
 
+def test_convert_sql_job_to_rq_job_timeout(sql_job, mocker):
+    sql_job['schedule'] = '{"type": "cron", "cron_string": "0 0 * * *", "timeout": "10m"}'  # NOQA
+    scheduler = mocker.MagicMock()
+    jobs.convert_sql_to_rq_job(sql_job, scheduler)
+    assert scheduler.cron.called
+    assert scheduler.cron.call_args[0] == ('0 0 * * *',)
+    assert scheduler.cron.call_args[1]['timeout'] == '10m'
+
+
 def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
     job = sql_job.copy()
     job['schedule'] = {"type": "enqueue_at"}
@@ -201,6 +212,40 @@ def adminapp(mocker):
         )
         with _make_nocommit_cursor(mocker):
             yield app
+
+
+def test_full_run_through_job_timeout(app, queue, mocker):
+    def dosleep(*args, **kwargs):
+        time.sleep(5)
+
+    mocker.patch('sfa_api.jobs.exchange_token', return_value='token')
+    mocker.patch('sfa_api.jobs.daily_observation_validation',
+                 new=dosleep)
+    fail = mocker.MagicMock()
+    gjq = mocker.patch('rq_scheduler.Scheduler.get_jobs_to_queue')
+
+    class US(jobs.UpdateMixin, Scheduler):
+        pass
+
+    sch = US(queue=queue, connection=queue.connection)
+    jobs.schedule_jobs(sch)
+    (job, exc_time) = list(sch.get_jobs(with_times=True))[0]
+    job.timeout = 1
+    assert exc_time == dt.datetime.utcnow().replace(
+        hour=0, minute=0, second=0, microsecond=0) + dt.timedelta(days=1)
+    gjq.return_value = [job]
+    sch.run(burst=True)
+    assert job in queue.jobs
+
+    def my_err(job, *exc_info):
+        assert exc_info[0] == JobTimeoutException
+        fail()
+
+    w = SimpleWorker([queue], connection=queue.connection,
+                     disable_default_exception_handler=True,
+                     exception_handlers=[my_err])
+    w.work(burst=True)
+    assert fail.called
 
 
 @pytest.mark.parametrize('jt,kwargs', [

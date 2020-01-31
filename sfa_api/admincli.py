@@ -342,6 +342,7 @@ class TimeDeltaParam(click.ParamType):
 
 base_url = click.option(
     '--base-url', default='https://api.solarforecastarbiter.org')
+timeout = click.option('--timeout')
 name_arg = click.argument('name')
 user_id_arg = click.argument('user_id', type=click.UUID)
 cron_string = click.argument('cron_string')
@@ -351,13 +352,14 @@ cron_string = click.argument('cron_string')
                      context_settings={"ignore_unknown_options": True})
 @with_default_options
 @base_url
+@timeout
 @name_arg
 @user_id_arg
 @cron_string
 @click.argument('start_td', type=TimeDeltaParam())
 @click.argument('end_td', type=TimeDeltaParam())
 def daily_validation_job(name, user_id, cron_string, start_td, end_td,
-                         base_url, **kwargs):
+                         base_url, timeout, **kwargs):
     """
     Create a daily observation validation job named NAME to be executed by
     the USER_ID user on a scheduled according to CRON_STRING. Validation
@@ -366,7 +368,7 @@ def daily_validation_job(name, user_id, cron_string, start_td, end_td,
     """
     from sfa_api.jobs import create_job
     id_ = create_job(
-        'daily_observation_validation', name, user_id, cron_string,
+        'daily_observation_validation', name, user_id, cron_string, timeout,
         start_td=start_td, end_td=end_td, base_url=base_url)
     click.echo(f'Job created with id {id_}')
 
@@ -374,12 +376,13 @@ def daily_validation_job(name, user_id, cron_string, start_td, end_td,
 @create_jobs.command('reference-nwp')
 @with_default_options
 @base_url
+@timeout
 @name_arg
 @user_id_arg
 @cron_string
 @click.argument('issue_time_buffer', type=TimeDeltaParam())
 def reference_nwp_job(name, user_id, cron_string, issue_time_buffer,
-                      base_url, **kwargs):
+                      base_url, timeout, **kwargs):
     """
     Create a reference nwp job named NAME to be executed by
     USER_ID on a scheduled defined by CRON_STRING. ISSUE_TIME_BUFFER
@@ -389,7 +392,7 @@ def reference_nwp_job(name, user_id, cron_string, issue_time_buffer,
     """
     from sfa_api.jobs import create_job
     id_ = create_job(
-        'reference_nwp', name, user_id, cron_string,
+        'reference_nwp', name, user_id, cron_string, timeout,
         issue_time_buffer=issue_time_buffer, base_url=base_url)
     click.echo(f'Job created with id {id_}')
 
@@ -397,12 +400,13 @@ def reference_nwp_job(name, user_id, cron_string, issue_time_buffer,
 @create_jobs.command('periodic-report')
 @with_default_options
 @base_url
+@timeout
 @name_arg
 @user_id_arg
 @cron_string
 @click.argument('report_id', type=click.UUID)
 def periodic_report_job(name, user_id, cron_string, report_id,
-                        base_url, **kwargs):
+                        base_url, timeout, **kwargs):
     """
     Create a job to periodically recreate a report given by REPORT_ID
     with job name NAME executed by user USER_ID on a schedule defined
@@ -410,6 +414,6 @@ def periodic_report_job(name, user_id, cron_string, report_id,
     """
     from sfa_api.jobs import create_job
     id_ = create_job(
-        'periodic_report', name, user_id, cron_string,
+        'periodic_report', name, user_id, cron_string, timeout,
         report_id=str(report_id), base_url=base_url)
     click.echo(f'Job created with id {id_}')
