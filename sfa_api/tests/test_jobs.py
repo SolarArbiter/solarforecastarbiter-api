@@ -143,7 +143,8 @@ def test_convert_sql_job_to_rq_job(sql_job, mocker):
 
 
 def test_convert_sql_job_to_rq_job_timeout(sql_job, mocker):
-    sql_job['schedule'] = '{"type": "cron", "cron_string": "0 0 * * *", "timeout": "10m"}'  # NOQA
+    sql_job['schedule'] = {
+        "type": "cron", "cron_string": "0 0 * * *", "timeout": "10m"}
     scheduler = mocker.MagicMock()
     jobs.convert_sql_to_rq_job(sql_job, scheduler)
     assert scheduler.cron.called
