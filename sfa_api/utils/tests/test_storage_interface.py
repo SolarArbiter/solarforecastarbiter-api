@@ -31,20 +31,6 @@ def remove_reference(obj_list):
             if obj['provider'] != 'Reference']
 
 
-@pytest.fixture(scope='session')
-def root_cursor():
-    connection = pymysql.connect(
-        host=os.getenv('MYSQL_HOST', '127.0.0.1'),
-        port=int(os.getenv('MYSQL_PORT', '3306')),
-        user='root',
-        password='testpassword',
-        database='arbiter_data',
-        binary_prefix=True)
-    cursor = connection.cursor()
-    yield cursor
-    connection.rollback()
-
-
 @pytest.fixture(params=[0, 1, 2, 3, 4])
 def startend(request):
     if request.param == 0:
