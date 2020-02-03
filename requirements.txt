@@ -14,10 +14,10 @@ pandas
 pyyaml
 pymysql
 sqlalchemy
-redis<3.4.0
+redis
 rq
 rq_scheduler
-fakeredis
+fakeredis>=1.1.1
 sentry_sdk
 blinker
 prometheus_flask_exporter
