@@ -266,3 +266,14 @@ def test_create_job(adminapp, jt, kwargs, nocommit_cursor, user_id):
     assert job['schedule'] == {'type': 'cron', 'cron_string': 'cronstr'}
     assert job['job_type'] == jt
     assert job['parameters'] == kwargs
+
+
+def test_create_job_timeout(adminapp, nocommit_cursor, user_id):
+    timeout = 100
+    jobs.create_job('periodic_report', 'testcreatejob', user_id, 'cronstr',
+                    timeout, report_id='reportid')
+    jlist = jobs.storage._call_procedure('list_jobs', with_current_user=False)
+    assert len(jlist) == 2
+    job = [j for j in jlist if j['name'] == 'testcreatejob'][0]
+    assert job['schedule'] == {'type': 'cron', 'cron_string': 'cronstr',
+                               'timeout': timeout}
