@@ -94,8 +94,12 @@ def sql_job(userid, orgid, jobid):
         'organization_id': orgid,
         'name': 'Test job',
         'job_type': 'daily_observation_validation',
-        'parameters': '{"start_td": "-1d", "end_td": "0h", "base_url": "http://localhost:5000"}',  # NOQA
-        'schedule': '{"type": "cron", "cron_string": "0 0 * * *"}',
+        'parameters': {
+            "start_td": "-1d",
+            "end_td": "0h",
+            "base_url": "http://localhost:5000"
+        },
+        'schedule': {"type": "cron", "cron_string": "0 0 * * *"},
         'version': 0,
         'created_at': dt.datetime(2019, 1, 1, 12, tzinfo=dt.timezone.utc),
         'modified_at': dt.datetime(2019, 1, 1, 12, tzinfo=dt.timezone.utc)
@@ -122,7 +126,7 @@ def test_schedule_jobs_modified(mocker, queue, sql_job):
 
 def test_schedule_jobs_err(mocker, queue, sql_job):
     job = sql_job.copy()
-    job['schedule'] = '{}'
+    job['schedule'] = {}
     mocker.patch('sfa_api.jobs.storage._call_procedure',
                  return_value=[job])
     log = mocker.patch('sfa_api.jobs.logger')
@@ -139,7 +143,8 @@ def test_convert_sql_job_to_rq_job(sql_job, mocker):
 
 
 def test_convert_sql_job_to_rq_job_timeout(sql_job, mocker):
-    sql_job['schedule'] = '{"type": "cron", "cron_string": "0 0 * * *", "timeout": "10m"}'  # NOQA
+    sql_job['schedule'] = {
+        "type": "cron", "cron_string": "0 0 * * *", "timeout": "10m"}
     scheduler = mocker.MagicMock()
     jobs.convert_sql_to_rq_job(sql_job, scheduler)
     assert scheduler.cron.called
@@ -149,7 +154,7 @@ def test_convert_sql_job_to_rq_job_timeout(sql_job, mocker):
 
 def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
     job = sql_job.copy()
-    job['schedule'] = '{"type": "enqueue_at"}'
+    job['schedule'] = {"type": "enqueue_at"}
     scheduler = mocker.MagicMock()
     with pytest.raises(ValueError):
         jobs.convert_sql_to_rq_job(job, scheduler)
@@ -199,6 +204,17 @@ def test_full_run_through(app, queue, mocker):
     assert validate.called
 
 
+@pytest.fixture()
+def adminapp(mocker):
+    with _make_sql_app() as app:
+        app.config.update(
+            MYSQL_USER='frameworkadmin',
+            MYSQL_PASSWORD='thisisaterribleandpublicpassword'
+        )
+        with _make_nocommit_cursor(mocker):
+            yield app
+
+
 def test_full_run_through_job_timeout(app, queue, mocker):
     def dosleep(*args, **kwargs):
         time.sleep(5)
@@ -242,9 +258,22 @@ def test_full_run_through_job_timeout(app, queue, mocker):
     pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(
         strict=True, raises=KeyError))
 ])
-def test_create_job(mocker, app, jt, kwargs):
-    store = mocker.patch('sfa_api.jobs.storage._call_procedure')
-    jobs.create_job(jt, 'testjob', 'userid', 'cronstr', '3min', **kwargs)
-    assert store.call_args[0][2:5] == ('userid', 'testjob', jt)
-    assert store.call_args[0][6] == (
-        '{"type": "cron", "cron_string": "cronstr", "timeout": "3min"}')
+def test_create_job(adminapp, jt, kwargs, nocommit_cursor, user_id):
+    jobs.create_job(jt, 'testcreatejob', user_id, 'cronstr', **kwargs)
+    jlist = jobs.storage._call_procedure('list_jobs', with_current_user=False)
+    assert len(jlist) == 2
+    job = [j for j in jlist if j['name'] == 'testcreatejob'][0]
+    assert job['schedule'] == {'type': 'cron', 'cron_string': 'cronstr'}
+    assert job['job_type'] == jt
+    assert job['parameters'] == kwargs
+
+
+def test_create_job_timeout(adminapp, nocommit_cursor, user_id):
+    timeout = 100
+    jobs.create_job('periodic_report', 'testcreatejob', user_id, 'cronstr',
+                    timeout, report_id='reportid')
+    jlist = jobs.storage._call_procedure('list_jobs', with_current_user=False)
+    assert len(jlist) == 2
+    job = [j for j in jlist if j['name'] == 'testcreatejob'][0]
+    assert job['schedule'] == {'type': 'cron', 'cron_string': 'cronstr',
+                               'timeout': timeout}

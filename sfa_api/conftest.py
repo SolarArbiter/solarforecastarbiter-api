@@ -176,24 +176,88 @@ VALID_CDF_VALUE_CSV = (
     '# forecast_id: 633f9396-50bb-11e9-8647-d663bd873d93\n'
     '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
     f'{FORECAST_CSV}')
-REPORT_POST_JSON = {
-    'name': 'NREL MIDC OASIS GHI Forecast Analysis',
-    'report_parameters': {
-        'start': '2019-04-01T07:00:00Z',
-        'end': '2019-06-01T06:59:00Z',
-        'metrics': ['mae', 'rmse'],
-        'filters': [
-            {'quality_flags': ['USER FLAGGED']}
-        ],
-        'categories': [
-            'total',
-            'date'
-        ],
-        'object_pairs': [
-            {'observation': '123e4567-e89b-12d3-a456-426655440000',
-             'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],
+
+
+@pytest.fixture()
+def report_post_json():
+    return {
+        'report_parameters': {
+            'name': 'NREL MIDC OASIS GHI Forecast Analysis',
+            'start': "2019-04-01T07:00:00Z",
+            'end': '2019-06-01T06:59:00Z',
+            'metrics': ['mae', 'rmse'],
+            'filters': [
+                {'quality_flags': ['USER FLAGGED']}
+            ],
+            'categories': [
+                'total',
+                'date'
+            ],
+            'object_pairs': [
+                {'observation': '123e4567-e89b-12d3-a456-426655440000',
+                 'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],
+        }
     }
-}
+
+
+@pytest.fixture()
+def report_parameters(report_post_json):
+    out = report_post_json['report_parameters'].copy()
+    out['start'] = dt.datetime(2019, 4, 1, 7,
+                               tzinfo=pytz.utc)
+    out['end'] = dt.datetime(2019, 6, 1, 6, 59,
+                             tzinfo=pytz.utc)
+    return out
+
+
+@pytest.fixture()
+def raw_report_json():
+    return {
+        'generated_at': '2019-07-01T12:00:00+00:00',
+        'timezone': 'Etc/GMT+8',
+        'versions': [],
+        'plots': None,
+        'metrics': [],
+        'processed_forecasts_observations': [],
+        'messages': [{'step': 'dunno', 'level': 'error',
+                      'message': 'FAILED', 'function': 'fcn'}],
+        'data_checksum': None
+    }
+
+
+@pytest.fixture()
+def reportid():
+    return '9f290dd4-42b8-11ea-abdf-f4939feddd82'
+
+
+@pytest.fixture()
+def report_values():
+    values = {
+        'object_id': '123e4567-e89b-12d3-a456-426655440000',
+        'processed_values': 'superencodedvalues'
+    }
+    return values
+
+
+@pytest.fixture()
+def report(report_parameters, raw_report_json, reportid, report_values):
+    rv = report_values.copy()
+    rv['id'] = 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+    out = {
+        'report_parameters': report_parameters,
+        'name': report_parameters['name'],
+        'report_id': reportid,
+        'provider': 'Organization 1',
+        'created_at': dt.datetime(2020, 1, 22, 13, 48, tzinfo=pytz.utc),
+        'modified_at': dt.datetime(2020, 1, 22, 13, 50,
+                                   tzinfo=pytz.utc),
+        'raw_report': raw_report_json,
+        'status': 'failed',
+        'values': [rv]
+    }
+    out['raw_report']['generated_at'] = dt.datetime(2019, 7, 1, 12,
+                                                    tzinfo=pytz.utc)
+    return out
 
 
 def copy_update(json, key, value):

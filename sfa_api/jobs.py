@@ -175,8 +175,8 @@ def convert_sql_to_rq_job(sql_job, scheduler):
         If the type of scheduling is not cron
     """
     args = [sql_job[k] for k in ('name', 'job_type', 'user_id')]
-    kwargs = json.loads(sql_job['parameters'])
-    schedule = json.loads(sql_job['schedule'])
+    kwargs = sql_job['parameters']
+    schedule = sql_job['schedule']
     if schedule['type'] != 'cron':
         raise ValueError('Only cron job schedules are supported')
     logger.info('Adding job %s with schedule %s', sql_job['name'],

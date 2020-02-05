@@ -644,7 +644,6 @@ def test_read_report(
     res_params = json.loads(res['report_parameters'])
     orig_params = json.loads(report['report_parameters'])
     assert res_params == orig_params
-    assert res['metrics'] == '{}'
     assert res['raw_report'] is None
 
 

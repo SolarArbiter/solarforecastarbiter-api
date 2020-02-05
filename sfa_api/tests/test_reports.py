@@ -2,31 +2,25 @@ import pytest
 
 
 from copy import deepcopy
-import json
-from sfa_api.conftest import BASE_URL, REPORT_POST_JSON
+from sfa_api.conftest import BASE_URL
 from solarforecastarbiter.datamodel import (
     ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
 
 
 @pytest.fixture()
-def report_json():
-    return REPORT_POST_JSON
-
-
-@pytest.fixture()
-def new_report(api, report_json, mocked_queuing):
+def new_report(api, report_post_json, mocked_queuing):
     def fn():
         res = api.post('/reports/',
                        base_url=BASE_URL,
-                       json=report_json)
+                       json=report_post_json)
         return res.data.decode()
     return fn
 
 
-def test_post_report(api, report_json, mocked_queuing):
+def test_post_report(api, report_post_json, mocked_queuing):
     res = api.post('/reports/',
                    base_url=BASE_URL,
-                   json=REPORT_POST_JSON)
+                   json=report_post_json)
     assert res.status_code == 201
     assert 'Location' in res.headers
 
@@ -39,7 +33,6 @@ def test_get_report(api, new_report):
     report = res.json
     assert 'report_id' in report
     assert 'provider' in report
-    assert 'metrics' in report
     assert 'raw_report' in report
     assert 'status' in report
     assert 'created_at' in report
@@ -73,9 +66,9 @@ REPORT_VALUESET = [
 
 
 @pytest.mark.parametrize('values', REPORT_VALUESET)
-def test_post_report_values(api, new_report, values):
+def test_post_report_values(api, new_report, values, report_post_json):
     report_id = new_report()
-    object_pairs = REPORT_POST_JSON['report_parameters']['object_pairs']
+    object_pairs = report_post_json['report_parameters']['object_pairs']
     obj_id = object_pairs[0]['observation']
     report_values = {
         'object_id': obj_id,
@@ -110,9 +103,9 @@ def test_post_report_values_bad_uuid(api, new_report, values):
 
 
 @pytest.mark.parametrize('values', REPORT_VALUESET)
-def test_read_report_values(api, new_report, values):
+def test_read_report_values(api, new_report, values, report_post_json):
     report_id = new_report()
-    object_pairs = REPORT_POST_JSON['report_parameters']['object_pairs']
+    object_pairs = report_post_json['report_parameters']['object_pairs']
     obj_id = object_pairs[0]['observation']
 
     report_values = {
@@ -133,21 +126,16 @@ def test_read_report_values(api, new_report, values):
     assert report_values[0]['processed_values'] == values
 
 
-def test_post_metrics(api, new_report):
+def test_post_raw_report(api, new_report, raw_report_json):
     report_id = new_report()
-    payload = {
-        'metrics': {'MAE': 'data', 'RMSE': 'data'},
-        'raw_report': '<p>hello</p>',
-    }
-    res = api.post(f'/reports/{report_id}/metrics',
+    res = api.post(f'/reports/{report_id}/raw',
                    base_url=BASE_URL,
-                   json=payload)
+                   json=raw_report_json)
     assert res.status_code == 204
-    metrics_res = api.get(f'/reports/{report_id}',
-                          base_url=BASE_URL)
-    report_with_metrics = metrics_res.get_json()
-    assert json.loads(report_with_metrics['metrics']) == payload['metrics']
-    assert report_with_metrics['raw_report'] == payload['raw_report']
+    full_res = api.get(f'/reports/{report_id}',
+                       base_url=BASE_URL)
+    report_with_raw = full_res.get_json()
+    assert report_with_raw['raw_report'] == raw_report_json
 
 
 def test_delete_report(api, new_report):
@@ -169,7 +157,8 @@ def test_list_reports(api, new_report):
     new_report()
     reports = api.get('/reports/', base_url=BASE_URL)
     reports_list = reports.get_json()
-    assert len(reports_list) == 3
+    # one more as test already in db
+    assert len(reports_list) == 4
 
 
 metrics_list = ", ".join(list(ALLOWED_DETERMINISTIC_METRICS.keys()))
@@ -177,6 +166,7 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
 
 
 @pytest.mark.parametrize('key,value,error', [
+    ('name', 'r'*70, '["Longer than maximum length 64."]'),
     ('start', 'invalid_date',
      '["Not a valid datetime."]'),
     ('end', 'invalid_date',
@@ -200,8 +190,8 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
         f'{{"0":["Must be one of: {categories_list}."]}}'),
 ])
 def test_post_report_invalid_report_params(
-        api, key, value, error, report_json):
-    payload = deepcopy(report_json)
+        api, key, value, error, report_post_json):
+    payload = deepcopy(report_post_json)
     payload['report_parameters'][key] = value
     res = api.post('/reports/', base_url=BASE_URL, json=payload)
     assert res.status_code == 400

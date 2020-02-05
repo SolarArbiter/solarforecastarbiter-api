@@ -87,7 +87,9 @@ def new_report(
         else:
             cdf_fx = cdf_forecasts.copy()
         fx_list.extend(cdf_fx)
+        name = f'report{str(uuid1())[:10]}'
         report_parameters = {
+            'name': name,
             'object_pairs': [(str(bin_to_uuid(obs['id'])),
                               str(bin_to_uuid(fx['id'])))
                              for fx in fx_list],
@@ -97,8 +99,8 @@ def new_report(
         }
         params_json = json.dumps(report_parameters)
         out = OrderedDict(id=newuuid(), organization_id=org['id'],
-                          name=f'report{str(uuid1())[:10]}',
-                          report_parameters=params_json, metrics="{}")
+                          name=name,
+                          report_parameters=params_json)
         insert_dict(cursor, 'reports', out)
         for obj in fx_list + [obs]:
             cursor.execute(

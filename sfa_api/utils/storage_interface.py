@@ -5,6 +5,7 @@ it is not feasible to utilize a mysql instance or other persistent
 storage.
 """
 from contextlib import contextmanager
+from copy import deepcopy
 import datetime as dt
 from functools import partial
 import math
@@ -76,6 +77,7 @@ def _make_sql_connection_partial():
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
     conv[converters.FIELD_TYPE.TIMESTAMP] = convert_datetime_utc
     conv[converters.FIELD_TYPE.DATETIME] = convert_datetime_utc
+    conv[converters.FIELD_TYPE.JSON] = json.loads
     conv[pd.Timestamp] = escape_timestamp
     conv[dt.datetime] = escape_datetime
     conv[float] = escape_float_with_nan
@@ -808,7 +810,7 @@ def _set_cdf_group_forecast_parameters(forecast_dict):
             continue
         elif key == 'constant_values':
             out[key] = []
-            constant_vals = json.loads(forecast_dict['constant_values'])
+            constant_vals = forecast_dict['constant_values']
             for single_id, val in constant_vals.items():
                 out[key].append({'forecast_id': single_id,
                                  'constant_value': val})
@@ -892,8 +894,6 @@ def list_users():
         List of dictionaries of user information.
     """
     users = _call_procedure('list_users')
-    for user in users:
-        user['roles'] = json.loads(user['roles'])
     return users
 
 
@@ -911,7 +911,6 @@ def read_user(user_id):
         Dictionary of user information.
     """
     user = _call_procedure_for_single('read_user', user_id)
-    user['roles'] = json.loads(user['roles'])
     return user
 
 
@@ -980,8 +979,6 @@ def list_roles():
         List of dictionaries of Role information.
     """
     roles = _call_procedure('list_roles')
-    for role in roles:
-        role['permissions'] = json.loads(role['permissions'])
     return roles
 
 
@@ -1035,8 +1032,6 @@ def read_role(role_id):
         the role does not exist.
     """
     role = _call_procedure_for_single('read_role', role_id)
-    role['permissions'] = json.loads(role['permissions'])
-    role['users'] = json.loads(role['users'])
     return role
 
 
@@ -1125,7 +1120,6 @@ def read_permission(permission_id):
 
     """
     permission = _call_procedure_for_single('read_permission', permission_id)
-    permission['objects'] = json.loads(permission['objects'])
     return permission
 
 
@@ -1159,8 +1153,6 @@ def list_permissions():
         If the User does not have permission to list permissions.
     """
     permissions = _call_procedure('list_permissions')
-    for permission in permissions:
-        permission['objects'] = json.loads(permission['objects'])
     return permissions
 
 
@@ -1246,12 +1238,18 @@ def remove_object_from_permission(permission_id, uuid):
 
 
 def _decode_report_parameters(report):
-    report['report_parameters'] = json.loads(report['report_parameters'])
+    out = deepcopy(report)
     dt_start = pd.Timestamp(report['report_parameters']['start'])
     dt_end = pd.Timestamp(report['report_parameters']['end'])
-    report['report_parameters']['start'] = dt_start
-    report['report_parameters']['end'] = dt_end
-    return report
+    out['report_parameters']['start'] = dt_start.to_pydatetime()
+    out['report_parameters']['end'] = dt_end.to_pydatetime()
+    if (
+            report.get('raw_report', None) is not None and
+            'generated_at' in report['raw_report']
+    ):
+        out['raw_report']['generated_at'] = pd.Timestamp(
+            report['raw_report']['generated_at']).to_pydatetime()
+    return out
 
 
 def list_reports():
@@ -1286,15 +1284,16 @@ def store_report(report):
           or the user lacks permissions to read the data.
     """
     report_id = generate_uuid()
-    iso_start = report['report_parameters']['start'].isoformat()
-    iso_end = report['report_parameters']['end'].isoformat()
-    report['report_parameters']['start'] = iso_start
-    report['report_parameters']['end'] = iso_end
+    rep = deepcopy(report)
+    iso_start = rep['report_parameters']['start'].isoformat()
+    iso_end = rep['report_parameters']['end'].isoformat()
+    rep['report_parameters']['start'] = iso_start
+    rep['report_parameters']['end'] = iso_end
     _call_procedure(
         'store_report',
         report_id,
-        report['name'],
-        json.dumps(report['report_parameters']),
+        rep['report_parameters']['name'],
+        json.dumps(rep['report_parameters']),
     )
     return report_id
 
@@ -1401,25 +1400,23 @@ def read_report_values(report_id):
     return values
 
 
-def store_report_metrics(report_id, metrics, raw_report):
+def store_raw_report(report_id, raw_report):
     """
     Parameters
     ----------
     report_id: str
         UUID of the report associated with the data.
-    metrics: dict
-        A dict containing the metrics and metadata
-    raw_report: bytes
-        byte representation of the rereport template.
+    raw_report: dict
+        dict representation of the raw report.
 
     Raises
     ------
     StorageAuthError
         If the user does not have permission to update the report
     """
-    json_metrics = json.dumps(metrics)
-    _call_procedure('store_report_metrics', report_id,
-                    json_metrics, raw_report)
+    json_raw_report = json.dumps(raw_report)
+    _call_procedure('store_raw_report', report_id,
+                    json_raw_report)
 
 
 def store_report_status(report_id, status):
@@ -1442,7 +1439,6 @@ def store_report_status(report_id, status):
 
 def get_current_user_info():
     user_info = _call_procedure_for_single('get_current_user_info')
-    user_info['roles'] = json.loads(user_info['roles'])
     return user_info
 
 
@@ -1597,7 +1593,7 @@ def _set_aggregate_parameters(aggregate_dict):
     for key in schema.AggregateSchema().fields.keys():
         if key == 'observations':
             out[key] = []
-            for obs in json.loads(aggregate_dict['observations']):
+            for obs in aggregate_dict['observations']:
                 for tkey in ('created_at', 'observation_deleted_at',
                              'effective_until', 'effective_from'):
                     if obs[tkey] is not None:
