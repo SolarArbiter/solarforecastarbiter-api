@@ -132,7 +132,7 @@ BEGIN
     DECLARE cur CURSOR FOR SELECT BIN_TO_UUID(id, 1) as id FROM forecasts WHERE site_id = siteid;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    SET baseparams = JSON_OBJECT('start', '2019-01-01T00:00Z', 'end', '2020-01-01T00:00Z', 'metrics', JSON_ARRAY('mae', 'rmse', 'mbe'), 'object_pairs', JSON_ARRAY());
+    SET baseparams = JSON_OBJECT('name', name, 'start', '2019-01-01T00:00Z', 'end', '2020-01-01T00:00Z', 'metrics', JSON_ARRAY('mae', 'rmse', 'mbe'), 'object_pairs', JSON_ARRAY());
     SET orgid = (SELECT organization_id FROM sites WHERE id = siteid);
     SET obsid = (SELECT BIN_TO_UUID(id, 1) FROM observations where site_id = siteid);
 
