@@ -138,11 +138,12 @@ class ReportView(BaseView):
         """Reorganizes report processed values into the propper place for
         plotting and creates a `solarforecastarbiter.datamodel.Report` object.
         """
-        raw_report = RawReport.from_dict(self.metadata['raw_report'])
-        pfxobs = load_report_values(raw_report, self.metadata['values'])
         report = Report.from_dict(self.metadata)
-        report = report.replace(raw_report=raw_report.replace(
-            processed_forecasts_observations=pfxobs))
+        if self.metadata['raw_report'] is not None:
+            raw_report = RawReport.from_dict(self.metadata['raw_report'])
+            pfxobs = load_report_values(raw_report, self.metadata['values'])
+            report = report.replace(raw_report=raw_report.replace(
+                processed_forecasts_observations=pfxobs))
         return report
 
     def template_args(self):
