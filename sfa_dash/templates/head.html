@@ -19,18 +19,19 @@
 <!-- Custom styles for this template -->
 <link href="/static/css/styles.css" type="text/css" rel="stylesheet">
 {% if includes_bokeh %}
+{% set bkversion = bokeh_version | default('1.4.0') %}
 <link
-    href="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.css"
+    href="https://cdn.pydata.org/bokeh/release/bokeh-{{ bkversion }}.min.css"
     rel="stylesheet" type="text/css">
 <link
-    href="https://cdn.pydata.org/bokeh/release/bokeh-widgets-1.2.0.min.css"
+    href="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{{ bkversion }}.min.css"
     rel="stylesheet" type="text/css">
 <link
-    href="https://cdn.pydata.org/bokeh/release/bokeh-tables-1.2.0.min.css"
+    href="https://cdn.pydata.org/bokeh/release/bokeh-tables-{{ bkversion }}.min.css"
     rel="stylesheet" type="text/css">
-<script src="https://cdn.pydata.org/bokeh/release/bokeh-1.2.0.min.js"></script>
-<script src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-1.2.0.min.js"></script>
-<script src="https://cdn.pydata.org/bokeh/release/bokeh-tables-1.2.0.min.js"></script>
+<script src="https://cdn.pydata.org/bokeh/release/bokeh-{{ bkversion }}.min.js"></script>
+<script src="https://cdn.pydata.org/bokeh/release/bokeh-widgets-{{ bkversion }}.min.js"></script>
+<script src="https://cdn.pydata.org/bokeh/release/bokeh-tables-{{ bkversion }}.min.js"></script>
 {% endif %}
 
 <script src="/static/js/table-search.js"></script>
