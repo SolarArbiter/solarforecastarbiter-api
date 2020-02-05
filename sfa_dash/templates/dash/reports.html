@@ -21,14 +21,10 @@
   {% for report in reports %}
     <tr class="reports-table-row">
         <td class="reports-table-name-column">
-          {% if report['status'] == 'complete' %}
-          <a href="{{ url_for('data_dashboard.report_view', uuid=report['report_id']) }}">{{ report['name'] }}</a>
-          {% else %}
-           {{ report['name'] }}
-           {% endif %}
+          <a href="{{ url_for('data_dashboard.report_view', uuid=report['report_id']) }}">{{ report['report_parameters']['name'] }}</a>
         </td>
         <td class="reports-table-created-column">{{ report['created_at'] | format_datetime }}</td>
-        <td class="reports-table-status-column">{{report['status'] }}</td>
+        <td class="reports-table-status-column">{{ report['status'] }}</td>
         <td><a role="button" class="btn btn-danger btn-sm" href="{{ url_for('data_dashboard.delete_report', uuid=report['report_id']) }}">Delete</a>
     </tr>
   {% endfor %}

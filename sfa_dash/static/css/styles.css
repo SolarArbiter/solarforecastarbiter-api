@@ -407,3 +407,102 @@ th.selection-column{
     background-color: #c9cccf;
     border-color: #a9acaf;
 }
+
+/* report stuff */
+
+#report-block h1, #report-block h2, #report-block h3{
+    margin-top: 2rem;
+    margin-bottom: .5rem;
+}
+#metric-plot-wrapper{
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1em;
+    margin-bottom: 1em;
+}
+
+#metrics-sort-list{
+    list-style: none;
+    padding-left: 0;
+}
+
+#metrics-sort-list .metric-sort:nth-child(2){
+    padding-left: 1em;
+}
+
+#metrics-sort-list .metric-sort:nth-child(3){
+    padding-left: 2em;
+}
+
+.metric-sort{
+    margin: .75em;
+    width: fit-content;
+}
+.metric-sort-value{
+    padding: .5rem 1rem;
+    background-color: #ddd;
+    margin: 0 .1rem;
+}
+.metric-sort .arrow-up{
+    height: 50%;
+    margin: 0 .25em;
+    display: inline-block;
+    border-bottom: .5em solid black;
+    border-left: .5em solid transparent;
+    border-right: .5em solid transparent;
+    border-top: unset;
+}
+.metric-sort .arrow-down{
+    height: 50%;
+    margin: 0 .25em;
+    display: inline-block;
+    border-bottom: unset;
+    border-left: .5em solid transparent;
+    border-right: .5em solid transparent;
+    border-top: .5em solid black;
+}
+
+#metric-sorting{
+    margin-bottom: 1em;
+}
+
+#metric-plot-wrapper > div > div{
+    padding-left: 2em;
+}
+#metric-plot-wrapper > div > div > div{
+    padding-left: 2em;
+}
+
+.report-plot-section-heading{
+    background-color: #ACD;
+    display: block;
+    padding: .5em;
+    position: relative;
+    margin-bottom: .2em;
+}
+.report-plot-section-heading-text{
+    padding-left: 1em;
+}
+.report-plot-section-heading::after{
+    content: "";
+    width: 1em;
+    height: 1em;
+    position: absolute;
+    left: 1em;
+    top: 30%;
+    border-left: .5em solid transparent;
+    border-right: .5em solid transparent;
+    border-top: .5em solid black;
+    border-bottom: unset;
+}
+.report-plot-section-heading.collapsed::after{
+    border-left: .5em solid black;
+    border-right: unset;
+    border-bottom: .5em solid transparent;
+    border-top: .5em solid transparent;
+}
+.ui-sortable-handle:hover{
+    cursor: pointer;
+}
+.plot-attribute-wrapper .plot-attribute-wrapper{
+    border-left: 1px solid #eee;
+}

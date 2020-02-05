@@ -1,5 +1,12 @@
 {% extends "dash/data.html" %}
 {% block content %}
-{% include 'sections/notifications.html' %}
-{{ report | safe }}
+{% include "sections/notifications.html" %}
+<div id="report-block">
+{% include "data/intermediate_report.html" %}
+</div>
+<script>
+    var metric_categories = JSON.parse('{{ metric_categories | tojson }}');
+    var deterministic_metrics = JSON.parse('{{ deterministic_metrics | tojson }}');
+</script>
+<script src="/static/js/report-rendering.js"></script>
 {% endblock %}

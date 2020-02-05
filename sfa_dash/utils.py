@@ -64,7 +64,7 @@ def sign_doc(doc, key_id, passphrase_file):
     return signed_body
 
 
-def make_hashes(doc, algs=['md5', 'sha1', 'sha256']):
+def make_hashes(doc, algs=['sha256']):
     """
     Create hashes of the document.
 

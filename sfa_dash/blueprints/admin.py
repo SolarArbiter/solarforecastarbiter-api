@@ -72,6 +72,16 @@ class AdminView(BaseView):
         }
         return {'subnav': self.format_subnav(**subnav_kwargs)}
 
+    def flatten_reports(self, report_list):
+        """Takes a list of report objects from the api and updates the
+        top-level keys with the contents of 'report_parameters' for each
+        report.
+        """
+        reports = [report.copy() for report in report_list]
+        for report in reports:
+            report.update(report.get('report_parameters'))
+        return reports
+
     def get(self):
         return render_template('forms/admin/admin.html',
                                **self.template_args())
@@ -464,13 +474,14 @@ class PermissionView(AdminView):
                 id_key = f'{object_type}_id'
             # create a dict of objects where keys are uuid and values are
             # objects
+            try:
+                object_list = handle_response(api_handler.list_metadata())
+            except DataRequestException as e:
+                return render_template(
+                    self.template, errors=e.errors, **self.template_args())
             if object_type == 'report':
-                object_list = api_handler.list_metadata()
-                object_map = {obj.to_dict()[id_key]: obj.to_dict()
-                              for obj in object_list}
+                object_map = self.flatten_reports(object_list)
             else:
-                objects = api_handler.list_metadata()
-                object_list = objects.json()
                 object_map = {obj[id_key]: obj
                               for obj in object_list}
             # rebuild the 'objects' dict with the uuid: object structure
@@ -514,15 +525,13 @@ class PermissionsCreation(AdminView):
         """Render a permissions form with all of the available
         objects from the
         """
+        try:
+            table_data = handle_response(self.api_handle.list_metadata())
+        except DataRequestException as e:
+            return render_template(self.template, errors=e.errors)
         if self.data_type == 'report':
-            table_data = self.api_handle.list_metadata()
-            table_data = [report.to_dict() for report in table_data]
-        else:
-            try:
-                table_data = handle_response(self.api_handle.list_metadata())
-            except DataRequestException as e:
-                return render_template(self.template, errors=e.errors)
-            table_data = self.filter_by_org(table_data, 'provider')
+            table_data = self.flatten_reports(table_data)
+        table_data = self.filter_by_org(table_data, 'provider')
         return render_template(self.template,
                                table_data=table_data,
                                data_type=self.data_type,
@@ -625,8 +634,9 @@ class PermissionObjectAddition(PermissionView):
             api = self.get_api_handler(permission['object_type'])
             perm_objects = list(permission['objects'].keys())
             if data_type == 'report':
-                all_objects = api.list_metadata()
-                all_objects = [rep.to_dict() for rep in all_objects]
+                all_objects = handle_response(api.list_metadata())
+                all_objects = [rep.update(rep['report_parameters'])
+                               for rep in all_objects]
             else:
                 all_objects = handle_response(api.list_metadata())
                 all_objects = self.filter_by_org(all_objects, 'provider')

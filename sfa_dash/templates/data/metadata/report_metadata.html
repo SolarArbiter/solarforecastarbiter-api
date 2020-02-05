@@ -2,16 +2,16 @@
 {% import "data/metadata/meta_macro.jinja" as macro %}
 {% block metadata %}
 <ul class="data-metadata-fields col-md-6 col-sm-12">
-      {{ macro.li('Name', metadata_object.name) }}
-      {{ macro.li('Organization', metadata_object.organization) }}
-      {{ macro.li('Status', metadata_object.status) }}
+      {{ macro.li('Name', metadata_object['report_parameters']['name']) }}
+      {{ macro.li('Organization', metadata_object['provider']) }}
+      {{ macro.li('Status', metadata_object['status']) }}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-sm-12">
-  {{ macro.li('Start', metadata_object.start | format_datetime)}}
-  {{ macro.li('End', metadata_object.end | format_datetime)}}
+  {{ macro.li('Start', metadata_object['report_parameters']['start'] | format_datetime)}}
+  {{ macro.li('End', metadata_object['report_parameters']['end'] | format_datetime)}}
   <li class="metadata-field"><span class="data-metadata-label">Metrics:</span>
       <ul>
-        {% for metric in metadata_object.metrics %}
+        {% for metric in metadata_object['report_parameters']['metrics'] %}
         <li>{{ metric | upper }}
         {% endfor %}
       </ul>

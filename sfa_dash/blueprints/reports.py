@@ -1,24 +1,27 @@
-"""Draft of reports endpoints/pages. Need to integrate core report generation.
-"""
 from flask import (request, redirect, url_for, render_template, send_file,
                    current_app)
 from requests.exceptions import HTTPError
-from solarforecastarbiter.reports.main import report_to_html_body
-from solarforecastarbiter.reports.template import full_html
+
+from solarforecastarbiter.datamodel import Report
+from solarforecastarbiter.reports.template import (
+    get_template_and_kwargs, render_html)
+
 from sfa_dash.api_interface import (observations, forecasts, sites, reports,
                                     aggregates)
-
-
 from sfa_dash.utils import check_sign_zip
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import filter_form_fields, handle_response
+from sfa_dash.errors import DataRequestException
 
 
 class ReportsView(BaseView):
     template = 'dash/reports.html'
 
     def template_args(self):
-        reports_list = reports.list_full_reports()
+        try:
+            reports_list = handle_response(reports.list_metadata())
+        except DataRequestException as e:
+            return {'errors': e.errors}
         return {
             "page_title": 'Reports',
             "reports": reports_list,
@@ -81,6 +84,7 @@ class ReportForm(BaseView):
 
     def parse_report_parameters(self, form_data):
         params = {}
+        params['name'] = form_data['name']
         params['object_pairs'] = self.zip_object_pairs(form_data)
         params['metrics'] = request.form.getlist('metrics')
         params['categories'] = request.form.getlist('categories')
@@ -92,7 +96,6 @@ class ReportForm(BaseView):
 
     def report_formatter(self, form_data):
         formatted = {}
-        formatted['name'] = form_data['name']
         formatted['report_parameters'] = self.parse_report_parameters(
             form_data)
         return formatted
@@ -107,54 +110,96 @@ class ReportForm(BaseView):
             }
             return super().get(form_data=api_payload, errors=errors)
         try:
-            reports.post_metadata(api_payload)
-        except HTTPError as e:
-            if e.response.status_code == 400:
-                # flatten error response to handle nesting
-                errors = e.response.json()['errors']
-            elif e.response.status_code == 404:
-                errors = {'error': ['Permission to create report denied.']}
-            else:
-                errors = {'error': ['An unrecoverable error occured.']}
-            return super().get(form_data=api_payload, errors=errors)
+            report_id = handle_response(reports.post_metadata(api_payload))
+        except DataRequestException as e:
+            return super().get(form_data=api_payload, errors=e.errors)
         return redirect(url_for(
-            'data_dashboard.reports',
-            messages={'creation': 'successful'}))
+            'data_dashboard.report_view',
+            uuid=report_id,
+        ))
 
 
 class ReportView(BaseView):
     template = 'data/report.html'
 
+    def should_include_timeseries(self):
+        if self.metadata['status'] != 'complete':
+            return False
+        raw_report = self.metadata['raw_report']
+        pfxobs = raw_report['processed_forecasts_observations']
+        total_data_points = 0
+        for fxobs in pfxobs:
+            fxobs_data_points = fxobs['valid_point_count'] * 2
+            total_data_points = total_data_points + fxobs_data_points
+        return total_data_points < current_app.config['REPORT_DATA_LIMIT']
+
     def template_args(self):
-        report_template = report_to_html_body(self.metadata)
-        return {'report': report_template,
-                'includes_bokeh': True}
+        include_timeseries = self.should_include_timeseries()
+        report_object = Report.from_dict(self.metadata)
+        report_template, report_kwargs = get_template_and_kwargs(
+            report_object,
+            request.url_root.rstrip('/'),
+            include_timeseries,
+            True
+        )
+        report_kwargs.update({
+            'report_template': report_template,
+            'dash_url': request.url_root.rstrip('/'),
+            'includes_bokeh': True
+        })
+        if not include_timeseries:
+            # display a message about omitting timeseries
+            download_link = url_for('data_dashboard.download_report_html',
+                                    uuid=self.metadata['report_id'])
+            script = ''
+            div = f"""<div class="alert alert-warning">
+    <strong>Warning</strong> To improve performance timeseries plots have been
+    omitted from this report. You may download a copy of this report with the
+    timeseries plots included:
+    <a href="{download_link}">Download HTML Report.</a></div>"""
+            report_kwargs.update({
+                'timeseries_div': div,
+                'timeseries_script': script,
+            })
+        return report_kwargs
 
-    def get(self, uuid):
+    def set_metadata(self, uuid):
+        """Loads all necessary data for loading a
+        `solarforecastarbiter.datamodel.Report` with processed forecasts and
+        observations.
+        """
+        metadata = handle_response(reports.get_metadata(uuid))
+        metadata['report_parameters']['object_pairs'] = []
+        self.metadata = metadata
+
+    def get(self, uuid, **kwargs):
         try:
-            self.metadata = reports.get_metadata(uuid)
-        except ValueError as e:
-            # Core threw an error trying to calculate the report
-            errors = {
-                'Access': ['Report could not be loaded in the failed state.'],
-                'errors': [str(e)],
-            }
-            return render_template(self.template, uuid=uuid, errors=errors)
-        return super().get()
+            self.set_metadata(uuid)
+        except DataRequestException as e:
+            return render_template(self.template, uuid=uuid, errors=e.errors)
+        return super().get(**kwargs)
 
 
-class DownloadReportView(BaseView):
+class DownloadReportView(ReportView):
     def __init__(self, format_, **kwargs):
         self.format_ = format_
 
     def get(self, uuid):
-        metadata = reports.get_metadata(uuid)
+        try:
+            self.set_metadata(uuid)
+        except DataRequestException as e:
+            errors = {'errors': e.errors}
+            return ReportView().get(uuid, errors=errors)
         # render to right format
         if self.format_ == 'html':
-            fname = metadata.name.replace(' ', '_')
-            body = report_to_html_body(metadata)
-            # should make a nice template for standalone reports
-            bytes_out = full_html(body).encode('utf-8')
+            fname = self.metadata['report_parameters']['name'].replace(
+                ' ', '_')
+            report_object = Report.from_dict(self.metadata)
+            bytes_out = render_html(
+                report_object,
+                request.url_root.rstrip('/'),
+                with_timeseries=True, body_only=False
+            ).encode('utf-8')
         else:
             raise ValueError(
                 'Only html report downloads is currently supported')
@@ -176,7 +221,7 @@ class DeleteReportView(BaseView):
     def template_args(self):
         return {
             'data_type': 'report',
-            'uuid': self.metadata.report_id,
+            'uuid': self.metadata['report_id'],
             'metadata': render_template(
                 self.metadata_template,
                 data_type='Report',
@@ -186,14 +231,10 @@ class DeleteReportView(BaseView):
 
     def get(self, uuid):
         try:
-            self.metadata = reports.get_metadata(uuid)
-        except ValueError as e:
-            errors = {
-                'Access': ['Report could not be loaded in the failed state.'],
-                'Report Computation': [str(e)],
-            }
+            self.metadata = handle_response(reports.get_metadata(uuid))
+        except DataRequestException as e:
             return render_template(self.template, data_type='report',
-                                   uuid=uuid, errors=errors)
+                                   uuid=uuid, errors=e.errors)
         return super().get()
 
     def post(self, uuid):

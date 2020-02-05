@@ -19,6 +19,10 @@ class BaseConfig(object):
     GPG_KEY_ID = os.getenv('GPG_KEY_ID', '')
     GPG_PASSPHRASE_FILE = os.getenv('GPG_PASSPHRASE_FILE', '')
 
+    # total number of data points after which to stop serving timeseries in
+    # reports
+    REPORT_DATA_LIMIT = 262800
+
 
 class LocalConfig(BaseConfig):
     SFA_API_URL = 'http://localhost:5000'
