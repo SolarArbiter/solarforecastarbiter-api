@@ -120,6 +120,19 @@ class ReportForm(BaseView):
         ))
 
 
+def build_report(metadata):
+    """Reorganizes report processed values into the propper place for
+    plotting and creates a `solarforecastarbiter.datamodel.Report` object.
+    """
+    report = Report.from_dict(metadata)
+    if metadata['raw_report'] is not None:
+        raw_report = RawReport.from_dict(metadata['raw_report'])
+        pfxobs = load_report_values(raw_report, metadata['values'])
+        report = report.replace(raw_report=raw_report.replace(
+            processed_forecasts_observations=pfxobs))
+    return report
+
+
 class ReportView(BaseView):
     template = 'data/report.html'
 
@@ -134,21 +147,9 @@ class ReportView(BaseView):
             total_data_points = total_data_points + fxobs_data_points
         return total_data_points < current_app.config['REPORT_DATA_LIMIT']
 
-    def build_report(self):
-        """Reorganizes report processed values into the propper place for
-        plotting and creates a `solarforecastarbiter.datamodel.Report` object.
-        """
-        report = Report.from_dict(self.metadata)
-        if self.metadata['raw_report'] is not None:
-            raw_report = RawReport.from_dict(self.metadata['raw_report'])
-            pfxobs = load_report_values(raw_report, self.metadata['values'])
-            report = report.replace(raw_report=raw_report.replace(
-                processed_forecasts_observations=pfxobs))
-        return report
-
     def template_args(self):
         include_timeseries = self.should_include_timeseries()
-        report_object = self.build_report()
+        report_object = build_report(self.metadata)
         report_template, report_kwargs = get_template_and_kwargs(
             report_object,
             request.url_root.rstrip('/'),
@@ -207,7 +208,7 @@ class DownloadReportView(ReportView):
         if self.format_ == 'html':
             fname = self.metadata['report_parameters']['name'].replace(
                 ' ', '_')
-            report_object = Report.from_dict(self.metadata)
+            report_object = build_report(self.metadata)
             bytes_out = render_html(
                 report_object,
                 request.url_root.rstrip('/'),
