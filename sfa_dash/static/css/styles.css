@@ -407,7 +407,9 @@ th.selection-column{
     background-color: #c9cccf;
     border-color: #a9acaf;
 }
-
+#download-form{
+    display: inline-block;
+}
 /* report stuff */
 
 #report-block h1:before, #report-block h2:before, #report-block h3:before{

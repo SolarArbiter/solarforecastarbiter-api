@@ -69,7 +69,34 @@ class BaseView(MethodView):
             end = pd.Timestamp(end_arg)
         except ValueError:
             end = pd.Timestamp.utcnow()
-        return start.isoformat(), end.isoformat()
+        return start, end
+
+    def format_download_params(self, form_data):
+        """Parses start and end time and the format from the posted form.
+        Returns headers and query parameters for requesting the data.
+
+        Parameters
+        ----------
+        form_data: dict
+            Dictionary of posted form values.
+
+        Returns
+        -------
+        headers: dict
+            The accept headers set to 'text/csv' or 'application/json'
+            based on the selected format.
+        params: dict
+            Query parameters start and end, both formatted in iso8601 and
+            localized to the provided timezone.
+        """
+        start_dt = pd.Timestamp(form_data['start'], tz='utc')
+        end_dt = pd.Timestamp(form_data['end'], tz='utc')
+        params = {
+            'start': start_dt.isoformat(),
+            'end': end_dt.isoformat(),
+        }
+        headers = {'Accept': form_data['format']}
+        return headers, params
 
     def generate_site_link(self, metadata):
         """Generate html for a link to a site page from an observation,

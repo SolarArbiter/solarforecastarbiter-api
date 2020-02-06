@@ -2,8 +2,7 @@ import json
 from json.decoder import JSONDecodeError
 
 from flask import (Blueprint, render_template, request,
-                   abort, redirect, url_for, make_response)
-import pandas as pd
+                   abort, redirect, url_for)
 from sfa_dash.api_interface import (sites, observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups,
                                     aggregates)
@@ -441,110 +440,6 @@ class UploadForm(BaseView):
                                     uuid=uuid))
 
 
-class DownloadForm(BaseView):
-    def __init__(self, data_type):
-        self.data_type = data_type
-        if data_type == 'observation':
-            self.template = 'forms/observation_download_form.html'
-            self.metadata_template = 'data/metadata/observation_metadata.html'
-            self.api_handle = observations
-        elif data_type == 'forecast':
-            self.template = 'forms/forecast_download_form.html'
-            self.metadata_template = 'data/metadata/forecast_metadata.html'
-            self.api_handle = forecasts
-        elif data_type == 'cdf_forecast':
-            self.template = 'forms/cdf_forecast_download_form.html'
-            self.metadata_template = 'data/metadata/cdf_forecast_metadata.html'
-            self.api_handle = cdf_forecasts
-        elif data_type == 'aggregate':
-            self.template = 'forms/aggregate_download_form.html'
-            self.metadata_template = 'data/metadata/aggregate_metadata.html'
-            self.api_handle = aggregates
-        else:
-            raise ValueError(f'No Download form configured for {data_type}.')
-
-    def format_params(self, form_data):
-        """Parses start and end time and the format from the posted form.
-        Returns headers and query parameters for requesting the data.
-
-        Parameters
-        ----------
-        form_data: dict
-            Dictionary of posted form values.
-
-        Returns
-        -------
-        headers: dict
-            The accept headers set to 'text/csv' or 'application/json'
-            based on the selected format.
-        params: dict
-            Query parameters start and end, both formatted in iso8601 and
-            localized to the provided timezone.
-        """
-        start_date = form_data["period-start-date"]
-        start_time = form_data["period-start-time"]
-        start_dt = pd.Timestamp(f'{start_date} {start_time}', tz='utc')
-        end_date = form_data["period-end-date"]
-        end_time = form_data["period-end-time"]
-        end_dt = pd.Timestamp(f'{end_date} {end_time}', tz='utc')
-        params = {
-            'start': start_dt.isoformat(),
-            'end': end_dt.isoformat(),
-        }
-        headers = {'Accept': form_data['format']}
-        return headers, params
-
-    def template_args(self, uuid):
-        try:
-            metadata_dict = handle_response(
-                self.api_handle.get_metadata(uuid))
-        except DataRequestException as e:
-            return {'errors': e.errors}
-        metadata_dict['site_link'] = self.generate_site_link(metadata_dict)
-        metadata = render_template(self.metadata_template, **metadata_dict)
-        return {'metadata': metadata, 'uuid': uuid}
-
-    def get(self, uuid):
-        return render_template(self.template, **self.template_args(uuid))
-
-    def post(self, uuid):
-        form_data = request.form
-        try:
-            headers, params = self.format_params(form_data)
-        except ValueError:
-            errors = {'start-end': ['Invalid datetime']}
-            response = make_response(render_template(
-                self.template, form_data=form_data,
-                errors=errors, **self.template_args(uuid)), 400)
-            return response
-        else:
-            try:
-                data = handle_response(
-                    self.api_handle.get_values(
-                        uuid, headers=headers, params=params))
-            except DataRequestException as e:
-                return render_template(
-                    self.template, **self.template_args(uuid), errors=e.errors)
-            else:
-                if form_data['format'] == 'application/json':
-                    response = make_response(json.dumps(data))
-                    response.headers.set('Content-Type', 'application/json')
-                    response.headers.set(
-                        'Content-Disposition',
-                        'attachment',
-                        filename='data.json')
-                elif form_data['format'] == 'text/csv':
-                    response = make_response(data)
-                    response.headers.set('Content-Type', 'text/csv')
-                    response.headers.set(
-                        'Content-Disposition',
-                        'attachment',
-                        filename='data.csv')
-                else:
-                    raise ValueError('Invalid Format.')
-            return response
-
-
 forms_blp = Blueprint('forms', 'forms')
 forms_blp.add_url_rule('/sites/create',
                        view_func=CreateForm.as_view('create_site',
@@ -568,21 +463,6 @@ forms_blp.add_url_rule('/forecasts/single/<uuid>/upload',
 forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_cdf_forecast_data',
                                                     data_type='cdf_forecast'))
-forms_blp.add_url_rule('/observations/<uuid>/download',
-                       view_func=DownloadForm.as_view(
-                           'download_observation_data',
-                           data_type='observation'))
-forms_blp.add_url_rule('/forecasts/single/<uuid>/download',
-                       view_func=DownloadForm.as_view('download_forecast_data',
-                                                      data_type='forecast'))
-forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/download',
-                       view_func=DownloadForm.as_view(
-                           'download_cdf_forecast_data',
-                           data_type='cdf_forecast'))
-forms_blp.add_url_rule('/aggregates/<uuid>/download',
-                       view_func=DownloadForm.as_view(
-                           'download_aggregate_data',
-                           data_type='aggregate'))
 forms_blp.add_url_rule('/reports/create',
                        view_func=ReportForm.as_view('create_report'))
 forms_blp.add_url_rule('/aggregates/create',

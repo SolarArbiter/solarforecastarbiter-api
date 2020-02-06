@@ -1,11 +1,11 @@
 {% extends "dash/data.html" %}
+{% import "forms/form_macros.jinja" as form %}
 {% block content %}
 {{ metadata | safe }}
 {% if upload_link is defined %}
 <a role="button" class="btn btn-primary btn-sm" href="{{upload_link}}">Upload data</a>
 {% endif %}
 {% if download_link is defined %}
-<a role="button" class="btn btn-primary btn-sm" href="{{download_link}}">Download data</a>
 {% endif %}
 {% if delete_link is defined %}
 <a role="button" class="btn btn-danger btn-sm" href="{{ delete_link }}">Delete</a>
@@ -18,24 +18,8 @@
 {% if bokeh_script is defined %}
 {{ bokeh_script | safe }}
 {% endif %}
-<script src="/static/js/plot-bound-parsing.js"></script>
-<div class="form-group mt-3">
-<div class="form-element">
-  <label for="start">Start (UTC):</label><br/>
-  <input type="date" id="start-date" name="period-start-date" {% if form_data is defined %}value="{{form_data['period-start-date']}}"{% endif %}required>
-  <input type="time" id="start-time" name="period-start-time" {% if form_data is defined %}value="{{form_data['period-start-time']}}"{% else %} value="00:00"{% endif %} required>
-</div>
-<div class="form-element">
-  <label for="end">End (UTC)</label><br/>
-  <input type="date" id="end-date" name="period-end-date" {% if form_data is defined %}value="{{form_data['period-end-date']}}"{% endif %}required>
-  <input type="time" id="end-time" name="period-end-time" {% if form_data is defined %}value="{{form_data['period-end-time']}}"{% else %} value="00:00"{% endif %} required>
-</div>
-<div class="form-element">
-  <button type="submit" form="plot-range-adjust" value="Submit" class="btn btn-primary">Set time range</button>
-</div>
-<form action="" method="get" id="plot-range-adjust" onsubmit="ParseStartEnd()">
-<input type="text" id="start" name="start" hidden>
-<input type="text" id="end" name="end" hidden>
+{# Time widgets are used for either setting the bounds of the plot or download #}
+{% include "data/time_widgets.html" %}
 </div>
 {% endif %}
 {% endblock %}

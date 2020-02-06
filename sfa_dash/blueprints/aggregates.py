@@ -7,7 +7,8 @@ import pandas as pd
 from sfa_dash.api_interface import observations, sites, aggregates
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import (filter_form_fields, handle_response,
-                                      parse_timedelta, flatten_dict)
+                                      parse_timedelta, flatten_dict,
+                                      download_timeseries)
 from sfa_dash.errors import DataRequestException
 
 
@@ -289,7 +290,7 @@ class AggregateView(BaseView):
             uuid=self.metadata['aggregate_id'])
         return breadcrumb_dict
 
-    def set_template_args(self):
+    def set_template_args(self, start, end, **kwargs):
         self.temp_args.update({
             'metadata': render_template(
                 self.metadata_template, **self.metadata),
@@ -306,13 +307,18 @@ class AggregateView(BaseView):
                     aggregate_id=self.metadata['aggregate_id']),
                 cdf_forecasts_url=url_for(
                     'data_dashboard.cdf_forecast_groups',
-                    aggregate_id=self.metadata['aggregate_id']))
+                    aggregate_id=self.metadata['aggregate_id'])),
+            'period_start_date': start.strftime('%Y-%m-%d'),
+            'period_start_time': start.strftime('%H:%M'),
+            'period_end_date': end.strftime('%Y-%m-%d'),
+            'period_end_time': end.strftime('%H:%M'),
         })
+        self.temp_args.update(kwargs)
 
     def template_args(self):
         return self.temp_args
 
-    def get(self, uuid):
+    def get(self, uuid, **kwargs):
         self.temp_args = {}
         start, end = self.parse_start_end_from_querystring()
         try:
@@ -331,8 +337,13 @@ class AggregateView(BaseView):
                     observation.update(obs)
                     self.observation_list.append(observation)
             self.insert_plot(uuid, start, end)
-            self.set_template_args()
-        return render_template(self.template, **self.template_args())
+            self.set_template_args(start, end, **kwargs)
+        return render_template(self.template, **self.temp_args)
+
+    def post(self, uuid):
+        """Download endpoint.
+        """
+        return download_timeseries(self, uuid)
 
 
 class DeleteAggregateView(BaseView):

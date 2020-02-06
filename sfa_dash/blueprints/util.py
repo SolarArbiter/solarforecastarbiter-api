@@ -1,9 +1,10 @@
 """ Utility classes/functions. Mostly for handling api data.
 """
+import json
 from copy import deepcopy
 
 
-from flask import render_template, url_for, request
+from flask import render_template, url_for, request, make_response
 from solarforecastarbiter import datamodel
 from solarforecastarbiter.io import utils as io_utils
 from solarforecastarbiter.plotting import timeseries
@@ -400,3 +401,96 @@ def flatten_dict(to_flatten):
         else:
             flattened[key] = value
     return flattened
+
+
+def json_file_response(filename, values):
+    """Generates a flask.Response object containing a json file, and the
+    correct headers.
+
+    Parameters
+    ----------
+    filename: str
+    values: dict
+        API response of a values endpoint on the form of a dictionary.
+
+    Returns
+    -------
+    flask.Response
+        Contains a json file with Content-Type and Content-Disposition headers.
+    """
+    response = make_response(json.dumps(values))
+    response.headers.set('Content-Type', 'application/json')
+    response.headers.set(
+        'Content-Disposition',
+        'attachment',
+        filename=f'{filename}.json')
+    return response
+
+
+def csv_file_response(filename, values):
+    """Generates a flask.Response object containing a csv file, and the
+    correct headers.
+
+    Parameters
+    ----------
+    filename: str
+    values: dict
+        API response of a values endpoint on the form of a dictionary.
+
+    Returns
+    -------
+    flask.Response
+        Contains a csv file with Content-Type and Content-Disposition headers.
+    """
+    response = make_response(values)
+    response.headers.set('Content-Type', 'text/csv')
+    response.headers.set(
+        'Content-Disposition',
+        'attachment',
+        filename=f'{filename}.csv')
+    return response
+
+
+def download_timeseries(view_class, uuid):
+    """Handle downloading timeseries data given a methodView instance with a
+    set `api_handle` attribute.
+
+    Expects a `start` and `end` query parameter as well as posted form data
+     with the key `format` containing a Content-Type html header value.
+
+    The endpoint makes a request to the api, and returns a file of the
+    requested type.
+    """
+    form_data = request.form
+    try:
+        headers, params = view_class.format_download_params(form_data)
+    except ValueError:
+        errors = {'start-end': ['Invalid datetime']}
+        return view_class.get(uuid, form_data=form_data, errors=errors)
+    else:
+        try:
+            data = handle_response(
+                view_class.api_handle.get_values(
+                    uuid, headers=headers, params=params))
+        except DataRequestException as e:
+            return render_template(
+                view_class.template,
+                **view_class.template_args(uuid),
+                errors=e.errors)
+        else:
+            try:
+                metadata = handle_response(
+                    view_class.api_handle.get_metadata(uuid))
+            except DataRequestException:
+                filename = 'data'
+            else:
+                name = metadata['name'].replace(' ', '_')
+                time_range = f"{params['start']}-{params['end']}"
+                filename = f'{name}_{time_range}'
+            if form_data['format'] == 'application/json':
+                response = json_file_response(filename, data)
+            elif form_data['format'] == 'text/csv':
+                response = csv_file_response(filename, data)
+            else:
+                response = make_response("Invalid media type.", 415)
+        return response

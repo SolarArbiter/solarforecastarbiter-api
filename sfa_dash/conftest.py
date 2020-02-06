@@ -180,7 +180,6 @@ create_form_routes_list = [
 single_object_routes_list = [
     '/forecasts/cdf/single/<uuid>/upload',
     '/forecasts/cdf/single/<uuid>',
-    '/forecasts/cdf/single<uuid>/download',
 ]
 
 
@@ -209,7 +208,6 @@ def site_id_route(request):
 observation_id_route_list = [
     '/observations/{observation_id}',
     '/observations/{observation_id}/upload',
-    '/observations/{observation_id}/download',
     '/observations/{observation_id}/delete',
 ]
 
@@ -224,7 +222,6 @@ def observation_id_route(request):
 forecast_id_route_list = [
     '/forecasts/single/{forecast_id}',
     '/forecasts/single/{forecast_id}/upload',
-    '/forecasts/single/{forecast_id}/download',
     '/forecasts/single/{forecast_id}/delete',
 ]
 

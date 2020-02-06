@@ -15,7 +15,7 @@ from sfa_dash.blueprints.reports import (ReportsView, ReportView,
                                          DeleteReportView,
                                          DownloadReportView)
 from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
-from sfa_dash.blueprints.util import handle_response
+from sfa_dash.blueprints.util import (handle_response, download_timeseries)
 from sfa_dash.errors import DataRequestException
 from sfa_dash.filters import human_friendly_datatype
 
@@ -98,7 +98,7 @@ class SingleObjectView(DataDashView):
                 uuid=self.metadata[self.id_key])
         return breadcrumb_dict
 
-    def set_template_args(self, **kwargs):
+    def set_template_args(self, start, end, **kwargs):
         """Insert necessary template arguments. See data/asset.html in the
         template folder for how these are layed out.
         """
@@ -111,13 +111,15 @@ class SingleObjectView(DataDashView):
         self.temp_args['upload_link'] = url_for(
             f'forms.upload_{self.data_type}_data',
             uuid=self.metadata[self.id_key])
-        self.temp_args['download_link'] = url_for(
-            f'forms.download_{self.data_type}_data',
-            uuid=self.metadata[self.id_key])
         if self.data_type != 'cdf_forecast':
             self.temp_args['delete_link'] = url_for(
                 f'data_dashboard.delete_{self.data_type}',
                 uuid=self.metadata[self.id_key])
+        self.temp_args['period_start_date'] = start.strftime('%Y-%m-%d')
+        self.temp_args['period_start_time'] = start.strftime('%H:%M')
+        self.temp_args['period_end_date'] = end.strftime('%Y-%m-%d')
+        self.temp_args['period_end_time'] = end.strftime('%H:%M')
+        self.temp_args.update(kwargs)
 
     def get(self, uuid, **kwargs):
         self.temp_args = {}
@@ -136,11 +138,16 @@ class SingleObjectView(DataDashView):
             except DataRequestException:
                 self.temp_args.update({'plot': None})
             else:
-                self.insert_plot(uuid, start, end)
+                self.insert_plot(uuid, start.isoformat(), end.isoformat())
             finally:
                 self.set_site_or_aggregate_link()
-                self.set_template_args(**kwargs)
+                self.set_template_args(start=start, end=end, **kwargs)
         return render_template(self.template, **self.temp_args)
+
+    def post(self, uuid):
+        """Data download endpoint.
+        """
+        return download_timeseries(self, uuid)
 
 
 class SingleCDFForecastGroupView(SingleObjectView):
