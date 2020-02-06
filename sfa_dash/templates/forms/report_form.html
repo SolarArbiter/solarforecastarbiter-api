@@ -44,38 +44,7 @@
        <div class="object-pair-control">
        </div>
 	 </div>
-    {#
-     <div class="form-element">
-       <label>Filters</label><br>
-       <input type="checkbox" data-toggle="collapse" data-target=".quality-flag-options" name="quality-flag" value="Quality Flag"> Quality Flag<br>
-	     <div class="quality-flag-options collapse ml-3">
-           <p>Checked items are included in the analysis. Unchecked items are excluded from the analysis.</p>
-           <input type="checkbox"checked>NIGHTTIME<br/>
-           <input type="checkbox"checked>CLOUDY<br/>
-           <input type="checkbox"checked>SHADED<br/>
-           <input type="checkbox">UNEVEN FREQUENCY<br/>
-           <input type="checkbox">LIMITS EXCEEDED<br/>
-           <input type="checkbox">CLEARSKY EXCEEDED<br/>
-           <input type="checkbox">STALE VALUES<br/>
-           <input type="checkbox">INTERPOLATED VALUES<br/>
-           <input type="checkbox">CLIPPED VALUES<br/>
-           <input type="checkbox">INCONSISTENT IRRADIANCE COMPONENTS<br/>
-         </div>
-       <input type="checkbox" name="time-of-day" data-toggle="collapse" data-target=".time-of-day-options" value="Time of Day"> Time Of Day<br>
-         <div class="time-of-day-options ml-3 collapse">
-           start: <input type="time"> end: <input type="time">
-           <label>Subdivision</label><br>
-           <input type="checkbox" name="total" value="Total" disabled checked> Total<br>
-           <input type="checkbox" name="monthly" value="Monthly"> Monthly<br>
-           <input type="checkbox" name="daily" value="Daily"> Daily<br>
-           <input type="checkbox" name="hourly" value="Hourly"> Hourly<br>
-         </div>
-       <input type="checkbox" name="value-range" value="Value Range" data-toggle="collapse" data-target=".value-range-options"> Value Range<br>
-         <div class="value-range-options ml-3 collapse">
-             <input type="text" class='value-range-number' name="value-min" placeholder="min"> <span class='bigtext'>&le; </span><input type="text" class='value-range-observation' name="value-obs" placeholder="observation"> <span class='bigtext'>&le;</span> <input type="text" class='value-range-number' name="value-max" placeholder="max"><br>
-         </div>
-     </div>
-     #}
+     
      <div class="form-element">
      <label>Metrics</label><br>
        {% for metric, label in deterministic_metrics.items() %}
@@ -90,6 +59,13 @@
      {% for category, label in metric_categories.items() %}
      <input type="checkbox" name="categories" value="{{ category }}" {% if form_data %}{% if category in form_data['report_parameters']['categories'] %}checked{% endif %}{% else %}checked{% endif %}> {{ label }}<br/>
      {% endfor %}
+     </div>
+     <div class="form-element">
+       <label>Quality Flag Filters</label><br>
+       <p>Data flagged with any checked quality flags is excluded from analysis. </p>
+       {% for flag in quality_flags.keys() %}
+       <input type="checkbox" name="quality_flags" value="{{ flag }}" {% if form_data %}{% if flag in form_data['report_parameters']['filters']['quality_flags'] %}checked{% endif %}{%endif %}> {{ flag }}<br/>
+       {% endfor %}
      </div>
     {{ form.token() }}
   </div>

@@ -78,10 +78,14 @@ class ReportForm(BaseView):
         return pairs
 
     def parse_filters(self, form_data):
-        """Return an empty array until we know more about how we want
-        to configure these filters
+        """Create a list of dictionary filters. Currently just supports
+        `quality_flags` which supports a list of quality flag names to exclude.
         """
-        return []
+        filters = []
+        quality_flags = request.form.getlist('quality_flags')
+        if quality_flags:
+            filters.append({'quality_flags': quality_flags})
+        return filters
 
     def parse_report_parameters(self, form_data):
         params = {}
@@ -90,7 +94,7 @@ class ReportForm(BaseView):
         params['metrics'] = request.form.getlist('metrics')
         params['categories'] = request.form.getlist('categories')
         # filters do not currently work in API
-        # params['filters'] = self.parse_filters(form_data)
+        params['filters'] = self.parse_filters(form_data)
         params['start'] = form_data['period-start']
         params['end'] = form_data['period-end']
         return params

@@ -24,6 +24,12 @@ TIMEZONE_OPTIONS = {tz: tz.replace('_', ' ') for tz in TIMEZONES}
 DEFAULT_METRICS = ['mae', 'mbe', 'rmse']
 
 
+ALLOWED_QUALITY_FLAGS = {
+    'USER FLAGGED': 1,
+    'NIGHTTIME': 16,
+}
+
+
 def template_variables():
     return {
         'dashboard_version': sfa_dash.__version__,
@@ -32,4 +38,5 @@ def template_variables():
         'metric_categories': ALLOWED_CATEGORIES,
         'deterministic_metrics': ALLOWED_DETERMINISTIC_METRICS,
         'default_metrics': DEFAULT_METRICS,
+        'quality_flags': ALLOWED_QUALITY_FLAGS
     }
