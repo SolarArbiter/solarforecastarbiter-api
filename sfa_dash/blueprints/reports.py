@@ -159,6 +159,7 @@ class ReportView(BaseView):
         report_kwargs.update({
             'report_template': report_template,
             'dash_url': request.url_root.rstrip('/'),
+            'include_metrics_toc': False,
             'includes_bokeh': True
         })
         if not include_timeseries:

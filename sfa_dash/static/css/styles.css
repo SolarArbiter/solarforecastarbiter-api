@@ -410,6 +410,13 @@ th.selection-column{
 
 /* report stuff */
 
+#report-block h1:before, #report-block h2:before, #report-block h3:before{
+   display: block;
+   content: "";
+   margin-top: -160px;
+   height: 160px;
+   visibility: hidden;
+}
 #report-block h1, #report-block h2, #report-block h3{
     margin-top: 2rem;
     margin-bottom: .5rem;
