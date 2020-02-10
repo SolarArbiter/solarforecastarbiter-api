@@ -211,7 +211,13 @@ def _set_forecast_parameters(forecast_dict):
 def _process_df_into_json(df, rounding=8):
     """Processes a Dataframe with DatetimeIndex and 'value' column
     (with optional 'quality_flag' column) into a json string of the
-    form [{"ts": ..., "v": ...}, ...] for sending to MySQL
+    form [{"ts": ..., "v": ...}, ...] for sending to MySQL.
+
+    This numpy string processing to JSON is much faster than
+    using the json module and converting the dataframe to a list
+    of dicts. Also can't use the builtin pandas json exporter
+    because we need to leave out the value key completely when
+    the value is NaN (limitation of MySQL JSON_TABLE for json null).
     """
     timestr = np.char.add(
         '{"ts":"', df.index.values.astype('M8[s]').astype(str))
