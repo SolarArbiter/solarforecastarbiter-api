@@ -338,6 +338,12 @@ def test_store_observation_values_null(cursor, allow_write_values,
     bad = '[{"ts": "2020-01-01T00:00:00", "qf": 0, "v": null}]'
     with pytest.raises(pymysql.err.InternalError):
         cursor.callproc('store_observation_values', (auth0id, obsid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (
+            auth0id, obsid, '[{"ts": "2020-01-01T00:00:00"}]'))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (
+            auth0id, obsid, '[{"qf": 0}]'))
 
 
 def test_store_observation_values_duplicates(cursor, allow_write_values,
@@ -426,6 +432,9 @@ def test_store_forecast_values_null(cursor, allow_write_values,
     bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
     with pytest.raises(pymysql.err.InternalError):
         cursor.callproc('store_forecast_values', (auth0id, fxid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_forecast_values', (
+            auth0id, fxid, '[{"v": 1.0}]'))
 
 
 def test_store_forecast_values_duplicates(cursor, allow_write_values,
@@ -648,6 +657,9 @@ def test_store_cdf_forecast_values_null(cursor, allow_write_values,
     bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
     with pytest.raises(pymysql.err.InternalError):
         cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_cdf_forecast_values', (
+            auth0id, fxid, '[{"v": 1.0}]'))
 
 
 def test_store_cdf_forecast_values_duplicates(
