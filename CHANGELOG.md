@@ -6,6 +6,60 @@ in this file.
 Detailed changes to the Solar Forecast Arbiter Core python library can be found
 in the core documentation's [what's new](https://solarforecastarbiter-core.readthedocs.io/en/latest/whatsnew/index.html) series.
 
+## [1.0beta4] - 2020-02-07
+
+### Added
+
+- Daily updating precomputed reports for select reference data.
+
+- Reports now contain a summary of data affected by the data resampling and
+  alignment process. The summary includes the number of data points removed by
+  each phase of validation.
+
+- Reports now contain a table of all included metrics over the entire selected
+  period.
+
+- Reports may be configured to filter data by quality flag. Currently allows
+  filtering of *user flagged* and *nighttime* values.
+
+- The dashboard report view now allows users to search metric plots by
+  forecast and to sort metric plots by metric, category and forecast.
+
+- Dashboard users can now download report metrics as a csv using a link in the
+  *Metrics* section of the report.
+
+- Reports in the *pending* and *failed* state now display a message to the user
+  about their status. For failed reports, this is a list of errors encountered
+  while processing the report.
+
+### Changed
+
+- The API's report response's `raw_report` attribute was updated to reflect the
+  set of processed report data needed for rendering a final report. The
+  `raw_report` attribute was previously presented as a serialized version of
+  the final rendered report.
+
+- The core library's Report received a major refactoring. See the core
+  [what's new](https://solarforecastarbiter-core.readthedocs.io/en/latest/whatsnew/1.0.0b4.html)
+  for details.
+
+- The button for downloading timeseries data from the dashboard has moved to
+  below the plots on any Forecast, Observation or Probabilistic Forecast's
+  page. The same start and end times are used for downloading data and creating
+  plots.
+
+- The start and end time values for the dashboard's timeseries plots are now
+  prefilled with time range requested. By default, this will display the last
+  three days of data.
+
+### Fixed
+
+- Corrected handling of empty observation timeseries during metrics
+  preprocessing which was causing report processing to fail.
+
+- Corrected handling of `interval_label` == `ending` when computing metrics
+  for a report containing mixed `interval_label`s.
+
 ## [1.0beta3] - 2019-12-16
 
 ### Added
