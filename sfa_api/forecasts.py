@@ -205,7 +205,10 @@ class ForecastValuesView(MethodView):
         """
         ---
         summary: Add Forecast data
-        description: Add new timeseries values to Forecast entry.
+        description: |
+          Add new timeseries values to Forecast entry.
+          Float values *will be rounded* to 8 decimal places before
+          storage.
         tags:
         - Forecasts
         parameters:
@@ -500,8 +503,10 @@ class CDFForecastValues(MethodView):
         """
         ---
         summary: Add Probabilistic Forecast data for one constant value.
-        description: >-
+        description: |
           Add timeseries values to a Probabilistic Forecast constant value.
+          Float values *will be rounded* to 8 decimal places before
+          storage.
         tags:
         - Probabilistic Forecasts
         parameters:

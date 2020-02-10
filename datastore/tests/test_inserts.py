@@ -295,116 +295,153 @@ def test_store_site_denied_cant_create(dictcursor, site_callargs):
 
 @pytest.fixture()
 def observation_values(insertuser):
-    def make(auth0id, obsid):
-        now = dt.datetime.utcnow().replace(microsecond=0)
-        for i in range(100):
-            now += dt.timedelta(minutes=5)
-            yield auth0id, obsid, now, float(random.randint(0, 100)), 0
-
     auth0id = insertuser[0]['auth0_id']
     obsid = insertuser[3]['strid']
     obsbinid = insertuser[3]['id']
-    testobs = make(auth0id, obsid)
-    return obsbinid, testobs
+    expected = []
+    now = dt.datetime.utcnow().replace(microsecond=0)
+    for i in range(100):
+        now += dt.timedelta(minutes=5)
+        expected.append(
+            (obsbinid, now, float(random.randint(0, 100)),
+             random.randint(0, 100)))
+    testobs = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2], 'qf': r[3]}
+         for r in expected])
+    return auth0id, obsid, obsbinid, testobs, expected
 
 
 def test_store_observation_values(cursor, allow_write_values,
                                   observation_values):
-    obsbinid, testobs = observation_values
-    expected = []
-    for to in testobs:
-        expected.append((obsbinid, *to[-3:]))
-        cursor.callproc('store_observation_values', to)
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
+    cursor.callproc('store_observation_values', (auth0id, obsid, testobs))
     cursor.execute(
         'SELECT * FROM arbiter_data.observations_values WHERE id = %s AND'
         ' timestamp > CURRENT_TIMESTAMP()',
         obsbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_observation_values_null(cursor, allow_write_values,
+                                       observation_values):
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
+    good = '[{"ts": "2020-01-01T00:00:00", "qf": 0}]'
+    cursor.callproc('store_observation_values', (auth0id, obsid, good))
+    cursor.execute(
+        'SELECT value, quality_flag FROM arbiter_data.observations_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        obsbinid)
+    res = cursor.fetchone()
+    assert res == (None, 0)
+    bad = '[{"ts": "2020-01-01T00:00:00", "qf": 0, "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (auth0id, obsid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (
+            auth0id, obsid, '[{"ts": "2020-01-01T00:00:00"}]'))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (
+            auth0id, obsid, '[{"qf": 0}]'))
 
 
 def test_store_observation_values_duplicates(cursor, allow_write_values,
                                              observation_values):
-    obsbinid, testobs = observation_values
-    testobs = list(testobs)
-    expected = []
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
     # first insert
-    for to in testobs:
-        cursor.callproc('store_observation_values', to)
-    # second insert
-    for to in testobs:
-        to = list(to)
-        to[-1] = 1
-        to[-2] = to[-2] + 1
-        cursor.callproc('store_observation_values', to)
-        expected.append((obsbinid, *to[-3:]))
+    cursor.callproc('store_observation_values', (auth0id, obsid, testobs))
     cursor.execute(
         'SELECT * FROM arbiter_data.observations_values WHERE id = %s AND'
         ' timestamp > CURRENT_TIMESTAMP()',
         obsbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+    # second insert
+    alt = []
+    for r in expected:
+        alt.append((r[0], r[1], r[2] + 0.9, r[3] + 1))
+    nextobs = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2], 'qf': r[3]}
+         for r in alt])
+    cursor.callproc('store_observation_values', (auth0id, obsid, nextobs))
+    cursor.execute(
+        'SELECT * FROM arbiter_data.observations_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        obsbinid)
+    res = cursor.fetchall()
+    assert res == tuple(alt)
 
 
 def test_store_observation_values_cant_write(cursor, observation_values):
-    obsbinid, testobs = observation_values
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('store_observation_values', list(testobs)[0])
+        cursor.callproc('store_observation_values', (auth0id, obsid, testobs))
     assert e.value.args[0] == 1142
 
 
 def test_store_observation_values_cant_write_cant_delete(
         cursor, observation_values, allow_delete_values):
-    obsbinid, testobs = observation_values
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('store_observation_values', list(testobs)[0])
+        cursor.callproc('store_observation_values', (auth0id, obsid, testobs))
     assert e.value.args[0] == 1142
 
 
 @pytest.fixture()
 def forecast_values(insertuser):
-    def make(auth0id, fxid):
-        now = dt.datetime.utcnow().replace(microsecond=0)
-        for i in range(100):
-            now += dt.timedelta(minutes=5)
-            yield auth0id, fxid, now, float(random.randint(0, 100))
-
     auth0id = insertuser[0]['auth0_id']
     fxid = insertuser[2]['strid']
     fxbinid = insertuser[2]['id']
-    testfx = make(auth0id, fxid)
-    return fxbinid, testfx
+    expected = []
+    now = dt.datetime.utcnow().replace(microsecond=0)
+    for i in range(100):
+        now += dt.timedelta(minutes=5)
+        expected.append(
+            (fxbinid, now, float(random.randint(0, 100))))
+    testfx = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in expected])
+    return auth0id, fxid, fxbinid, testfx, expected
 
 
 def test_store_forecast_values(cursor, allow_write_values,
                                forecast_values):
-    fxbinid, testfx = forecast_values
-    expected = []
-    for tf in testfx:
-        expected.append((fxbinid, *tf[2:]))
-        cursor.callproc('store_forecast_values', tf)
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
+    cursor.callproc('store_forecast_values', (auth0id, fxid, testfx))
     cursor.execute(
         'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
         ' timestamp > CURRENT_TIMESTAMP()',
         fxbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_forecast_values_null(cursor, allow_write_values,
+                                    forecast_values):
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
+    good = '[{"ts": "2020-01-01T00:00:00"}]'
+    cursor.callproc('store_forecast_values', (auth0id, fxid, good))
+    cursor.execute(
+        'SELECT value FROM arbiter_data.forecasts_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        fxbinid)
+    res = cursor.fetchone()
+    assert res == (None,)
+    bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_forecast_values', (auth0id, fxid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_forecast_values', (
+            auth0id, fxid, '[{"v": 1.0}]'))
 
 
 def test_store_forecast_values_duplicates(cursor, allow_write_values,
                                           forecast_values):
-    fxbinid, testfx = forecast_values
-    testfx = list(testfx)
-    expected = []
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
     # first insert
-    for tf in testfx:
-        cursor.callproc('store_forecast_values', tf)
-    # second insert
-    for tf in testfx:
-        tf = list(tf)
-        tf[-1] = tf[-1] + 1
-        expected.append((fxbinid, *tf[2:]))
-        cursor.callproc('store_forecast_values', tf)
+    cursor.callproc('store_forecast_values', (auth0id, fxid, testfx))
     cursor.execute(
         'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
         ' timestamp > CURRENT_TIMESTAMP()',
@@ -412,19 +449,34 @@ def test_store_forecast_values_duplicates(cursor, allow_write_values,
     res = cursor.fetchall()
     assert res == tuple(expected)
 
+    # second insert
+    alt = []
+    for r in expected:
+        alt.append((r[0], r[1], r[2] + 0.9))
+    nextfx = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in alt])
+    cursor.callproc('store_forecast_values', (auth0id, fxid, nextfx))
+    cursor.execute(
+        'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
+        ' timestamp > CURRENT_TIMESTAMP()',
+        fxbinid)
+    res = cursor.fetchall()
+    assert res == tuple(alt)
+
 
 def test_store_forecast_values_cant_write(cursor, forecast_values):
-    fxbinid, testfx = forecast_values
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('store_forecast_values', list(testfx)[0])
+        cursor.callproc('store_forecast_values', (auth0id, fxid, testfx))
     assert e.value.args[0] == 1142
 
 
 def test_store_forecast_values_cant_write_cant_delete(
         cursor, forecast_values, allow_delete_values):
-    fxbinid, testfx = forecast_values
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('store_forecast_values', list(testfx)[0])
+        cursor.callproc('store_forecast_values', (auth0id, fxid, testfx))
     assert e.value.args[0] == 1142
 
 
@@ -563,61 +615,85 @@ def test_store_cdf_forecast_single_denied_cant_update_group(
 
 @pytest.fixture(params=[0, 1, 2])
 def cdf_forecast_values(insertuser, request):
-    def make(auth0id, fxid):
-        now = dt.datetime.utcnow().replace(microsecond=0)
-        for i in range(100):
-            now += dt.timedelta(minutes=5)
-            yield auth0id, fxid, now, float(random.randint(0, 100))
-
     auth0id = insertuser[0]['auth0_id']
     fxid = list(insertuser[6]['constant_values'].keys())[request.param]
-    testfx = make(auth0id, fxid)
-    return fxid, testfx
+    fxbinid = uuid_to_bin(uuid.UUID(fxid))
+    expected = []
+    now = dt.datetime.utcnow().replace(microsecond=0)
+    for i in range(100):
+        now += dt.timedelta(minutes=5)
+        expected.append(
+            (fxbinid, now, float(random.randint(0, 100))))
+    testfx = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in expected])
+    return auth0id, fxid, fxbinid, testfx, expected
 
 
 def test_store_cdf_forecast_values(
         cursor, allow_write_values, cdf_forecast_values):
-    fxid, testfx = cdf_forecast_values
-    expected = []
-    for tf in testfx:
-        expected.append((fxid, *tf[2:]))
-        cursor.callproc('store_cdf_forecast_values', tf)
+    auth0id, fxid, fxbinid, testfx, expected = cdf_forecast_values
+    cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, testfx))
     cursor.execute(
-        'SELECT BIN_TO_UUID(id, 1) as id, timestamp, value '
-        'FROM arbiter_data.cdf_forecasts_values WHERE id = UUID_TO_BIN(%s, 1)'
+        'SELECT id, timestamp, value '
+        'FROM arbiter_data.cdf_forecasts_values WHERE id = %s'
         ' AND timestamp > CURRENT_TIMESTAMP()',
-        fxid)
+        fxbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_cdf_forecast_values_null(cursor, allow_write_values,
+                                        cdf_forecast_values):
+    auth0id, fxid, fxbinid, testfx, expected = cdf_forecast_values
+    good = '[{"ts": "2020-01-01T00:00:00"}]'
+    cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, good))
+    cursor.execute(
+        'SELECT value FROM arbiter_data.cdf_forecasts_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        fxbinid)
+    res = cursor.fetchone()
+    assert res == (None,)
+    bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, bad))
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_cdf_forecast_values', (
+            auth0id, fxid, '[{"v": 1.0}]'))
 
 
 def test_store_cdf_forecast_values_duplicates(
         cursor, allow_write_values, cdf_forecast_values):
-    fxid, testfx = cdf_forecast_values
-    testfx = list(testfx)
-    expected = []
-    # first
-    for tf in testfx:
-        cursor.callproc('store_cdf_forecast_values', tf)
-    # duplicate
-    for tf in testfx:
-        tf = list(tf)
-        tf[-1] = tf[-1] + 9
-        cursor.callproc('store_cdf_forecast_values', tf)
-        expected.append((fxid, *tf[2:]))
+    auth0id, fxid, fxbinid, testfx, expected = cdf_forecast_values
+    cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, testfx))
     cursor.execute(
-        'SELECT BIN_TO_UUID(id, 1) as id, timestamp, value '
-        'FROM arbiter_data.cdf_forecasts_values WHERE id = UUID_TO_BIN(%s, 1)'
+        'SELECT id, timestamp, value '
+        'FROM arbiter_data.cdf_forecasts_values WHERE id = %s'
         ' AND timestamp > CURRENT_TIMESTAMP()',
-        fxid)
+        fxbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+    # duplicate
+    alt = []
+    for r in expected[::-1]:
+        alt.append((r[0], r[1], r[2] + 9.9))
+    nextfx = json.dumps(
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in alt])
+    cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, nextfx))
+    cursor.execute(
+        'SELECT id, timestamp, value '
+        'FROM arbiter_data.cdf_forecasts_values WHERE id = %s'
+        ' AND timestamp > CURRENT_TIMESTAMP()',
+        fxbinid)
+    res = cursor.fetchall()
+    assert res == tuple(alt[::-1])
 
 
 def test_store_cdf_forecast_values_cant_write(cursor, cdf_forecast_values):
-    fxid, testfx = cdf_forecast_values
+    auth0id, fxid, fxbinid, testfx, expected = cdf_forecast_values
     with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc('store_cdf_forecast_values', list(testfx)[0])
+        cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, testfx))
     assert e.value.args[0] == 1142
 
 

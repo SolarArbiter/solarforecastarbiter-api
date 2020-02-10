@@ -205,7 +205,10 @@ class ObservationValuesView(MethodView):
         """
         ---
         summary: Add Observation data.
-        description: Add new timeseries values to the Observation entry.
+        description: |
+          Add new timeseries values to the Observation entry.
+          Float values *will be rounded* to 8 decimal places before
+          storage.
         tags:
         - Observations
         parameters:
