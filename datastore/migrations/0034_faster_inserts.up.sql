@@ -12,9 +12,9 @@ BEGIN
         INSERT INTO arbiter_data.observations_values (id, timestamp, value, quality_flag)
             SELECT binid, timestamp, value, quality_flag
             FROM JSON_TABLE(data, '$[*]' COLUMNS (
-                timestamp TIMESTAMP PATH '$.timestamp' ERROR ON EMPTY ERROR ON ERROR,
-                value FLOAT PATH '$.value' ERROR ON ERROR,
-                quality_flag SMALLINT UNSIGNED PATH '$.quality_flag' ERROR ON EMPTY ERROR ON ERROR)
+                timestamp TIMESTAMP PATH '$.ts' ERROR ON EMPTY ERROR ON ERROR,
+                value FLOAT PATH '$.v' NULL ON EMPTY ERROR ON ERROR,
+                quality_flag SMALLINT UNSIGNED PATH '$.qf' ERROR ON EMPTY ERROR ON ERROR)
             ) as jsonvals
         ON DUPLICATE KEY UPDATE value=jsonvals.value,
             quality_flag=jsonvals.quality_flag;
@@ -43,8 +43,8 @@ BEGIN
         INSERT INTO arbiter_data.forecasts_values (id, timestamp, value)
             SELECT binid, timestamp, value
             FROM JSON_TABLE(data, '$[*]' COLUMNS (
-               timestamp TIMESTAMP PATH '$.timestamp' ERROR ON EMPTY ERROR ON ERROR,
-               value FLOAT PATH '$.value' ERROR ON ERROR)
+               timestamp TIMESTAMP PATH '$.ts' ERROR ON EMPTY ERROR ON ERROR,
+               value FLOAT PATH '$.v' NULL ON EMPTY ERROR ON ERROR)
             ) as jsonvals
         ON DUPLICATE KEY UPDATE value=jsonvals.value;
     ELSE
@@ -73,8 +73,8 @@ BEGIN
         INSERT INTO arbiter_data.cdf_forecasts_values (id, timestamp, value)
             SELECT binid, timestamp, value
             FROM JSON_TABLE(data, '$[*]' COLUMNS (
-                timestamp TIMESTAMP PATH '$.timestamp' ERROR ON EMPTY ERROR ON ERROR,
-                value FLOAT PATH '$.value' ERROR ON ERROR)
+                timestamp TIMESTAMP PATH '$.ts' ERROR ON EMPTY ERROR ON ERROR,
+                value FLOAT PATH '$.v' NULL ON EMPTY ERROR ON ERROR)
             ) as jsonvals
         ON DUPLICATE KEY UPDATE value=jsonvals.value;
     ELSE

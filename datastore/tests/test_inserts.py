@@ -306,8 +306,8 @@ def observation_values(insertuser):
             (obsbinid, now, float(random.randint(0, 100)),
              random.randint(0, 100)))
     testobs = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2], 'quality_flag': r[3]}
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2], 'qf': r[3]}
          for r in expected])
     return auth0id, obsid, obsbinid, testobs, expected
 
@@ -322,6 +322,22 @@ def test_store_observation_values(cursor, allow_write_values,
         obsbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_observation_values_null(cursor, allow_write_values,
+                                       observation_values):
+    auth0id, obsid, obsbinid, testobs, expected = observation_values
+    good = '[{"ts": "2020-01-01T00:00:00", "qf": 0}]'
+    cursor.callproc('store_observation_values', (auth0id, obsid, good))
+    cursor.execute(
+        'SELECT value, quality_flag FROM arbiter_data.observations_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        obsbinid)
+    res = cursor.fetchone()
+    assert res == (None, 0)
+    bad = '[{"ts": "2020-01-01T00:00:00", "qf": 0, "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_observation_values', (auth0id, obsid, bad))
 
 
 def test_store_observation_values_duplicates(cursor, allow_write_values,
@@ -340,8 +356,8 @@ def test_store_observation_values_duplicates(cursor, allow_write_values,
     for r in expected:
         alt.append((r[0], r[1], r[2] + 0.9, r[3] + 1))
     nextobs = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2], 'quality_flag': r[3]}
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2], 'qf': r[3]}
          for r in alt])
     cursor.callproc('store_observation_values', (auth0id, obsid, nextobs))
     cursor.execute(
@@ -379,8 +395,8 @@ def forecast_values(insertuser):
         expected.append(
             (fxbinid, now, float(random.randint(0, 100))))
     testfx = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2]} for r in expected])
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in expected])
     return auth0id, fxid, fxbinid, testfx, expected
 
 
@@ -394,6 +410,22 @@ def test_store_forecast_values(cursor, allow_write_values,
         fxbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_forecast_values_null(cursor, allow_write_values,
+                                    forecast_values):
+    auth0id, fxid, fxbinid, testfx, expected = forecast_values
+    good = '[{"ts": "2020-01-01T00:00:00"}]'
+    cursor.callproc('store_forecast_values', (auth0id, fxid, good))
+    cursor.execute(
+        'SELECT value FROM arbiter_data.forecasts_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        fxbinid)
+    res = cursor.fetchone()
+    assert res == (None,)
+    bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_forecast_values', (auth0id, fxid, bad))
 
 
 def test_store_forecast_values_duplicates(cursor, allow_write_values,
@@ -413,8 +445,8 @@ def test_store_forecast_values_duplicates(cursor, allow_write_values,
     for r in expected:
         alt.append((r[0], r[1], r[2] + 0.9))
     nextfx = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2]} for r in alt])
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in alt])
     cursor.callproc('store_forecast_values', (auth0id, fxid, nextfx))
     cursor.execute(
         'SELECT * FROM arbiter_data.forecasts_values WHERE id = %s AND'
@@ -584,8 +616,8 @@ def cdf_forecast_values(insertuser, request):
         expected.append(
             (fxbinid, now, float(random.randint(0, 100))))
     testfx = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2]} for r in expected])
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in expected])
     return auth0id, fxid, fxbinid, testfx, expected
 
 
@@ -600,6 +632,22 @@ def test_store_cdf_forecast_values(
         fxbinid)
     res = cursor.fetchall()
     assert res == tuple(expected)
+
+
+def test_store_cdf_forecast_values_null(cursor, allow_write_values,
+                                        cdf_forecast_values):
+    auth0id, fxid, fxbinid, testfx, expected = cdf_forecast_values
+    good = '[{"ts": "2020-01-01T00:00:00"}]'
+    cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, good))
+    cursor.execute(
+        'SELECT value FROM arbiter_data.cdf_forecasts_values '
+        'WHERE id = %s AND timestamp = TIMESTAMP("2020-01-01T00:00:00")',
+        fxbinid)
+    res = cursor.fetchone()
+    assert res == (None,)
+    bad = '[{"ts": "2020-01-01T00:00:00", "v": null}]'
+    with pytest.raises(pymysql.err.InternalError):
+        cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, bad))
 
 
 def test_store_cdf_forecast_values_duplicates(
@@ -618,8 +666,8 @@ def test_store_cdf_forecast_values_duplicates(
     for r in expected[::-1]:
         alt.append((r[0], r[1], r[2] + 9.9))
     nextfx = json.dumps(
-        [{'timestamp': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
-          'value': r[2]} for r in alt])
+        [{'ts': r[1].strftime('%Y-%m-%dT%H:%M:%S'),
+          'v': r[2]} for r in alt])
     cursor.callproc('store_cdf_forecast_values', (auth0id, fxid, nextfx))
     cursor.execute(
         'SELECT id, timestamp, value '
