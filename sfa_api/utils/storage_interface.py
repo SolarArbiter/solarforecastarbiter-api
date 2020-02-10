@@ -15,6 +15,7 @@ import uuid
 
 from cryptography.fernet import Fernet
 from flask import current_app
+import numpy as np
 import pandas as pd
 import pymysql
 from pymysql import converters
@@ -207,6 +208,31 @@ def _set_forecast_parameters(forecast_dict):
     return out
 
 
+def _process_df_into_json(df, rounding=8):
+    """Processes a Dataframe with DatetimeIndex and 'value' column
+    (with optional 'quality_flag' column) into a json string of the
+    form [{"ts": ..., "v": ...}, ...] for sending to MySQL
+    """
+    timestr = np.char.add(
+        '{"ts":"', df.index.values.astype('M8[s]').astype(str))
+    timeend = '"'
+    values = df['value'].values
+    nans = np.isnan(values)
+    valstr = np.char.add(
+        timeend + ',"v":', np.round(values, rounding).astype('str'))
+    valstr[nans] = timeend
+    if 'quality_flag' in df.columns:
+        qf = np.char.add(
+            ',"qf":',
+            df['quality_flag'].values.astype(int).astype(str))
+        valstr = np.char.add(valstr, qf)
+    objarr = np.char.add(timestr, valstr)
+    if len(objarr) == 0:
+        return '[]'
+    else:
+        return '[' + '},'.join(objarr) + '}]'
+
+
 def store_observation_values(observation_id, observation_df):
     """Store observation data.
 
@@ -228,14 +254,8 @@ def store_observation_values(observation_id, observation_df):
         If the user does not have permission to store values on the Observation
         or if the Observation does not exists
     """
-    with get_cursor('standard') as cursor:
-        query = 'CALL store_observation_values(%s, %s, %s, %s, %s)'
-        query_cmd = partial(
-            cursor.executemany, query,
-            ((current_user, observation_id, row.Index, row.value,
-              row.quality_flag)
-             for row in observation_df.itertuples()))
-        try_query(query_cmd)
+    obs_json = _process_df_into_json(observation_df)
+    _call_procedure('store_observation_values', observation_id, obs_json)
     return observation_id
 
 
@@ -382,13 +402,8 @@ def store_forecast_values(forecast_id, forecast_df):
     StorageAuthError
         If the user does not have permission to write values for the Forecast
     """
-    with get_cursor('standard') as cursor:
-        query = 'CALL store_forecast_values(%s, %s, %s, %s)'
-        query_cmd = partial(
-            cursor.executemany, query,
-            ((current_user, forecast_id, row.Index, row.value)
-             for row in forecast_df.itertuples()))
-        try_query(query_cmd)
+    fx_json = _process_df_into_json(forecast_df)
+    _call_procedure('store_forecast_values', forecast_id, fx_json)
     return forecast_id
 
 
@@ -634,13 +649,8 @@ def store_cdf_forecast_values(forecast_id, forecast_df):
         The UUID of the associated forecast. Returns
         None if the CDFForecast does not exist.
     """
-    with get_cursor('standard') as cursor:
-        query = 'CALL store_cdf_forecast_values(%s, %s, %s, %s)'
-        query_cmd = partial(
-            cursor.executemany, query,
-            ((current_user, forecast_id, row.Index, row.value)
-             for row in forecast_df.itertuples()))
-        try_query(query_cmd)
+    fx_json = _process_df_into_json(forecast_df)
+    _call_procedure('store_cdf_forecast_values', forecast_id, fx_json)
     return forecast_id
 
 

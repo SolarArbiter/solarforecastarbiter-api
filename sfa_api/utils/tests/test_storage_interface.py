@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import math
 import uuid
 
@@ -229,6 +230,40 @@ def test_store_observation_invalid_user(
             list(demo_observations.values())[0])
 
 
+def test_process_df_into_json():
+    df = pd.DataFrame({'value': [1.0, 3.0, np.nan]},
+                      index=pd.date_range(
+                          start='2020-02-02T00:00:00Z',
+                          periods=3, freq='10min'))
+    out = storage_interface._process_df_into_json(df)
+    jo = json.loads(out)
+    assert [j['ts'] for j in jo] == [i.strftime('%Y-%m-%dT%H:%M:%S')
+                                     for i in df.index]
+    assert [j.get('v', 'NO!') for j in jo] == [1.0, 3.0, 'NO!']
+
+
+def test_process_df_into_json_empty():
+    df = pd.DataFrame({'value': []},
+                      index=pd.DatetimeIndex([]))
+    out = storage_interface._process_df_into_json(df)
+    jo = json.loads(out)
+    assert len(jo) == 0
+
+
+def test_process_df_into_json_extended():
+    df = pd.DataFrame({'value': [1.0, 3.0, 9.91992993000],
+                       'quality_flag': [0, 1, 999]},
+                      index=pd.date_range(
+                          start='2020-02-02T00:00:00.01299Z',
+                          periods=3, freq='10min'))
+    out = storage_interface._process_df_into_json(df, 4)
+    jo = json.loads(out)
+    assert [j['ts'] for j in jo] == [i.strftime('%Y-%m-%dT%H:%M:%S')
+                                     for i in df.index]
+    assert [j['v'] for j in jo] == [1.0, 3.0, 9.9199]
+    assert [j['qf'] for j in jo] == [0, 1, 999]
+
+
 @pytest.mark.parametrize('observation', demo_observations.values())
 def test_store_observation_values(sql_app, user, nocommit_cursor,
                                   observation, obs_vals):
@@ -245,6 +280,18 @@ def test_store_observation_values_tz(sql_app, user, nocommit_cursor, obs_vals):
     new_id = storage_interface.store_observation(observation)
     storage_interface.store_observation_values(
         new_id, obs_vals.tz_convert('MST'))
+    stored = storage_interface.read_observation_values(new_id)
+    pdt.assert_frame_equal(stored, obs_vals)
+
+
+def test_store_observation_values_nan(sql_app, user, nocommit_cursor,
+                                      obs_vals):
+    observation = list(demo_observations.values())[0]
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    obs_vals.loc[2:4, ['value']] = np.nan
+    assert np.isnan(obs_vals['value']).sum() > 0
+    storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
     pdt.assert_frame_equal(stored, obs_vals)
 
@@ -384,6 +431,17 @@ def test_store_forecast_values(sql_app, user, nocommit_cursor,
                                forecast, fx_vals):
     forecast['name'] = 'new_forecast'
     new_id = storage_interface.store_forecast(forecast)
+    storage_interface.store_forecast_values(new_id, fx_vals)
+    stored = storage_interface.read_forecast_values(new_id)
+    pdt.assert_frame_equal(stored, fx_vals)
+
+
+def test_store_forecast_values_nan(sql_app, user, nocommit_cursor,
+                                   fx_vals):
+    forecast = list(demo_forecasts.values())[0]
+    new_id = storage_interface.store_forecast(forecast)
+    fx_vals.loc[2:4, ['value']] = np.nan
+    assert np.isnan(fx_vals['value']).sum() > 0
     storage_interface.store_forecast_values(new_id, fx_vals)
     stored = storage_interface.read_forecast_values(new_id)
     pdt.assert_frame_equal(stored, fx_vals)
@@ -537,6 +595,17 @@ def test_read_cdf_forecast_values_invalid_user(
 def test_store_cdf_forecast_values(sql_app, user, nocommit_cursor,
                                    cdf_forecast_id, fx_vals):
     fx_vals = fx_vals.shift(freq='30d')
+    storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
+    stored = storage_interface.read_cdf_forecast_values(
+        cdf_forecast_id, start=fx_vals.index[0])
+    pdt.assert_frame_equal(stored, fx_vals)
+
+
+def test_store_cdf_forecast_values_nan(sql_app, user, nocommit_cursor,
+                                       cdf_forecast_id, fx_vals):
+    fx_vals = fx_vals.shift(freq='30d')
+    fx_vals.loc[2:4, ['value']] = np.nan
+    assert np.isnan(fx_vals['value']).sum() > 0
     storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
     stored = storage_interface.read_cdf_forecast_values(
         cdf_forecast_id, start=fx_vals.index[0])
