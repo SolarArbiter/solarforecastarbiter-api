@@ -166,7 +166,7 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
 
 
 @pytest.mark.parametrize('key,value,error', [
-    ('name', 'r'*70, '["Longer than maximum length 64."]'),
+    ('name', 'r' * 70, '["Longer than maximum length 64."]'),
     ('start', 'invalid_date',
      '["Not a valid datetime."]'),
     ('end', 'invalid_date',

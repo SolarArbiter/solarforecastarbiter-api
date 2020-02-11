@@ -243,10 +243,10 @@ site_blp = Blueprint(
 )
 site_blp.add_url_rule('/', view_func=AllSitesView.as_view('all'))
 site_blp.add_url_rule(
-    '/<uuid:site_id>', view_func=SiteView.as_view('single'))
-site_blp.add_url_rule('/<uuid:site_id>/observations',
+    '/<uuid_str:site_id>', view_func=SiteView.as_view('single'))
+site_blp.add_url_rule('/<uuid_str:site_id>/observations',
                       view_func=SiteObservations.as_view('observations'))
-site_blp.add_url_rule('/<uuid:site_id>/forecasts/single',
+site_blp.add_url_rule('/<uuid_str:site_id>/forecasts/single',
                       view_func=SiteForecasts.as_view('forecasts'))
-site_blp.add_url_rule('/<uuid:site_id>/forecasts/cdf',
+site_blp.add_url_rule('/<uuid_str:site_id>/forecasts/cdf',
                       view_func=SiteCDFForecastGroups.as_view('cdf_forecasts'))
