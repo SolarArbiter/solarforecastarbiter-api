@@ -1,12 +1,13 @@
 """Tests that API maintains proper state after interactions
 """
 import pytest
+import re
+import uuid
 
 
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
                               VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
                               BASE_URL)
-import re
 
 
 invalid_json = {'invalid': 'garbage'}
@@ -498,3 +499,26 @@ def test_uuid_path_validation(sql_api, uuid_paths, auth_header, bad_id):
                           headers=auth_header,
                           base_url=BASE_URL)
         assert req.status_code == 404
+
+
+@pytest.fixture(scope='module')
+def cvtr_testapp(sql_app):
+    @sql_app.route('/test/<uuid_str:someuuid>')
+    def testroute(someuuid):
+        uuid.UUID(someuuid)
+        return 'ok'
+    yield sql_app
+
+
+@pytest.mark.parametrize('uuid_str', [
+    str(uuid.uuid1()),
+    str(uuid.uuid3(uuid.NAMESPACE_DNS, 'solarfarorecastarbiter.org')),
+    str(uuid.uuid4()),
+    str(uuid.uuid5(uuid.NAMESPACE_DNS, 'solarfarorecastarbiter.org'))
+])
+def test_uuid_converter_all_versions(cvtr_testapp, uuid_str, auth_header):
+    with cvtr_testapp.test_client() as api:
+        req = api.get(f'/test/{uuid_str}',
+                      headers=auth_header,
+                      base_url=BASE_URL)
+        assert req.status_code == 200
