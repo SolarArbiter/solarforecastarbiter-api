@@ -488,7 +488,10 @@ def uuid_paths(sql_api):
     return paths_with_id
 
 
-@pytest.mark.parametrize('bad_id', ['56061aa6-4cf4-11ea-a21d-0a580a800331%'])
+@pytest.mark.parametrize('bad_id', [
+    '56061aa6-4cf4-11ea-a21d-0a580a800331%',
+    'not a real uuid',
+])
 def test_uuid_path_validation(sql_api, uuid_paths, auth_header, bad_id):
     for path in uuid_paths:
         req = sql_api.get(path.format(id=bad_id),
