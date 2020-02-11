@@ -284,18 +284,18 @@ reports_blp.add_url_rule(
     view_func=AllReportsView.as_view('all')
 )
 reports_blp.add_url_rule(
-    '/<report_id>',
+        '/<uuid:report_id>',
     view_func=ReportView.as_view('single')
 )
 reports_blp.add_url_rule(
-    '/<report_id>/status/<status>',
+    '/<uuid:report_id>/status/<status>',
     view_func=ReportStatusView.as_view('status')
 )
 reports_blp.add_url_rule(
-    '/<report_id>/raw',
+    '/<uuid:report_id>/raw',
     view_func=RawReportView.as_view('metrics')
 )
 reports_blp.add_url_rule(
-    '/<report_id>/values',
+    '/<uuid:report_id>/values',
     view_func=ReportValuesView.as_view('values')
 )

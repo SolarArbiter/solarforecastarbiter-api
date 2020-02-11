@@ -203,8 +203,8 @@ permission_blp = Blueprint(
 )
 permission_blp.add_url_rule('/', view_func=AllPermissionsView.as_view('all'))
 permission_blp.add_url_rule(
-    '/<permission_id>',
+    '/<uuid:permission_id>',
     view_func=PermissionView.as_view('single'))
 permission_blp.add_url_rule(
-    '/<permission_id>/objects/<object_id>',
+    '/<uuid:permission_id>/objects/<uuid:object_id>',
     view_func=PermissionObjectManagementView.as_view('objects'))

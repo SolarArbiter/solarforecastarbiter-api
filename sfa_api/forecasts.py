@@ -572,24 +572,24 @@ forecast_blp.add_url_rule(
     '/single/',
     view_func=AllForecastsView.as_view('all'))
 forecast_blp.add_url_rule(
-    '/single/<forecast_id>',
+    '/single/<uuid:forecast_id>',
     view_func=ForecastView.as_view('single'))
 forecast_blp.add_url_rule(
-    '/single/<forecast_id>/values',
+    '/single/<uuid:forecast_id>/values',
     view_func=ForecastValuesView.as_view('values'))
 forecast_blp.add_url_rule(
-    '/single/<forecast_id>/metadata',
+    '/single/<uuid:forecast_id>/metadata',
     view_func=ForecastMetadataView.as_view('metadata'))
 
 forecast_blp.add_url_rule(
     '/cdf/',
     view_func=AllCDFForecastGroupsView.as_view('all_cdf_groups'))
 forecast_blp.add_url_rule(
-    '/cdf/<forecast_id>',
+    '/cdf/<uuid:forecast_id>',
     view_func=CDFForecastGroupMetadataView.as_view('single_cdf_group'))
 forecast_blp.add_url_rule(
-    '/cdf/single/<forecast_id>',
+    '/cdf/single/<uuid:forecast_id>',
     view_func=CDFForecastMetadata.as_view('single_cdf_metadata'))
 forecast_blp.add_url_rule(
-    '/cdf/single/<forecast_id>/values',
+    '/cdf/single/<uuid:forecast_id>/values',
     view_func=CDFForecastValues.as_view('single_cdf_value'))

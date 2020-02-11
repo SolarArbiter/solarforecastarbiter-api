@@ -400,16 +400,16 @@ agg_blp = Blueprint(
 )
 agg_blp.add_url_rule('/', view_func=AllAggregatesView.as_view('all'))
 agg_blp.add_url_rule(
-    '/<aggregate_id>', view_func=AggregateView.as_view('single'))
+    '/<uuid:aggregate_id>', view_func=AggregateView.as_view('single'))
 agg_blp.add_url_rule(
-    '/<aggregate_id>/values',
+    '/<uuid:aggregate_id>/values',
     view_func=AggregateValuesView.as_view('values'))
 agg_blp.add_url_rule(
-    '/<aggregate_id>/metadata',
+    '/<uuid:aggregate_id>/metadata',
     view_func=AggregateMetadataView.as_view('metadata'))
 agg_blp.add_url_rule(
-    '/<aggregate_id>/forecasts/single',
+    '/<uuid:aggregate_id>/forecasts/single',
     view_func=AggregateForecasts.as_view('forecasts'))
 agg_blp.add_url_rule(
-    '/<aggregate_id>/forecasts/cdf',
+    '/<uuid:aggregate_id>/forecasts/cdf',
     view_func=AggregateCDFForecastGroups.as_view('cdf_forecasts'))

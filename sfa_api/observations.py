@@ -319,10 +319,10 @@ obs_blp = Blueprint(
 
 obs_blp.add_url_rule('/', view_func=AllObservationsView.as_view('all'))
 obs_blp.add_url_rule(
-    '/<observation_id>', view_func=ObservationView.as_view('single'))
+    '/<uuid:observation_id>', view_func=ObservationView.as_view('single'))
 obs_blp.add_url_rule(
-    '/<observation_id>/values',
+    '/<uuid:observation_id>/values',
     view_func=ObservationValuesView.as_view('values'))
 obs_blp.add_url_rule(
-    '/<observation_id>/metadata',
+    '/<uuid:observation_id>/metadata',
     view_func=ObservationMetadataView.as_view('metadata'))

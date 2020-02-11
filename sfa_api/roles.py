@@ -187,8 +187,8 @@ role_blp = Blueprint(
     'roles', 'roles', url_prefix='/roles',
 )
 role_blp.add_url_rule('/', view_func=AllRolesView.as_view('all'))
-role_blp.add_url_rule('/<role_id>', view_func=RoleView.as_view('single'))
+role_blp.add_url_rule('/<uuid:role_id>', view_func=RoleView.as_view('single'))
 role_blp.add_url_rule(
-    '/<role_id>/permissions/<permission_id>',
+    '/<uuid:role_id>/permissions/<uuid:permission_id>',
     view_func=RolePermissionManagementView.as_view('permissions')
 )
