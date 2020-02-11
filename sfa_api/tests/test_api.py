@@ -1,6 +1,8 @@
 """Tests that API maintains proper state after interactions
 """
 import pytest
+import re
+import uuid
 
 
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
@@ -476,3 +478,47 @@ def test_sequence(sql_api, auth_header):
     delete_site = sql_api.delete(new_site_url, headers=auth_header)
     assert delete_site.status_code == 204
     assert new_site not in get_site_list(sql_api, auth_header)
+
+
+@pytest.fixture()
+def uuid_paths(sql_api):
+    paths_with_id = []
+    for rule in sql_api.application.url_map.iter_rules():
+        if 'GET' in rule.methods and '_id' in rule.rule:
+            paths_with_id.append(re.sub('<.+>', '{id}', rule.rule))
+    return paths_with_id
+
+
+@pytest.mark.parametrize('bad_id', [
+    '56061aa6-4cf4-11ea-a21d-0a580a800331%',
+    'not a real uuid',
+])
+def test_uuid_path_validation(sql_api, uuid_paths, auth_header, bad_id):
+    for path in uuid_paths:
+        req = sql_api.get(path.format(id=bad_id),
+                          headers=auth_header,
+                          base_url=BASE_URL)
+        assert req.status_code == 404
+
+
+@pytest.fixture(scope='module')
+def cvtr_testapp(sql_app):
+    @sql_app.route('/test/<uuid_str:someuuid>')
+    def testroute(someuuid):
+        uuid.UUID(someuuid)
+        return 'ok'
+    yield sql_app
+
+
+@pytest.mark.parametrize('uuid_str', [
+    str(uuid.uuid1()),
+    str(uuid.uuid3(uuid.NAMESPACE_DNS, 'solarfarorecastarbiter.org')),
+    str(uuid.uuid4()),
+    str(uuid.uuid5(uuid.NAMESPACE_DNS, 'solarfarorecastarbiter.org'))
+])
+def test_uuid_converter_all_versions(cvtr_testapp, uuid_str, auth_header):
+    with cvtr_testapp.test_client() as api:
+        req = api.get(f'/test/{uuid_str}',
+                      headers=auth_header,
+                      base_url=BASE_URL)
+        assert req.status_code == 200

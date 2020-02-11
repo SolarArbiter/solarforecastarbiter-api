@@ -292,16 +292,19 @@ user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
 user_blp.add_url_rule('/', view_func=AllUsersView.as_view('all'))
-user_blp.add_url_rule('/<user_id>', view_func=UserView.as_view('single'))
 user_blp.add_url_rule(
-    '/<user_id>/roles/<role_id>',
+    '/<uuid_str:user_id>',
+    view_func=UserView.as_view('single')
+)
+user_blp.add_url_rule(
+    '/<uuid_str:user_id>/roles/<uuid_str:role_id>',
     view_func=UserRolesManagementView.as_view('user_roles_management')
 )
 user_blp.add_url_rule(
     '/current',
     view_func=CurrentUserView.as_view('current_user'))
 user_blp.add_url_rule(
-    '/<user_id>/email',
+    '/<uuid_str:user_id>/email',
     view_func=UserIdToEmailView.as_view('user_email'))
 
 
@@ -311,6 +314,6 @@ user_email_blp = Blueprint(
 user_email_blp.add_url_rule(
     '/<email>', view_func=UserByEmailView.as_view('single'))
 user_email_blp.add_url_rule(
-    '/<email>/roles/<role_id>',
+    '/<email>/roles/<uuid_str:role_id>',
     view_func=UserRolesManagementByEmailView.as_view('user_roles_management')
 )
