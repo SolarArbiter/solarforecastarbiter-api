@@ -6,6 +6,7 @@ import pytest
 from sfa_api.conftest import (VALID_SITE_JSON, VALID_OBS_JSON,
                               VALID_FORECAST_JSON, VALID_CDF_FORECAST_JSON,
                               BASE_URL)
+import re
 
 
 invalid_json = {'invalid': 'garbage'}
@@ -476,3 +477,21 @@ def test_sequence(sql_api, auth_header):
     delete_site = sql_api.delete(new_site_url, headers=auth_header)
     assert delete_site.status_code == 204
     assert new_site not in get_site_list(sql_api, auth_header)
+
+
+@pytest.fixture()
+def uuid_paths(sql_api):
+    paths_with_id = []
+    for rule in sql_api.application.url_map.iter_rules():
+        if 'GET' in rule.methods and '_id' in rule.rule:
+            paths_with_id.append(re.sub('<.+>', '{id}', rule.rule))
+    return paths_with_id
+
+
+@pytest.mark.parametrize('bad_id', ['56061aa6-4cf4-11ea-a21d-0a580a800331%'])
+def test_uuid_path_validation(sql_api, uuid_paths, auth_header, bad_id):
+    for path in uuid_paths:
+        req = sql_api.get(path.format(id=bad_id),
+                          headers=auth_header,
+                          base_url=BASE_URL)
+        assert req.status_code == 404
