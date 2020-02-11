@@ -8,7 +8,7 @@ from werkzeug.routing import BaseConverter
 class UUIDStringConverter(BaseConverter):
     def to_python(self, value):
         try:
-            return str(uuid.UUID(value, version=1))
+            return str(uuid.UUID(value))
         except ValueError:
             abort(404)
 
