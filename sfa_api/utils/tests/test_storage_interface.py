@@ -1375,3 +1375,126 @@ def test_store_report_status_denied(
         sql_app, invalid_user, nocommit_cursor, reportid):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_report_status(reportid, 'failed')
+
+
+@pytest.mark.parametrize('inp,exp', [
+    ('NaN', storage_interface.NANSTR),
+    ('aNaN', 'aNaN'),
+    ('a NaN', 'a NaN'),
+    ('"NaN', '"NaN'),
+    (', NaN', ', ' + storage_interface.NANSTR),
+    ('[NaN,', '[' + storage_interface.NANSTR + ','),
+    ('Infinity', storage_interface.INFSTR),
+    (', Infinity', ', ' + storage_interface.INFSTR),
+    ('[Infinity,', '[' + storage_interface.INFSTR + ','),
+    ('-Infinity', storage_interface.NINFSTR),
+    (',-Infinity', ',' + storage_interface.NINFSTR),
+    ('[-Infinity,', '[' + storage_interface.NINFSTR + ','),
+])
+def test_replace(inp, exp):
+    assert storage_interface._replace(inp) == exp
+
+
+@pytest.mark.parametrize('inp,exp', [
+    ('allyourbase', '"allyourbase"'),
+    (math.nan, storage_interface.NANSTR),
+    ('NaN', '"NaN"'),
+    (math.inf, storage_interface.INFSTR),
+    (-1 * math.inf, storage_interface.NINFSTR),
+    ([math.nan, math.inf],
+     f'[{storage_interface.NANSTR}, {storage_interface.INFSTR}]'),
+    ({'Infinity': math.inf, 'NaN': math.nan},
+     f'{{"Infinity": {storage_interface.INFSTR}, '
+     f'"NaN": {storage_interface.NANSTR}}}')
+])
+def test_dump_json_replace_nan(inp, exp):
+    assert storage_interface.dump_json_replace_nan(inp) == exp
+
+
+def naneq(inp, exp):
+    def eq(a, b):
+        return a == b or (math.isnan(a) and math.isnan(b))
+
+    if type(inp) != type(exp):
+        return False
+    if isinstance(inp, list):
+        if len(inp) != len(exp):
+            return False
+        for i, v in enumerate(inp):
+            if not naneq(exp[i], v):
+                return False
+        return True
+    elif isinstance(inp, dict):
+        if set(inp.keys()) != set(exp.keys()):
+            return False
+        for k, v in inp.items():
+            if not naneq(exp[k], v):
+                return False
+        return True
+    else:
+        return eq(inp, exp)
+
+
+@pytest.mark.parametrize('a,b,res', [
+    ('asdf', 'asdf', True),
+    ({'a': math.nan, 'b': math.inf}, {'b': math.inf, 'a': math.nan}, True),
+    ([math.nan, 1, 2, 3], [None, 1, 2, 3], False),
+    ([1, 2, 3], [1, 2], False),
+    ({'a': math.nan}, {'b': math.nan, 'a': math.inf}, False),
+    ({'a': math.inf}, {'a': -1 * math.inf}, False),
+])
+def test_naneq(a, b, res):
+    assert naneq(a, b) is res
+
+
+@pytest.mark.parametrize('inp', [
+    'allyourbase',
+    math.nan,
+    'NaN',
+    math.inf,
+    -1 * math.inf,
+    'Infinity',
+    [math.nan, math.inf],
+    ['Nan', math.nan],
+    ['\'Nan\'', math.nan],
+    ['"NaN"', 'Infinity'],
+    [-1 * math.inf, math.inf, math.nan],
+    'allInfinityother',
+    'beforNaNandmore',
+    {'val': math.nan, 'Other': 'NaN'}
+])
+def test_json_replace_nan_roundtrip(inp):
+    inter = storage_interface.dump_json_replace_nan(inp)
+    # make sure valid json w/o nan or inf
+    assert 'INVALID' not in json.loads(
+        inter, parse_constant=lambda x: 'INVALID')
+    out = storage_interface.load_json_replace_nan(inter)
+    assert naneq(out, inp)
+
+
+def test_store_raw_report_nan_metric(
+        sql_app, user, nocommit_cursor, reportid,
+        report, raw_report_json):
+    rr = raw_report_json.copy()
+    rr['messages'] = ['first']
+    rr['metrics'] = [{'name': 'name', 'forecast_id': '', 'observation_id': '',
+                      'aggregate_id': '', 'values': [{
+                          'category': 'date', 'metric': 'r', 'index': '0',
+                          'value': math.nan}]}]
+    storage_interface.store_raw_report(reportid, rr)
+    rep = storage_interface.read_report(reportid)
+    raw = rep['raw_report']
+    assert raw.pop('messages') == ['first']
+    exp = report['raw_report']
+    exp.pop('messages')
+    omet = raw.pop('metrics')
+    raw['metrics'] = []
+    assert raw == exp
+    assert naneq(omet, rr['metrics'])
+
+
+def test_call_procedure_bad_json(
+        sql_app, user, nocommit_cursor, reportid):
+    with pytest.raises(storage_interface.BadAPIRequest):
+        storage_interface._call_procedure('store_raw_report', reportid,
+                                          '{"badnan": NaN}')

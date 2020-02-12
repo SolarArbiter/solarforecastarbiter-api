@@ -10,6 +10,7 @@ import datetime as dt
 from functools import partial
 import math
 import random
+import re
 import uuid
 
 
@@ -37,11 +38,50 @@ MAXTIMESTAMP = pd.Timestamp('20380119T031407Z')
 # microseconds dropped on purpose, must quote
 # this is faster than using strftime
 TIMEFORMAT = "'{0.year:04}-{0.month:02}-{0.day:02} {0.hour:02}:{0.minute:02}:{0.second:02}'"  # NOQA
+NANSTR = '"__MYSQLNAN"'
+INFSTR = '"__MYSQLINF"'
+NINFSTR = '"__MYSQLNINF"'
+# look back and match [{:, or the start, then any number of
+# whitespace, then string like NaN, then ]}, or end of string
+_RESTR = ('(?<![^[{:,])(?P<sp>\\s*)', '(?=[\\],}]|\\Z)')
+RENAN = re.compile(_RESTR[0] + 'NaN' + _RESTR[1])
+REINF = re.compile(_RESTR[0] + 'Infinity' + _RESTR[1])
+RENINF = re.compile(_RESTR[0] + '-Infinity' + _RESTR[1])
 
 
 def generate_uuid():
     """Generate a version 1 UUID and ensure clock_seq is random"""
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
+
+
+def _replace(s):
+    out = s
+    if 'NaN' in out:
+        out = RENAN.sub('\\g<1>' + NANSTR, out)
+    if '-Infinity' in out:
+        out = RENINF.sub('\\g<1>' + NINFSTR, out)
+    if 'Infinity' in out:
+        out = REINF.sub('\\g<1>' + INFSTR, out)
+    return out
+
+
+def dump_json_replace_nan(obj):
+    """Dump the object to json and replace any NaN, +-Infinity
+    values with special strings for storing in mysql"""
+    outstr = json.dumps(obj, allow_nan=True)
+    return _replace(outstr)
+
+
+def load_json_replace_nan(inp):
+    """Replace the special nan/inf strings with the json parser
+    string for that value"""
+    if NANSTR in inp:
+        inp = inp.replace(NANSTR, 'NaN')
+    if INFSTR in inp:
+        inp = inp.replace(INFSTR, 'Infinity')
+    if NINFSTR in inp:
+        inp = inp.replace(NINFSTR, '-Infinity')
+    return json.loads(inp)
 
 
 def escape_float_with_nan(value, mapping=None):
@@ -78,7 +118,7 @@ def _make_sql_connection_partial():
     conv[converters.FIELD_TYPE.NEWDECIMAL] = float
     conv[converters.FIELD_TYPE.TIMESTAMP] = convert_datetime_utc
     conv[converters.FIELD_TYPE.DATETIME] = convert_datetime_utc
-    conv[converters.FIELD_TYPE.JSON] = json.loads
+    conv[converters.FIELD_TYPE.JSON] = load_json_replace_nan
     conv[pd.Timestamp] = escape_timestamp
     conv[dt.datetime] = escape_datetime
     conv[float] = escape_float_with_nan
@@ -144,6 +184,8 @@ def try_query(query_cmd):
             raise StorageAuthError(e.args[1])
         elif ecode == 1451:
             raise DeleteRestrictionError
+        elif ecode == 3140:
+            raise BadAPIRequest({'error': e.args[1]})
         else:
             raise
 
@@ -1309,7 +1351,7 @@ def store_report(report):
         'store_report',
         report_id,
         rep['report_parameters']['name'],
-        json.dumps(rep['report_parameters']),
+        dump_json_replace_nan(rep['report_parameters']),
     )
     return report_id
 
@@ -1430,7 +1472,7 @@ def store_raw_report(report_id, raw_report):
     StorageAuthError
         If the user does not have permission to update the report
     """
-    json_raw_report = json.dumps(raw_report)
+    json_raw_report = dump_json_replace_nan(raw_report)
     _call_procedure('store_raw_report', report_id,
                     json_raw_report)
 
