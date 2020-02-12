@@ -1405,10 +1405,16 @@ def test_replace(inp, exp):
      f'[{storage_interface.NANSTR}, {storage_interface.INFSTR}]'),
     ({'Infinity': math.inf, 'NaN': math.nan},
      f'{{"Infinity": {storage_interface.INFSTR}, '
-     f'"NaN": {storage_interface.NANSTR}}}')
+     f'"NaN": {storage_interface.NANSTR}}}'),
+    ('dict: 12', '"dict: 12"'),
+    # known failure when ther is what looks like a dict in a string
+    pytest.param('notdict: NaN, other', '"notdict: NaN, other"',
+                 marks=pytest.mark.xfail(strict=True))
 ])
 def test_dump_json_replace_nan(inp, exp):
-    assert storage_interface.dump_json_replace_nan(inp) == exp
+    out = storage_interface.dump_json_replace_nan(inp)
+    json.loads(out)  # should be valid json
+    assert out == exp
 
 
 def naneq(inp, exp):
@@ -1461,7 +1467,7 @@ def test_naneq(a, b, res):
     [-1 * math.inf, math.inf, math.nan],
     'allInfinityother',
     'beforNaNandmore',
-    {'val': math.nan, 'Other': 'NaN'}
+    {'val': math.nan, 'Other': 'NaN'},
 ])
 def test_json_replace_nan_roundtrip(inp):
     inter = storage_interface.dump_json_replace_nan(inp)
