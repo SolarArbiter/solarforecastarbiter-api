@@ -761,7 +761,7 @@ class RawReportSchema(ma.Schema):
         required=True,
         validate=TimezoneValidator())
     versions = ma.List(
-        ma.Tuple((ma.String(), ma.String)),
+        ma.Tuple((ma.String(), ma.String())),
         title="Package Versions",
         description=(
             "Versions of the packages used to generate this raw report"
@@ -794,7 +794,8 @@ class RawReportSchema(ma.Schema):
         description=(
             "SHA-256 checksum of the data used to generate this raw report"
         ),
-        missing=None
+        missing=None,
+        validate=[UserstringValidator(), validate.Length(equal=64)]
     )
 
 

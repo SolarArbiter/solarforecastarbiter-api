@@ -1,3 +1,4 @@
+import hashlib
 import pytest
 
 
@@ -136,6 +137,25 @@ def test_post_raw_report(api, new_report, raw_report_json):
                        base_url=BASE_URL)
     report_with_raw = full_res.get_json()
     assert report_with_raw['raw_report'] == raw_report_json
+
+
+@pytest.mark.parametrize('chksum', [
+    hashlib.sha256(b'asdf').hexdigest(),
+    pytest.param('tooshort', marks=pytest.mark.xfail(strict=True)),
+    pytest.param('bad??$', marks=pytest.mark.xfail(strict=True))
+])
+def test_post_raw_report_chksum(api, new_report, raw_report_json, chksum):
+    report_id = new_report()
+    post = raw_report_json
+    post['data_checksum'] = chksum
+    res = api.post(f'/reports/{report_id}/raw',
+                   base_url=BASE_URL,
+                   json=post)
+    assert res.status_code == 204
+    full_res = api.get(f'/reports/{report_id}',
+                       base_url=BASE_URL)
+    report_with_raw = full_res.get_json()
+    assert report_with_raw['raw_report'] == post
 
 
 def test_delete_report(api, new_report):
