@@ -1799,8 +1799,8 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
     ).groupby('observation_id')
     out = {}
     for obs_id, df in groups:
-        out[obs_id] = df.drop(columns='observation_id').set_index(
-            'timestamp')
+        out[obs_id] = df.drop(columns='observation_id').drop_duplicates(
+        ).set_index('timestamp').sort_index()
     return out
 
 
