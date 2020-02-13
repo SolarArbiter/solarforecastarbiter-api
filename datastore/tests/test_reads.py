@@ -991,7 +991,7 @@ def test_read_aggregate_values_removed_overlap(
     assert res == vals
     cursor.execute(
         "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
-    )
+    )  # 12:28 and 12:29 extra
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
         "(aggregate_id, observation_id, _incr, effective_from) VALUES"
@@ -1004,7 +1004,8 @@ def test_read_aggregate_values_removed_overlap(
             start, end)
     )
     res = cursor.fetchall()
-    assert res == vals
+    assert len(res) == len(vals) + 2
+    assert set(res) == set(vals)
 
 
 def test_read_aggregate_values_full_overlap(
@@ -1036,7 +1037,8 @@ def test_read_aggregate_values_full_overlap(
             start, end)
     )
     res = cursor.fetchall()
-    assert res == vals
+    assert len(res) == len(vals) + 1
+    assert set(res) == set(vals)
 
 
 def test_read_aggregate_values_deleted(
