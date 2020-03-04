@@ -1,0 +1,1 @@
+DROP PROCEDURE get_user_actions_on_object;
