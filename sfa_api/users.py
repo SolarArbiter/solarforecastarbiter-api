@@ -3,7 +3,7 @@ from flask.views import MethodView
 
 
 from sfa_api import spec
-from sfa_api.schema import UserSchema
+from sfa_api.schema import UserSchema, ActionList
 from sfa_api.utils.auth0_info import (
     get_email_of_user, list_user_emails, get_auth0_id_of_user)
 from sfa_api.utils.errors import StorageAuthError
@@ -266,6 +266,37 @@ class UserByEmailView(MethodView):
         return jsonify(UserSchema().dump(user))
 
 
+class UserActionsView(MethodView):
+    def get(self, object_id):
+        """
+        ---
+        summary: Available actions on object.
+        description: |-
+          Get a list of actions the current user is allowed to perform
+          on an object.
+        parameters:
+        - object_id
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of actions the user can make on the object.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ActionList'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        actions = storage.get_user_actions_on_object(object_id)
+        json_response = {'object_id': object_id,
+                         'actions': actions}
+        return jsonify(ActionList().dump(json_response))
+
+
 spec.components.parameter(
     'user_id', 'path',
     {
@@ -306,7 +337,9 @@ user_blp.add_url_rule(
 user_blp.add_url_rule(
     '/<uuid_str:user_id>/email',
     view_func=UserIdToEmailView.as_view('user_email'))
-
+user_blp.add_url_rule(
+    '/actions-on/<uuid_str:object_id>/',
+    view_func=UserActionsView.as_view('user_actions_on_object'))
 
 user_email_blp = Blueprint(
     'users-by-email', 'users-by-email', url_prefix='/users-by-email',
@@ -315,5 +348,4 @@ user_email_blp.add_url_rule(
     '/<email>', view_func=UserByEmailView.as_view('single'))
 user_email_blp.add_url_rule(
     '/<email>/roles/<uuid_str:role_id>',
-    view_func=UserRolesManagementByEmailView.as_view('user_roles_management')
-)
+    view_func=UserRolesManagementByEmailView.as_view('user_roles_management'))

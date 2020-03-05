@@ -1883,3 +1883,23 @@ def create_job_user(username, passwd, org_id, encryption_key):
     _call_procedure('store_token', auth0_id, sec_token,
                     with_current_user=False)
     return user_id, auth0_id
+
+
+def get_user_actions_on_object(object_id):
+    """Read the list of actions that the user can perform on object.
+
+    Parameters
+    ----------
+    object_id: String
+        UUID of the observation to retrieve.
+
+    Returns
+    -------
+    list
+        The list of actions.
+    """
+    permissions = _call_procedure('get_user_actions_on_object', object_id)
+    if not permissions:
+        raise StorageAuthError()
+    actions = [perm['action'] for perm in permissions]
+    return actions

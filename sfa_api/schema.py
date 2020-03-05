@@ -963,3 +963,9 @@ class AggregateValuesSchema(ObservationValuesPostSchema):
         },
         description="Contains a link to the values endpoint."
     )
+
+
+@spec.define_schema('ActionList')
+class ActionList(ma.Schema):
+    object_id = ma.UUID(title="Object UUID")
+    actions = ma.List(ma.String(), title="Actions allowed on the object.")
