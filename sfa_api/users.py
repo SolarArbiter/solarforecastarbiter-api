@@ -338,7 +338,7 @@ user_blp.add_url_rule(
     '/<uuid_str:user_id>/email',
     view_func=UserIdToEmailView.as_view('user_email'))
 user_blp.add_url_rule(
-    '/actions-on/<uuid_str:object_id>/',
+    '/actions-on/<uuid_str:object_id>',
     view_func=UserActionsView.as_view('user_actions_on_object'))
 
 user_email_blp = Blueprint(

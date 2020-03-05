@@ -236,3 +236,28 @@ def test_user_email_user_dne(api, missing_id):
 def test_user_email_user_unaffiliated(api, unaffiliated_userid):
     res = api.get(f'/users/{unaffiliated_userid}/email', BASE_URL)
     assert res.status_code == 404
+
+
+def test_get_user_actions_on_object(api, forecast_id):
+    res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
+    assert res.json == {'object_id': forecast_id,
+                        'actions': ['read', 'read_values', 'delete',
+                                    'delete_values', 'write_values']}
+
+
+def test_get_user_actions_on_object_404_missing(api, missing_id):
+    res = api.get(f'/users/actions-on/{missing_id}', BASE_URL)
+    assert res.status_code == 404
+
+
+def test_get_user_actions_on_object_404_no_permissions(
+        api, forecast_id, remove_perms):
+    res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
+    for action in res.json['actions'][:-1]:
+        remove_perms(action, 'forecasts')
+        less_one = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
+        assert action not in less_one.json['actions']
+    # the last action should result in a 404 to this endpoint
+    remove_perms(res.json['actions'][-1], 'forecasts')
+    res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
+    assert res.status_code == 404
