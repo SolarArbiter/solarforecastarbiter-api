@@ -1504,3 +1504,22 @@ def test_call_procedure_bad_json(
     with pytest.raises(storage_interface.BadAPIRequest):
         storage_interface._call_procedure('store_raw_report', reportid,
                                           '{"badnan": NaN}')
+
+
+def test_get_user_actions_on_object(
+        sql_app, user, nocommit_cursor, forecast_id):
+    actions = storage_interface.get_user_actions_on_object(forecast_id)
+    assert actions == ['read', 'read_values', 'delete', 'delete_values',
+                       'write_values']
+
+
+def test_get_user_actions_on_object_object_dne(
+        sql_app, user, nocommit_cursor, missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.get_user_actions_on_object(missing_id)
+
+
+def test_get_user_actions_on_object_no_actions(
+        sql_app, user, nocommit_cursor, inaccessible_forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.get_user_actions_on_object(inaccessible_forecast_id)

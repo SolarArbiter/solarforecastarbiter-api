@@ -1,5 +1,6 @@
 from collections import namedtuple
 import datetime as dt
+import itertools
 import json
 import random
 
@@ -1481,3 +1482,69 @@ def test_read_auth0id_caller_unaffiliated(cursor, insertuser,
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_auth0id', (u2['auth0_id'], bin_to_uuid(insertuser.user['id'])))
     assert e.value.args[0] == 1142
+
+
+all_actions = ['read', 'update', 'delete', 'read_values',
+               'write_values', 'delete_values', 'grant', 'revoke']
+
+def action_combinations():
+    combos = []
+    for i in range(1, 9):
+        combos = combos + list(itertools.combinations(all_actions, i))
+    return combos
+
+@pytest.mark.parametrize('granted', action_combinations())  
+def test_get_user_actions_on_object(
+        dictcursor, user_org_role, new_role, add_perm, granted):
+    user, org, _ = user_org_role
+    auth0id = user['auth0_id']
+    role = new_role(org=org)
+    role_id = bin_to_uuid(role['id'])
+    
+    for action in granted:
+        add_perm(action, 'roles')
+
+    dictcursor.callproc('get_user_actions_on_object', (auth0id, role_id))
+    actions = dictcursor.fetchall()
+    assert actions == [{'action': action} for action in granted]
+
+
+def test_get_user_actions_on_object_no_permissions(
+        dictcursor, user_org_role, new_forecast):
+    user, org, _ = user_org_role
+    auth0id = user['auth0_id']
+    forecast = new_forecast(org=org)
+    forecast_id = bin_to_uuid(forecast['id'])
+    
+    dictcursor.callproc('get_user_actions_on_object', (auth0id, forecast_id))
+    actions = dictcursor.fetchall()
+    assert not actions
+
+@pytest.fixture()
+def remove_perm(cursor):
+    def fcn(action, what):
+        cursor.execute(
+            'DELETE FROM permissions WHERE action=%s and object_type=%s',
+            (action, what))
+    return fcn
+
+def test_get_user_actions_on_object_after_removal(
+        dictcursor, user_org_role, new_role, add_perm, remove_perm):
+    user, org, _ = user_org_role
+    auth0id = user['auth0_id']
+    role = new_role(org=org)
+    role_id = bin_to_uuid(role['id'])
+
+    to_grant = all_actions.copy()
+    for action in to_grant:
+        add_perm(action, 'roles')
+
+    dictcursor.callproc('get_user_actions_on_object', (auth0id, role_id))
+    actions = dictcursor.fetchall()
+    assert actions == [{'action': action} for action in to_grant]
+
+    for action in to_grant:
+        remove_perm(action, 'roles')
+        dictcursor.callproc('get_user_actions_on_object', (auth0id, role_id))
+        actions = dictcursor.fetchall()
+        assert action not in [x['action'] for x in actions]

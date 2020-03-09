@@ -430,6 +430,13 @@ def forecast_id():
     return '11c20780-76ae-4b11-bef1-7a75bdc784e3'
 
 
+# Forecast provided by 'Forecast Provider A', but test user does not
+# have access to it.
+@pytest.fixture()
+def inaccessible_forecast_id():
+    return 'd0dd64fc-8250-11e9-a81f-54bf64606445'
+
+
 @pytest.fixture()
 def site_id():
     return 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a'
