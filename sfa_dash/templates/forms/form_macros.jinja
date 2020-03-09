@@ -22,12 +22,12 @@
 {% endif %}
 {% endmacro %}
 
-{% macro select(label, name, options, help_text=None, required=False, form_data={}) %}
+{% macro select(label, name, options, default_value, help_text=None, required=False, form_data={}) %}
 <label>{{ label }}</label>
 <div class="input-wrapper">
 <select class="form-control {{ name }}-field" name="{{ name }}"{% if required %} required {% endif %}>
   {% for option, option_label in options.items() %}
-  <option value="{{ option }}" {% if option == form_data.get(name)  %} selected="selected"{% endif %}>{{ option_label }}</option>
+  <option value="{{ option }}" {% if option == form_data.get(name, default_value)  %} selected="selected"{% endif %}>{{ option_label }}</option>
   {% endfor %}
 </select>
 </div>

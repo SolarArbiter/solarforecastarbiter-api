@@ -112,7 +112,7 @@ function createContainerDiv(parentValue, type, value){
     label = humanReadableLabel(type, value);
     collapse_button = $(`<a role="button" data-toggle="collapse" class="report-plot-section-heading collapse-${type.toLowerCase()}-${value.replace(/ |\^/g,"-").toLowerCase()} collapsed"
                             data-target=".${wrapperClass.replace(/ /g,".")}">
-                         <p class="h3 report-plot-section-heading-text">${type}: ${label}</p></a>`)
+                         <p class="h4 report-plot-section-heading-text">${type}: ${label}</p></a>`)
     wrapper = $(`<div class="plot-attribute-wrapper ${wrapperClass} collapse"></div>`);
     return [wrapper, collapse_button]
 }

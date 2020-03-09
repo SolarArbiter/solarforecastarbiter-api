@@ -477,9 +477,6 @@ th.selection-column{
 #metric-plot-wrapper > div > div{
     padding-left: 2em;
 }
-#metric-plot-wrapper > div > div > div{
-    padding-left: 2em;
-}
 
 .report-plot-section-heading{
     background-color: #ACD;
@@ -489,7 +486,8 @@ th.selection-column{
     margin-bottom: .2em;
 }
 .report-plot-section-heading-text{
-    padding-left: 1em;
+    padding-left: 1.5em;
+    margin-bottom: 0;
 }
 .report-plot-section-heading::after{
     content: "";
@@ -514,4 +512,16 @@ th.selection-column{
 }
 .plot-attribute-wrapper .plot-attribute-wrapper{
     border-left: 1px solid #eee;
+}
+
+#report-block #observations-and-forecasts + p + table td:nth-of-type(2n){
+    border-right: 1px solid #dee2e6;
+}
+
+#report-block #observations-and-forecasts + p + table td:last-child{
+    border-right: none;
+}
+
+.datetime-td{
+    word-break: break-word;
 }

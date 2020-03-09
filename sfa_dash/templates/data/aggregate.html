@@ -34,9 +34,9 @@
     <tr class="aggregate-observation-row">
         <td scope="col"><a href="{{ url_for('data_dashboard.observation_view', uuid=obs["observation_id"]) }}">{{ obs["name"] }}</a></td>
         <td scope="col" class="provider-column">{{ obs["provider"] }}</td>
-        <td scope="col">{{ obs["effective_from"] }}</td>
+        <td scope="col" class="effective-from-column datetime-td">{{ obs["effective_from"] | format_datetime}}</td>
         {% if obs["effective_until"] is not none %}
-        <td scope="col">{{ obs["effective_until"] }}</td>
+        <td scope="col" class="effective-until-column datetime-td">{{ obs["effective_until"] | format_datetime}}</td>
         {% else %}
         <td scope="col"><a href="{{ url_for('forms.remove_aggregate_observations', uuid=aggregate['aggregate_id'], observation_id=obs['observation_id']) }}">Set Effective Until</a></td>
         {% endif %}

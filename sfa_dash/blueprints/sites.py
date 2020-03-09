@@ -8,7 +8,7 @@ from flask import render_template, url_for, request
 class SitesListingView(SiteDashView):
     """Render a page with a table listing Sites.
     """
-    template = 'org/obs.html'
+    template = 'data/table.html'
 
     def breadcrumb_html(self, site=None, **kwargs):
         breadcrumb_format = '/<a href="{url}">{text}</a>'

@@ -17,6 +17,8 @@ TIMEZONES = pytz.country_timezones('US') + list(
 VARIABLE_OPTIONS = {key: f'{value} ({filters.api_varname_to_units(key)})'
                     for key, value in filters.variable_mapping.items()}
 
+DEFAULT_VARIABLE = 'ghi'
+
 
 TIMEZONE_OPTIONS = {tz: tz.replace('_', ' ') for tz in TIMEZONES}
 
@@ -34,6 +36,7 @@ def template_variables():
     return {
         'dashboard_version': sfa_dash.__version__,
         'variable_options': VARIABLE_OPTIONS,
+        'default_variable': DEFAULT_VARIABLE,
         'timezone_options': TIMEZONE_OPTIONS,
         'metric_categories': ALLOWED_CATEGORIES,
         'deterministic_metrics': ALLOWED_DETERMINISTIC_METRICS,

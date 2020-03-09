@@ -16,7 +16,7 @@ from sfa_dash.errors import DataRequestException
 class DataListingView(BaseView):
     """Lists accessible forecasts/observations.
     """
-    template = 'org/obs.html'
+    template = 'data/table.html'
     subnav_format = {
         '{observations_url}': 'Observations',
         '{forecasts_url}': 'Forecasts',

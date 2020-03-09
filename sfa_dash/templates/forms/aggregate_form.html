@@ -29,6 +29,7 @@
      <div class="form-element">
        {{ form.select('Variable', 'variable',
                       variable_options,
+                      default_variable,
                       form_data=form_data,
                       help_text='Variable described by the aggregate. All observations that make up the Aggregate must also have this variable.') }}
      </div>
