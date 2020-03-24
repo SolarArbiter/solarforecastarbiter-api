@@ -94,6 +94,51 @@ class AllReportsView(MethodView):
         return response
 
 
+class RecomputeReportView(MethodView):
+    def get(self, report_id):
+        """
+        ---
+        summary: Recompute a report.
+        tags:
+          - Reports
+        parameters:
+        - report_id
+        responses:
+          200:
+            description: Sucessfully scheduled report computation.
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the report
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the report.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        report_perms = storage.get_user_actions_on_object(report_id)
+        if 'update' not in report_perms:
+            raise StorageAuthError()
+        q = get_queue('reports')
+        q.enqueue(
+            compute_report,
+            HiddenToken(current_access_token),
+            report_id,
+            base_url=request.url_root.rstrip('/'))
+        response = make_response(report_id, 201)
+        response.headers['Location'] = url_for('reports.single',
+                                               report_id=report_id)
+        return response
+
+
 class ReportView(MethodView):
     def get(self, report_id):
         """
