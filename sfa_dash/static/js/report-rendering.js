@@ -9,7 +9,6 @@
  * The content inside of the metric-block is arbitrary, this code only alters
  * the layout of the page.
  */
-
 function hideEmptyMetricSections(){
     /* Hide all empty sections after a search for forecast.
      */
@@ -45,6 +44,11 @@ function hideMetricsOnSearch(){
         noMatch = noMatch.add(headers);
     });
     noMatch.attr('hidden', true);
+
+    // Apply sorting and load visible visible plots before hiding empty
+    // sections. 
+    applySorting();
+    loadVisiblePlots();
     hideEmptyMetricSections();
 }
 function genericSort(a, b){
@@ -114,6 +118,14 @@ function createContainerDiv(parentValue, type, value){
                             data-target=".${wrapperClass.replace(/ /g,".")}">
                          <p class="h4 report-plot-section-heading-text">${type}: ${label}</p></a>`)
     wrapper = $(`<div class="plot-attribute-wrapper ${wrapperClass} collapse"></div>`);
+
+    // register callback to load plots when expanded
+    wrapper.on("show.bs.collapse", function(){
+        $(this).addClass('loading-plots');
+    }).on("shown.bs.collapse", function(){
+        loadVisiblePlots();
+        $(this).removeClass('loading-plots');
+    });
     return [wrapper, collapse_button]
 }
 
@@ -237,7 +249,6 @@ function sortingLi(sortBy){
 function upButtonCallback(){
     // Move the current element's parent li before the next li in the list.
     $(this).parent().prev().before($(this).parent());
-    applySorting();
     hideMetricsOnSearch();
 }
 
@@ -245,10 +256,29 @@ function upButtonCallback(){
 function downButtonCallback(){
     // Move the current element's parent li after the next li in the list.
     $(this).parent().next().after($(this).parent());
-    applySorting();
     hideMetricsOnSearch();
 }
 
+
+async function renderPlotly(div, plotSpec){
+    Plotly.newPlot(div, plotSpec);
+}
+
+
+function loadVisiblePlots(){
+    for(var key in metric_plots){
+        if(metric_plots.hasOwnProperty(key)){
+            var plotDiv = $(`#${key}`);
+            var isHidden = plotDiv.attr('hidden');
+            var parentVisible = plotDiv.parent().hasClass('show');
+            var plotExists = plotDiv.hasClass('js-plotly-plot');
+            
+            if(!isHidden && !plotExists && parentVisible){
+                renderPlotly(plotDiv[0], metric_plots[key]);
+            }
+        }
+    }
+}
 
 $(document).ready(function(){
     /* Create sorting widgets to insert into the template, we do this here
@@ -266,6 +296,5 @@ $(document).ready(function(){
     metricSortingWrapper.prepend(sortingWidgets);
     metricSortingWrapper.prepend($('<div><b>Use the arrows below to reorder the metrics plots.</b><div>'));
     $('#metric-plot-wrapper').before($(metricSortingWrapper));
-    applySorting();
     hideMetricsOnSearch();
 });

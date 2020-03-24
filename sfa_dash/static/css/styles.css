@@ -525,3 +525,24 @@ th.selection-column{
 .datetime-td{
     word-break: break-word;
 }
+
+.plot-attribute-wrapper .plot-attribute-wrapper.loading-plots::after{
+    animation: 1.5s linear infinite spinner;
+    animation-play-state: inherit;
+    border: solid 5px #DDD;
+    border-bottom-color: #8AB;
+    border-radius: 50%;
+    content: "";
+    height: 40px;
+    position: absolute;
+    margin-bottom: 20px;
+    top: 20px;
+    left: 50%;
+    transform: translate3d(-50%, -50%, 0);
+    width: 40px;
+    will-change: transform;
+}
+@keyframes spinner {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

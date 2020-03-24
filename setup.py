@@ -27,6 +27,7 @@ setup(
         'solarforecastarbiter',
         'sentry_sdk',
         'blinker',
-        'prometheus-flask-exporter'
+        'prometheus-flask-exporter',
+        'sqlalchemy_utils',
     ]
 )
