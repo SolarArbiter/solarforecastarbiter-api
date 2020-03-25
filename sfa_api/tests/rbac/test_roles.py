@@ -2,7 +2,7 @@ import pytest
 
 
 from sfa_api.conftest import BASE_URL
-from sfa_api.tests.rbac.conftest import ROLE
+from sfa_api.conftest import ROLE
 
 
 def get_role(api, role_id):
@@ -35,9 +35,11 @@ def test_get_role(api, new_role):
     assert role['modified_at'].endswith('+00:00')
 
 
-def test_list_roles_missing_perms(api, user_id, remove_perms):
-    remove_perms('read', 'roles')
+def test_list_roles_missing_perms(
+        api, user_id, remove_perms_from_current_role):
+    remove_perms_from_current_role('read', 'roles')
     roles = api.get('/roles/', BASE_URL)
+    remove_perms_from_current_role('read', 'roles')
     assert roles.status_code == 200
     user_roles = roles.json
     assert len(user_roles) == 1
@@ -65,10 +67,11 @@ def test_create_role_name_exists(api):
     assert response['role'] == ["Role 'test created role' already exists."]
 
 
-def test_create_role_name_exists_no_permissions(api, remove_perms):
+def test_create_role_name_exists_no_permissions(
+        api, remove_perms_from_current_role):
     new_role_id = api.post('/roles/', BASE_URL, json=ROLE)
     assert new_role_id.status_code == 201
-    remove_perms('create', 'roles')
+    remove_perms_from_current_role('create', 'roles')
     role_failure = api.post('/roles/', BASE_URL, json=ROLE)
     assert role_failure.status_code == 404
 
@@ -86,8 +89,8 @@ def test_create_role_invalid_json(api, role, error):
     assert failed_role.get_data(as_text=True) == f'{{"errors":{error}}}\n'
 
 
-def test_create_role_missing_perms(api, remove_perms):
-    remove_perms('create', 'roles')
+def test_create_role_missing_perms(api, remove_perms_from_current_role):
+    remove_perms_from_current_role('create', 'roles')
     failed_role = api.post(f'/roles/', BASE_URL, json=ROLE)
     assert failed_role.status_code == 404
 
@@ -97,10 +100,10 @@ def test_get_role_dne(api, missing_id):
     assert missing.status_code == 404
 
 
-def test_get_role_missing_perms(api, new_role, remove_perms):
+def test_get_role_missing_perms(api, new_role, remove_perms_from_current_role):
     role_id = new_role()
     assert api.get(f'/roles/{role_id}', BASE_URL).status_code == 200
-    remove_perms('read', 'roles')
+    remove_perms_from_current_role('read', 'roles')
     assert api.get(f'/roles/{role_id}', BASE_URL).status_code == 404
 
 
@@ -117,9 +120,10 @@ def test_delete_role_dne(api, missing_id):
     assert missing.status_code == 404
 
 
-def test_delete_role_missing_perms(api, new_role, remove_perms):
+def test_delete_role_missing_perms(
+        api, new_role, remove_perms_from_current_role):
     role_id = new_role()
-    remove_perms('delete', 'roles')
+    remove_perms_from_current_role('delete', 'roles')
     failed_delete = api.delete(f'/roles/{role_id}', BASE_URL)
     assert failed_delete.status_code == 404
 
@@ -204,8 +208,9 @@ def test_remove_perm_from_role_perm_dne(api, new_role, missing_id):
     assert perms_on_role == new_perms_on_role
 
 
-def test_add_perm_to_role_missing_perm(api, new_role, new_perm, remove_perms):
-    remove_perms('update', 'roles')
+def test_add_perm_to_role_missing_perm(
+        api, new_role, new_perm, remove_perms_from_current_role):
+    remove_perms_from_current_role('update', 'roles')
     role_id = new_role()
     perm_id = new_perm()
     failed_add = api.post(f'/roles/{role_id}/permissions/{perm_id}',
@@ -229,7 +234,7 @@ def test_add_perm_to_role_already_granted(api, new_role, new_perm, missing_id):
 
 
 def test_add_perm_to_role_already_granted_lost_perms(
-        api, new_role, new_perm, missing_id, remove_perms):
+        api, new_role, new_perm, missing_id, remove_perms_from_current_role):
     role_id = new_role()
     perm_id = new_perm()
     perms = api.get('/permissions/', BASE_URL)
@@ -237,7 +242,7 @@ def test_add_perm_to_role_already_granted_lost_perms(
     added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
                           BASE_URL)
     assert added_perm.status_code == 204
-    remove_perms('update', 'roles')
+    remove_perms_from_current_role('update', 'roles')
     added_perm = api.post(f'/roles/{role_id}/permissions/{perm_id}',
                           BASE_URL)
     assert added_perm.status_code == 404

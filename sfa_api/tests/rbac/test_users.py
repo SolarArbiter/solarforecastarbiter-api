@@ -75,8 +75,9 @@ def test_get_user_dne(api, dne_paths):
     assert get_user.status_code == 404
 
 
-def test_get_user_no_perms(api, remove_perms, external_paths):
-    remove_perms('read', 'users')
+def test_get_user_no_perms(
+        api, remove_perms_from_current_role, external_paths):
+    remove_perms_from_current_role('read', 'users')
     get_user = api.get(external_paths, BASE_URL)
     assert get_user.status_code == 404
 
@@ -90,8 +91,8 @@ def test_list_users(api, user_id):
     assert all([user.get('email', False) for user in user_list])
 
 
-def test_list_users_no_perm(api, remove_perms, user_id):
-    remove_perms('read', 'users')
+def test_list_users_no_perm(api, remove_perms_from_current_role, user_id):
+    remove_perms_from_current_role('read', 'users')
     get_users = api.get('/users/', BASE_URL)
     assert get_users.status_code == 200
     only_self = get_users.json
@@ -122,9 +123,10 @@ def test_add_role_to_user_role_dne(api, missing_id, normal_paths):
     assert add_role.status_code == 404
 
 
-def test_add_role_to_user_no_perms(api, normal_paths, new_role, remove_perms):
+def test_add_role_to_user_no_perms(
+        api, normal_paths, new_role, remove_perms_from_current_role):
     role_id = new_role()
-    remove_perms('grant', 'roles')
+    remove_perms_from_current_role('grant', 'roles')
     add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
     get_user = api.get(normal_paths, BASE_URL)
@@ -135,9 +137,10 @@ def test_add_role_to_user_no_perms(api, normal_paths, new_role, remove_perms):
 
 @pytest.mark.parametrize('path', ('/users/{id_}', '/users-by-email/{email}'))
 def test_add_role_to_user_no_tou(
-        api, unaffiliated_userid, new_role, remove_perms, path):
+        api, unaffiliated_userid, new_role, remove_perms_from_current_role,
+        path):
     role_id = new_role()
-    remove_perms('grant', 'roles')
+    remove_perms_from_current_role('grant', 'roles')
     add_role = api.post(
         path.format(id_=unaffiliated_userid, email='unaffiliated@what.com') +
         f'/roles/{role_id}',
@@ -174,11 +177,11 @@ def test_remove_role_from_user_role_dne(api, normal_paths, missing_id):
 
 
 def test_remove_role_from_user_no_perms(api, normal_paths, new_role,
-                                        remove_perms):
+                                        remove_perms_from_current_role):
     role_id = new_role()
     add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
-    remove_perms('revoke', 'roles')
+    remove_perms_from_current_role('revoke', 'roles')
     remove_role = api.delete(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert remove_role.status_code == 404
 
@@ -210,14 +213,14 @@ def test_add_role_to_user_already_granted(api, new_role, normal_paths):
 
 
 def test_add_role_to_user_already_granted_lost_perms(
-        api, user_id, new_role, remove_perms, normal_paths):
+        api, user_id, new_role, remove_perms_from_current_role, normal_paths):
     role_id = new_role()
     add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 204
     get_user = api.get(normal_paths, BASE_URL)
     user = get_user.json
     roles_on_user = user['roles'].keys()
-    remove_perms('grant', 'roles')
+    remove_perms_from_current_role('grant', 'roles')
     assert role_id in roles_on_user
     add_role = api.post(normal_paths + f'/roles/{role_id}', BASE_URL)
     assert add_role.status_code == 404
@@ -240,9 +243,11 @@ def test_user_email_user_unaffiliated(api, unaffiliated_userid):
 
 def test_get_user_actions_on_object(api, forecast_id):
     res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
-    assert res.json == {'object_id': forecast_id,
-                        'actions': ['read', 'read_values', 'delete',
-                                    'delete_values', 'write_values']}
+    json_res = res.json
+    assert json_res['object_id'] == forecast_id
+    assert sorted(json_res['actions']) == sorted(['delete', 'write_values',
+                                                  'delete_values', 'read',
+                                                  'read_values'])
 
 
 def test_get_user_actions_on_object_404_missing(api, missing_id):
@@ -251,13 +256,13 @@ def test_get_user_actions_on_object_404_missing(api, missing_id):
 
 
 def test_get_user_actions_on_object_404_no_permissions(
-        api, forecast_id, remove_perms):
+        api, forecast_id, remove_perms_from_current_role):
     res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
     for action in res.json['actions'][:-1]:
-        remove_perms(action, 'forecasts')
+        remove_perms_from_current_role(action, 'forecasts')
         less_one = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
         assert action not in less_one.json['actions']
     # the last action should result in a 404 to this endpoint
-    remove_perms(res.json['actions'][-1], 'forecasts')
+    remove_perms_from_current_role(res.json['actions'][-1], 'forecasts')
     res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
     assert res.status_code == 404

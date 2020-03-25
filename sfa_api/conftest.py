@@ -177,6 +177,18 @@ VALID_CDF_VALUE_CSV = (
     '# metadata: https://localhost/forecasts/cdf/single/633f9396-50bb-11e9-8647-d663bd873d93\n' # NOQA
     f'{FORECAST_CSV}')
 
+ROLE = {
+    "name": "test created role",
+    "description": "testing role creation",
+}
+
+PERMISSION = {
+    "action": "read",
+    "applies_to_all": False,
+    "description": "test created permission",
+    "object_type": "observations",
+}
+
 
 @pytest.fixture()
 def report_post_json():
@@ -1903,3 +1915,74 @@ timestamp,value,quality_flag
     obs_df.index = pd.to_datetime(obs_df.index)
     obs_df.index.name = 'timestamp'
     return obs_df
+
+
+@pytest.fixture
+def new_role(api):
+    def fn(**kwargs):
+        role_json = ROLE.copy()
+        role_json.update(kwargs)
+        role = api.post(f'/roles/', BASE_URL, json=role_json)
+        role_id = role.data.decode('utf-8')
+        return role_id
+    return fn
+
+
+@pytest.fixture
+def new_observation(api):
+    def fn():
+        obs = api.post(f'/observations/', BASE_URL, json=VALID_OBS_JSON)
+        obs_id = obs.data.decode('utf-8')
+        return obs_id
+    return fn
+
+
+@pytest.fixture
+def new_perm(api):
+    def fn(**kwargs):
+        perm_json = PERMISSION.copy()
+        perm_json.update(kwargs)
+        perm = api.post(f'/permissions/', BASE_URL, json=perm_json)
+        perm_id = perm.data.decode('utf-8')
+        return perm_id
+    return fn
+
+
+@pytest.fixture
+def current_roles(api):
+    roles_req = api.get('/roles/', BASE_URL)
+    return [role['role_id'] for role in roles_req.json]
+
+
+@pytest.fixture
+def current_role(api, current_roles):
+    return current_roles[0]
+
+
+@pytest.fixture
+def remove_perms_from_current_role(api, current_role):
+    def fn(action, object_type):
+        perm_req = api.get('/permissions/', BASE_URL)
+        perms = perm_req.json
+        to_remove = [perm['permission_id'] for perm in perms
+                     if perm['object_type'] == object_type
+                     and perm['action'] == action]
+        for perm_id in to_remove:
+            api.delete(f'/roles/{current_role}/permissions/{perm_id}',
+                       BASE_URL)
+    return fn
+
+
+@pytest.fixture
+def remove_all_perms(api, current_roles):
+    def fn(action, object_type):
+        perm_req = api.get('/permissions/', BASE_URL)
+        perms = perm_req.json
+        to_remove = [perm['permission_id'] for perm in perms
+                     if perm['object_type'] == object_type
+                     and perm['action'] == action]
+        for role_id in current_roles:
+            for perm_id in to_remove:
+                api.delete(f'/roles/{role_id}/permissions/{perm_id}',
+                           BASE_URL)
+    return fn

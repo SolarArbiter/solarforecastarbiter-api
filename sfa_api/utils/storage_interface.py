@@ -1901,5 +1901,5 @@ def get_user_actions_on_object(object_id):
     permissions = _call_procedure('get_user_actions_on_object', object_id)
     if not permissions:
         raise StorageAuthError()
-    actions = [perm['action'] for perm in permissions]
+    actions = list(set([perm['action'] for perm in permissions]))
     return actions

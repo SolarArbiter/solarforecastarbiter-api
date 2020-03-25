@@ -1,6 +1,6 @@
 import pytest
 
-from sfa_api.tests.rbac.conftest import PERMISSION
+from sfa_api.conftest import PERMISSION
 from sfa_api.conftest import BASE_URL
 
 
@@ -10,8 +10,8 @@ def test_list_permissions(api):
     assert len(perms.json) > 0
 
 
-def test_list_permissions_no_perms(api, remove_perms):
-    remove_perms('read', 'permissions')
+def test_list_permissions_no_perms(api, remove_perms_from_current_role):
+    remove_perms_from_current_role('read', 'permissions')
     perms = api.get('/permissions/', BASE_URL)
     assert perms.status_code == 200
     assert len(perms.json) == 0
@@ -32,8 +32,8 @@ def test_create_permission(api):
     assert perm['organization'] == 'Organization 1'
 
 
-def test_create_permission_no_perms(api, remove_perms):
-    remove_perms('create', 'permissions')
+def test_create_permission_no_perms(api, remove_perms_from_current_role):
+    remove_perms_from_current_role('create', 'permissions')
     failed_create = api.post('/permission/', BASE_URL, json=PERMISSION)
     assert failed_create.status_code == 404
 
@@ -69,9 +69,10 @@ def test_get_permission(api, new_perm):
     assert response['created_at'].endswith('+00:00')
 
 
-def test_get_permission_no_perms(api, remove_perms, new_perm):
+def test_get_permission_no_perms(
+        api, remove_perms_from_current_role, new_perm):
     perm_id = new_perm()
-    remove_perms('read', 'permissions')
+    remove_perms_from_current_role('read', 'permissions')
     get_fail = api.get(f'/permissions/{perm_id}', BASE_URL)
     assert get_fail.status_code == 404
 
@@ -83,9 +84,10 @@ def test_delete_permission(api, new_perm):
     assert api.get(f'/permissions/{perm_id}', BASE_URL).status_code == 404
 
 
-def test_delete_permission_no_perms(api, new_perm, remove_perms):
+def test_delete_permission_no_perms(
+        api, new_perm, remove_perms_from_current_role):
     perm_id = new_perm()
-    remove_perms('delete', 'permissions')
+    remove_perms_from_current_role('delete', 'permissions')
     delete_fail = api.delete(f'/permissions/{perm_id}', BASE_URL)
     assert delete_fail.status_code == 404
 
@@ -117,13 +119,13 @@ def test_add_object_to_permission_object_already_exists(
 
 
 def test_add_object_to_permission_no_permission_object_already_exists(
-        api, new_perm, new_observation, remove_perms):
+        api, new_perm, new_observation, remove_perms_from_current_role):
     perm_id = new_perm()
     new_obs = new_observation()
     add_to_perm = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
                            BASE_URL)
     assert add_to_perm.status_code == 204
-    remove_perms('update', 'permissions')
+    remove_perms_from_current_role('update', 'permissions')
     add_to_perm_failure = api.post(f'/permissions/{perm_id}/objects/{new_obs}',
                                    BASE_URL)
     assert add_to_perm_failure.status_code == 404
@@ -134,10 +136,11 @@ def test_add_object_to_permission_no_permission_object_already_exists(
     ('read', 'observations'),
 ])
 def test_add_object_to_permission_no_perms(
-        api, new_perm, new_observation, remove_perms, action, object_type):
+        api, new_perm, new_observation, remove_perms_from_current_role,
+        action, object_type):
     perm_id = new_perm()
     obs_id = new_observation()
-    remove_perms(action, object_type)
+    remove_perms_from_current_role(action, object_type)
     add_to_perm = api.post(f'/permissions/{perm_id}/objects/{obs_id}',
                            BASE_URL)
     assert add_to_perm.status_code == 404
@@ -192,13 +195,14 @@ def test_remove_object_from_permission_object_dne(
     ('update', 'permissions'),
 ])
 def test_remove_object_from_permission_no_perms(
-        api, new_perm, new_observation, remove_perms, action, object_type):
+        api, new_perm, new_observation, remove_perms_from_current_role,
+        action, object_type):
     perm_id = new_perm()
     obs_id = new_observation()
     add_object = api.post(f'/permissions/{perm_id}/objects/{obs_id}',
                           BASE_URL)
     assert add_object.status_code == 204
-    remove_perms(action, object_type)
+    remove_perms_from_current_role(action, object_type)
     delete_object = api.delete(f'/permissions/{perm_id}/objects/{obs_id}',
                                BASE_URL)
     assert delete_object.status_code == 404
