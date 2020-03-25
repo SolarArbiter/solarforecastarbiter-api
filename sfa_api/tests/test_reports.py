@@ -218,3 +218,23 @@ def test_post_report_invalid_report_params(
     expected = ('{"errors":{"report_parameters":[{"%s":%s}]}}\n' %
                 (key, error))
     assert res.get_data(as_text=True) == expected
+
+
+def test_recompute(api, new_report):
+    report_id = new_report()
+    res = api.get(f'/reports/{report_id}/recompute', base_url=BASE_URL)
+    assert res.status_code == 200
+    assert res.data.decode('utf-8') == report_id
+    assert 'Location' in res.headers
+
+
+def test_recompute_report_dne(api, missing_id):
+    res = api.get(f'/reports/{missing_id}/recompute', base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+def test_recompute_report_no_update(api, new_report, remove_all_perms):
+    report_id = new_report()
+    remove_all_perms('update', 'reports')
+    res = api.get(f'/reports/{report_id}/recompute', base_url=BASE_URL)
+    assert res.status_code == 404

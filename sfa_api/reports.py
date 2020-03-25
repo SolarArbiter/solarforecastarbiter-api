@@ -7,7 +7,7 @@ from solarforecastarbiter.reports.main import compute_report
 
 from sfa_api import spec
 from sfa_api.utils.auth import current_access_token
-from sfa_api.utils.errors import BadAPIRequest
+from sfa_api.utils.errors import BadAPIRequest, StorageAuthError
 from sfa_api.utils.queuing import get_queue
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
@@ -133,7 +133,7 @@ class RecomputeReportView(MethodView):
             HiddenToken(current_access_token),
             report_id,
             base_url=request.url_root.rstrip('/'))
-        response = make_response(report_id, 201)
+        response = make_response(report_id, 200)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)
         return response
@@ -343,4 +343,8 @@ reports_blp.add_url_rule(
 reports_blp.add_url_rule(
     '/<uuid_str:report_id>/values',
     view_func=ReportValuesView.as_view('values')
+)
+reports_blp.add_url_rule(
+    '/<uuid_str:report_id>/recompute',
+    view_func=RecomputeReportView.as_view('recompute')
 )
