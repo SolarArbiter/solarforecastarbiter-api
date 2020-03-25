@@ -102,8 +102,8 @@ def test_add_user_to_org_invalid_orgid(
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
         [unaffiliated_userid, 'baduuid'] + auth_args)
-    assert ('Error: Invalid value for "ORGANIZATION_ID": baduuid '
-            'is not a valid UUID value') in result.output
+    assert ("Error: Invalid value for 'ORGANIZATION_ID': baduuid "
+            "is not a valid UUID value!") in result.output
 
 
 def test_add_user_to_org_invalid_userid(
@@ -111,8 +111,8 @@ def test_add_user_to_org_invalid_userid(
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
         ['baduuid', orgid] + auth_args)
-    assert ('Error: Invalid value for "USER_ID": baduuid is '
-            'not a valid UUID value') in result.output
+    assert ("Error: Invalid value for 'USER_ID': baduuid is "
+            "not a valid UUID value") in result.output
 
 
 def test_add_user_to_org_user_dne(
