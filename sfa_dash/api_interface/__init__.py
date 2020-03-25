@@ -4,6 +4,7 @@ from flask import current_app as app
 
 
 from sfa_dash import oauth_request_session
+from sfa_dash.api_interface.util import handle_response
 
 
 def get_request(path, **kwargs):
@@ -21,8 +22,8 @@ def get_request(path, **kwargs):
     """
     # may need to handle errors if oauth_request_session does not exist somehow
     # definitely need to handle errors here
-    return oauth_request_session.get(
-        f'{app.config["SFA_API_URL"]}{path}', **kwargs)
+    return handle_response(oauth_request_session.get(
+        f'{app.config["SFA_API_URL"]}{path}', **kwargs))
 
 
 def post_request(path, payload, json=True):
@@ -49,8 +50,8 @@ def post_request(path, payload, json=True):
     else:
         kwargs = {'headers': {'Content-type': 'text/csv'},
                   'data': payload}
-    return oauth_request_session.post(
-        f'{app.config["SFA_API_URL"]}{path}', **kwargs)
+    return handle_response(oauth_request_session.post(
+        f'{app.config["SFA_API_URL"]}{path}', **kwargs))
 
 
 def delete_request(path, **kwargs):
@@ -66,5 +67,5 @@ def delete_request(path, **kwargs):
     requests.Response
         The api response.
     """
-    return oauth_request_session.delete(
-        f'{app.config["SFA_API_URL"]}{path}', **kwargs)
+    return handle_response(oauth_request_session.delete(
+        f'{app.config["SFA_API_URL"]}{path}', **kwargs))

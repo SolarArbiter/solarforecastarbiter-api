@@ -11,7 +11,7 @@ from sfa_dash.api_interface import (observations, forecasts, sites, reports,
                                     aggregates)
 from sfa_dash.utils import check_sign_zip
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import filter_form_fields, handle_response
+from sfa_dash.blueprints.util import filter_form_fields
 from sfa_dash.errors import DataRequestException
 
 
@@ -20,7 +20,7 @@ class ReportsView(BaseView):
 
     def template_args(self):
         try:
-            reports_list = handle_response(reports.list_metadata())
+            reports_list = reports.list_metadata()
         except DataRequestException as e:
             return {'errors': e.errors}
         return {
@@ -36,11 +36,10 @@ class ReportForm(BaseView):
         """Requests the forecasts and observations from
         the api for injecting into the dom as a js variable
         """
-        observation_list = handle_response(
-            observations.list_metadata())
-        forecast_list = handle_response(forecasts.list_metadata())
-        site_list = handle_response(sites.list_metadata())
-        aggregate_list = handle_response(aggregates.list_metadata())
+        observation_list = observations.list_metadata()
+        forecast_list = forecasts.list_metadata()
+        site_list = sites.list_metadata()
+        aggregate_list = aggregates.list_metadata()
         for obs in observation_list:
             del obs['extra_parameters']
         for fx in forecast_list:
@@ -115,7 +114,7 @@ class ReportForm(BaseView):
             }
             return super().get(form_data=api_payload, errors=errors)
         try:
-            report_id = handle_response(reports.post_metadata(api_payload))
+            report_id = reports.post_metadata(api_payload)
         except DataRequestException as e:
             return super().get(form_data=api_payload, errors=e.errors)
         return redirect(url_for(
@@ -187,7 +186,7 @@ class ReportView(BaseView):
         `solarforecastarbiter.datamodel.Report` with processed forecasts and
         observations.
         """
-        metadata = handle_response(reports.get_metadata(uuid))
+        metadata = reports.get_metadata(uuid)
         metadata['report_parameters']['object_pairs'] = []
         self.metadata = metadata
 
@@ -250,7 +249,7 @@ class DeleteReportView(BaseView):
 
     def get(self, uuid):
         try:
-            self.metadata = handle_response(reports.get_metadata(uuid))
+            self.metadata = reports.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, data_type='report',
                                    uuid=uuid, errors=e.errors)

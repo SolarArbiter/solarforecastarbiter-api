@@ -7,7 +7,7 @@ from flask import render_template, request, url_for
 
 from sfa_dash.api_interface import sites, aggregates
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import DataTables, handle_response
+from sfa_dash.blueprints.util import DataTables
 from sfa_dash.filters import human_friendly_datatype
 
 from sfa_dash.errors import DataRequestException
@@ -95,11 +95,9 @@ class DataListingView(BaseView):
         # silently failing and listing all objects.
         if site_id is not None or aggregate_id is not None:
             if site_id is not None:
-                location_metadata = handle_response(
-                    sites.get_metadata(site_id))
+                location_metadata = sites.get_metadata(site_id)
             else:
-                location_metadata = handle_response(
-                    aggregates.get_metadata(aggregate_id))
+                location_metadata = aggregates.get_metadata(aggregate_id)
             template_args['breadcrumb'] = self.breadcrumb_html(
                 self.get_breadcrumb_dict(location_metadata))
         else:

@@ -38,11 +38,11 @@ class DataTables(object):
     def create_table_elements(cls, data_list, id_key, view_name):
         """Creates a list of objects to be rendered as table by jinja template
         """
-        sites_list = handle_response(sites.list_metadata())
+        sites_list = sites.list_metadata()
         location_dict = {site['site_id']: site for site in sites_list}
         if id_key != 'observation_id':
             no_location_text = 'Site/Aggregate unavailable'
-            aggregates_list = handle_response(aggregates.list_metadata())
+            aggregates_list = aggregates.list_metadata()
             location_dict.update({agg['aggregate_id']: agg
                                   for agg in aggregates_list})
         else:
@@ -120,8 +120,7 @@ class DataTables(object):
             new Observation' button.
         """
         creation_link = cls.creation_link('observation', site_id=site_id)
-        obs_data = handle_response(
-            observations.list_metadata(site_id=site_id))
+        obs_data = observations.list_metadata(site_id=site_id)
         rows = cls.create_table_elements(
             obs_data,
             'observation_id',
@@ -158,9 +157,8 @@ class DataTables(object):
         else:
             creation_link = None
 
-        forecast_data = handle_response(
-            forecasts.list_metadata(site_id=site_id,
-                                    aggregate_id=aggregate_id))
+        forecast_data = forecasts.list_metadata(
+            site_id=site_id, aggregate_id=aggregate_id)
         rows = cls.create_table_elements(
             forecast_data,
             'forecast_id',
@@ -198,9 +196,9 @@ class DataTables(object):
                 aggregate_id=aggregate_id)
         else:
             creation_link = None
-        cdf_forecast_data = handle_response(
-            cdf_forecast_groups.list_metadata(site_id=site_id,
-                                              aggregate_id=aggregate_id))
+        cdf_forecast_data = cdf_forecast_groups.list_metadata(
+            site_id=site_id,
+            aggregate_id=aggregate_id)
         rows = cls.create_table_elements(
             cdf_forecast_data,
             'forecast_id',
@@ -226,7 +224,7 @@ class DataTables(object):
             If a site_id is passed and the user does not have access
             to that site or some other api error has occurred.
         """
-        site_data = handle_response(sites.list_metadata())
+        site_data = sites.list_metadata()
         rows = cls.create_site_table_elements(site_data)
         creation_link = url_for('forms.create_site')
         rendered_table = render_template(cls.site_template,
@@ -288,74 +286,6 @@ def filter_form_fields(prefix, form_data):
     return [form_data[key]
             for key in form_data.keys()
             if key.startswith(prefix)]
-
-
-def handle_response(request_object):
-    """Parses the response from a request object. On an a resolvable
-    error, raises a DataRequestException with a default error
-    message.
-
-    Parameters
-    ----------
-    request_object: requests.Response
-        The response object from an executed request.
-
-    Returns
-    -------
-    dict, str or None
-        Note that this function checks the content-type of a response
-        and returns the appropriate type. A Dictionary parsed from a
-        JSON object, or a string. Returns None when a 204 is encountered.
-        Users should be mindful of the expected response body from the
-        API.
-
-    Raises
-    ------
-    sfa_dash.errors.DataRequestException
-        If a recoverable 400 level error has been encountered.
-        The errors attribute will contain a dict of errors.
-    requests.exceptions.HTTPError
-        If the status code received from the API could not be
-        handled.
-    """
-    if not request_object.ok:
-        errors = {}
-        if request_object.status_code == 400:
-            errors = request_object.json()
-        elif request_object.status_code == 401:
-            errors = {
-                '401': "You do not have permission to create this resource."
-            }
-        elif request_object.status_code == 404:
-            previous_page = request.headers.get('Referer', None)
-            errors = {'404': (
-                'The requested object could not be found. You may need to '
-                'request access from the data owner.')
-            }
-            if previous_page is not None and previous_page != request.url:
-                errors['404'] = errors['404'] + (
-                    f' <a href="{previous_page}">Return to the previous '
-                    'page.</a>')
-        elif request_object.status_code == 422:
-            errors = request_object.json()['errors']
-        if errors:
-            raise DataRequestException(request_object.status_code, **errors)
-        else:
-            # Other errors should be due to bugs and not by attempts to reach
-            # inaccessible data. Allow exceptions to be raised
-            # so that they can be reported to Sentry.
-            request_object.raise_for_status()
-    if request_object.request.method == 'GET':
-        # all GET endpoints should return a JSON object
-        if request_object.headers['Content-Type'] == 'application/json':
-            return request_object.json()
-        else:
-            return request_object.text
-    # POST responses should contain a single string uuid of a newly created
-    # object unless a 204 No Content was returned.
-    if request_object.request.method == 'POST':
-        if request_object.status_code != 204:
-            return request_object.text
 
 
 def parse_timedelta(data_dict, key_root):
@@ -469,9 +399,10 @@ def download_timeseries(view_class, uuid):
         return view_class.get(uuid, form_data=form_data, errors=errors)
     else:
         try:
-            data = handle_response(
-                view_class.api_handle.get_values(
-                    uuid, headers=headers, params=params))
+            data = view_class.api_handle.get_values(
+                uuid,
+                headers=headers,
+                params=params)
         except DataRequestException as e:
             return render_template(
                 view_class.template,
@@ -479,8 +410,7 @@ def download_timeseries(view_class, uuid):
                 errors=e.errors)
         else:
             try:
-                metadata = handle_response(
-                    view_class.api_handle.get_metadata(uuid))
+                metadata = view_class.api_handle.get_metadata(uuid)
             except DataRequestException:
                 filename = 'data'
             else:

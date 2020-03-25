@@ -6,9 +6,8 @@ import pandas as pd
 
 from sfa_dash.api_interface import observations, sites, aggregates
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import (filter_form_fields, handle_response,
-                                      parse_timedelta, flatten_dict,
-                                      download_timeseries)
+from sfa_dash.blueprints.util import (filter_form_fields, parse_timedelta,
+                                      flatten_dict, download_timeseries)
 from sfa_dash.errors import DataRequestException
 
 
@@ -21,7 +20,7 @@ class AggregatesView(BaseView):
         return breadcrumb_dict
 
     def template_args(self):
-        aggregates_list = handle_response(aggregates.list_metadata())
+        aggregates_list = aggregates.list_metadata()
         return {
             "breadcrumb": self.breadcrumb_html(self.get_breadcrumb_dict()),
             "aggregates": aggregates_list,
@@ -50,8 +49,7 @@ class AggregateForm(BaseView):
         form_data = request.form
         api_payload = self.aggregate_formatter(form_data)
         try:
-            aggregate_id = handle_response(
-                aggregates.post_metadata(api_payload))
+            aggregate_id = aggregates.post_metadata(api_payload)
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors, form_data=form_data)
@@ -84,8 +82,8 @@ class AggregateObservationAdditionForm(BaseView):
             The metadata of the aggregate used for filtering applicable
             observations.
         """
-        sites_list = handle_response(sites.list_metadata())
-        observations_list = handle_response(observations.list_metadata())
+        sites_list = sites.list_metadata()
+        observations_list = observations.list_metadata()
 
         # Remove observations with greater interval length
         observations_list = list(filter(
@@ -161,8 +159,7 @@ class AggregateObservationAdditionForm(BaseView):
 
     def get(self, uuid, **kwargs):
         try:
-            self.metadata = handle_response(
-                aggregates.get_metadata(uuid))
+            self.metadata = aggregates.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors)
@@ -173,8 +170,7 @@ class AggregateObservationAdditionForm(BaseView):
         form_data = request.form
         api_payload = self.aggregate_observation_formatter(form_data)
         try:
-            handle_response(
-                aggregates.update(uuid, api_payload))
+            aggregates.update(uuid, api_payload)
         except DataRequestException as e:
             if 'observations' in e.errors:
                 # unpack list of errors related to observations
@@ -228,8 +224,7 @@ class AggregateObservationRemovalForm(BaseView):
                 self.get_breadcrumb_dict()),
         }
         try:
-            observation = handle_response(
-                observations.get_metadata(observation_id))
+            observation = observations.get_metadata(observation_id)
         except DataRequestException:
             template_arguments['warnings'] = {
                 'observation': ['Observation could not be read.']
@@ -241,8 +236,7 @@ class AggregateObservationRemovalForm(BaseView):
 
     def get(self, uuid, observation_id, **kwargs):
         try:
-            self.metadata = handle_response(
-                aggregates.get_metadata(uuid))
+            self.metadata = aggregates.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors)
@@ -254,8 +248,7 @@ class AggregateObservationRemovalForm(BaseView):
         api_payload = self.aggregate_observation_formatter(
             form_data, observation_id)
         try:
-            handle_response(
-                aggregates.update(uuid, api_payload))
+            aggregates.update(uuid, api_payload)
         except DataRequestException as e:
             if 'observations' in e.errors:
                 # unpack list of errors related to observations
@@ -322,12 +315,12 @@ class AggregateView(BaseView):
         self.temp_args = {}
         start, end = self.parse_start_end_from_querystring()
         try:
-            self.metadata = handle_response(self.api_handle.get_metadata(uuid))
+            self.metadata = self.api_handle.get_metadata(uuid)
         except DataRequestException as e:
             self.temp_args.update({'errors': e.errors})
         else:
             self.observation_list = []
-            observations_list = handle_response(observations.list_metadata())
+            observations_list = observations.list_metadata()
             observation_dict = {obs['observation_id']: obs
                                 for obs in observations_list}
             for obs in self.metadata['observations']:
@@ -363,8 +356,7 @@ class DeleteAggregateView(BaseView):
 
     def get(self, uuid, **kwargs):
         try:
-            self.metadata = handle_response(
-                aggregates.get_metadata(uuid))
+            self.metadata = aggregates.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         return super().get(**kwargs)

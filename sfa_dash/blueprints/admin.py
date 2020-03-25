@@ -6,7 +6,7 @@ from sfa_dash.api_interface import (
     permissions, reports, aggregates
 )
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import filter_form_fields, handle_response
+from sfa_dash.blueprints.util import filter_form_fields
 from sfa_dash.errors import DataRequestException
 
 
@@ -57,7 +57,7 @@ class AdminView(BaseView):
         #       dashboard purposes to eliminate multiple
         #       api calls
         # TODO: fix org key to be consistent across types
-        user_data = users.current().json()
+        user_data = users.current()
         organization = user_data['organization']
 
         def compare_org_to_user(object_dict):
@@ -90,7 +90,7 @@ class AdminView(BaseView):
 # Users Views
 class UserListing(AdminView):
     def get(self):
-        users_list = users.list_metadata().json()
+        users_list = users.list_metadata()
         if 'errors' in users_list:
             users_list = None
         return render_template('forms/admin/users.html',
@@ -102,8 +102,8 @@ class UserView(AdminView):
     def get(self, uuid):
         temp_args = self.template_args()
         try:
-            user = handle_response(users.get_metadata(uuid))
-            role_list = handle_response(roles.list_metadata())
+            user = users.get_metadata(uuid)
+            role_list = roles.list_metadata()
         except DataRequestException as e:
             temp_args.update({'errors': e.errors})
             return render_template('forms/admin/user.html',
@@ -124,15 +124,14 @@ class UserRoleAddition(AdminView):
         """Form for adding roles to a user.
         """
         try:
-            user = handle_response(users.get_metadata(uuid))
-            all_roles = handle_response(roles.list_metadata())
+            user = users.get_metadata(uuid)
+            all_roles = roles.list_metadata()
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors, **self.template_args())
         else:
             user_roles = list(user['roles'].keys())
-            role_request = roles.list_metadata()
-            all_roles = role_request.json()
+            all_roles = roles.list_metadata()
             all_roles = self.filter_by_org(all_roles, 'organization')
             # remove any roles the user already has
             all_roles = [role for role in all_roles
@@ -153,7 +152,7 @@ class UserRoleAddition(AdminView):
         errors = {}
         for role in roles:
             try:
-                handle_response(users.add_role(uuid, role))
+                users.add_role(uuid, role)
             except DataRequestException:
                 errors[role] = [f'Failed to add role {role} to user.']
             else:
@@ -215,7 +214,7 @@ class UserRoleRemoval(AdminView):
 # Roles Views
 class RoleListing(AdminView):
     def get(self):
-        roles_list = roles.list_metadata().json()
+        roles_list = roles.list_metadata()
         if 'errors' in roles_list:
             roles_list = None
         return render_template('forms/admin/roles.html',
@@ -228,7 +227,7 @@ class RoleView(AdminView):
 
     def get_email(self, user_id):
         try:
-            email = handle_response(users.get_email(user_id))
+            email = users.get_email(user_id)
         except DataRequestException:
             return 'Email Unavailable'
         else:
@@ -237,9 +236,8 @@ class RoleView(AdminView):
     def get(self, uuid, **kwargs):
         role_table = request.args.get('table', 'permissions')
         try:
-            role = handle_response(roles.get_metadata(uuid))
-            permission_list = handle_response(
-                permissions.list_metadata())
+            role = roles.get_metadata(uuid)
+            permission_list = permissions.list_metadata()
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
@@ -248,7 +246,7 @@ class RoleView(AdminView):
             role['permissions'] = {k: {'added_to_role': v, **permission_map[k]}
                                    for k, v in role['permissions'].items()
                                    if k in permission_map}
-            user_list = users.list_metadata().json()
+            user_list = users.list_metadata()
             user_map = {user['user_id']: user
                         for user in user_list}
             role_users = {}
@@ -277,7 +275,7 @@ class RoleGrant(AdminView):
     def get(self, uuid, **kwargs):
         template_args = self.template_args()
         try:
-            role = handle_response(roles.get_metadata(uuid))
+            role = roles.get_metadata(uuid)
         except DataRequestException as e:
             template_args['errors'] = e.errors
         redirect_link = request.headers.get(
@@ -295,7 +293,7 @@ class RoleGrant(AdminView):
         form_data = request.form
         user_email = form_data.get('user_email', '')
         try:
-            handle_response(users.add_role_by_email(user_email, uuid))
+            users.add_role_by_email(user_email, uuid)
         except DataRequestException:
             role = roles.get_metadata(uuid).json()
             errors = {
@@ -326,7 +324,7 @@ class RoleCreation(AdminView):
             'description': form_data['description'],
         }
         try:
-            role_id = handle_response(roles.post_metadata(role))
+            role_id = roles.post_metadata(role)
         except DataRequestException as e:
             return self.get(errors=e.errors, form_data=form_data)
         messages = {'Success': f'Role {role["name"]} created.'}
@@ -340,9 +338,8 @@ class RolePermissionAddition(AdminView):
 
     def get(self, uuid, **kwargs):
         try:
-            role = handle_response(roles.get_metadata(uuid))
-            all_perms = handle_response(
-                permissions.list_metadata())
+            role = roles.get_metadata(uuid)
+            all_perms = permissions.list_metadata()
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
@@ -364,7 +361,7 @@ class RolePermissionAddition(AdminView):
         messages = {}
         for perm in perms:
             try:
-                handle_response(roles.add_permission(uuid, perm))
+                roles.add_permission(uuid, perm)
             except DataRequestException:
                 errors[perm] = [f'Failed to add perm {perm} to role.']
             else:
@@ -381,8 +378,7 @@ class RoleDeletionView(AdminView):
 
     def get(self, uuid):
         try:
-            role = handle_response(
-                roles.get_metadata(uuid))
+            role = roles.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors)
@@ -403,7 +399,7 @@ class RoleDeletionView(AdminView):
         if request.headers['Referer'] != confirmation_url:
             return redirect(confirmation_url)
         try:
-            handle_response(roles.delete(uuid))
+            roles.delete(uuid)
         except DataRequestException as e:
             return self.get(uuid, errors=e.errors)
         else:
@@ -417,9 +413,8 @@ class RolePermissionRemoval(AdminView):
         """Confirmation view for removing permission from a role
         """
         try:
-            role = handle_response(roles.get_metadata(uuid))
-            permission = handle_response(
-                permissions.get_metadata(permission_id))
+            role = roles.get_metadata(uuid)
+            permission = permissions.get_metadata(permission_id)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         perm_req = permissions.get_metadata(permission_id)
@@ -447,7 +442,7 @@ class PermissionsListing(AdminView):
 
     def get(self):
         try:
-            permissions_list = permissions.list_metadata().json()
+            permissions_list = permissions.list_metadata()
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         return render_template(self.template,
@@ -460,7 +455,7 @@ class PermissionView(AdminView):
 
     def get(self, uuid, **kwargs):
         try:
-            permission = handle_response(permissions.get_metadata(uuid))
+            permission = permissions.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
@@ -475,7 +470,7 @@ class PermissionView(AdminView):
             # create a dict of objects where keys are uuid and values are
             # objects
             try:
-                object_list = handle_response(api_handler.list_metadata())
+                object_list = api_handler.list_metadata()
             except DataRequestException as e:
                 return render_template(
                     self.template, errors=e.errors, **self.template_args())
@@ -526,7 +521,7 @@ class PermissionsCreation(AdminView):
         objects from the
         """
         try:
-            table_data = handle_response(self.api_handle.list_metadata())
+            table_data = self.api_handle.list_metadata()
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         if self.data_type == 'report':
@@ -560,8 +555,7 @@ class PermissionsCreation(AdminView):
         form_data = request.form
         permission = self.parsePermission(form_data)
         try:
-            permission_id = handle_response(
-                permissions.post_metadata(permission))
+            permission_id = permissions.post_metadata(permission)
         except DataRequestException as e:
             return render_template(
                 self.template, form_data=form_data, errors=e.errors)
@@ -570,8 +564,7 @@ class PermissionsCreation(AdminView):
         messages = {}
         for object_id in objects:
             try:
-                handle_response(permissions.add_object(
-                    permission_id, object_id))
+                permissions.add_object(permission_id, object_id)
             except DataRequestException:
                 errors[object_id] = [
                     f'Failed to add {self.data_type} to permission.']
@@ -593,7 +586,7 @@ class PermissionDeletionView(AdminView):
     def get(self, uuid):
         temp_args = {}
         try:
-            perm = handle_response(permissions.get_metadata(uuid))
+            perm = permissions.get_metadata(uuid)
         except DataRequestException as e:
             temp_args['errors'] = e.errors
         else:
@@ -613,7 +606,7 @@ class PermissionDeletionView(AdminView):
         if request.headers['Referer'] != confirmation_url:
             return redirect(confirmation_url)
         try:
-            handle_response(permissions.delete(uuid))
+            permissions.delete(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
@@ -625,8 +618,7 @@ class PermissionObjectAddition(PermissionView):
 
     def get(self, uuid, **kwargs):
         try:
-            permission = handle_response(
-                permissions.get_metadata(uuid))
+            permission = permissions.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
@@ -634,11 +626,11 @@ class PermissionObjectAddition(PermissionView):
             api = self.get_api_handler(permission['object_type'])
             perm_objects = list(permission['objects'].keys())
             if data_type == 'report':
-                all_objects = handle_response(api.list_metadata())
+                all_objects = api.list_metadata()
                 all_objects = [rep.update(rep['report_parameters'])
                                for rep in all_objects]
             else:
-                all_objects = handle_response(api.list_metadata())
+                all_objects = api.list_metadata()
                 all_objects = self.filter_by_org(all_objects, 'provider')
             # remove any objects alread on the permission
             object_id_key = f"{data_type}_id"
@@ -667,9 +659,9 @@ class PermissionObjectRemoval(AdminView):
 
     def get(self, uuid, object_id, **kwargs):
         try:
-            permission = handle_response(permissions.get_metadata(uuid))
+            permission = permissions.get_metadata(uuid)
             api = self.get_api_handler(permission['object_type'])
-            object_data = handle_response(api.get_metadata(object_id))
+            object_data = api.get_metadata(object_id)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:

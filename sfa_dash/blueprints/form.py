@@ -11,7 +11,6 @@ from sfa_dash.blueprints.aggregates import (AggregateForm,
                                             AggregateObservationRemovalForm)
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.reports import ReportForm
-from sfa_dash.blueprints.util import handle_response
 from sfa_dash.errors import DataRequestException
 
 
@@ -206,7 +205,7 @@ class MetadataForm(BaseView):
         return forecast_metadata
 
     def get_site_metadata(self, site_id):
-        return handle_response(sites.get_metadata(site_id))
+        return sites.get_metadata(site_id)
 
     def cdf_forecast_formatter(self, forecast_dict):
         cdf_forecast_metadata = self.forecast_formatter(forecast_dict)
@@ -243,8 +242,7 @@ class CreateForm(MetadataForm):
         formatted_form = self.formatter(form_data)
         template_args = {}
         try:
-            created_uuid = handle_response(
-                self.api_handle.post_metadata(formatted_form))
+            created_uuid = self.api_handle.post_metadata(formatted_form)
         except DataRequestException as e:
             if e.status_code == 404:
                 errors = {
@@ -296,7 +294,7 @@ class CreateAggregateForecastForm(MetadataForm):
             raise ValueError(f'No metadata form defined for {data_type}')
 
     def get_aggregate_metadata(self, aggregate_id):
-        return handle_response(aggregates.get_metadata(aggregate_id))
+        return aggregates.get_metadata(aggregate_id)
 
     def render_metadata_section(self, metadata):
         return render_template(
@@ -316,8 +314,7 @@ class CreateAggregateForecastForm(MetadataForm):
         formatted_form = self.formatter(form_data)
         template_args = {}
         try:
-            created_uuid = handle_response(
-                self.api_handle.post_metadata(formatted_form))
+            created_uuid = self.api_handle.post_metadata(formatted_form)
         except DataRequestException as e:
             if e.status_code == 404:
                 errors = {
@@ -372,8 +369,7 @@ class UploadForm(BaseView):
     def get(self, uuid):
         temp_args = {}
         try:
-            metadata_dict = handle_response(
-                self.api_handle.get_metadata(uuid))
+            metadata_dict = self.api_handle.get_metadata(uuid)
             metadata_dict['site_link'] = self.generate_site_link(
                 metadata_dict)
         except DataRequestException as e:
@@ -432,7 +428,7 @@ class UploadForm(BaseView):
         if errors:
             return render_template(self.template, uuid=uuid, errors=errors)
         try:
-            handle_response(post_request)
+            post_request
         except DataRequestException as e:
             return render_template(self.template, uuid=uuid, errors=e.errors)
         else:

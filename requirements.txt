@@ -11,7 +11,7 @@ pymysql
 python-jose
 blinker
 cryptography
-bokeh
+bokeh==1.4.0
 git+git://github.com/solararbiter/solarforecastarbiter-core#egg=solarforecastarbiter [all]
 tables==3.5.1
 prometheus_flask_exporter

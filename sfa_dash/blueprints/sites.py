@@ -1,4 +1,4 @@
-from sfa_dash.blueprints.util import DataTables, handle_response
+from sfa_dash.blueprints.util import DataTables
 from sfa_dash.blueprints.dash import SiteDashView
 from sfa_dash.api_interface import sites
 from sfa_dash.errors import DataRequestException
@@ -53,8 +53,7 @@ class SingleSiteView(SiteDashView):
 
     def get(self, uuid, **kwargs):
         try:
-            self.metadata = handle_response(
-                sites.get_metadata(uuid))
+            self.metadata = sites.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         return render_template(self.template, **self.template_args(**kwargs))

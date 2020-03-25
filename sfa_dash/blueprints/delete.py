@@ -3,7 +3,6 @@ from flask import url_for, request, render_template, redirect
 from sfa_dash.api_interface import (sites, observations, forecasts,
                                     cdf_forecast_groups)
 from sfa_dash.blueprints.dash import DataDashView
-from sfa_dash.blueprints.util import handle_response
 from sfa_dash.errors import DataRequestException
 
 
@@ -41,8 +40,7 @@ class DeleteConfirmation(DataDashView):
         request to this endpoint on submission
         """
         try:
-            self.metadata = handle_response(
-                self.api_handle.get_metadata(uuid))
+            self.metadata = self.api_handle.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, uuid=uuid, errors=e.errors)
         else:
@@ -66,7 +64,7 @@ class DeleteConfirmation(DataDashView):
             # the confirmation page, redirect to confirm.
             return redirect(confirmation_url)
         try:
-            handle_response(self.api_handle.delete(uuid))
+            self.api_handle.delete(uuid)
         except DataRequestException as e:
             return self.get(uuid, errors=e.errors)
         return redirect(url_for(f'data_dashboard.{self.data_type}s'))

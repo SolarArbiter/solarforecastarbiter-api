@@ -6,7 +6,7 @@ from flask.views import MethodView
 import pandas as pd
 
 from sfa_dash.errors import DataRequestException
-from sfa_dash.blueprints.util import handle_response, timeseries_adapter
+from sfa_dash.blueprints.util import timeseries_adapter
 
 
 class BaseView(MethodView):
@@ -21,8 +21,8 @@ class BaseView(MethodView):
         the temp_args keys plot and bokeh_script respectively.
         """
         try:
-            values = handle_response(self.api_handle.get_values(
-                uuid, params={'start': start, 'end': end}))
+            values = self.api_handle.get_values(
+                uuid, params={'start': start, 'end': end})
         except DataRequestException as e:
             if e.status_code == 422:
                 self.temp_args.update({'warnings': e.errors})

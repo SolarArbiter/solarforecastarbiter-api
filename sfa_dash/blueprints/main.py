@@ -15,7 +15,7 @@ from sfa_dash.blueprints.reports import (ReportsView, ReportView,
                                          DeleteReportView,
                                          DownloadReportView)
 from sfa_dash.blueprints.sites import SingleSiteView, SitesListingView
-from sfa_dash.blueprints.util import (handle_response, download_timeseries)
+from sfa_dash.blueprints.util import download_timeseries
 from sfa_dash.errors import DataRequestException
 from sfa_dash.filters import human_friendly_datatype
 
@@ -128,8 +128,7 @@ class SingleObjectView(DataDashView):
         # inject the errors into the template arguments and skip
         # any further processing.
         try:
-            self.metadata = handle_response(
-                self.api_handle.get_metadata(uuid))
+            self.metadata = self.api_handle.get_metadata(uuid)
         except DataRequestException as e:
             self.temp_args.update({'errors': e.errors})
         else:
@@ -207,8 +206,7 @@ class SingleCDFForecastGroupView(SingleObjectView):
     def get(self, uuid, **kwargs):
         self.temp_args = {}
         try:
-            self.metadata = handle_response(
-                cdf_forecast_groups.get_metadata(uuid))
+            self.metadata = cdf_forecast_groups.get_metadata(uuid)
         except DataRequestException as e:
             self.temp_args.update({'errors': e.errors})
         else:

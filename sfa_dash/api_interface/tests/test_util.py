@@ -2,7 +2,7 @@ import pytest
 from requests.exceptions import HTTPError
 
 
-from sfa_dash.blueprints.util import handle_response
+from sfa_dash.api_interface.util import handle_response
 from sfa_dash.errors import DataRequestException
 
 
@@ -22,7 +22,7 @@ def mock_response(mocker):
 
 @pytest.fixture()
 def mock_request(mocker):
-    mocker.patch('sfa_dash.blueprints.util.request')
+    mocker.patch('sfa_dash.api_interface.util.request')
 
 
 @pytest.mark.parametrize('code', [

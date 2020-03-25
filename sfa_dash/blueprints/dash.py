@@ -3,7 +3,6 @@ on site-section.
 """
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.api_interface import sites, aggregates
-from sfa_dash.blueprints.util import handle_response
 from sfa_dash.errors import DataRequestException
 from flask import render_template, request, url_for
 
@@ -19,7 +18,7 @@ class DataDashView(BaseView):
         return temp_args
 
     def get_site_metadata(self, site_id):
-        return handle_response(sites.get_metadata(site_id))
+        return sites.get_metadata(site_id)
 
     def set_site_or_aggregate_metadata(self):
         """Searches for a site_id or aggregate_id  in self.metadata
@@ -42,8 +41,8 @@ class DataDashView(BaseView):
                 raise
         elif self.metadata.get('aggregate_id'):
             try:
-                self.metadata['aggregate'] = handle_response(
-                    aggregates.get_metadata(self.metadata['aggregate_id']))
+                self.metadata['aggregate'] = aggregates.get_metadata(
+                    self.metadata['aggregate_id'])
             except DataRequestException:
                 self.temp_args.update({
                     'warnings': {
