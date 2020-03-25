@@ -1510,7 +1510,7 @@ def test_get_user_actions_on_object(
         sql_app, user, nocommit_cursor, forecast_id):
     actions = storage_interface.get_user_actions_on_object(forecast_id)
     assert sorted(actions) == sorted(['read', 'read_values', 'delete',
-                                      'delete_values','write_values'])
+                                      'delete_values', 'write_values'])
 
 
 def test_get_user_actions_on_object_object_dne(
