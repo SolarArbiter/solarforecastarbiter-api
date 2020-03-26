@@ -340,6 +340,46 @@ def read_observation_values(observation_id, start=None, end=None):
     return df
 
 
+def read_latest_observation_value(observation_id):
+    """Read the most recent observation value.
+
+    Parameters
+    ----------
+    observation_id: string
+        UUID of associated observation.
+
+    Returns
+    -------
+    pandas.DataFrame
+        With a value column and datetime index and only one row
+    """
+    obs_vals = _call_procedure('read_latest_observation_value', observation_id,
+                               cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(obs_vals), columns=[
+            'observation_id', 'timestamp', 'value', 'quality_flag']
+    ).drop(columns='observation_id').set_index('timestamp')
+    return df
+
+
+def read_observation_time_range(observation_id):
+    """Get the time range of values for a observation.
+
+    Parameters
+    ----------
+    observation_id: string
+        UUID of associated observation.
+
+    Returns
+    -------
+    dict
+        With `min_timestamp` and `max_timestamp` keys that are either
+        dt.datetime objects or None
+    """
+    return _call_procedure_for_single(
+        'read_observation_time_range', observation_id)
+
+
 def store_observation(observation):
     """Store Observation metadata. Should generate and store a uuid
     as the 'observation_id' field.
@@ -488,6 +528,45 @@ def read_forecast_values(forecast_id, start=None, end=None):
     """
     return _read_fx_values('read_forecast_values', forecast_id,
                            start, end)
+
+
+def read_latest_forecast_value(forecast_id):
+    """Read the most recent forecast value.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+
+    Returns
+    -------
+    pandas.DataFrame
+        With a value column and datetime index and only one row
+    """
+    fx_vals = _call_procedure('read_latest_forecast_value', forecast_id,
+                              cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
+    ).drop(columns='forecast_id').set_index('timestamp')
+    return df
+
+
+def read_forecast_time_range(forecast_id):
+    """Get the time range of values for a forecast.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+
+    Returns
+    -------
+    dict
+        With `min_timestamp` and `max_timestamp` keys that are either
+        dt.datetime objects or None
+    """
+    return _call_procedure_for_single(
+        'read_forecast_time_range', forecast_id)
 
 
 def store_forecast(forecast):
@@ -721,6 +800,45 @@ def read_cdf_forecast_values(forecast_id, start=None, end=None):
     """
     return _read_fx_values('read_cdf_forecast_values', forecast_id,
                            start, end)
+
+
+def read_latest_cdf_forecast_value(forecast_id):
+    """Read the most recent CDF forecast value.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+
+    Returns
+    -------
+    pandas.DataFrame
+        With a value column and datetime index and only one row
+    """
+    fx_vals = _call_procedure('read_latest_cdf_forecast_value', forecast_id,
+                              cursor_type='standard')
+    df = pd.DataFrame.from_records(
+        list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
+    ).drop(columns='forecast_id').set_index('timestamp')
+    return df
+
+
+def read_cdf_forecast_time_range(forecast_id):
+    """Get the time range of values for a CDF forecast.
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+
+    Returns
+    -------
+    dict
+        With `min_timestamp` and `max_timestamp` keys that are either
+        dt.datetime objects or None
+    """
+    return _call_procedure_for_single(
+        'read_cdf_forecast_time_range', forecast_id)
 
 
 def store_cdf_forecast(cdf_forecast):

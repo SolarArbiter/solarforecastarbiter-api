@@ -210,6 +210,72 @@ def test_read_observation_values_invalid_user(sql_app, invalid_user, startend):
             list(demo_observations.keys())[0], start, end)
 
 
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_read_latest_observation_value(sql_app, user, observation_id):
+    idx_step = demo_observations[observation_id]['interval_length']
+    observation_values = storage_interface.read_latest_observation_value(
+        observation_id)
+    fx_index = observation_values.index
+    assert len(fx_index) == 1
+    assert fx_index[0] == TESTINDICES[idx_step].index[-1]
+    assert (observation_values.columns == ['value', 'quality_flag']).all()
+
+
+def test_read_latest_observation_value_no_data(sql_app, user, nocommit_cursor):
+    observation = list(demo_observations.values())[0].copy()
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    observation_values = storage_interface.read_latest_observation_value(new_id)
+    fx_index = observation_values.index
+    assert len(fx_index) == 0
+
+
+def test_read_latest_df_observation_value_invalid_observation(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_observation_value(
+            str(uuid.uuid1()))
+
+
+def test_read_latest_observation_value_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_observation_values(
+            list(demo_single_cdf.keys())[0])
+
+
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_read_observation_time_range(sql_app, user, observation_id):
+    idx_step = demo_observations[observation_id]['interval_length']
+    trange = storage_interface.read_observation_time_range(
+        observation_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == TESTINDICES[idx_step].index[0]
+    assert trange['max_timestamp'] == TESTINDICES[idx_step].index[-1]
+
+
+def test_read_observation_time_range_no_data(sql_app, user, nocommit_cursor):
+    observation = list(demo_observations.values())[0].copy()
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    trange = storage_interface.read_observation_time_range(new_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == None
+    assert trange['max_timestamp'] == None
+
+
+def test_read_observation_time_range_invalid_observation(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_observation_time_range(
+            str(uuid.uuid1()))
+
+
+def test_read_observation_time_range_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_observation_time_range(
+            list(demo_single_cdf.keys())[0])
+
+
 @pytest.mark.parametrize('observation', demo_observations.values())
 def test_store_observation(sql_app, user, observation, nocommit_cursor):
     observation = observation.copy()
@@ -408,6 +474,72 @@ def test_read_forecast_values_invalid_user(sql_app, invalid_user, startend):
             list(demo_forecasts.keys())[0], start, end)
 
 
+@pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
+def test_read_latest_forecast_value(sql_app, user, forecast_id):
+    idx_step = demo_forecasts[forecast_id]['interval_length']
+    forecast_values = storage_interface.read_latest_forecast_value(
+        forecast_id)
+    fx_index = forecast_values.index
+    assert len(fx_index) == 1
+    assert fx_index[0] == TESTINDICES[idx_step].index[-1]
+    assert (forecast_values.columns == ['value']).all()
+
+
+def test_read_latest_forecast_value_no_data(sql_app, user, nocommit_cursor):
+    forecast = list(demo_forecasts.values())[0].copy()
+    forecast['name'] = 'new_forecast'
+    new_id = storage_interface.store_forecast(forecast)
+    forecast_values = storage_interface.read_latest_forecast_value(new_id)
+    fx_index = forecast_values.index
+    assert len(fx_index) == 0
+
+
+def test_read_latest_df_forecast_value_invalid_forecast(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_forecast_value(
+            str(uuid.uuid1()))
+
+
+def test_read_latest_forecast_value_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_forecast_values(
+            list(demo_single_cdf.keys())[0])
+
+
+@pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
+def test_read_forecast_time_range(sql_app, user, forecast_id):
+    idx_step = demo_forecasts[forecast_id]['interval_length']
+    trange = storage_interface.read_forecast_time_range(
+        forecast_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == TESTINDICES[idx_step].index[0]
+    assert trange['max_timestamp'] == TESTINDICES[idx_step].index[-1]
+
+
+def test_read_forecast_time_range_no_data(sql_app, user, nocommit_cursor):
+    forecast = list(demo_forecasts.values())[0].copy()
+    forecast['name'] = 'new_forecast'
+    new_id = storage_interface.store_forecast(forecast)
+    trange = storage_interface.read_forecast_time_range(new_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == None
+    assert trange['max_timestamp'] == None
+
+
+def test_read_forecast_time_range_invalid_forecast(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_forecast_time_range(
+            str(uuid.uuid1()))
+
+
+def test_read_forecast_time_range_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_forecast_time_range(
+            list(demo_single_cdf.keys())[0])
+
+
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
 def test_store_forecast(sql_app, user, forecast, nocommit_cursor):
     forecast = forecast.copy()
@@ -589,6 +721,74 @@ def test_read_cdf_forecast_values_invalid_user(
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_cdf_forecast_values(
             list(demo_single_cdf.keys())[0], start, end)
+
+
+@pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
+def test_read_latest_cdf_forecast_value(sql_app, user, forecast_id):
+    parent_id = demo_single_cdf[forecast_id]['parent']
+    idx_step = demo_group_cdf[parent_id]['interval_length']
+    forecast_values = storage_interface.read_latest_cdf_forecast_value(
+        forecast_id)
+    fx_index = forecast_values.index
+    assert len(fx_index) == 1
+    assert fx_index[0] == TESTINDICES[idx_step].index[-1]
+    assert (forecast_values.columns == ['value']).all()
+
+
+def test_read_latest_cdf_forecast_value_no_data(sql_app, user, nocommit_cursor):
+    cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
+                    'constant_value': 100.0}
+    new_id = storage_interface.store_cdf_forecast(cdf_forecast)
+    forecast_values = storage_interface.read_latest_cdf_forecast_value(new_id)
+    fx_index = forecast_values.index
+    assert len(fx_index) == 0
+
+
+def test_read_latest_df_forecast_value_invalid_forecast(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_cdf_forecast_value(
+            str(uuid.uuid1()))
+
+
+def test_read_latest_cdf_forecast_value_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_cdf_forecast_values(
+            list(demo_single_cdf.keys())[0])
+
+
+@pytest.mark.parametrize('forecast_id', demo_single_cdf.keys())
+def test_read_cdf_forecast_time_range(sql_app, user, forecast_id):
+    parent_id = demo_single_cdf[forecast_id]['parent']
+    idx_step = demo_group_cdf[parent_id]['interval_length']
+    trange = storage_interface.read_cdf_forecast_time_range(
+        forecast_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == TESTINDICES[idx_step].index[0]
+    assert trange['max_timestamp'] == TESTINDICES[idx_step].index[-1]
+
+
+def test_read_cdf_forecast_time_range_no_data(sql_app, user, nocommit_cursor):
+    cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
+                    'constant_value': 100.0}
+    new_id = storage_interface.store_cdf_forecast(cdf_forecast)
+    trange = storage_interface.read_cdf_forecast_time_range(new_id)
+    assert len(trange) == 2
+    assert trange['min_timestamp'] == None
+    assert trange['max_timestamp'] == None
+
+
+def test_read_cdf_forecast_time_range_invalid_forecast(sql_app, user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_cdf_forecast_time_range(
+            str(uuid.uuid1()))
+
+
+def test_read_cdf_forecast_time_range_invalid_user(
+        sql_app, invalid_user):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_cdf_forecast_time_range(
+            list(demo_single_cdf.keys())[0])
 
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
