@@ -45,3 +45,8 @@ def remove_role_by_email(email, role_id):
 def get_email(user_id):
     req = get_request(f'/users/{user_id}/email')
     return req
+
+
+def actions_on(uuid):
+    req = get_request(f'/users/actions-on/{uuid}')
+    return req

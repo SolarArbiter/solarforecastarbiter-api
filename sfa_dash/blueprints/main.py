@@ -1,10 +1,10 @@
 from collections import OrderedDict
 
 
-from flask import Blueprint, render_template, url_for, request
+from flask import Blueprint, render_template, url_for, request, g
 
 
-from sfa_dash.api_interface import (observations, forecasts,
+from sfa_dash.api_interface import (users, observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups)
 from sfa_dash.blueprints.aggregates import (AggregatesView, AggregateView,
                                             DeleteAggregateView)
@@ -111,10 +111,16 @@ class SingleObjectView(DataDashView):
         self.temp_args['upload_link'] = url_for(
             f'forms.upload_{self.data_type}_data',
             uuid=self.metadata[self.id_key])
+
         if self.data_type != 'cdf_forecast':
             self.temp_args['delete_link'] = url_for(
                 f'data_dashboard.delete_{self.data_type}',
                 uuid=self.metadata[self.id_key])
+        else:
+            # update allowed actions based on parent cdf_forecast_group
+            allowed = users.actions_on(self.metadata['parent'])
+            g.allowed_actions = allowed['actions']
+
         self.temp_args['period_start_date'] = start.strftime('%Y-%m-%d')
         self.temp_args['period_start_time'] = start.strftime('%H:%M')
         self.temp_args['period_end_date'] = end.strftime('%Y-%m-%d')

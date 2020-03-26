@@ -6,7 +6,8 @@ del get_versions
 import os  # NOQA
 
 
-from flask import Flask, redirect, url_for, render_template, session, request  # NOQA
+from flask import (Flask, redirect, url_for, render_template, session, request,  # NOQA
+                   g)  # NOQA
 from flask_seasurf import SeaSurf  # NOQA
 import sentry_sdk  # NOQA
 from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
@@ -14,7 +15,9 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
 
 from sfa_dash.blueprints.auth0 import (make_auth0_blueprint,  # NOQA
                                        oauth_request_session)  # NOQA
+from sfa_dash.api_interface import users  # NOQA
 from sfa_dash.database import db, session_storage  # NOQA
+from sfa_dash.errors import DataRequestException  # NOQA
 from sfa_dash.filters import register_jinja_filters  # NOQA
 from sfa_dash.template_globals import template_variables  # NOQA
 from sfa_dash import error_handlers  # NOQA
@@ -77,6 +80,15 @@ def create_app(config=None):
         # Injects variables into all rendered templates
         global_template_args = {}
         global_template_args['current_user'] = session.get('userinfo')
+        if 'uuid' in request.view_args:
+            uuid = request.view_args.get('uuid')
+            try:
+                g.allowed_actions = users.actions_on(uuid)['actions']
+            except DataRequestException:
+                # Allow for special cases to later set g.allowed_actions e.g.
+                # cdf_forecast_single, where permissions are dependent on
+                # the parent cdf_forecast_group
+                pass
         global_template_args.update(template_variables())
         return global_template_args
 

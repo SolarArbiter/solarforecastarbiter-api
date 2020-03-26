@@ -1,4 +1,6 @@
 {% import "forms/form_macros.jinja" as form %}
+
+{% if is_allowed('read_values') %}
 {# Time widgets are used for either setting the bounds of the plot or download #}
 <div class="form-group mt-3">
 <div class="form-element">
@@ -30,3 +32,4 @@
 <input type="text" class="start" name="start" hidden>
 <input type="text" class="end" name="end" hidden>
 <script src="/static/js/plot-bound-parsing.js"></script>
+{% endif %}

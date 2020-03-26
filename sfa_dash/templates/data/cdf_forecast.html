@@ -1,13 +1,13 @@
 {% extends "dash/data.html" %}
 {% block content %}
 {{ metadata | safe }}
-{% if upload_link is defined %}
+{% if upload_link is defined and is_allowed('write_values') %}
 <a role="button" class="btn btn-primary btn-sm" href="{{upload_link}}">Upload data</a>
 {% endif %}
-{% if download_link is defined %}
+{% if download_link is defined and is_allowed('read_values') %}
 <a role="button" class="btn btn-primary btn-sm" href="{{download_link}}">Download data</a>
 {% endif %}
-{% if delete_link is defined %}
+{% if delete_link is defined and is_allowed('delete') %}
 <a role="button" class="btn btn-danger btn-sm" href="{{ delete_link }}">Delete</a>
 {% endif %}
 {% include "sections/notifications.html" %}

@@ -4,9 +4,22 @@
 {% include "sections/notifications.html" %}
 {% if role is defined %}
 {% include 'data/metadata/role_metadata.html' %}
+
+{% set revoke_allowed = is_allowed('revoke') %}
+
+{% set update_allowed = is_allowed('update') %}
+{% if update_allowed %}
 <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_perm_addition', uuid=role['role_id']) }}">Add Permissions</a>
+{% endif %}
+
+{% set grant_allowed = is_allowed('grant') %}
+{% if grant_allowed %}
 <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('admin.role_grant', uuid=role['role_id']) }}">Grant Role</a>
+{% endif %}
+
+{% if is_allowed('delete') %}
 <a role="button" class="btn btn-danger btn-sm" href="{{ url_for('admin.delete_role', uuid=role['role_id']) }}">Delete</a>
+{% endif %}
 
 <ul class="mt-2 nav nav-tabs">
     <li class="nav-item {% if role_table == 'permissions' %}active{% endif %}"><a class="nav-link" href="{{ url_for('admin.role_view', uuid=role['role_id'], table='permissions') }}">Permissions</a></li>
@@ -32,7 +45,11 @@
       <tr>
           <td><a href="{{ url_for('admin.permission_view', uuid=perm_id) }}">{{ perm['description'] }}</a></td>
           <td>{{ perm['added_to_role'] | format_datetime}}</td>
-          <td><a role="button" class="role-permission-delete-button" href="{{ url_for('admin.role_perm_removal', uuid=role['role_id'], permission_id=perm['permission_id']) }}">Remove</a></td>
+          <td>
+            {% if update_allowed %}
+            <a role="button" class="role-permission-delete-button" href="{{ url_for('admin.role_perm_removal', uuid=role['role_id'], permission_id=perm['permission_id']) }}">Remove</a>
+            {% endif %}
+          </td>
       </tr>
     {% endfor %}
   </tbody>
@@ -57,7 +74,11 @@
       <tr>
           <td class="email-column"><a href="{{ url_for('admin.user_view', uuid=user['user_id']) }}"> {{ user['email'] }} </a></td>
           <td class="provider-column">{{ user['organization'] }} </td>
-          <td><a href={{ url_for('admin.user_role_removal', uuid=user_id, role_id=role['role_id']) }}>Remove</a></td>
+          <td>
+            {% if revoke_allowed %}
+            <a href={{ url_for('admin.user_role_removal', uuid=user_id, role_id=role['role_id']) }}>Remove</a>
+            {% endif %}
+          </td>
       </tr>
     {% endfor %}
   </tbody>

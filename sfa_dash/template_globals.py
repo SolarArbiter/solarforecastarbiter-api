@@ -3,6 +3,7 @@
 # the template_variables function.
 
 import pytz
+from flask import g
 
 import sfa_dash
 from sfa_dash import filters
@@ -32,6 +33,23 @@ ALLOWED_QUALITY_FLAGS = {
 }
 
 
+def is_allowed(action):
+    """Returns if the action is allowed or not on the current object.
+
+    Parameters
+    ----------
+    action: str
+        The action to query for permission.
+
+    Returns
+    -------
+    bool
+        If the action is allowed or not.
+    """
+    allowed = getattr(g, 'allowed_actions', [])
+    return action in allowed
+
+
 def template_variables():
     return {
         'dashboard_version': sfa_dash.__version__,
@@ -41,5 +59,6 @@ def template_variables():
         'metric_categories': ALLOWED_CATEGORIES,
         'deterministic_metrics': ALLOWED_DETERMINISTIC_METRICS,
         'default_metrics': DEFAULT_METRICS,
-        'quality_flags': ALLOWED_QUALITY_FLAGS
+        'quality_flags': ALLOWED_QUALITY_FLAGS,
+        'is_allowed': is_allowed
     }
