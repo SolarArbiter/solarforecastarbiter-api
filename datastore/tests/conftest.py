@@ -217,7 +217,7 @@ def new_forecast(cursor, new_site):
         # add some  test data too
         cursor.execute(
             'INSERT INTO forecasts_values (id, timestamp, value) VALUES '
-            '(%s, CURRENT_TIMESTAMP(), RAND())', (out['id'], ))
+            '(%s, TIMESTAMP(\'2020-01-01 11:03\'), RAND())', (out['id'], ))
         return out
     return fcn
 
@@ -259,7 +259,8 @@ def new_cdf_forecast(cursor, new_site):
             # add some  test data too
             cursor.execute(
                 'INSERT INTO cdf_forecasts_values (id, timestamp, value) '
-                'VALUES (%s, CURRENT_TIMESTAMP(), RAND())', (single['id'], ))
+                'VALUES (%s, TIMESTAMP(\'2020-01-03 18:01\'), RAND())',
+                (single['id'], ))
             out['constant_values'][str(id)] = float(i)
         return out
     return fcn
@@ -279,7 +280,7 @@ def new_observation(cursor, new_site):
         insert_dict(cursor, 'observations', out)
         cursor.execute(
             'INSERT INTO observations_values (id, timestamp, value, '
-            'quality_flag) VALUES (%s, CURRENT_TIMESTAMP(), RAND(), 0)',
+            'quality_flag) VALUES (%s, TIMESTAMP(\'2020-01-03 10:00\'), RAND(), 0)',
             (out['id'], ))
         return out
     return fcn

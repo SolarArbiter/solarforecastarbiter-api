@@ -1,0 +1,3 @@
+DROP PROCEDURE read_latest_observation_value;
+DROP PROCEDURE read_latest_forecast_value;
+DROP PROCEDURE read_latest_cdf_forecast_value;
