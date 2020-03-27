@@ -166,7 +166,7 @@ class ForecastValuesView(MethodView):
         responses:
           200:
             content:
-              applciation/json:
+              application/json:
                 schema:
                   $ref: '#/components/schemas/ForecastValues'
               text/csv:
@@ -525,7 +525,7 @@ class CDFForecastValues(MethodView):
         responses:
           200:
             content:
-              applciation/json:
+              application/json:
                 schema:
                   $ref: '#/components/schemas/CDFForecastValues'
               text/csv:
@@ -709,10 +709,10 @@ forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/values',
     view_func=ForecastValuesView.as_view('values'))
 forecast_blp.add_url_rule(
-    '/<uuid_str:forecast_id>/values/latest',
+    '/single/<uuid_str:forecast_id>/values/latest',
     view_func=ForecastLatestView.as_view('latest_value'))
 forecast_blp.add_url_rule(
-    '/<uuid_str:forecast_id>/values/timerange',
+    '/single/<uuid_str:forecast_id>/values/timerange',
     view_func=ForecastTimeRangeView.as_view('time_range'))
 forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/metadata',

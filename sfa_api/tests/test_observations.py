@@ -375,3 +375,68 @@ def test_post_file_invalid_mimetype(api, observation_id):
     assert file_post.status_code == 400
     expected = '{"errors":{"error":["Unsupported Content-Type or MIME type."]}}\n' # noqa
     assert file_post.get_data(as_text=True) == expected
+
+
+def test_get_latest_observation_values_200(api, observation_id, ghi_obs_vals):
+    r = api.get(f'/observations/{observation_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['observation_id'] == observation_id
+    assert len(data['values']) == 1
+    assert data['values'][0]['timestamp'] == ghi_obs_vals.index[-1].isoformat()
+
+
+def test_get_latest_observation_values_404_fxid(api, forecast_id):
+    r = api.get(f'/observations/{forecast_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_latest_observation_values_404(api, missing_id):
+    r = api.get(f'/observations/{missing_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_latest_observation_values_new(api, new_observation):
+    obs_id = new_observation()
+    r = api.get(f'/observations/{obs_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    data = r.get_json()
+    assert len(data['values']) == 0
+
+
+def test_get_observation_timerange_200(api, observation_id, ghi_obs_vals):
+    r = api.get(f'/observations/{observation_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['observation_id'] == observation_id
+    assert data['max_timestamp'] == ghi_obs_vals.index[-1].isoformat()
+    assert data['min_timestamp'] == ghi_obs_vals.index[0].isoformat()
+
+
+def test_get_observation_timerange_404_fxid(api, forecast_id):
+    r = api.get(f'/observations/{forecast_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_observation_timerange_404(api, missing_id):
+    r = api.get(f'/observations/{missing_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_observation_timerange_new(api, new_observation):
+    obs_id = new_observation()
+    r = api.get(f'/observations/{obs_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data['min_timestamp'] is None
+    assert data['max_timestamp'] is None

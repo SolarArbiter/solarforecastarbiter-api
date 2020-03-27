@@ -307,3 +307,49 @@ def test_post_and_get_values_csv(api, cdf_forecast_id, mock_previous):
                 query_string={'start': start, 'end': end})
     posted_data = r.data
     assert VALID_CDF_VALUE_CSV == posted_data.decode('utf-8')
+
+
+def test_get_latest_cdf_forecast_value_200(api, cdf_forecast_id, fx_vals):
+    r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['forecast_id'] == cdf_forecast_id
+    assert len(data['values']) == 1
+    assert data['values'][0]['timestamp'] == fx_vals.index[-1].isoformat()
+
+
+def test_get_latest_cdf_forecast_value_404(api, missing_id):
+    r = api.get(f'/forecasts/cdf/single/{missing_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_latest_cdf_forecast_value_404_obsid(api, observation_id):
+    r = api.get(f'/forecasts/cdf/single/{observation_id}/values/latest',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_cdf_forecast_timerange_200(api, cdf_forecast_id, fx_vals):
+    r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['forecast_id'] == cdf_forecast_id
+    assert data['max_timestamp'] == fx_vals.index[-1].isoformat()
+    assert data['min_timestamp'] == fx_vals.index[0].isoformat()
+
+
+def test_get_cdf_forecast_timerange_404(api, missing_id):
+    r = api.get(f'/forecasts/cdf/single/{missing_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_cdf_forecast_timerange_404_obsid(api, observation_id):
+    r = api.get(f'/forecasts/cdf/single/{observation_id}/values/timerange',
+                base_url=BASE_URL)
+    assert r.status_code == 404
