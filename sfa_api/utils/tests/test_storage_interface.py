@@ -266,8 +266,8 @@ def test_read_observation_time_range_no_data(sql_app, user, nocommit_cursor):
     new_id = storage_interface.store_observation(observation)
     trange = storage_interface.read_observation_time_range(new_id)
     assert len(trange) == 2
-    assert trange['min_timestamp'] == None
-    assert trange['max_timestamp'] == None
+    assert trange['min_timestamp'] is None
+    assert trange['max_timestamp'] is None
 
 
 def test_read_observation_time_range_invalid_observation(sql_app, user):
@@ -536,8 +536,8 @@ def test_read_forecast_time_range_no_data(sql_app, user, nocommit_cursor):
     new_id = storage_interface.store_forecast(forecast)
     trange = storage_interface.read_forecast_time_range(new_id)
     assert len(trange) == 2
-    assert trange['min_timestamp'] == None
-    assert trange['max_timestamp'] == None
+    assert trange['min_timestamp'] is None
+    assert trange['max_timestamp'] is None
 
 
 def test_read_forecast_time_range_invalid_forecast(sql_app, user):
@@ -748,7 +748,8 @@ def test_read_latest_cdf_forecast_value(sql_app, user, forecast_id):
     assert (forecast_values.columns == ['value']).all()
 
 
-def test_read_latest_cdf_forecast_value_no_data(sql_app, user, nocommit_cursor):
+def test_read_latest_cdf_forecast_value_no_data(
+        sql_app, user, nocommit_cursor):
     cdf_forecast = {'parent': list(demo_group_cdf.keys())[0],
                     'constant_value': 100.0}
     new_id = storage_interface.store_cdf_forecast(cdf_forecast)
@@ -793,8 +794,8 @@ def test_read_cdf_forecast_time_range_no_data(sql_app, user, nocommit_cursor):
     new_id = storage_interface.store_cdf_forecast(cdf_forecast)
     trange = storage_interface.read_cdf_forecast_time_range(new_id)
     assert len(trange) == 2
-    assert trange['min_timestamp'] == None
-    assert trange['max_timestamp'] == None
+    assert trange['min_timestamp'] is None
+    assert trange['max_timestamp'] is None
 
 
 def test_read_cdf_forecast_time_range_invalid_forecast(sql_app, user):
