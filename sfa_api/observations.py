@@ -17,7 +17,8 @@ from sfa_api.utils.request_handling import (validate_parsable_values,
 from sfa_api.schema import (ObservationValuesSchema,
                             ObservationSchema,
                             ObservationPostSchema,
-                            ObservationLinksSchema)
+                            ObservationLinksSchema,
+                            ObservationTimeRangeSchema)
 
 
 class AllObservationsView(MethodView):
@@ -277,6 +278,68 @@ class ObservationValuesView(MethodView):
         return stored, 201
 
 
+class ObservationLatestView(MethodView):
+    def get(self, observation_id, *args):
+        """
+        ---
+        summary: Get latest Observation data.
+        description: |
+          Get the most recent timeseries value from the Observation
+          entry.
+        tags:
+        - Observations
+        parameters:
+          - observation_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationValues'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        values = storage.read_latest_observation_value(observation_id)
+        values['timestamp'] = values.index
+        dict_values = values.to_dict(orient='records')
+        data = ObservationValuesSchema().dump(
+            {"observation_id": observation_id, "values": dict_values})
+        return jsonify(data)
+
+
+class ObservationTimeRangeView(MethodView):
+    def get(self, observation_id, *args):
+        """
+        ---
+        summary: Get the time range of an Observation.
+        description: |
+          Get the minimum and maximum timestamps of Observation
+          values stored in the Arbiter.
+        tags:
+        - Observations
+        parameters:
+          - observation_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationTimeRange'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        timerange = storage.read_observation_time_range(observation_id)
+        timerange['observation_id'] = observation_id
+        data = ObservationTimeRangeSchema().dump(timerange)
+        return jsonify(data)
+
+
 class ObservationMetadataView(MethodView):
     def get(self, observation_id, *args):
         """
@@ -326,6 +389,12 @@ obs_blp.add_url_rule(
 obs_blp.add_url_rule(
     '/<uuid_str:observation_id>/values',
     view_func=ObservationValuesView.as_view('values'))
+obs_blp.add_url_rule(
+    '/<uuid_str:observation_id>/values/latest',
+    view_func=ObservationLatestView.as_view('latest_value'))
+obs_blp.add_url_rule(
+    '/<uuid_str:observation_id>/values/timerange',
+    view_func=ObservationTimeRangeView.as_view('time_range'))
 obs_blp.add_url_rule(
     '/<uuid_str:observation_id>/metadata',
     view_func=ObservationMetadataView.as_view('metadata'))

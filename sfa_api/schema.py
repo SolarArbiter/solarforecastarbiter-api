@@ -278,6 +278,26 @@ class ObservationValuesSchema(ObservationValuesPostSchema):
     )
 
 
+@spec.define_schema('ObservationTimeRange')
+class ObservationTimeRangeSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    observation_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Observation associated with this data.")
+    min_timestamp = ISODateTime(
+        title="Minimum Timestamp",
+        description=("The minimum timestamp in the observation value series as"
+                     " an ISO 8601 datetime."),
+    )
+    max_timestamp = ISODateTime(
+        title="Maximum Timestamp",
+        description=("The maximum timestamp in the observation value series as"
+                     " an ISO 8601 datetime."),
+    )
+
+
 @spec.define_schema('ObservationDefinition')
 class ObservationPostSchema(ma.Schema):
     class Meta:
