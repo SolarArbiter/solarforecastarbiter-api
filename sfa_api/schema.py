@@ -278,24 +278,27 @@ class ObservationValuesSchema(ObservationValuesPostSchema):
     )
 
 
-@spec.define_schema('ObservationTimeRange')
-class ObservationTimeRangeSchema(ma.Schema):
+class TimeRangeSchema(ma.Schema):
     class Meta:
         strict = True
         ordered = True
-    observation_id = ma.UUID(
-        title='Obs ID',
-        description="UUID of the Observation associated with this data.")
     min_timestamp = ISODateTime(
         title="Minimum Timestamp",
-        description=("The minimum timestamp in the observation value series as"
+        description=("The minimum timestamp in the value series as"
                      " an ISO 8601 datetime."),
     )
     max_timestamp = ISODateTime(
         title="Maximum Timestamp",
-        description=("The maximum timestamp in the observation value series as"
+        description=("The maximum timestamp in the value series as"
                      " an ISO 8601 datetime."),
     )
+
+
+@spec.define_schema('ObservationTimeRange')
+class ObservationTimeRangeSchema(TimeRangeSchema):
+    observation_id = ma.UUID(
+        title='Obs ID',
+        description="UUID of the Observation associated with this data.")
 
 
 @spec.define_schema('ObservationDefinition')
@@ -408,6 +411,21 @@ class ForecastValuesSchema(ForecastValuesPostSchema):
         },
         description="Contains a link to the metadata endpoint."
     )
+
+
+@spec.define_schema('ForecastTimeRange')
+class ForecastTimeRangeSchema(TimeRangeSchema):
+    forecast_id = ma.UUID(
+        title='Forecast ID',
+        description="UUID of the forecast associated with this data.")
+
+
+@spec.define_schema('CDFForecastTimeRange')
+class CDFForecastTimeRangeSchema(TimeRangeSchema):
+    forecast_id = ma.UUID(
+        title='Forecast ID',
+        description=(
+            "UUID of the probabilistic forecast associated with this data."))
 
 
 @spec.define_schema('ForecastDefinition')

@@ -20,9 +20,9 @@ from sfa_api.utils import storage_interface
 
 
 TESTINDICES = {
-    1: generate_randoms(1)[0].to_series(keep_tz=True),
-    5: generate_randoms(5)[0].to_series(keep_tz=True),
-    60: generate_randoms(60)[0].to_series(keep_tz=True),
+    1: generate_randoms(1)[0].to_series(),
+    5: generate_randoms(5)[0].to_series(),
+    60: generate_randoms(60)[0].to_series(),
 }
 
 
@@ -225,7 +225,8 @@ def test_read_latest_observation_value_no_data(sql_app, user, nocommit_cursor):
     observation = list(demo_observations.values())[0].copy()
     observation['name'] = 'new_observation'
     new_id = storage_interface.store_observation(observation)
-    observation_values = storage_interface.read_latest_observation_value(new_id)
+    observation_values = storage_interface.read_latest_observation_value(
+        new_id)
     fx_index = observation_values.index
     assert len(fx_index) == 0
 
@@ -234,6 +235,12 @@ def test_read_latest_df_observation_value_invalid_observation(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_latest_observation_value(
             str(uuid.uuid1()))
+
+
+def test_read_latest_observation_value_fx_id(sql_app, user, forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_observation_value(
+            forecast_id)
 
 
 def test_read_latest_observation_value_invalid_user(
@@ -494,10 +501,16 @@ def test_read_latest_forecast_value_no_data(sql_app, user, nocommit_cursor):
     assert len(fx_index) == 0
 
 
-def test_read_latest_df_forecast_value_invalid_forecast(sql_app, user):
+def test_read_latest_forecast_value_invalid_forecast(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_latest_forecast_value(
             str(uuid.uuid1()))
+
+
+def test_read_latest_forecast_value_obs_id(sql_app, user, observation_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_forecast_value(
+            observation_id)
 
 
 def test_read_latest_forecast_value_invalid_user(
@@ -748,6 +761,12 @@ def test_read_latest_df_forecast_value_invalid_forecast(sql_app, user):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_latest_cdf_forecast_value(
             str(uuid.uuid1()))
+
+
+def test_read_latest_cdf_forecast_value_obs_id(sql_app, user, observation_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_latest_cdf_forecast_value(
+            observation_id)
 
 
 def test_read_latest_cdf_forecast_value_invalid_user(

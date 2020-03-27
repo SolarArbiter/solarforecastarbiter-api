@@ -10,10 +10,12 @@ from sfa_api.schema import (ForecastValuesSchema,
                             ForecastSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema,
+                            ForecastTimeRangeSchema,
                             CDFForecastGroupPostSchema,
                             CDFForecastGroupSchema,
                             CDFForecastSchema,
-                            CDFForecastValuesSchema)
+                            CDFForecastValuesSchema,
+                            CDFForecastTimeRangeSchema)
 
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
@@ -260,6 +262,68 @@ class ForecastValuesView(MethodView):
                               previous_time)
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         return stored, 201
+
+
+class ForecastLatestView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get latest Forecast data.
+        description: |
+          Get the most recent timeseries value from the Forecast
+          entry.
+        tags:
+        - Forecasts
+        parameters:
+          - forecast_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastValues'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        values = storage.read_latest_forecast_value(forecast_id)
+        values['timestamp'] = values.index
+        dict_values = values.to_dict(orient='records')
+        data = ForecastValuesSchema().dump(
+            {"forecast_id": forecast_id, "values": dict_values})
+        return jsonify(data)
+
+
+class ForecastTimeRangeView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get the time range of an Forecast.
+        description: |
+          Get the minimum and maximum timestamps of Forecast
+          values stored in the Arbiter.
+        tags:
+        - Forecasts
+        parameters:
+          - forecast_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastTimeRange'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        timerange = storage.read_forecast_time_range(forecast_id)
+        timerange['forecast_id'] = forecast_id
+        data = ForecastTimeRangeSchema().dump(timerange)
+        return jsonify(data)
 
 
 class ForecastMetadataView(MethodView):
@@ -558,6 +622,68 @@ class CDFForecastValues(MethodView):
         return stored, 201
 
 
+class CDFForecastLatestView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get latest Probabilistic Forecast value.
+        description: |
+          Get the most recent timeseries value from the Probabilistic
+          Forecast entry.
+        tags:
+          - Probabilistic Forecasts
+        parameters:
+          - forecast_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CDFForecastValues'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        values = storage.read_latest_cdf_forecast_value(forecast_id)
+        values['timestamp'] = values.index
+        dict_values = values.to_dict(orient='records')
+        data = CDFForecastValuesSchema().dump(
+            {"forecast_id": forecast_id, "values": dict_values})
+        return jsonify(data)
+
+
+class CDFForecastTimeRangeView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get the time range of an Probabilistic Forecast.
+        description: |
+          Get the minimum and maximum timestamps of Probabilistic Forecast
+          values stored in the Arbiter.
+        tags:
+        - Probabilistic Forecasts
+        parameters:
+          - forecast_id
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CDFForecastTimeRange'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        timerange = storage.read_cdf_forecast_time_range(forecast_id)
+        timerange['forecast_id'] = forecast_id
+        data = CDFForecastTimeRangeSchema().dump(timerange)
+        return jsonify(data)
+
+
 spec.components.parameter(
     'forecast_id', 'path',
     {
@@ -583,6 +709,12 @@ forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/values',
     view_func=ForecastValuesView.as_view('values'))
 forecast_blp.add_url_rule(
+    '/<uuid_str:forecast_id>/values/latest',
+    view_func=ForecastLatestView.as_view('latest_value'))
+forecast_blp.add_url_rule(
+    '/<uuid_str:forecast_id>/values/timerange',
+    view_func=ForecastTimeRangeView.as_view('time_range'))
+forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/metadata',
     view_func=ForecastMetadataView.as_view('metadata'))
 
@@ -598,3 +730,9 @@ forecast_blp.add_url_rule(
 forecast_blp.add_url_rule(
     '/cdf/single/<uuid_str:forecast_id>/values',
     view_func=CDFForecastValues.as_view('single_cdf_value'))
+forecast_blp.add_url_rule(
+    '/cdf/single/<uuid_str:forecast_id>/values/latest',
+    view_func=CDFForecastLatestView.as_view('cdf_latest_value'))
+forecast_blp.add_url_rule(
+    '/cdf/single/<uuid_str:forecast_id>/values/timerange',
+    view_func=CDFForecastTimeRangeView.as_view('cdf_time_range'))
