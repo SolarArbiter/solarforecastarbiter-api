@@ -1588,6 +1588,17 @@ def test_read_latest_observation_values_denied(cursor, obs_values, insertuser):
     assert e.value.args[0] == 1142
 
 
+    
+def test_read_observation_latest_fxid(cursor, obs_values, insertuser,
+                                      allow_read_observation_values,
+                                      allow_read_forecast_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_observation_value',
+                        (auth0id, insertuser.fx['strid']))
+    assert e.value.args[0] == 1142
+
+    
 def test_read_latest_observation_values_denied_can_read_meta(
         cursor, obs_values, allow_read_observations, insertuser):
     auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
@@ -1629,6 +1640,16 @@ def test_read_latest_forecast_values_denied(cursor, fx_values, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_latest_forecast_value',
                         (auth0id, fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_forecast_values_obsid(cursor, fx_values, insertuser,
+                                           allow_read_forecast_values,
+                                           allow_read_observation_values):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_forecast_value',
+                        (auth0id, insertuser.obs['strid']))
     assert e.value.args[0] == 1142
 
 
@@ -1674,6 +1695,17 @@ def test_read_latest_cdf_forecast_values_denied(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_latest_cdf_forecast_value',
                         (auth0id, cdf_fxid))
+    assert e.value.args[0] == 1142
+
+    
+def test_read_latest_cdf_forecast_values_obsid(
+        cursor, cdf_fx_values, insertuser,
+        allow_read_cdf_forecast_values,
+        allow_read_observation_values):
+    auth0id, fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_cdf_forecast_value',
+                        (auth0id, insertuser.obs['strid']))
     assert e.value.args[0] == 1142
 
 
@@ -1723,6 +1755,16 @@ def test_read_observation_time_range_denied(cursor, obs_values, insertuser):
     assert e.value.args[0] == 1142
 
 
+def test_read_observation_time_range_fxid(cursor, obs_values, insertuser,
+                                          allow_read_observation_values,
+                                          allow_read_forecast_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_time_range',
+                        (auth0id, insertuser.fx['strid']))
+    assert e.value.args[0] == 1142
+
+
 def test_read_observation_time_range_denied_can_read_meta(
         cursor, obs_values, allow_read_observations, insertuser):
     auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
@@ -1769,6 +1811,16 @@ def test_read_cdf_forecast_time_range_denied(
     assert e.value.args[0] == 1142
 
 
+def test_read_cdf_forecast_time_range_obs_id(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values,
+        allow_read_observation_values):
+    auth0id, *_ = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_time_range',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+    
+
 def test_read_cdf_forecast_time_range_denied_can_read_meta(
         cursor, cdf_fx_values, allow_read_cdf_forecasts, insertuser):
     auth0id, cdf_fxid, vals, start, end = cdf_fx_values
@@ -1814,6 +1866,16 @@ def test_read_forecast_time_range_denied(
         cursor.callproc('read_forecast_time_range', (auth0id, fxid))
     assert e.value.args[0] == 1142
 
+
+def test_read_forecast_time_range_obs_id(
+        cursor, fx_values, insertuser, allow_read_forecast_values,
+        allow_read_observation_values):
+    auth0id, *_ = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_time_range',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+    
 
 def test_read_forecast_time_range_denied_can_read_meta(
         cursor, fx_values, allow_read_forecasts, insertuser):

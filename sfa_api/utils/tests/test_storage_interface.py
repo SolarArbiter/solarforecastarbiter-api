@@ -227,8 +227,8 @@ def test_read_latest_observation_value_no_data(sql_app, user, nocommit_cursor):
     new_id = storage_interface.store_observation(observation)
     observation_values = storage_interface.read_latest_observation_value(
         new_id)
-    fx_index = observation_values.index
-    assert len(fx_index) == 0
+    obs_index = observation_values.index
+    assert len(obs_index) == 0
 
 
 def test_read_latest_df_observation_value_invalid_observation(sql_app, user):

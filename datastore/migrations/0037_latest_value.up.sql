@@ -1,3 +1,36 @@
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION is_read_observation_values_allowed(
+  auth0id VARCHAR(32), binid BINARY(16))
+RETURNS BOOLEAN
+READS SQL DATA SQL SECURITY DEFINER
+RETURN (
+    EXISTS(SELECT 1 FROM arbiter_data.observations WHERE id = binid) &
+    can_user_perform_action(auth0id, binid, 'read_values')
+);
+
+
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION is_read_forecast_values_allowed(
+    auth0id VARCHAR(32), binid BINARY(16))
+RETURNS BOOLEAN
+READS SQL DATA SQL SECURITY DEFINER
+RETURN (
+    EXISTS(SELECT 1 FROM arbiter_data.forecasts WHERE id = binid) &
+    can_user_perform_action(auth0id, binid, 'read_values')
+);
+
+
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION is_read_cdf_forecast_values_allowed(
+    auth0id VARCHAR(32), binid BINARY(16))
+RETURNS BOOLEAN
+READS SQL DATA SQL SECURITY DEFINER
+/* if groupid is null (no cdf singe) can_user_perform_action will be false */
+RETURN can_user_perform_action(auth0id, (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid), 'read_values');
+
+
+GRANT EXECUTE ON FUNCTION is_read_observation_values_allowed TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION is_read_forecast_values_allowed TO 'select_objects'@'localhost';
+GRANT EXECUTE ON FUNCTION is_read_cdf_forecast_values_allowed TO 'select_objects'@'localhost';
+
+
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_latest_observation_value (
 IN auth0id VARCHAR(32), IN strid CHAR(36))
 COMMENT 'Read latest observation value'
@@ -7,7 +40,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE lasttime TIMESTAMP;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
+    SET allowed = is_read_observation_values_allowed(auth0id, binid);
     IF allowed THEN
         /* more efficient to set the max time then select one row w/ full index
            vs doing a sort by timestamp desc which has to do a reverse index scan
@@ -32,7 +65,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE lasttime TIMESTAMP;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
+    SET allowed = is_read_forecast_values_allowed(auth0id, binid);
     IF allowed THEN
         SET lasttime = (SELECT MAX(timestamp) from arbiter_data.forecasts_values WHERE id = binid);
         SELECT BIN_TO_UUID(id, 1) as forecast_id, timestamp, value
@@ -50,11 +83,9 @@ READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE binid BINARY(16);
     DECLARE lasttime TIMESTAMP;
-    DECLARE groupid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = UUID_TO_BIN(strid, 1);
-    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
-    SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'read_values'));
+    SET allowed = is_read_cdf_forecast_values_allowed(auth0id, binid);
     IF allowed THEN
         SET lasttime = (SELECT MAX(timestamp) from arbiter_data.cdf_forecasts_values WHERE id = binid);
         SELECT BIN_TO_UUID(id, 1) as forecast_id, timestamp, value
@@ -84,7 +115,7 @@ BEGIN
     DECLARE firsttime TIMESTAMP;
     DECLARE lasttime TIMESTAMP;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
+    SET allowed = is_read_observation_values_allowed(auth0id, binid);
     IF allowed THEN
         SET lasttime = (SELECT MAX(timestamp) from arbiter_data.observations_values WHERE id = binid);
         SET firsttime = (SELECT MIN(timestamp) from arbiter_data.observations_values WHERE id = binid);
@@ -108,7 +139,7 @@ BEGIN
     DECLARE firsttime TIMESTAMP;
     DECLARE lasttime TIMESTAMP;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
+    SET allowed = is_read_forecast_values_allowed(auth0id, binid);
     IF allowed THEN
         SET lasttime = (SELECT MAX(timestamp) from arbiter_data.forecasts_values WHERE id = binid);
         SET firsttime = (SELECT MIN(timestamp) from arbiter_data.forecasts_values WHERE id = binid);
@@ -132,10 +163,8 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     DECLARE firsttime TIMESTAMP;
     DECLARE lasttime TIMESTAMP;
-    DECLARE groupid BINARY(16);
     SET binid = UUID_TO_BIN(strid, 1);
-    SET groupid = (SELECT cdf_forecast_group_id FROM cdf_forecasts_singles WHERE id = binid);
-    SET allowed = (SELECT can_user_perform_action(auth0id, groupid, 'read_values'));
+    SET allowed = is_read_cdf_forecast_values_allowed(auth0id, binid);
     IF allowed THEN
         SET lasttime = (SELECT MAX(timestamp) from arbiter_data.cdf_forecasts_values WHERE id = binid);
         SET firsttime = (SELECT MIN(timestamp) from arbiter_data.cdf_forecasts_values WHERE id = binid);
