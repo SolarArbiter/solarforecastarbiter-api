@@ -274,7 +274,7 @@ class ObservationValuesSchema(ObservationValuesPostSchema):
             'metadata': ma.AbsoluteURLFor('observations.metadata',
                                           observation_id='<observation_id>'),
             'timerange': ma.AbsoluteURLFor('observations.time_range',
-                                            observation_id='<observation_id>'),
+                                           observation_id='<observation_id>'),
         },
         description="Contains a link to the values endpoint."
     )
@@ -359,7 +359,7 @@ class ObservationLinksSchema(ma.Schema):
             'values': ma.AbsoluteURLFor('observations.values',
                                         observation_id='<observation_id>'),
             'timerange': ma.AbsoluteURLFor('observations.time_range',
-                                            observation_id='<observation_id>'),
+                                           observation_id='<observation_id>'),
         },
         description="Contains links to the values and metadata endpoints."
     )
@@ -399,7 +399,7 @@ class CDFForecastValuesSchema(ForecastValuesPostSchema):
             'metadata': ma.AbsoluteURLFor('forecasts.single_cdf_metadata',
                                           forecast_id='<forecast_id>'),
             'timerange': ma.AbsoluteURLFor('forecasts.cdf_time_range',
-                                            forecast_id='<forecast_id>'),
+                                           forecast_id='<forecast_id>'),
         },
         description="Contains a link to the metadata endpoint."
     )
@@ -415,7 +415,7 @@ class ForecastValuesSchema(ForecastValuesPostSchema):
             'metadata': ma.AbsoluteURLFor('forecasts.metadata',
                                           forecast_id='<forecast_id>'),
             'timerange': ma.AbsoluteURLFor('forecasts.time_range',
-                                            forecast_id='<forecast_id>'),
+                                           forecast_id='<forecast_id>'),
         },
         description="Contains a link to the metadata endpoint."
     )
@@ -538,7 +538,7 @@ class ForecastLinksSchema(ma.Schema):
             'values': ma.AbsoluteURLFor('forecasts.values',
                                         forecast_id='<forecast_id>'),
             'timerange': ma.AbsoluteURLFor('forecasts.time_range',
-                                            forecast_id='<forecast_id>'),
+                                           forecast_id='<forecast_id>'),
         },
         description="Contains links to the values and metadata endpoints."
     )
@@ -605,7 +605,7 @@ class CDFForecastSingleSchema(ma.Schema):
             'values': ma.AbsoluteURLFor('forecasts.single_cdf_value',
                                         forecast_id='<forecast_id>'),
             'timerange': ma.AbsoluteURLFor('forecasts.cdf_time_range',
-                                            forecast_id='<forecast_id>'),
+                                           forecast_id='<forecast_id>'),
         },
         description="Contains a link to the values endpoint."
     )
