@@ -197,7 +197,7 @@ def obs_values(cursor, insertuser):
     auth0id = insertuser[0]['auth0_id']
 
     def insert(obsid):
-        start = dt.datetime(2019, 1, 30, 12, 28, 20)
+        start = dt.datetime(2020, 1, 30, 12, 28, 20)
         vals = tuple([
             (obsid, start + dt.timedelta(minutes=i),
              float(random.randint(0, 100)), 0) for i in range(10)])
@@ -205,8 +205,8 @@ def obs_values(cursor, insertuser):
             'INSERT INTO observations_values (id, timestamp, value, '
             'quality_flag) VALUES (UUID_TO_BIN(%s, 1), %s, %s, %s)',
             vals)
-        start = dt.datetime(2019, 1, 30, 12, 20)
-        end = dt.datetime(2019, 1, 30, 12, 40)
+        start = dt.datetime(2020, 1, 30, 12, 20)
+        end = dt.datetime(2020, 1, 30, 12, 40)
         return auth0id, obsid, vals, start, end
     return insert
 
@@ -220,15 +220,15 @@ def test_read_observation_values(cursor, obs_values, insertuser,
 
 
 @pytest.mark.parametrize('start,end,theslice', [
-    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+    (dt.datetime(2020, 1, 30, 12, 20), dt.datetime(2020, 2, 10, 12, 20),
      slice(10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 40),
      slice(2, 10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 29, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 35),
      slice(2, 7)),
 ])
 def test_read_observation_values_time_limits(
@@ -261,15 +261,15 @@ def test_read_observation_values_denied_can_read_meta(
 def fx_values(cursor, insertuser):
     auth0id = insertuser[0]['auth0_id']
     fxid = insertuser[2]['strid']
-    start = dt.datetime(2019, 1, 30, 12, 28, 20)
+    start = dt.datetime(2020, 1, 30, 12, 28, 20)
     vals = tuple([
         (fxid, start + dt.timedelta(minutes=i),
          float(random.randint(0, 100))) for i in range(10)])
     cursor.executemany(
         'INSERT INTO forecasts_values (id, timestamp, value) '
         'VALUES (UUID_TO_BIN(%s, 1), %s, %s)', vals)
-    start = dt.datetime(2019, 1, 30, 12, 20)
-    end = dt.datetime(2019, 1, 30, 12, 40)
+    start = dt.datetime(2020, 1, 30, 12, 20)
+    end = dt.datetime(2020, 1, 30, 12, 40)
     return auth0id, fxid, vals, start, end
 
 
@@ -282,15 +282,15 @@ def test_read_forecast_values(cursor, fx_values,
 
 
 @pytest.mark.parametrize('start,end,theslice', [
-    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+    (dt.datetime(2020, 1, 30, 12, 20), dt.datetime(2020, 2, 10, 12, 20),
      slice(10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 40),
      slice(2, 10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 29, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 35),
      slice(2, 7)),
 ])
 def test_read_forecast_values_time_limits(
@@ -410,15 +410,15 @@ def cdf_fx_values(cursor, insertuser, request):
     auth0id = insertuser[0]['auth0_id']
     forecast = insertuser[6]
     strid = list(forecast['constant_values'].keys())[request.param]
-    start = dt.datetime(2019, 1, 30, 12, 28, 20)
+    start = dt.datetime(2020, 1, 30, 12, 28, 20)
     vals = tuple([
         (strid, start + dt.timedelta(minutes=i),
          float(random.randint(0, 100))) for i in range(10)])
     cursor.executemany(
         'INSERT INTO cdf_forecasts_values (id, timestamp, value) '
         'VALUES (UUID_TO_BIN(%s, 1), %s, %s)', vals)
-    start = dt.datetime(2019, 1, 30, 12, 20)
-    end = dt.datetime(2019, 1, 30, 12, 40)
+    start = dt.datetime(2020, 1, 30, 12, 20)
+    end = dt.datetime(2020, 1, 30, 12, 40)
     return auth0id, strid, vals, start, end
 
 
@@ -431,15 +431,15 @@ def test_read_cdf_forecast_values(cursor, cdf_fx_values,
 
 
 @pytest.mark.parametrize('start,end,theslice', [
-    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+    (dt.datetime(2020, 1, 30, 12, 20), dt.datetime(2020, 2, 10, 12, 20),
      slice(10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 40),
      slice(2, 10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 29, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 35),
      slice(2, 7)),
 ])
 def test_read_cdf_forecast_values_time_limits(
@@ -908,15 +908,15 @@ def test_read_aggregate_values(
 
 
 @pytest.mark.parametrize('start,end,theslice', [
-    (dt.datetime(2019, 1, 30, 12, 20), dt.datetime(2019, 2, 10, 12, 20),
+    (dt.datetime(2020, 1, 30, 12, 20), dt.datetime(2020, 2, 10, 12, 20),
      slice(10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 40),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 40),
      slice(2, 10)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 29, 12, 30),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 29, 12, 30),
      slice(0)),
-    (dt.datetime(2019, 1, 30, 12, 30), dt.datetime(2019, 1, 30, 12, 35),
+    (dt.datetime(2020, 1, 30, 12, 30), dt.datetime(2020, 1, 30, 12, 35),
      slice(2, 7)),
 ])
 def test_read_aggregate_values_time_limits(
@@ -951,7 +951,7 @@ def test_read_aggregate_values_removed(
     res = cursor.fetchall()
     assert res == vals
     cursor.execute(
-        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2020-01-30 12:30')"  # NOQA
     )
     cursor.callproc(
         'read_aggregate_values', (
@@ -964,7 +964,7 @@ def test_read_aggregate_values_removed(
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
         "(aggregate_id, observation_id, _incr, effective_from) VALUES"
-        " (%s, %s, 1, TIMESTAMP('2019-01-30 12:35'))",
+        " (%s, %s, 1, TIMESTAMP('2020-01-30 12:35'))",
         (agg['id'], obs['id'])
     )
     cursor.callproc(
@@ -991,12 +991,12 @@ def test_read_aggregate_values_removed_overlap(
     res = cursor.fetchall()
     assert res == vals
     cursor.execute(
-        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+        "UPDATE aggregate_observation_mapping SET effective_until = TIMESTAMP('2020-01-30 12:30')"  # NOQA
     )  # 12:28 and 12:29 extra
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
         "(aggregate_id, observation_id, _incr, effective_from) VALUES"
-        " (%s, %s, 1, TIMESTAMP('2019-01-30 11:00'))",
+        " (%s, %s, 1, TIMESTAMP('2020-01-30 11:00'))",
         (agg['id'], obs['id'])
     )
     cursor.callproc(
@@ -1024,7 +1024,7 @@ def test_read_aggregate_values_full_overlap(
     res = cursor.fetchall()
     assert res == vals
     cursor.execute(
-        "UPDATE aggregate_observation_mapping SET effective_from = TIMESTAMP('2019-01-30 12:29'), effective_until = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+        "UPDATE aggregate_observation_mapping SET effective_from = TIMESTAMP('2020-01-30 12:29'), effective_until = TIMESTAMP('2020-01-30 12:30')"  # NOQA
     )
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
@@ -1057,14 +1057,14 @@ def test_read_aggregate_values_deleted(
     res = cursor.fetchall()
     assert res == vals
     cursor.execute(
-        "UPDATE aggregate_observation_mapping SET observation_deleted_at = TIMESTAMP('2019-01-30 12:30')"  # NOQA
+        "UPDATE aggregate_observation_mapping SET observation_deleted_at = TIMESTAMP('2020-01-30 12:30')"  # NOQA
     )
     obs1 = new_observation(org=org)
     _, _, v2, *_ = obs_values(str(bin_to_uuid(obs1['id'])))
     cursor.execute(
         "INSERT INTO aggregate_observation_mapping "
         "(aggregate_id, observation_id, _incr, created_at) VALUES"
-        " (%s, %s, 1, TIMESTAMP('2019-01-30 12:20'))",
+        " (%s, %s, 1, TIMESTAMP('2020-01-30 12:20'))",
         (agg['id'], obs1['id'])
     )
     cursor.callproc(
@@ -1278,6 +1278,7 @@ def test_read_metadata_for_value_write_fx(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
+
 
 def test_read_metadata_for_value_write_fx_before(
         dictcursor, insertuser, allow_write_values):
@@ -1520,6 +1521,7 @@ def test_get_user_actions_on_object_no_permissions(
     actions = dictcursor.fetchall()
     assert not actions
 
+    
 @pytest.fixture()
 def remove_perm(cursor):
     def fcn(action, what):
@@ -1527,6 +1529,7 @@ def remove_perm(cursor):
             'DELETE FROM permissions WHERE action=%s and object_type=%s',
             (action, what))
     return fcn
+
 
 def test_get_user_actions_on_object_after_removal(
         dictcursor, user_org_role, new_role, add_perm, remove_perm):
@@ -1548,3 +1551,336 @@ def test_get_user_actions_on_object_after_removal(
         dictcursor.callproc('get_user_actions_on_object', (auth0id, role_id))
         actions = dictcursor.fetchall()
         assert action not in [x['action'] for x in actions]
+
+
+def test_read_latest_observation_values(cursor, obs_values, insertuser,
+                                        allow_read_observation_values):
+    auth0id, obsid, vals, *_ = obs_values(insertuser[3]['strid'])
+    cursor.callproc('read_latest_observation_value', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == vals[-1]
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s, %s)', (obsid, time_, 0, 0))
+    cursor.callproc('read_latest_observation_value', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert res[0] == (obsid, time_, 0, 0)
+
+
+def test_read_latest_observation_values_no_data(
+        cursor, obs_values, insertuser, allow_read_observation_values):
+    auth0id, obsid, vals, *_ = obs_values(insertuser[3]['strid'])
+    cursor.execute(
+        'DELETE from observations_values where id = UUID_TO_BIN(%s, 1)',
+        (obsid,))
+    cursor.callproc('read_latest_observation_value', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert len(res) == 0
+
+
+def test_read_latest_observation_values_denied(cursor, obs_values, insertuser):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_observation_value',
+                        (auth0id, obsid))
+    assert e.value.args[0] == 1142
+
+
+    
+def test_read_observation_latest_fxid(cursor, obs_values, insertuser,
+                                      allow_read_observation_values,
+                                      allow_read_forecast_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_observation_value',
+                        (auth0id, insertuser.fx['strid']))
+    assert e.value.args[0] == 1142
+
+    
+def test_read_latest_observation_values_denied_can_read_meta(
+        cursor, obs_values, allow_read_observations, insertuser):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_observation_value',
+                        (auth0id, obsid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_forecast_values(cursor, fx_values, insertuser,
+                                     allow_read_forecast_values):
+    auth0id, fxid, vals, *_ = fx_values
+    cursor.callproc('read_latest_forecast_value', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == vals[-1]
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.execute(
+        'INSERT INTO forecasts_values (id, timestamp, value)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s)', (fxid, time_, 1.8))
+    cursor.callproc('read_latest_forecast_value', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert res[0] == (fxid, time_, 1.8)
+
+
+def test_read_latest_forecast_values_no_data(
+        cursor, fx_values, insertuser, allow_read_forecast_values):
+    auth0id, fxid, vals, *_ = fx_values
+    cursor.execute(
+        'DELETE from forecasts_values where id = UUID_TO_BIN(%s, 1)',
+        (fxid,))
+    cursor.callproc('read_latest_forecast_value', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert len(res) == 0
+
+
+def test_read_latest_forecast_values_denied(cursor, fx_values, insertuser):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_forecast_value',
+                        (auth0id, fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_forecast_values_obsid(cursor, fx_values, insertuser,
+                                           allow_read_forecast_values,
+                                           allow_read_observation_values):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_forecast_value',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_forecast_values_denied_can_read_meta(
+        cursor, fx_values, allow_read_forecasts, insertuser):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_forecast_value',
+                        (auth0id, fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_cdf_forecast_values(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, *_ = cdf_fx_values
+    cursor.callproc('read_latest_cdf_forecast_value', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == vals[-1]
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.execute(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s)', (cdf_fxid, time_, 1.8))
+    cursor.callproc('read_latest_cdf_forecast_value', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert res[0] == (cdf_fxid, time_, 1.8)
+
+
+def test_read_latest_cdf_forecast_values_no_data(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, *_ = cdf_fx_values
+    cursor.execute(
+        'DELETE from cdf_forecasts_values where id = UUID_TO_BIN(%s, 1)',
+        (cdf_fxid,))
+    cursor.callproc('read_latest_cdf_forecast_value', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert len(res) == 0
+
+
+def test_read_latest_cdf_forecast_values_denied(
+        cursor, cdf_fx_values, insertuser):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_cdf_forecast_value',
+                        (auth0id, cdf_fxid))
+    assert e.value.args[0] == 1142
+
+    
+def test_read_latest_cdf_forecast_values_obsid(
+        cursor, cdf_fx_values, insertuser,
+        allow_read_cdf_forecast_values,
+        allow_read_observation_values):
+    auth0id, fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_cdf_forecast_value',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+
+
+def test_read_latest_cdf_forecast_values_denied_can_read_meta(
+        cursor, cdf_fx_values, allow_read_cdf_forecasts, insertuser):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_latest_cdf_forecast_value',
+                        (auth0id, cdf_fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_observation_range(
+        cursor, obs_values, insertuser, allow_read_observation_values):
+    auth0id, obsid, vals, *_ = obs_values(insertuser[3]['strid'])
+    cursor.callproc('read_observation_time_range', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (dt.datetime(2020, 1, 3, 10), vals[-1][1])
+    early = dt.datetime(1989, 3, 2, 12, 22)
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.executemany(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s, %s)', (
+            (obsid, early, 0, 0), (obsid, time_, 0, 0)))
+    cursor.callproc('read_observation_time_range', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert res[0] == (early, time_)
+
+
+def test_read_observation_range_no_data(
+        cursor, obs_values, insertuser, allow_read_observation_values):
+    auth0id, obsid, vals, *_ = obs_values(insertuser[3]['strid'])
+    cursor.execute(
+        'DELETE from observations_values where id = UUID_TO_BIN(%s, 1)',
+        (obsid,))
+    cursor.callproc('read_observation_time_range', (auth0id, obsid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (None, None)
+
+
+def test_read_observation_time_range_denied(cursor, obs_values, insertuser):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_time_range', (auth0id, obsid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_observation_time_range_fxid(cursor, obs_values, insertuser,
+                                          allow_read_observation_values,
+                                          allow_read_forecast_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_time_range',
+                        (auth0id, insertuser.fx['strid']))
+    assert e.value.args[0] == 1142
+
+
+def test_read_observation_time_range_denied_can_read_meta(
+        cursor, obs_values, allow_read_observations, insertuser):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_time_range', (auth0id, obsid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_cdf_forecast_range(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, *_ = cdf_fx_values
+    cursor.callproc('read_cdf_forecast_time_range', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (dt.datetime(2020, 1, 3, 18, 1), vals[-1][1])
+    early = dt.datetime(1989, 3, 2, 12, 22)
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.executemany(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s)', (
+            (cdf_fxid, early, 0), (cdf_fxid, time_, 0)))
+    cursor.callproc('read_cdf_forecast_time_range', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert res[0] == (early, time_)
+
+
+def test_read_cdf_forecast_range_no_data(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, *_ = cdf_fx_values
+    cursor.execute(
+        'DELETE from cdf_forecasts_values where id = UUID_TO_BIN(%s, 1)',
+        (cdf_fxid,))
+    cursor.callproc('read_cdf_forecast_time_range', (auth0id, cdf_fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (None, None)
+
+
+def test_read_cdf_forecast_time_range_denied(
+        cursor, cdf_fx_values, insertuser):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_time_range', (auth0id, cdf_fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_cdf_forecast_time_range_obs_id(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values,
+        allow_read_observation_values):
+    auth0id, *_ = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_time_range',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+    
+
+def test_read_cdf_forecast_time_range_denied_can_read_meta(
+        cursor, cdf_fx_values, allow_read_cdf_forecasts, insertuser):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_cdf_forecast_time_range', (auth0id, cdf_fxid))
+    assert e.value.args[0] == 1142
+
+    
+def test_read_forecast_range(
+        cursor, fx_values, insertuser, allow_read_forecast_values):
+    auth0id, fxid, vals, *_ = fx_values
+    cursor.callproc('read_forecast_time_range', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (dt.datetime(2020, 1, 1, 11, 3), vals[-1][1])
+    early = dt.datetime(1989, 3, 2, 12, 22)
+    time_ = dt.datetime.now().replace(microsecond=0)
+    cursor.executemany(
+        'INSERT INTO forecasts_values (id, timestamp, value)'
+        ' VALUES (UUID_TO_BIN(%s, 1), %s, %s)', (
+            (fxid, early, 0), (fxid, time_, 0)))
+    cursor.callproc('read_forecast_time_range', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert res[0] == (early, time_)
+
+
+def test_read_forecast_range_no_data(
+        cursor, fx_values, insertuser, allow_read_forecast_values):
+    auth0id, fxid, vals, *_ = fx_values
+    cursor.execute(
+        'DELETE from forecasts_values where id = UUID_TO_BIN(%s, 1)',
+        (fxid,))
+    cursor.callproc('read_forecast_time_range', (auth0id, fxid))
+    res = cursor.fetchall()
+    assert len(res) == 1
+    assert res[0] == (None, None)
+
+
+def test_read_forecast_time_range_denied(
+        cursor, fx_values, insertuser):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_time_range', (auth0id, fxid))
+    assert e.value.args[0] == 1142
+
+
+def test_read_forecast_time_range_obs_id(
+        cursor, fx_values, insertuser, allow_read_forecast_values,
+        allow_read_observation_values):
+    auth0id, *_ = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_time_range',
+                        (auth0id, insertuser.obs['strid']))
+    assert e.value.args[0] == 1142
+    
+
+def test_read_forecast_time_range_denied_can_read_meta(
+        cursor, fx_values, allow_read_forecasts, insertuser):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_time_range', (auth0id, fxid))
+    assert e.value.args[0] == 1142
+    

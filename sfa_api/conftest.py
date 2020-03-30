@@ -1938,6 +1938,16 @@ def new_observation(api):
 
 
 @pytest.fixture
+def new_forecast(api):
+    def fn():
+        fx = api.post(f'/forecasts/single/', BASE_URL,
+                      json=VALID_FORECAST_JSON)
+        fx_id = fx.data.decode('utf-8')
+        return fx_id
+    return fn
+
+
+@pytest.fixture
 def new_perm(api):
     def fn(**kwargs):
         perm_json = PERMISSION.copy()
