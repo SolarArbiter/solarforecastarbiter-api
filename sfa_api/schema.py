@@ -730,7 +730,7 @@ class ReportObjectPair(ma.Schema):
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
     reference_forecast = ma.UUID(title="Reference Forecast UUID",
-                                 default=None)
+                                 missing=None)
 
 
 @spec.define_schema('ReportParameters')

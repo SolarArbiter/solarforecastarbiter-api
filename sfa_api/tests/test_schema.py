@@ -3,6 +3,7 @@ import datetime as dt
 
 import marshmallow
 import pytest
+import uuid
 
 
 from sfa_api import schema
@@ -46,6 +47,19 @@ def test_object_pair_deserialization(inp):
     assert 'forecast' in deserialized
     assert (bool('observation' in deserialized) !=
             bool('aggregate' in deserialized))
+    assert deserialized['reference_forecast'] is None
+
+
+@pytest.mark.parametrize('inp', [
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+     '"observation": "123e4567-e89b-12d3-a456-426655440000",'
+     '"reference_forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3"}'),
+])
+def test_object_pair_with_ref(inp):
+    deserialized = schema.ReportObjectPair().loads(inp)
+    assert deserialized['forecast'] == uuid.UUID("11c20780-76ae-4b11-bef1-7a75bdc784e3")  # noqa
+    assert deserialized['observation'] == uuid.UUID("123e4567-e89b-12d3-a456-426655440000")  # noqa
+    assert deserialized['reference_forecast'] == uuid.UUID("11c20780-76ae-4b11-bef1-7a75bdc784e3")  # noqa
 
 
 @pytest.mark.parametrize('inp', [
