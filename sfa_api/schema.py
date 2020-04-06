@@ -730,7 +730,18 @@ class ReportObjectPair(ma.Schema):
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
     reference_forecast = ma.UUID(title="Reference Forecast UUID",
+                                 allow_none=True,
                                  missing=None)
+    uncertainty = ma.String(
+        title='Uncertainty',
+        description=(
+            'How to determine uncertainty when calculating metrics. Set to '
+            '"null" to ignore uncertainty, "observation_uncertainty" to use '
+            'uncertainty from the observation, or a float between 0 and 100 '
+            'representing uncertainty as a percentage.'),
+        allow_none=True,
+        missing=None,
+    )
 
 
 @spec.define_schema('ReportParameters')
