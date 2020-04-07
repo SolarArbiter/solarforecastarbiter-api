@@ -5,7 +5,8 @@ import pytz
 
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
-    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
+    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
+    UncertaintyValidator)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
 
@@ -737,10 +738,11 @@ class ReportObjectPair(ma.Schema):
         description=(
             'How to determine uncertainty when calculating metrics. Set to '
             '"null" to ignore uncertainty, "observation_uncertainty" to use '
-            'uncertainty from the observation, or a float between 0 and 100 '
-            'representing uncertainty as a percentage.'),
+            'uncertainty from the observation, or a quoted float value '
+            'between 0.0 and 100.0 representing uncertainty as a percentage.'),
         allow_none=True,
         missing=None,
+        validate=UncertaintyValidator(),
     )
 
 
