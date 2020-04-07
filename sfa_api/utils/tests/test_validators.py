@@ -86,7 +86,7 @@ def test_uncertainty_validator(valid):
 
 
 @pytest.mark.parametrize("invalid", [
-    "None", "bad string",
+    "None", "bad string", "101", "-1.0"
 ])
 def test_uncertainty_validator_errors(invalid):
     with pytest.raises(ValidationError):
