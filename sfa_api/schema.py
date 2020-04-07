@@ -737,7 +737,7 @@ class ReportObjectPair(ma.Schema):
         title='Uncertainty',
         description=(
             'How to determine uncertainty when calculating metrics. Set to '
-            '"null" to ignore uncertainty, "observation_uncertainty" to use '
+            '"null" (or  omit) to ignore uncertainty, "observation_uncertainty" to use '
             'uncertainty from the observation, or a quoted float value '
             'between 0.0 and 100.0 representing uncertainty as a percentage.'),
         allow_none=True,
