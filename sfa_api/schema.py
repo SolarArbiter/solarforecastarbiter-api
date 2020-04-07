@@ -5,7 +5,8 @@ import pytz
 
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
-    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator)
+    TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
+    UncertaintyValidator)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
 
@@ -729,6 +730,21 @@ class ReportObjectPair(ma.Schema):
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
+    reference_forecast = ma.UUID(title="Reference Forecast UUID",
+                                 allow_none=True,
+                                 missing=None)
+    uncertainty = ma.String(
+        title='Uncertainty',
+        description=(
+            'How to determine uncertainty when calculating metrics. Set to '
+            '"null" (or  omit) to ignore uncertainty, '
+            '"observation_uncertainty" to use uncertainty from the '
+            'observation, or a quoted float value between 0.0 and 100.0 '
+            'representing uncertainty as a percentage.'),
+        allow_none=True,
+        missing=None,
+        validate=UncertaintyValidator(),
+    )
 
 
 @spec.define_schema('ReportParameters')

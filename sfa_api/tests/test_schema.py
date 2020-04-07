@@ -1,8 +1,10 @@
 import datetime as dt
 
 
+import json
 import marshmallow
 import pytest
+import uuid
 
 
 from sfa_api import schema
@@ -46,6 +48,53 @@ def test_object_pair_deserialization(inp):
     assert 'forecast' in deserialized
     assert (bool('observation' in deserialized) !=
             bool('aggregate' in deserialized))
+    assert deserialized['reference_forecast'] is None
+    assert deserialized['uncertainty'] is None
+
+
+@pytest.mark.parametrize('inp', [
+    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+     '"observation": "123e4567-e89b-12d3-a456-426655440000",'
+     '"reference_forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3"}'),
+])
+def test_object_pair_with_ref(inp):
+    deserialized = schema.ReportObjectPair().loads(inp)
+    assert deserialized['forecast'] == uuid.UUID("11c20780-76ae-4b11-bef1-7a75bdc784e3")  # noqa
+    assert deserialized['observation'] == uuid.UUID("123e4567-e89b-12d3-a456-426655440000")  # noqa
+    assert deserialized['reference_forecast'] == uuid.UUID("11c20780-76ae-4b11-bef1-7a75bdc784e3")  # noqa
+
+
+base_pair_dict = {
+    "forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",
+    "observation": "123e4567-e89b-12d3-a456-426655440000",
+    "reference_forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3"
+}
+
+
+@pytest.mark.parametrize('uncertainty,exp_type', [
+    (None, type(None)),
+    ('observation_uncertainty', str),
+    ('10.0', str),
+    ('0.0', str),
+    ('100.0', str),
+])
+def test_object_pair_with_uncertainty(uncertainty, exp_type):
+    pair_dict = base_pair_dict.copy()
+    pair_dict.update({'uncertainty': uncertainty})
+    pair_json = json.dumps(pair_dict)
+    deserialized = schema.ReportObjectPair().loads(pair_json)
+    assert isinstance(deserialized['uncertainty'], exp_type)
+
+
+@pytest.mark.parametrize('uncertainty', [
+    'bad string', 10.0, '-10.0', '101.0',
+])
+def test_object_pair_with_invalid_uncertainty(uncertainty):
+    pair_dict = base_pair_dict.copy()
+    pair_dict.update({'uncertainty': uncertainty})
+    pair_json = json.dumps(pair_dict)
+    with pytest.raises(marshmallow.exceptions.ValidationError):
+        schema.ReportObjectPair().loads(pair_json)
 
 
 @pytest.mark.parametrize('inp', [

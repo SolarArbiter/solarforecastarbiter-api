@@ -75,3 +75,19 @@ def test_timelimit_validator(time_):
 def test_timelimit_validator_fail(time_):
     with pytest.raises(ValidationError):
         validators.TimeLimitValidator()(time_)
+
+
+@pytest.mark.parametrize("valid", [
+    None, "observation_uncertainty", "0.0",
+    ] + list(range(0, 101, 10))
+)
+def test_uncertainty_validator(valid):
+    assert validators.UncertaintyValidator()(valid) == valid
+
+
+@pytest.mark.parametrize("invalid", [
+    "None", "bad string", "101", "-1.0"
+])
+def test_uncertainty_validator_errors(invalid):
+    with pytest.raises(ValidationError):
+        validators.UncertaintyValidator()(invalid)

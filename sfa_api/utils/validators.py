@@ -71,3 +71,28 @@ class TimeLimitValidator(Validator):
             raise ValidationError(
                 f'Less than minimum allowed timestamp of {MIN_SQL_TIME}')
         return value
+
+
+class UncertaintyValidator(Validator):
+    """Ensures value is None, 'observation_uncertainty' or a quoted float.
+    """
+    def __call__(self, value):
+        if value is not None:
+            if value != "observation_uncertainty":
+                try:
+                    float_value = float(value)
+                except ValueError:
+                    raise ValidationError(
+                        "Invalid uncertainty value. Must be one of: null, "
+                        "'observation_uncertainty' or a quoted float value "
+                        "from 0.0 to 100.0.")
+                else:
+                    if float_value > 100:
+                        raise ValidationError(
+                            "Unvertainty percentage must be less than or "
+                            "equal to 100.0.")
+                    if float_value < 0:
+                        raise ValidationError(
+                            "Unvertainty percentage must be greater than or "
+                            "equal to 0.0.")
+        return value
