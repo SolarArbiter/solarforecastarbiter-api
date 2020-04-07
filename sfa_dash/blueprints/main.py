@@ -71,7 +71,7 @@ class SingleObjectView(DataDashView):
                 uuid=self.metadata['site_id'])
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.{listing_view}',
-                uuid=self.metadata['site_id'])
+                site_id=self.metadata['site_id'])
         elif self.metadata.get('aggregate') is not None:
             breadcrumb_dict['Aggregates'] = url_for(
                 'data_dashboard.aggregates')
@@ -80,7 +80,7 @@ class SingleObjectView(DataDashView):
                 uuid=self.metadata['aggregate_id'])
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.{listing_view}',
-                uuid=self.metadata['aggregate_id'])
+                aggregate_id=self.metadata['aggregate_id'])
         else:
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.{listing_view}')
@@ -176,7 +176,7 @@ class SingleCDFForecastGroupView(SingleObjectView):
                 uuid=self.metadata['site_id'])
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 'data_dashboard.cdf_forecast_groups',
-                uuid=self.metadata['site_id'])
+                site_id=self.metadata['site_id'])
         elif self.metadata.get('aggregate') is not None:
             breadcrumb_dict['Aggregates'] = url_for(
                 'data_dashboard.aggregates')
@@ -185,7 +185,7 @@ class SingleCDFForecastGroupView(SingleObjectView):
                 uuid=self.metadata['aggregate_id'])
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 f'data_dashboard.cdf_forecast_groups',
-                uuid=self.metadata['aggregate_id'])
+                aggregate_id=self.metadata['aggregate_id'])
         else:
             breadcrumb_dict[f'{self.human_label}s'] = url_for(
                 'data_dashboard.cdf_forecast_groups')
