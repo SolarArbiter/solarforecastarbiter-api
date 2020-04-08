@@ -1,3 +1,4 @@
+import logging
 import tempfile
 
 
@@ -24,6 +25,21 @@ def test_worker(mocker, args):
     w.assert_called
 
 
+def test_worker_log(mocker):
+    w = mocker.patch('rq.Worker')
+
+    def f(*args, **kwargs):
+        logging.info('testlog')
+
+    w.return_value.work = f
+    runner = CliRunner()
+    with tempfile.NamedTemporaryFile('r') as f:
+        res = runner.invoke(cli.cli, ['worker', '-v', f.name])
+    assert res.exit_code == 0
+    assert 'testlog' in res.output
+    w.assert_called
+
+
 def test_devserver(mocker):
     app = mocker.patch.object(sfa_api, 'create_app')
     runner = CliRunner()
@@ -40,6 +56,25 @@ def test_scheduled_worker(mocker):
         f.flush()
         r = runner.invoke(cli.cli, ['scheduled-worker', f.name])
     assert r.exit_code == 0
+    w.assert_called
+
+
+def test_scheduled_worker_log(mocker):
+    w = mocker.patch('rq.Worker')
+
+    def f(*args, **kwargs):
+        logging.info('testinfo')
+        logging.warning('testwarn')
+
+    w.return_value.work = f
+    runner = CliRunner()
+    with tempfile.NamedTemporaryFile('w') as f:
+        f.write('SCHEDULER_QUEUE = "scheduled"')
+        f.flush()
+        r = runner.invoke(cli.cli, ['scheduled-worker', f.name])
+    assert r.exit_code == 0
+    assert 'testwarn' in r.output
+    assert 'testinfo' not in r.output
     w.assert_called
 
 
