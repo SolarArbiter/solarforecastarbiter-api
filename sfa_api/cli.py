@@ -19,9 +19,9 @@ verbose_opt = click.option('-v', '--verbose', count=True,
                            help='Increase logging verbosity')
 
 
-def _get_log_level(config, verbose):  # pragma: no cover
-    if 'LOG_LEVEL' in config:
-        loglevel = config['LOG_LEVEL']
+def _get_log_level(config, verbose, key='LOG_LEVEL'):  # pragma: no cover
+    if key in config:
+        loglevel = config[key]
     else:
         if verbose == 1:
             loglevel = 'INFO'
@@ -30,6 +30,16 @@ def _get_log_level(config, verbose):  # pragma: no cover
         else:
             loglevel = 'WARNING'
     return loglevel
+
+
+def _setup_logging(level):
+    root_logger = logging.getLogger()
+    formatter = logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
+    root_logger.setLevel(level)
 
 
 @cli.command()
@@ -53,7 +63,8 @@ def worker(verbose, queues, config_file):
     config = Config(Path.cwd())
     config.from_pyfile(config_file)
 
-    loglevel = _get_log_level(config, verbose)
+    worker_loglevel = _get_log_level(config, verbose, key='WORKER_LOG_LEVEL')
+    _setup_logging(_get_log_level(config, verbose))
 
     if 'QUEUES' in config:  # pragma: no cover
         queues = config['QUEUES']
@@ -63,7 +74,7 @@ def worker(verbose, queues, config_file):
     red = make_redis_connection(config)
     with Connection(red):
         w = Worker(queues)
-        w.work(logging_level=loglevel)
+        w.work(logging_level=worker_loglevel)
 
 
 @cli.command()
@@ -94,9 +105,11 @@ def scheduled_worker(verbose, config_file):
     import solarforecastarbiter  # NOQA preload
 
     with make_job_app(config_file) as (app, queue):
-        loglevel = _get_log_level(app.config, verbose)
+        worker_loglevel = _get_log_level(
+            app.config, verbose, key='WORKER_LOG_LEVEL')
+        _setup_logging(_get_log_level(app.config, verbose))
         w = Worker(queue, connection=queue.connection)
-        w.work(logging_level=loglevel)
+        w.work(logging_level=worker_loglevel)
 
 
 @cli.command()
@@ -115,22 +128,15 @@ def scheduler(verbose, config_file, interval, burst):
     sentry_sdk.init(send_default_pii=False,
                     integrations=[RqIntegration()])
     from rq_scheduler import Scheduler
-    from rq.utils import ColorizingStreamHandler
     from sfa_api.jobs import make_job_app, UpdateMixin
     import solarforecastarbiter  # NOQA preload
-
-    root_logger = logging.getLogger()
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler = ColorizingStreamHandler()
-    handler.setFormatter(formatter)
-    root_logger.addHandler(handler)
 
     class UpdateScheduler(UpdateMixin, Scheduler):
         pass
 
     with make_job_app(config_file) as (app, queue):
         loglevel = _get_log_level(app.config, verbose)
-        root_logger.setLevel(loglevel)
+        _setup_logging(loglevel)
         scheduler = UpdateScheduler(queue=queue, interval=interval,
                                     connection=queue.connection)
         scheduler.run(burst=burst)
