@@ -33,7 +33,7 @@ INSERT INTO arbiter_data.observations (
  * observation with the comments stripped out. Test data was generated with
  * the same index as the existing data for "DA GHI" at the test site "Weather
  * Station". The
- * docker exec <docker mysql container id> /usr/bin/mysqldump -u root --password=testpassword --no-create-info arbiter_data forecasts_values --where="id=UUID_TO_BIN('24cbae4e-7ea6-11ea-86b1-0242ac150002', 1)"
+ * docker exec <docker mysql container id> /usr/bin/mysqldump -u root --password=testpassword --no-create-info arbiter_data forecasts_values observations_values --where="id=UUID_TO_BIN('24cbae4e-7ea6-11ea-86b1-0242ac150002', 1) OR id=UUID_TO_BIN('991d15ce-7f66-11ea-96ae-0242ac150002', 1)"
  */
  SET NAMES utf8mb4 ;
 
