@@ -32,7 +32,7 @@ VARIABLES = ALLOWED_VARIABLES.keys()
 
 ALLOWED_REPORT_METRICS = list(ALLOWED_DETERMINISTIC_METRICS.keys())
 ALLOWED_REPORT_CATEGORIES = list(ALLOWED_CATEGORIES.keys())
-INTERVAL_LABELS = ['beginning', 'ending', 'instant']
+INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
