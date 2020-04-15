@@ -751,6 +751,23 @@ demo_forecasts = {
         "interval_value_type": "interval_mean",
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37)),
         "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 55, 37))
+    },
+    '24cbae4e-7ea6-11ea-86b1-0242ac150002': {
+        'name': 'Weather Station Event Forecast',
+        'issue_time_of_day': '05:00',
+        'lead_time_to_start': 60.0,
+        'interval_length': 5.0,
+        'run_length': 60.0,
+        'interval_label': 'event',
+        'interval_value_type': 'instantaneous',
+        'variable': 'event',
+        'forecast_id': '24cbae4e-7ea6-11ea-86b1-0242ac150002',
+        'site_id': '123e4567-e89b-12d3-a456-426655440001',
+        'aggregate_id': None,
+        'provider': 'Organization 1',
+        'extra_parameters': '',
+        'created_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 28, 20)),
+        'modified_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 28, 20)),
     }
 }
 
