@@ -679,7 +679,20 @@ demo_observations = {
         "uncertainty": 0.10,
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 12, 2, 38)),
         "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 12, 2, 38))
-    }
+    },
+    '991d15ce-7f66-11ea-96ae-0242ac150002':{
+        'name': 'Weather Station Event Observation',
+        'variable': 'event',
+        'interval_value_type': 'instantaneous',
+        'interval_length': 5.0,
+        'interval_label': 'event',
+        'site_id': '123e4567-e89b-12d3-a456-426655440001',
+        'uncertainty': 1.0,
+        'observation_id': '991d15ce-7f66-11ea-96ae-0242ac150002',
+        'provider': 'Organization 1',
+        'created_at': pytz.utc.localize(dt.datetime(2019, 4, 14, 7, 00, 00)),
+        'modified_at': pytz.utc.localize(dt.datetime(2019, 4, 14, 7, 00, 00)),
+        'extra_parameters': ''}
 }
 
 
