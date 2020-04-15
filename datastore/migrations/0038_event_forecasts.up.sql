@@ -11,10 +11,11 @@ SET @site_id = UUID_TO_BIN('123e4567-e89b-12d3-a456-426655440001', 1);
 INSERT INTO arbiter_data.forecasts (
     id, organization_id, site_id, name, variable, issue_time_of_day,
     lead_time_to_start, interval_label, interval_length, run_length,
-    interval_value_type, extra_parameters
+    interval_value_type, extra_parameters, created_at, modified_at
 ) VALUES (
     @event_fx_id, @orgid, @site_id, "Weather Station Event Forecast", "event",
-    "05:00", 60.0, "event", 5, 60.0, "instantaneous", ""
+    "05:00", 60.0, "event", 5, 60.0, "instantaneous", "",
+    TIMESTAMP('2020-04-15 00:00'), TIMESTAMP('2020-04-15 00:00')
 );
 
 /* Below is the output of a mysqldump command for the test event forecast, with

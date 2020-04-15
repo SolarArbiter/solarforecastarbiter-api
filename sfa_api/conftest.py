@@ -766,8 +766,8 @@ demo_forecasts = {
         'aggregate_id': None,
         'provider': 'Organization 1',
         'extra_parameters': '',
-        'created_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 28, 20)),
-        'modified_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 28, 20)),
+        'created_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 00, 00)),
+        'modified_at': pytz.utc.localize(dt.datetime(2020, 4, 15, 0, 00, 00)),
     }
 }
 
