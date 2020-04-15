@@ -680,7 +680,7 @@ demo_observations = {
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 12, 2, 38)),
         "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 12, 2, 38))
     },
-    '991d15ce-7f66-11ea-96ae-0242ac150002':{
+    '991d15ce-7f66-11ea-96ae-0242ac150002': {
         'name': 'Weather Station Event Observation',
         'variable': 'event',
         'interval_value_type': 'instantaneous',
