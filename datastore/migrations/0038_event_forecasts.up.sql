@@ -15,7 +15,7 @@ INSERT INTO arbiter_data.forecasts (
 ) VALUES (
     @event_fx_id, @orgid, @site_id, "Weather Station Event Forecast", "event",
     "05:00", 60.0, "event", 5, 60.0, "instantaneous", "",
-    TIMESTAMP('2020-04-15 00:00'), TIMESTAMP('2020-04-15 00:00')
+    TIMESTAMP('2019-04-14 07:00'), TIMESTAMP('2019-04-14 07:00')
 );
 
 /* Below is the output of a mysqldump command for the test event forecast, with
