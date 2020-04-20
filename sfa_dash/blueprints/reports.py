@@ -72,7 +72,15 @@ class ReportForm(BaseView):
         # appropriately indexed forecast.
         truth_ids = filter_form_fields('truth-id-', form_data)
         truth_types = filter_form_fields('truth-type-', form_data)
-        pairs = [{'forecast': f, truth_types[i]: truth_ids[i]}
+
+        reference_forecasts = filter_form_fields('reference-forecast-',
+                                                 form_data)
+
+        uncertainty_values = filter_form_fields('deadband-value-', form_data)
+        pairs = [{'forecast': f,
+                  truth_types[i]: truth_ids[i],
+                  'reference_forecast': reference_forecasts[i],
+                  'uncertainty': uncertainty_values[i]}
                  for i, f in enumerate(fx)]
         return pairs
 

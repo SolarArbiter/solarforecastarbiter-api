@@ -283,9 +283,10 @@ def filter_form_fields(prefix, form_data):
     list
         List of all values where the corresponding key began with prefix.
     """
-    return [form_data[key]
-            for key in form_data.keys()
-            if key.startswith(prefix)]
+    values = [form_data[key]
+              for key in form_data.keys()
+              if key.startswith(prefix)]
+    return [None if v == 'null' else v for v in values]
 
 
 def parse_timedelta(data_dict, key_root):

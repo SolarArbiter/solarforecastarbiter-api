@@ -173,16 +173,25 @@ ul.data-metadata-fields{
 }
 
 /* Forms */
-li.object-pair {
+div.object-pair {
   list-style: none;
-  padding-right: 1em;
+  padding: .5em 1em;
   position: relative;
+  border: 1px solid #333;
+  border-radius: 5px;
+  margin-bottom: .5em;
 }
-ul.object-pair-list{
+div.object-pair-label{
+    font-size: 16px;
+}
+div.object-pair-list{
   padding-left: 0;
+  margin-bottom: 1em;
 }
 a.object-pair-delete-button{
-    top: 50%;
+    position: absolute;
+    top: 5px;
+    right: 20px;
     color: #A00 !important;
 }
 .form-group{
@@ -545,4 +554,12 @@ th.selection-column{
 @keyframes spinner {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+#form-errors .alert{
+    list-style: none;
+}
+.warning-message{
+    font-weight: bold;
+    color: #A11;
 }
