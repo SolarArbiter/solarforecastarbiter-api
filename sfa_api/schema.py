@@ -8,7 +8,13 @@ from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
     UncertaintyValidator)
 from solarforecastarbiter.datamodel import (
-    ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_METRICS)
+    ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
+    ALLOWED_EVENT_METRICS)
+
+
+ALLOWED_METRICS = {}
+ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
+ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
 
 
 class ISODateTime(ma.AwareDateTime):
