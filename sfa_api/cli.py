@@ -92,7 +92,14 @@ def devserver(port, config_name):
 @cli.command()
 @verbose_opt
 @click.argument('config_file')
-def scheduled_worker(verbose, config_file):
+@click.option('--worker-ttl', default=420,
+              help='The timeout for the worker monitoring process')
+@click.option(
+    '--job-monitoring-interval', default=30,
+    help='The timeout for an individual job running in a work-horse process'
+)
+def scheduled_worker(
+        verbose, config_file, worker_ttl, job_monitoring_interval):
     """
     Run an RQ worker for use with scheduled jobs, with config loaded
     from CONFIG_FILE.
@@ -108,7 +115,9 @@ def scheduled_worker(verbose, config_file):
         worker_loglevel = _get_log_level(
             app.config, verbose, key='WORKER_LOG_LEVEL')
         _setup_logging(_get_log_level(app.config, verbose))
-        w = Worker(queue, connection=queue.connection)
+        w = Worker(queue, connection=queue.connection,
+                   default_worker_ttl=worker_ttl,
+                   job_monitoring_interval=job_monitoring_interval)
         w.work(logging_level=worker_loglevel)
 
 
