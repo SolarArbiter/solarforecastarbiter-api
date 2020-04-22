@@ -535,6 +535,9 @@ th.selection-column{
     word-break: break-word;
 }
 
+table.obsfx-table td{
+    font-size: .75rem;
+}
 .plot-attribute-wrapper .plot-attribute-wrapper.loading-plots::after{
     animation: 1.5s linear infinite spinner;
     animation-play-state: inherit;
