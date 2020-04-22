@@ -430,7 +430,7 @@ EVENT_VARIABLE = copy_update(VALID_FORECAST_JSON, 'variable', 'event')
     (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
                    'set to \'event\'."]}')),
 ])
-def test_observation_post_bad_event(api, payload, message):
+def test_forecast_post_bad_event(api, payload, message):
     r = api.post('/forecasts/single/',
                  base_url=BASE_URL,
                  json=payload)
