@@ -503,7 +503,7 @@ class ForecastPostSchema(ma.Schema):
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates_schema
-    def validate_id(self, data, **kwargs):
+    def validate_forecast(self, data, **kwargs):
         if (
                 data.get('site_id') is not None and
                 data.get('aggregate_id') is not None
