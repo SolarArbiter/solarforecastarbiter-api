@@ -440,3 +440,21 @@ def test_get_observation_timerange_new(api, new_observation):
     data = r.get_json()
     assert data['min_timestamp'] is None
     assert data['max_timestamp'] is None
+
+
+EVENT_LABEL = copy_update(VALID_OBS_JSON, 'interval_label', 'event')
+EVENT_VARIABLE = copy_update(VALID_OBS_JSON, 'variable', 'event')
+
+
+@pytest.mark.parametrize('payload,message', [
+    (EVENT_VARIABLE, (f'{{"events":["Both interval_label and variable must be '
+                      'set to \'event\'."]}')),
+    (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
+                   'set to \'event\'."]}')),
+])
+def test_observation_post_bad_event(api, payload, message):
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
