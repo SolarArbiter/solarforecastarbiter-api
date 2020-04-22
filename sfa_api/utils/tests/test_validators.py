@@ -91,3 +91,20 @@ def test_uncertainty_validator(valid):
 def test_uncertainty_validator_errors(invalid):
     with pytest.raises(ValidationError):
         validators.UncertaintyValidator()(invalid)
+
+
+@pytest.mark.parametrize("data", [
+    {'variable': 'event', 'interval_label': 'event'},
+    {'variable': 'notevent', 'interval_label': 'notevent'},
+])
+def test_validate_if_event(data):
+    validators.validate_if_event({}, data)
+
+
+@pytest.mark.parametrize("data", [
+    {'variable': 'event', 'interval_label': 'notevent'},
+    {'variable': 'notevent', 'interval_label': 'event'},
+])
+def test_validate_if_event_error(data):
+    with pytest.raises(ValidationError):
+        validators.validate_if_event({}, data)

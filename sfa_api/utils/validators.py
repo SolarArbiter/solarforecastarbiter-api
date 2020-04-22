@@ -96,3 +96,33 @@ class UncertaintyValidator(Validator):
                             "Unvertainty percentage must be greater than or "
                             "equal to 0.0.")
         return value
+
+
+def validate_if_event(schema, data, **kwargs):
+    """Checks for an event variable or interval label and ensures they are
+    the same.
+
+    This function is in the form of a marshmallow schema-level validator, which
+    is typically implemented as a decorated method but is instead placed here
+    to allow reuse.
+
+    Parameters
+    ----------
+    schema: marshmallow.Schema
+        The schema to validate.
+    data: dict
+        The data being used to instantiate the schema class.
+
+    Raises
+    ------
+    marshmallow.ValidationError
+        If either `variable` or `interval_label` are set to 'event' and the
+        other does not match.
+    """
+    variable = data.get('variable')
+    interval_label = data.get('interval_label')
+    if(variable == 'event' or interval_label == 'event'):
+        if (variable != interval_label):
+            raise ValidationError({
+                'events': ["Both interval_label and variable must be set to "
+                           "'event'."]})

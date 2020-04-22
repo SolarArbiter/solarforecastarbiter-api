@@ -418,3 +418,21 @@ def test_get_forecast_timerange_404_obsid(api, observation_id):
     r = api.get(f'/forecasts/single/{observation_id}/values/timerange',
                 base_url=BASE_URL)
     assert r.status_code == 404
+
+
+EVENT_LABEL = copy_update(VALID_FORECAST_JSON, 'interval_label', 'event')
+EVENT_VARIABLE = copy_update(VALID_FORECAST_JSON, 'variable', 'event')
+
+
+@pytest.mark.parametrize('payload,message', [
+    (EVENT_VARIABLE, (f'{{"events":["Both interval_label and variable must be '
+                      'set to \'event\'."]}')),
+    (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
+                   'set to \'event\'."]}')),
+])
+def test_forecast_post_bad_event(api, payload, message):
+    r = api.post('/forecasts/single/',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'

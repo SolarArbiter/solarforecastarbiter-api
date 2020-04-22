@@ -6,7 +6,7 @@ import pytz
 from sfa_api import spec, ma
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
-    UncertaintyValidator)
+    UncertaintyValidator, validate_if_event)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS)
@@ -334,6 +334,10 @@ class ObservationPostSchema(ma.Schema):
         required=True)
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
+    @validates_schema
+    def validate_observation(self, data, **kwargs):
+        validate_if_event(self, data, **kwargs)
+
 
 @spec.define_schema('ObservationMetadata')
 class ObservationSchema(ObservationPostSchema):
@@ -499,7 +503,7 @@ class ForecastPostSchema(ma.Schema):
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates_schema
-    def validate_id(self, data, **kwargs):
+    def validate_forecast(self, data, **kwargs):
         if (
                 data.get('site_id') is not None and
                 data.get('aggregate_id') is not None
@@ -513,6 +517,7 @@ class ForecastPostSchema(ma.Schema):
         ):
             raise ValidationError(
                 "One of site_id or aggregate_id must be provided")
+        validate_if_event(self, data, **kwargs)
 
 
 @spec.define_schema('ForecastMetadata')
