@@ -8,7 +8,13 @@ from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
     UncertaintyValidator)
 from solarforecastarbiter.datamodel import (
-    ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS)
+    ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
+    ALLOWED_EVENT_METRICS)
+
+
+ALLOWED_METRICS = {}
+ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
+ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
 
 
 class ISODateTime(ma.AwareDateTime):
@@ -31,7 +37,7 @@ class ISODateTime(ma.AwareDateTime):
 # variable: units we just want the variable names here
 VARIABLES = ALLOWED_VARIABLES.keys()
 
-ALLOWED_REPORT_METRICS = list(ALLOWED_DETERMINISTIC_METRICS.keys())
+ALLOWED_REPORT_METRICS = list(ALLOWED_METRICS.keys())
 ALLOWED_REPORT_CATEGORIES = list(ALLOWED_CATEGORIES.keys())
 INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
