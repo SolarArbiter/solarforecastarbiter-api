@@ -138,7 +138,16 @@ class ReportForm(BaseView):
         try:
             report_id = reports.post_metadata(api_payload)
         except DataRequestException as e:
-            return super().get(form_data=api_payload, errors=e.errors)
+            if e.status_code == 404:
+                errors = {
+                    '404': [('You do not have permission to create '
+                             'reports. You may need to request '
+                             'permissions from your organization '
+                             'administrator.')]
+                }
+            else:
+                errors = e.errors
+            return super().get(form_data=api_payload, errors=errors)
         return redirect(url_for(
             'data_dashboard.report_view',
             uuid=report_id,
