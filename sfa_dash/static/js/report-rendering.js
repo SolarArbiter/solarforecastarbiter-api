@@ -91,7 +91,7 @@ function humanReadableLabel(type, label){
      * labels to their human-friendly versions.
      */
     if (type == 'Metric'){
-        return deterministic_metrics[label];
+        return all_metrics[label];
     } else if (type == 'Category'){
         return metric_categories[label];
     } else {

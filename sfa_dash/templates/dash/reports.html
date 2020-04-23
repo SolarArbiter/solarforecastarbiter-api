@@ -2,7 +2,7 @@
 {% block content %}
 <div class="tools {{ table_type }}-tools mt-1">
   <input type="text" placeholder="Search" class="search">
-  <a role="button" class="btn btn-primary btn-sm" href="/reports/create">Create new Report</a>
+  <a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_report')}}">Create new Report</a>
 </div> 
 {% include "sections/notifications.html" %}
 <table class="reports-table table results">

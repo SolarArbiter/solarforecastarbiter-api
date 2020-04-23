@@ -137,7 +137,9 @@ $(document).ready(function() {
         variables = new Set();
         for (fx in page_data['forecasts']){
             var new_var = page_data['forecasts'][fx].variable;
-            if (!current_units || variable_unit_map[new_var] == current_units){
+            if (!current_units ||
+                variable_unit_map[new_var] == current_units ||
+                !variable_unit_map[new_var]){
                 variables.add(page_data['forecasts'][fx].variable);
             }
         }
@@ -606,7 +608,9 @@ $(document).ready(function() {
                     .attr('data-interval-length', this.interval_length)
                     .attr('data-variable', this.variable));
         });
-        $.each(page_data['forecasts'], function(){
+        var nonevent_forecasts = page_data['forecasts'].filter(
+            f => f.variable != 'event');
+        $.each(nonevent_forecasts, function(){
             forecast_select.append($('<option></option>')
                     .html(this.name)
                     .val(this.forecast_id)
@@ -616,7 +620,7 @@ $(document).ready(function() {
                     .attr('data-interval-length', this.interval_length)
                     .attr('data-variable', this.variable));
         });
-        $.each(page_data['forecasts'], function(){
+        $.each(nonevent_forecasts, function(){
             ref_forecast_select.append($('<option></option>')
                     .html(this.name)
                     .val(this.forecast_id)
@@ -705,12 +709,6 @@ $(document).ready(function() {
                     ref_text = selected_reference_forecast.text;
                     ref_id = selected_reference_forecast.value;
                 }
-                // try to parse deadband values TODO
-                // try{
-                //     deadband_values = parseDeadband();
-                // }catch(error){
-                //     return;
-                // }
                 pair = addPair('aggregate',
                                selected_aggregate.text,
                                selected_aggregate.value,

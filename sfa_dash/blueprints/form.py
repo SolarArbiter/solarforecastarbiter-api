@@ -459,8 +459,14 @@ forms_blp.add_url_rule('/forecasts/single/<uuid>/upload',
 forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_cdf_forecast_data',
                                                     data_type='cdf_forecast'))
-forms_blp.add_url_rule('/reports/create',
-                       view_func=ReportForm.as_view('create_report'))
+forms_blp.add_url_rule('/reports/deterministic/create',
+                       view_func=ReportForm.as_view(
+                           'create_report',
+                           report_type='deterministic'))
+forms_blp.add_url_rule('/reports/event/create',
+                       view_func=ReportForm.as_view(
+                           'create_event_report',
+                           report_type='event'))
 forms_blp.add_url_rule('/aggregates/create',
                        view_func=AggregateForm.as_view(
                            'create_aggregate'))

@@ -7,6 +7,7 @@
 <script>
     var metric_categories = JSON.parse('{{ metric_categories | tojson }}');
     var deterministic_metrics = JSON.parse('{{ deterministic_metrics | tojson }}');
+    var all_metrics = JSON.parse('{{ all_metrics | tojson }}');
 </script>
 <script src="/static/js/report-rendering.js"></script>
 {% endblock %}

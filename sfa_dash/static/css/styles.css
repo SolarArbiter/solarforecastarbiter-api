@@ -566,3 +566,30 @@ table.obsfx-table td{
     font-weight: bold;
     color: #A11;
 }
+
+ul.report-menu{
+    list-style: none;
+    padding: 0;
+    background-color: ;
+    border-bottom: 1px solid #dee2e6;
+}
+ul.report-menu li{
+    display: inline-block;
+    padding: .5em;
+}
+
+li.report-menu-item.report-menu-label{
+    font-weight: bold;
+}
+
+li.report-menu-item.active{
+    border-color: #dee2e6 #dee2e6 #fff #dee2e6;
+    border-style: solid;
+    border-width: 1px;
+    background-color: #fff;
+    margin-bottom: -1px;
+}
+
+li.report-menu-item.active a{
+    color: #333;
+}

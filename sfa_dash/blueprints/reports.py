@@ -15,6 +15,9 @@ from sfa_dash.blueprints.util import filter_form_fields
 from sfa_dash.errors import DataRequestException
 
 
+ALLOWED_REPORT_TYPES = ['deterministic', 'probabilistic', 'event']
+
+
 class ReportsView(BaseView):
     template = 'dash/reports.html'
 
@@ -30,7 +33,18 @@ class ReportsView(BaseView):
 
 
 class ReportForm(BaseView):
-    template = 'forms/report_form.html'
+    def set_template(self):
+        if self.report_type == 'event':
+            self.template = 'forms/event_report_form.html'
+        else:
+            self.template = 'forms/report_form.html'
+
+    def __init__(self, report_type):
+        if report_type not in ALLOWED_REPORT_TYPES:
+            raise ValueError('Invalid report_type.')
+        else:
+            self.report_type = report_type
+            self.set_template()
 
     def get_pairable_objects(self):
         """Requests the forecasts and observations from
