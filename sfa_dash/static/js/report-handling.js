@@ -246,10 +246,10 @@ $(document).ready(function() {
          */
         var deadbandSelect= $(
             `<div><b>Uncertainty:</b><br>
-             <input type="radio" name="deadband-select" value="null" checked> Ignore Uncertainty.<br>
-             <input type="radio" name="deadband-select" value="observation_uncertainty"> Set deadband to observation uncertainty.<br>
+             <input type="radio" name="deadband-select" value="null" checked> Ignore uncertainty<br>
+             <input type="radio" name="deadband-select" value="observation_uncertainty"> Set deadband to observation uncertainty: <span id="selected-obs-uncertainty">No observation selected</span><br>
              <input type="radio" name="deadband-select" value="user_supplied"> Set deadband to:
-             <input type="number" step="any" min=0.0 max=100.0 name="deadband-value"> &percnt;<br></div>`);
+             <input id="custom-deadband" type="number" step="any" min=0.0 max=100.0 name="deadband-value"> &percnt;<br></div>`);
         // deadbandSelect.find('[name="deadband-value"]')[0].setCustomValidity(
         //     "Must be a value from 0.0 to 100.0");
         var db_wrapper = $('<div class="form-element full-width deadband-select-wrapper"></div>')
@@ -272,12 +272,12 @@ $(document).ready(function() {
             return [val, val];
 
         }else if(source == "null"){
-            return ["Ignore uncertainty.", "null"]
+            return ["Ignore uncertainty", "null"]
         }else if(source == "observation_uncertainty"){
             var obs_id = $('#observation-select').val();
             var obs = searchObjects("observations", obs_id);
             if(obs){
-                obs_uncertainty = obs['uncertainty'].toString();
+                obs_uncertainty = `${obs['uncertainty'].toString()}&percnt;`;
                 return [obs_uncertainty, obs_uncertainty];
             }
         }
@@ -514,16 +514,18 @@ $(document).ready(function() {
                 toHide.attr('hidden', true);
                 // if the current selection is hidden, deselect it
                 if (toHide.filter(':selected').length){
-                    observation_select.val('');
+                    observation_select.val('').change();
                 }
                 if (toHide.length == observations.length){
                     $('#no-observations').removeAttr('hidden');
                 } else {
                     $('#no-observations').attr('hidden', true);
+                    observation_select.val('').change();
                 }
             } else {
                 observations.attr('hidden', true);
                 $('#no-observation-forecast-selection').removeAttr('hidden');
+                observation_select.val('').change();
             }
         }
 
@@ -589,6 +591,16 @@ $(document).ready(function() {
         forecast_select.change(filterObservations);
         forecast_select.change(filterAggregates);
         forecast_select.change(filterReferenceForecasts);
+        observation_select.change(function(){
+            obs_id = $(this).val();
+            if (obs_id){
+                observation = searchObjects('observations', obs_id);
+                uncertainty = observation['uncertainty'];
+                $('#selected-obs-uncertainty').html(`${uncertainty}&percnt;`);
+            } else {
+                $('#selected-obs-uncertainty').html("No observation selected");
+            }
+        });
 
         // insert options from page_data into the select elements
         $.each(page_data['sites'], function(){

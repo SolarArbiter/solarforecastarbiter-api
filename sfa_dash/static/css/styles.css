@@ -593,3 +593,6 @@ li.report-menu-item.active{
 li.report-menu-item.active a{
     color: #333;
 }
+input#custom-deadband{
+    width: 5rem;
+}
