@@ -12,7 +12,7 @@
   <li class="metadata-field"><span class="data-metadata-label">Metrics:</span>
       <ul>
         {% for metric in metadata_object['report_parameters']['metrics'] %}
-        <li>{{ deterministic_metrics[metric] }}</li>
+        <li>{{ all_metrics[metric] }}</li>
         {% endfor %}
       </ul>
 

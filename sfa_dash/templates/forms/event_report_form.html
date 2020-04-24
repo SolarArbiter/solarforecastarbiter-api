@@ -62,7 +62,7 @@
      </div>
      <div class="form-element">
        <label>Quality Flag Filters</label><br>
-       <p>Data flagged with any checked quality flags is excluded from analysis. </p>
+       <p>Observation data flagged with any of the checked quality flags is excluded from analysis. The corresponding forecast data is also excluded.</p>
        {% for flag, label in quality_flags.items() %}
        {% if flag not in ['CLEARSKY EXCEEDED'] %}
        <input type="checkbox" name="quality_flags" value="{{ flag }}" {% if form_data %}{% if flag in form_data['report_parameters']['filters']['quality_flags'] %}checked{% endif %}{%endif %}> {{ label }}<br/>

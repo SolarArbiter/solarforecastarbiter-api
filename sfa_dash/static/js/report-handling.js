@@ -7,23 +7,20 @@ $(document).ready(function() {
          * Disables and de-selects the forecast skill metric if not all of the
          * object pairs have reference foreasts.
          */
-        var nulls_exist = $('.reference-forecast-value').map(function(){return $(this).val()}).get().some(x=>x=='null');
+        var reference_exist = $('.reference-forecast-value').map(function(){
+            return $(this).val();
+        }).get().some(x=>x!='null');
         var skill = $('[name=metrics][value=s]'); 
-        if(nulls_exist){
+        if (reference_exist){
+            // show skill remove warning
+            $('#reference-warning').remove();
+        } else {
             // hide skill, insert warning
-            skill.attr('disabled', true);
-            if($('#reference-warning').length == 0){
+            if ($('#reference-warning').length == 0){
                 $(`<span id="reference-warning" class="warning-message">
                    (Requires reference forecast selection)</span>`
                  ).insertAfter(skill.next());
             }
-            if(skill.is(':checked')){
-                skill.removeAttr('checked');
-            }
-        }else{
-            // show skill remove warning
-            skill.removeAttr('disabled');
-            $('#reference-warning').remove();
         }
     }
     function searchObjects(object_type, object_id){
@@ -264,23 +261,23 @@ $(document).ready(function() {
          * valid string value.
          */
         var source = $('[name="deadband-select"]:checked').val();
-        if(source == "user_supplied"){
+        if (source == "null"){
+            return ["Ignore uncertainty", "null"]
+        } else if (source == "user_supplied"){
             var val = $('[name="deadband-value"]').val();
             if(!$('[name="deadband-value"]')[0].reportValidity()){
                 throw 'Deadband out of range';
             }
-            return [val, val];
-
-        }else if(source == "null"){
-            return ["Ignore uncertainty", "null"]
-        }else if(source == "observation_uncertainty"){
+            
+        } else if (source == "observation_uncertainty"){
             var obs_id = $('#observation-select').val();
             var obs = searchObjects("observations", obs_id);
             if(obs){
-                obs_uncertainty = `${obs['uncertainty'].toString()}&percnt;`;
-                return [obs_uncertainty, obs_uncertainty];
+                var val = obs['uncertainty']
             }
         }
+        var str_val = `${val}&percnt;`
+        return [str_val, val];
     }
 
 
