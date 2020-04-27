@@ -245,11 +245,12 @@ $(curl -s --request POST \\
      --url 'https://solarforecastarbiter.auth0.com/oauth/token' \\
      --header 'content-type: application/json' \\
      --data '{"grant_type": "password", "username": "testing@solarforecastarbiter.org", "password": "Thepassword123!", "audience": "https://api.solarforecastarbiter.org", "client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}' \\
-| jq '.["access_token"]' | sed 's/"//g')
+| jq -r '.["access_token"]' )
 
 curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
-     --url "https://api.solarforecastarbiter.org/observations"
+     --url "https://api.solarforecastarbiter.org/observations/"
 ```
+The jq utility can be obtained at https://stedolan.github.io/jq/.
 
 For more about how to obtain a JWT using the Resource Owner Password flow, see
 [What is the OAuth2 password grant](https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant)
