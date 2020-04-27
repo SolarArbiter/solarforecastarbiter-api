@@ -40,13 +40,6 @@ class AdminView(BaseView):
             raise ValueError('Invalid object_type')
         return api_handler
 
-    def current_user(self):
-        """Get user organization from the api
-        """
-        user_request = users.current()
-        user = user_request.json()
-        return user
-
     def filter_by_org(self, object_list, org_key='organization'):
         """Filter function for comparing the organization of an
         object to hide roles/permissions/objects from view so that
@@ -417,8 +410,6 @@ class RolePermissionRemoval(AdminView):
             permission = permissions.get_metadata(permission_id)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
-        perm_req = permissions.get_metadata(permission_id)
-        permission = perm_req.json()
         return render_template(self.template,
                                role=role,
                                perm=permission,
@@ -677,10 +668,10 @@ class PermissionObjectRemoval(AdminView):
         """Remove an object from a permission by passing the
         request through to the API
         """
-        delete_request = permissions.remove_object(uuid, object_id)
-        if delete_request.status_code != 204:
-            errors = delete_request.json()
-            return self.get(uuid, object_id, errors=errors)
+        try:
+            permissions.remove_object(uuid, object_id)
+        except DataRequestException as e:
+            return self.get(uuid, object_id, errors=e.errors)
         return redirect(url_for('admin.permission_view', uuid=uuid))
 
 
