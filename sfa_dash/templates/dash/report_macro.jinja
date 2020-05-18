@@ -1,0 +1,46 @@
+{% import "data/metadata/meta_macro.jinja" as meta_macro %}
+{% macro report_popout(report) %}
+<div class="report-metadata-popup">
+<ul class="data-metadata-fields col-md-6 col-sm-12">
+      {{ meta_macro.li('Name', report['report_parameters']['name']) }}
+      {{ meta_macro.li('Organization', report['provider']) }}
+      {{ meta_macro.li('Status', report['status']) }}
+</ul>
+<ul class="data-metadata-fields col-md-6 col-sm-12">
+  {{ meta_macro.li('Start', report['report_parameters']['start'] | format_datetime)}}
+  {{ meta_macro.li('End', report['report_parameters']['end'] | format_datetime)}}
+  <li class="metadata-field"><span class="data-metadata-label">Metrics:</span>
+      <ul>
+        {% for metric in report['report_parameters']['metrics'] %}
+        <li>{{ all_metrics[metric] }}</li>
+        {% endfor %}
+      </ul>
+
+  </li>
+</ul>
+<ul class="data-metadata-fields col-md-6 col-sm-12">
+  <li class="metadata-field"><span class="data-metadata-label">Metric Categories:</span>
+  <ul>
+    {% for category in report['report_parameters']['categories'] %}
+    <li>{{ metric_categories[category]  }}</li>
+    {% endfor %}
+  </ul>
+  </li>
+</ul>
+<ul class="data-metadata-fields col-md-6 col-sm-12">
+  <li class="metadata-field"><span class="data-metadata-label">Filters:</span>
+      <ul>
+        {% for report_filter in report['report_parameters']['filters'] %}
+        {% for filter_name, values in report_filter.items() %}
+        <li class="metadata-field"><span class="data-metadata-label">{{ filter_name }}</span>
+          <ul>
+            {% for value in values %}
+            <li>{{ value }}</li>
+            {% endfor %}
+        {% endfor %}
+        {% endfor %}
+      </ul>
+  </li>
+</ul>
+</div>
+{% endmacro %}
