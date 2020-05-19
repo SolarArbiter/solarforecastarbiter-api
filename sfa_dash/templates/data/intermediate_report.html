@@ -1,5 +1,15 @@
 {% if report_template is defined %}
 {% extends report_template %}
+{% block report_title %}
+<div class="report-header">
+{% if report_name is defined %}
+<h1 id="report-title">{{ report_name }}</h1>
+{% else %}
+<h1 id="report-title">{{ report['report_parameters']['name'] }}</h1>
+{% endif %}
+{% if is_allowed('update') %}<a class="btn btn-primary btn-sm" href="{{url_for('forms.recompute_report', uuid=report['report_id'])}}">Recompute report</a>{% endif %}
+</div>
+{% endblock %}
 {% block download %}
 {% set report_url = dash_url + '/reports/'+ report['report_id'] %}
 <p>

@@ -10,7 +10,7 @@ from sfa_dash.blueprints.aggregates import (AggregateForm,
                                             AggregateObservationAdditionForm,
                                             AggregateObservationRemovalForm)
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.reports import ReportForm
+from sfa_dash.blueprints.reports import ReportForm, RecomputeReportView
 from sfa_dash.errors import DataRequestException
 
 
@@ -483,3 +483,6 @@ forms_blp.add_url_rule('/aggregates/<uuid>/forecasts/cdf/create',
                        view_func=CreateAggregateForecastForm.as_view(
                            'create_aggregate_cdf_forecast_group',
                            data_type='cdf_forecast_group'))
+forms_blp.add_url_rule('/reports/<uuid>/recompute',
+                       view_func=RecomputeReportView.as_view(
+                           'recompute_report'))

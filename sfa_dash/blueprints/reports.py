@@ -1,6 +1,5 @@
 from flask import (request, redirect, url_for, render_template, send_file,
                    current_app)
-from requests.exceptions import HTTPError
 
 from solarforecastarbiter.datamodel import Report, RawReport
 from solarforecastarbiter.io.utils import load_report_values
@@ -304,22 +303,23 @@ class DeleteReportView(BaseView):
             # the confirmation page, redirect to confirm.
             return redirect(confirmation_url)
         try:
-            delete_request = reports.delete(uuid)
-        except HTTPError as e:
-            if e.response.status_code == 400:
-                # Redirect and display errors if the delete request
-                # failed
-                response_json = delete_request.json()
-                errors = response_json['errors']
-            elif e.response.status_code == 404:
-                errors = {
-                    "404": ['The requested object could not be found.']
-                }
-            else:
-                errors = {
-                    "error": ["Could not complete the requested action."]
-                }
-            return self.get(uuid, errors=errors)
+            reports.delete(uuid)
+        except DataRequestException as e:
+            return self.get(uuid, errors=e.errors)
         return redirect(url_for(
             f'data_dashboard.reports',
             messages={'delete': ['Success']}))
+
+
+class RecomputeReportView(BaseView):
+    """View to recompute a report. Requests a recompute and redirects the user
+    to the reports listing view.
+    """
+    def get(self, uuid):
+        try:
+            reports.recompute(uuid)
+        except DataRequestException as e:
+            return ReportView().get(uuid, errors=e.errors)
+        return ReportView().get(
+            uuid,
+            messages={'report': ['recomputed successfully']})

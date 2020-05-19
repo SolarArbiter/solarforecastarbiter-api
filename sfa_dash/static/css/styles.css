@@ -424,13 +424,7 @@ th.selection-column{
 }
 /* report stuff */
 
-#report-block h1:before, #report-block h2:before, #report-block h3:before{
-   display: block;
-   content: "";
-   margin-top: -160px;
-   height: 160px;
-   visibility: hidden;
-}
+
 #report-block h1, #report-block h2, #report-block h3{
     margin-top: 2rem;
     margin-bottom: .5rem;
@@ -627,4 +621,9 @@ a.report-details-closer{
 }
 .reports-table-row:nth-child(n+3) {
     width: fit-content;
+}
+div.report-header{
+    padding-bottom: .5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
 }

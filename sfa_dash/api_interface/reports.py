@@ -19,3 +19,8 @@ def post_metadata(report_dict):
 def delete(report_id):
     delete = delete_request(f'/reports/{report_id}')
     return delete
+
+
+def recompute(report_id):
+    recompute = get_request(f'/reports/{report_id}/recompute')
+    return recompute
