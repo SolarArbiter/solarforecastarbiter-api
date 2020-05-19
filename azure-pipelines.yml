@@ -51,8 +51,8 @@ jobs:
     - script: docker wait solararbitersolarforecastarbiter-dashboard_migrate_schemas_1
       displayName: 'Wait for MySQL'
 
-    - script: pytest sfa_dash
+    - script: cd / && pytest --pyargs sfa_dash
       displayName: 'pytest'
 
-    - script: flake8 sfa_dash
+    - script: flake8 $(Pipeline.Workspace)/sfa_dash
       displayName: 'flake8'

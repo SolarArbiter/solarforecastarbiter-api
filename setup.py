@@ -11,6 +11,7 @@ setup(
     author='Solar Forecast Arbiter Team',
     author_email='info@solarforecastarbiter.org',
     packages=find_packages(),
+    include_package_data=True,
     install_requires=[
         'flask',
         'requests',

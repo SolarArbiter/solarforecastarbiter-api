@@ -1,2 +1,22 @@
+include MANIFEST.in
+include LICENSE
+include README.md
+include setup.py
+
+# include most everything under sfa_dash by default
+# better to package too much than not enough
+graft sfa_dash
+
+global-exclude __pycache__
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude *.so
+global-exclude *~
+global-exclude .DS_Store
+global-exclude .git*
+global-exclude \#*
+global-exclude .ipynb_checkpoints
+
 include versioneer.py
 include sfa_dash/_version.py
