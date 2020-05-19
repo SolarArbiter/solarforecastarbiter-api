@@ -366,7 +366,7 @@ class UploadForm(BaseView):
     def render_metadata_section(self, metadata):
         return render_template(self.metadata_template, **metadata)
 
-    def get(self, uuid):
+    def get(self, uuid, **kwargs):
         temp_args = {}
         try:
             metadata_dict = self.api_handle.get_metadata(uuid)
@@ -377,7 +377,7 @@ class UploadForm(BaseView):
         else:
             temp_args.update(
                 {'metadata': self.render_metadata_section(metadata_dict)})
-        return render_template(self.template, uuid=uuid, **temp_args)
+        return render_template(self.template, uuid=uuid, **temp_args, **kwargs)
 
     def post(self, uuid):
         errors = {}
@@ -406,10 +406,11 @@ class UploadForm(BaseView):
                             'excel.'],
                     }
                 else:
-                    post_request = self.api_handle.post_values(
-                        uuid,
-                        decoded_data,
-                        json=False)
+                    try:
+                        self.api_handle.post_values(uuid, decoded_data,
+                                                    json=False)
+                    except DataRequestException as e:
+                        errors = e.errors
             elif posted_file.mimetype == 'application/json':
                 try:
                     posted_data = json.load(posted_file)
@@ -418,19 +419,17 @@ class UploadForm(BaseView):
                         'json': ["Error parsing JSON file."]
                     }
                 else:
-                    post_request = self.api_handle.post_values(uuid,
-                                                               posted_data)
+                    try:
+                        self.api_handle.post_values(uuid, posted_data)
+                    except DataRequestException as e:
+                        errors = e.errors
             else:
                 errors = {
                     'mime-type': [
                         f'Unsupported file type {posted_file.mimetype}.']
                 }
         if errors:
-            return render_template(self.template, uuid=uuid, errors=errors)
-        try:
-            post_request
-        except DataRequestException as e:
-            return render_template(self.template, uuid=uuid, errors=e.errors)
+            return self.get(uuid=uuid, errors=errors)
         else:
             return redirect(url_for(f'data_dashboard.{self.data_type}_view',
                                     uuid=uuid))
