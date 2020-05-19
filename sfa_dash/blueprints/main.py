@@ -298,6 +298,10 @@ data_dash_blp.add_url_rule(
     '/reports/<uuid>/download/html',
     view_func=DownloadReportView.as_view(
         'download_report_html', format_='html'))
+data_dash_blp.add_url_rule(
+    '/reports/<uuid>/download/pdf',
+    view_func=DownloadReportView.as_view(
+        'download_report_pdf', format_='pdf'))
 
 
 # Deletion forms

@@ -5,7 +5,7 @@ from requests.exceptions import HTTPError
 from solarforecastarbiter.datamodel import Report, RawReport
 from solarforecastarbiter.io.utils import load_report_values
 from solarforecastarbiter.reports.template import (
-    get_template_and_kwargs, render_html)
+    get_template_and_kwargs, render_html, render_pdf)
 
 from sfa_dash.api_interface import (observations, forecasts, sites, reports,
                                     aggregates)
@@ -239,19 +239,28 @@ class DownloadReportView(ReportView):
         except DataRequestException as e:
             errors = {'errors': e.errors}
             return ReportView().get(uuid, errors=errors)
+
+        # don't do the work of making a report if the format is incorrect
+        if self.format_ not in ('html', 'pdf'):
+            raise ValueError(
+                'Only html and pdf report downloads are currently supported')
+
+        fname = self.metadata['report_parameters']['name'].replace(
+                ' ', '_')
+        report_object = build_report(self.metadata)
         # render to right format
         if self.format_ == 'html':
-            fname = self.metadata['report_parameters']['name'].replace(
-                ' ', '_')
-            report_object = build_report(self.metadata)
             bytes_out = render_html(
                 report_object,
                 request.url_root.rstrip('/'),
                 with_timeseries=True, body_only=False
             ).encode('utf-8')
-        else:
-            raise ValueError(
-                'Only html report downloads is currently supported')
+        elif self.format_ == 'pdf':
+            bytes_out = render_pdf(
+                report_object,
+                request.url_root.rstrip('/'),
+            )
+
         out = check_sign_zip(bytes_out, fname + f'.{self.format_}',
                              current_app.config['GPG_KEY_ID'],
                              current_app.config['GPG_PASSPHRASE_FILE'])

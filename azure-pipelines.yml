@@ -36,7 +36,7 @@ jobs:
   
     - script: |
         echo "##vso[task.setvariable variable=mysql.host]127.0.0.1"
-        echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter_dashboard_mysql_1 | rev | cut -d':' -f 1 | rev)"
+        echo "##vso[task.setvariable variable=mysql.port]$(docker port solararbitersolarforecastarbiter-dashboard_mysql_1 | rev | cut -d':' -f 1 | rev)"
       displayName: 'Set env variables'
 
     - script: |
@@ -48,7 +48,7 @@ jobs:
     - script: pip install .
       displayName: 'Install sfa_dash'
     
-    - script: docker wait solararbitersolarforecastarbiter_dashboard_migrate_schemas_1
+    - script: docker wait solararbitersolarforecastarbiter-dashboard_migrate_schemas_1
       displayName: 'Wait for MySQL'
 
     - script: pytest sfa_dash

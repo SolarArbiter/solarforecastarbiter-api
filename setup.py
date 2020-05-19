@@ -7,7 +7,7 @@ setup(
     cmdclass=versioneer.get_cmdclass(),
     description=('Dashboard for interacting with Solar Forecast Arbiter'
                  'Backend'),
-    url='https://github.com/SolarArbiter/solarforecastarbiter_dashboard',
+    url='https://github.com/SolarArbiter/solarforecastarbiter-dashboard',
     author='Solar Forecast Arbiter Team',
     author_email='info@solarforecastarbiter.org',
     packages=find_packages(),

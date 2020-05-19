@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/solararbiter/solarforecastarbiter/_apis/build/status/SolarArbiter.solarforecastarbiter_dashboard?branchName=master)](https://dev.azure.com/solararbiter/solarforecastarbiter/_build/latest?definitionId=3&branchName=master)
+[![Build Status](https://dev.azure.com/solararbiter/solarforecastarbiter/_apis/build/status/SolarArbiter.solarforecastarbiter-dashboard?branchName=master)](https://dev.azure.com/solararbiter/solarforecastarbiter/_build/latest?definitionId=3&branchName=master)
 
 ## Contents
 - [Introduction](#solar-forecast-arbiter-dashboard)
@@ -8,7 +8,7 @@
 # Solar Forecast Arbiter Dashboard
 
 The [Solar Forecast Arbiter dashboard](https://dashboard.solarforecastarbiter.org)
-if the [Flask](http://flask.pocoo.org/) based web front-end to the 
+if the [Flask](http://flask.pocoo.org/) based web front-end to the
 [Solar Forecast Arbiter Framework](https://solarforecastarbiter.org/documentation/framework/).
 
 ## Installation
