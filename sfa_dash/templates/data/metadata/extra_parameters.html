@@ -1,0 +1,12 @@
+{% if extra_parameters | length %}
+<div class="data-metadata-extra-parameters-field container">
+  <a role="button" class="collapser-button collapsed" data-toggle="collapse" data-target=".extra-params-wrapper">Extra parameters</a>
+  <div class="extra-params-wrapper collapse">
+    {# Due to the loose format of extra parameters, ensure that autoescaping is
+       enabled in this block #}
+    {% autoescape true %}
+    <pre>{{ extra_parameters }}</pre>
+    {% endautoescape %}
+  </div>
+</div>
+{% endif %}

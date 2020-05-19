@@ -333,7 +333,7 @@ $(document).ready(function() {
     pair_index = 0;
     // call the function to initialize the pair creation widget and insert it into the DOM
     pair_selector = createPairSelector();
-    pair_control_container.append($('<a role="button" class="full-width object-pair-button collapsed" data-toggle="collapse" data-target=".pair-selector-wrapper">Create Forecast Evaluation pairs</a>'));
+    pair_control_container.append($('<a role="button" class="full-width collapser-button collapsed" data-toggle="collapse" data-target=".pair-selector-wrapper">Create Forecast Evaluation pairs</a>'));
     pair_control_container.append(pair_selector);
     registerDatetimeValidator('period-start');
     registerDatetimeValidator('period-end')
