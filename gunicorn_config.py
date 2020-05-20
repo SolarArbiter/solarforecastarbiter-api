@@ -1,5 +1,7 @@
+import logging
 from pathlib import Path
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+from gunicorn.glogging import Logger
 
 
 bind = '127.0.0.1:8080'
@@ -20,3 +22,23 @@ def when_ready(server):
 
 def child_exit(server, worker):
     GunicornPrometheusMetrics.mark_process_dead_on_child_exit(worker.pid)
+
+
+class NoKubeFilter(logging.Filter):
+    def filter(record):
+        if (
+            record.args['a'].startswith('kube-probe') and
+            record.args['{X-Forwarded-For}i'] == "-"
+        ):
+            return 0
+        else:
+            return 1
+
+
+class NoKubeLogger(Logger):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.access_log.addFilter(NoKubeFilter)
+
+
+logger_class = NoKubeLogger
