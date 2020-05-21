@@ -25,6 +25,9 @@ class Config(object):
     SFA_API_STATIC_DATA = os.getenv('SFA_API_STATIC_DATA', False)
     # limit requests to 16MB
     MAX_CONTENT_LENGTH = os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
+    JOB_BASE_URL = os.getenv('JOB_BASE_URL', None)
+    REPORT_JOB_TIMEOUT = int(os.getenv('REPORT_JOB_TIMEOUT', 600))
+    VALIDATION_JOB_TIMEOUT = int(os.getenv('VALIDATION_JOB_TIMEOUT', 150))
 
 
 class ProductionConfig(Config):

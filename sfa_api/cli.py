@@ -22,7 +22,7 @@ worker_ttl = click.option(
     help='The timeout for the worker monitoring process'
 )
 job_monitoring_interval = click.option(
-    '--job-monitoring-interval', default=30,
+    '--job-monitoring-interval', default=180,
     help='The timeout for an individual job running in a work-horse process'
 )
 
