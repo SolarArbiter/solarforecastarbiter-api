@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 from gunicorn.glogging import Logger
@@ -14,6 +15,9 @@ keyfile = '/certs/tls.key' if Path('/certs/tls.key').exists() else None
 # date X-Forwarded-For status "status line" response_length "referer" "user agent" request_time (s)  # NOQA
 access_log_format = '%(t)s %({X-Forwarded-For}i)s %(s)s "%(r)s" %(b)s "%(f)s" "%(a)s"  %(L)s'  # NOQA
 accesslog = '-'
+# has the most effect for large observation uploads
+# that can take time to load/validate
+timeout = os.getenv('TIMEOUT', 30)
 
 
 def when_ready(server):

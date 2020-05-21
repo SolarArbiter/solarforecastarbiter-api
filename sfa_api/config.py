@@ -23,6 +23,8 @@ class Config(object):
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', None)
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', None)
     SFA_API_STATIC_DATA = os.getenv('SFA_API_STATIC_DATA', False)
+    # limit requests to 16MB
+    MAX_CONTENT_LENGTH = os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
 
 
 class ProductionConfig(Config):
