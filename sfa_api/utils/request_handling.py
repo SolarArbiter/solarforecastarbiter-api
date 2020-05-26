@@ -4,7 +4,7 @@ import json
 import re
 
 
-from flask import request
+from flask import request, current_app
 import numpy as np
 import pandas as pd
 from solarforecastarbiter.datamodel import Forecast, Site
@@ -162,6 +162,8 @@ def parse_values(decoded_data, mimetype):
         - If the MIME type is not one of 'text/csv', 'application/json',
           or 'application/vnd.ms-excel'
         - If parsing fails, see parse_json or parse_csv for conditions.
+        - If the filed contains more than the maximum allowed number of
+          datapoints.
     """
     if mimetype == 'text/csv' or mimetype == 'application/vnd.ms-excel':
         values = parse_csv(decoded_data)
@@ -170,6 +172,13 @@ def parse_values(decoded_data, mimetype):
     else:
         error = "Unsupported Content-Type or MIME type."
         raise BadAPIRequest(error=error)
+    if values.index.size > current_app.config.get('MAX_POST_DATAPOINTS'):
+        raise BadAPIRequest({
+            'error': ('File exceeds maximum number of datapoints. '
+                      f'{current_app.config.get("MAXIMUM_POST_DATAPOINTS")} '
+                      f'datapoints allowed, {values.index.size} datapoints '
+                      'found in file.')
+        })
     return values
 
 
@@ -229,12 +238,6 @@ def validate_parsable_values():
         decoded_data = request.get_data(as_text=True)
         mimetype = request.mimetype
     value_df = parse_values(decoded_data, mimetype)
-    if value_df.index.size > current_app.config.MAXIMUM_POST_DATAPOINTS:
-        raise BadAPIRequest({
-            'error': ('File exceeds maximum number of datapoints. '
-                      f'{current_app.config.MAXIMUM_POST_DATAPOINTS} '
-                      f'datapoints allowed, {value_df.index.size} datapoints '
-                      'found in file.')
     return value_df
 
 
