@@ -162,7 +162,7 @@ def parse_values(decoded_data, mimetype):
         - If the MIME type is not one of 'text/csv', 'application/json',
           or 'application/vnd.ms-excel'
         - If parsing fails, see parse_json or parse_csv for conditions.
-        - If the filed contains more than the maximum allowed number of
+        - If the file contains more than the maximum allowed number of
           datapoints.
     """
     if mimetype == 'text/csv' or mimetype == 'application/vnd.ms-excel':
