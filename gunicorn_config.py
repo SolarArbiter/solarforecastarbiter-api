@@ -1,5 +1,8 @@
+import logging
+import os
 from pathlib import Path
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+from gunicorn.glogging import Logger
 
 
 bind = '127.0.0.1:8080'
@@ -12,6 +15,9 @@ keyfile = '/certs/tls.key' if Path('/certs/tls.key').exists() else None
 # date X-Forwarded-For status "status line" response_length "referer" "user agent" request_time (s)  # NOQA
 access_log_format = '%(t)s %({X-Forwarded-For}i)s %(s)s "%(r)s" %(b)s "%(f)s" "%(a)s"  %(L)s'  # NOQA
 accesslog = '-'
+# has the most effect for large observation uploads
+# that can take time to load/validate
+timeout = os.getenv('TIMEOUT', 30)
 
 
 def when_ready(server):
@@ -20,3 +26,23 @@ def when_ready(server):
 
 def child_exit(server, worker):
     GunicornPrometheusMetrics.mark_process_dead_on_child_exit(worker.pid)
+
+
+class NoKubeFilter(logging.Filter):
+    def filter(record):
+        if (
+            record.args['a'].startswith('kube-probe') and
+            record.args['{X-Forwarded-For}i'] == "-"
+        ):
+            return 0
+        else:
+            return 1
+
+
+class NoKubeLogger(Logger):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.access_log.addFilter(NoKubeFilter)
+
+
+logger_class = NoKubeLogger

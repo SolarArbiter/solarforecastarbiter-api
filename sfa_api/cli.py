@@ -17,6 +17,14 @@ def cli():
 
 verbose_opt = click.option('-v', '--verbose', count=True,
                            help='Increase logging verbosity')
+worker_ttl = click.option(
+    '--worker-ttl', default=420,
+    help='The timeout for the worker monitoring process'
+)
+job_monitoring_interval = click.option(
+    '--job-monitoring-interval', default=180,
+    help='The timeout for an individual job running in a work-horse process'
+)
 
 
 def _get_log_level(config, verbose, key='LOG_LEVEL'):  # pragma: no cover
@@ -46,8 +54,10 @@ def _setup_logging(level):
 @verbose_opt
 @click.option('-q', '--queues', multiple=True, help='RQ queues',
               default=['default'])
+@worker_ttl
+@job_monitoring_interval
 @click.argument('config_file')
-def worker(verbose, queues, config_file):
+def worker(verbose, queues, worker_ttl, job_monitoring_interval, config_file):
     """
     Run an RQ worker, with config loaded from CONFIG_FILE,
     to process commands on the QUEUES.
@@ -71,9 +81,12 @@ def worker(verbose, queues, config_file):
 
     # will likely want to add prometheus in here somewhere,
     # perhaps as custom worker class
+    # if possible, get len report obj, time range
     red = make_redis_connection(config)
     with Connection(red):
-        w = Worker(queues)
+        w = Worker(queues,
+                   default_worker_ttl=worker_ttl,
+                   job_monitoring_interval=job_monitoring_interval)
         w.work(logging_level=worker_loglevel)
 
 
@@ -92,12 +105,8 @@ def devserver(port, config_name):
 @cli.command()
 @verbose_opt
 @click.argument('config_file')
-@click.option('--worker-ttl', default=420,
-              help='The timeout for the worker monitoring process')
-@click.option(
-    '--job-monitoring-interval', default=30,
-    help='The timeout for an individual job running in a work-horse process'
-)
+@worker_ttl
+@job_monitoring_interval
 def scheduled_worker(
         verbose, config_file, worker_ttl, job_monitoring_interval):
     """

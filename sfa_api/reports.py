@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+from flask import (
+    Blueprint, request, jsonify, make_response, url_for, current_app)
 from flask.views import MethodView
 from marshmallow import ValidationError
 from solarforecastarbiter.io.utils import HiddenToken
@@ -16,6 +17,21 @@ from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
 
 
 REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
+
+
+def enqueue_report(report_id, base_url):
+    alt_base_url = current_app.config.get('JOB_BASE_URL')
+    if alt_base_url is not None:
+        base_url = alt_base_url
+    q = get_queue('reports')
+    q.enqueue(
+        compute_report,
+        HiddenToken(current_access_token),
+        report_id,
+        base_url=base_url,
+        result_ttl=0,
+        job_timeout=current_app.config['REPORT_JOB_TIMEOUT']
+    )
 
 
 class AllReportsView(MethodView):
@@ -85,12 +101,7 @@ class AllReportsView(MethodView):
         response = make_response(report_id, 201)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)
-        q = get_queue('reports')
-        q.enqueue(
-            compute_report,
-            HiddenToken(current_access_token),
-            report_id,
-            base_url=request.url_root.rstrip('/'))
+        enqueue_report(report_id, request.url_root.rstrip('/'))
         return response
 
 
@@ -127,12 +138,7 @@ class RecomputeReportView(MethodView):
         report_perms = storage.get_user_actions_on_object(report_id)
         if 'update' not in report_perms:
             raise StorageAuthError()
-        q = get_queue('reports')
-        q.enqueue(
-            compute_report,
-            HiddenToken(current_access_token),
-            report_id,
-            base_url=request.url_root.rstrip('/'))
+        enqueue_report(report_id, request.url_root.rstrip('/'))
         response = make_response(report_id, 200)
         response.headers['Location'] = url_for('reports.single',
                                                report_id=report_id)

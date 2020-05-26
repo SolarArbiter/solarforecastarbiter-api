@@ -23,6 +23,11 @@ class Config(object):
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', None)
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', None)
     SFA_API_STATIC_DATA = os.getenv('SFA_API_STATIC_DATA', False)
+    # limit requests to 16MB
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    JOB_BASE_URL = os.getenv('JOB_BASE_URL', None)
+    REPORT_JOB_TIMEOUT = int(os.getenv('REPORT_JOB_TIMEOUT', 600))
+    VALIDATION_JOB_TIMEOUT = int(os.getenv('VALIDATION_JOB_TIMEOUT', 150))
 
 
 class ProductionConfig(Config):

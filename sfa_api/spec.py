@@ -311,7 +311,7 @@ spec = APISpec(
         {'url': '//testing-api.solarforecastarbiter.org/',
          'description': 'Testing server'},
         {'url': '//api.solarforecastarbiter.org/',
-         'description': 'Prodution server'}
+         'description': 'Production server'}
     ]
 )
 

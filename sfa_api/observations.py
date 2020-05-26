@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, make_response, url_for
+from flask import (Blueprint, request, jsonify, make_response, url_for,
+                   current_app)
 from flask.views import MethodView
 from marshmallow import ValidationError
 from solarforecastarbiter.io.utils import HiddenToken
@@ -274,7 +275,11 @@ class ObservationValuesView(MethodView):
                 observation_id,
                 observation_df.index[0].isoformat(),
                 observation_df.index[-1].isoformat(),
-                base_url=request.url_root.rstrip('/'))
+                base_url=(current_app.config['JOB_BASE_URL']
+                          or request.url_root.rstrip('/')),
+                result_ttl=0,
+                job_timeout=current_app.config['VALIDATION_JOB_TIMEOUT']
+            )
         return stored, 201
 
 
