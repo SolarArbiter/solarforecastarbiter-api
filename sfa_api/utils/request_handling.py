@@ -229,6 +229,12 @@ def validate_parsable_values():
         decoded_data = request.get_data(as_text=True)
         mimetype = request.mimetype
     value_df = parse_values(decoded_data, mimetype)
+    if value_df.index.size > current_app.config.MAXIMUM_POST_DATAPOINTS:
+        raise BadAPIRequest({
+            'error': ('File exceeds maximum number of datapoints. '
+                      f'{current_app.config.MAXIMUM_POST_DATAPOINTS} '
+                      f'datapoints allowed, {value_df.index.size} datapoints '
+                      'found in file.')
     return value_df
 
 
