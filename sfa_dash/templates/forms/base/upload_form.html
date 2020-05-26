@@ -1,5 +1,8 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
+{% block extra_scripts %}
+<script src="/static/js/form-validation.js"></script>
+{% endblock %}
 {% block content %}
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
@@ -10,6 +13,10 @@
     {% block fields %}
     {% endblock %}
     <div class="form-element full-width">
+
+        <p>Files should contain a maximum of 200,000 data points and have a
+           maximum size of 16MB. Uploaded data will truncated to 8 points of
+           decimal precision.</p>
         <input type="file" name="{{ data_type }}-data" accept=".csv, .json">
     </div>
     {{ form.token() }}

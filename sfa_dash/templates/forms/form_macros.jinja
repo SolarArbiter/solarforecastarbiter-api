@@ -1,3 +1,5 @@
+{% macro name_validation() %}pattern="[A-Za-z0-9(), \-_']+" maxlength=64{% endmacro %}
+
 {% macro help_button(name) %}
 <a data-toggle="collapse" data-target=".{{ name }}-help-text" role="button" href="" class="help-button">?</a>
 {% endmacro %}
@@ -14,7 +16,7 @@
 {% endif %}
 <label>{{ label }}</label><br/>
 <div class="input-wrapper">
-<input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}" {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>{% if units is not none %}{{ units }}{% endif %}
+<input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}"  {% if name == 'name' %}{{ name_validation() }}{% endif %} {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>{% if units is not none %}{{ units }}{% endif %}
 </div>
 {% if help_text is not none %}
 {{ help_button(name) }}

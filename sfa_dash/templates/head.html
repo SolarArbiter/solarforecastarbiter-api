@@ -18,6 +18,7 @@
 
 <!-- Custom styles for this template -->
 <link href="/static/css/styles.css" type="text/css" rel="stylesheet">
+
 {% if includes_bokeh %}
 {% set bkversion = bokeh_version | default('1.4.0') %}
 <link
@@ -36,7 +37,6 @@
 
 <script src="/static/js/table-search.js"></script>
 <script src="/static/js/table-checkall.js"></script>
-
 <script src="https://cdn.plot.ly/plotly-1.52.3.min.js"></script>
 
 {# inject the page_data json variable if provided by jinja #}

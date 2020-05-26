@@ -1,5 +1,9 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
+{% block extra_scripts %}
+<script src="/static/js/form-validation.js"></script>
+{% endblock %}
+
 {% block content %}
 {% include "sections/notifications.html" %}
 <form action="" method="post" enctype="application/json" id="the-form-id">
