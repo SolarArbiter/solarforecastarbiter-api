@@ -32,3 +32,8 @@ def post_values(uuid, values, json=True):
 def delete(observation_id):
     req = delete_request(f'/observations/{observation_id}')
     return req
+
+
+def valid_times(observation_id):
+    req = get_request(f'/observations/{observation_id}/values/timerange')
+    return req

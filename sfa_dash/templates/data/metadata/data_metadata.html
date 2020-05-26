@@ -24,6 +24,12 @@
   {{ macro.li('Interval length', interval_length | display_timedelta) }}
   {% block extra_fields %}
   {% endblock %}
+  {% if timerange_start is defined %}
+  {{ macro.li('Start', timerange_start | format_datetime) }}
+  {% endif %}
+  {% if timerange_end is defined %} 
+  {{ macro.li('End', timerange_end | format_datetime) }}
+  {% endif %}
 </ul>
 {% include "data/metadata/extra_parameters.html" %}
 {% endblock %}

@@ -313,12 +313,12 @@ class AggregateView(BaseView):
 
     def get(self, uuid, **kwargs):
         self.temp_args = {}
-        start, end = self.parse_start_end_from_querystring()
         try:
             self.metadata = self.api_handle.get_metadata(uuid)
         except DataRequestException as e:
             self.temp_args.update({'errors': e.errors})
         else:
+            start, end = self.parse_start_end_from_querystring()
             self.observation_list = []
             observations_list = observations.list_metadata()
             observation_dict = {obs['observation_id']: obs

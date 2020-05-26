@@ -48,6 +48,19 @@ class BaseView(MethodView):
                     'bokeh_script': script_plot[0]
                 })
 
+    def set_timerange(self):
+        """Retrieve the available timerange for an object and set the
+        'min_timestamp' and 'max_timestamp' keys in metdata. If the range
+        cannot be found the keys will not be set.
+        """
+        try:
+            timerange = self.api_handle.valid_times(self.metadata[self.id_key])
+        except DataRequestException:
+            return
+        else:
+            self.metadata['timerange_start'] = timerange['min_timestamp']
+            self.metadata['timerange_end'] = timerange['max_timestamp']
+
     def parse_start_end_from_querystring(self):
         """Attempts to find the start and end query parameters. If not found,
         returns defaults spanning the last three days. Used for setting
@@ -62,13 +75,17 @@ class BaseView(MethodView):
         start_arg = request.args.get('start', 'x')
         end_arg = request.args.get('end', 'x')
         try:
-            start = pd.Timestamp(start_arg)
-        except ValueError:
-            start = pd.Timestamp.utcnow() - pd.Timedelta('3days')
-        try:
             end = pd.Timestamp(end_arg)
         except ValueError:
-            end = pd.Timestamp.utcnow()
+            meta_end = self.metadata.get('timerange_end')
+            if meta_end is None:
+                end = pd.Timestamp.utcnow()
+            else:
+                end = pd.Timestamp(meta_end)
+        try:
+            start = pd.Timestamp(start_arg)
+        except ValueError:
+            start = end - pd.Timedelta('3days')
         return start, end
 
     def format_download_params(self, form_data):

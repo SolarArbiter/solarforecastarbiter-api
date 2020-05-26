@@ -34,3 +34,8 @@ def post_values(uuid, values, json=True):
 def delete(forecast_id):
     req = delete_request(f'/forecasts/single/{forecast_id}')
     return req
+
+
+def valid_times(forecast_id):
+    req = get_request(f'/forecasts/single/{forecast_id}/values/timerange')
+    return req

@@ -129,7 +129,6 @@ class SingleObjectView(DataDashView):
 
     def get(self, uuid, **kwargs):
         self.temp_args = {}
-        start, end = self.parse_start_end_from_querystring()
         # Attempt a request for the object's metadata. On an error,
         # inject the errors into the template arguments and skip
         # any further processing.
@@ -138,6 +137,8 @@ class SingleObjectView(DataDashView):
         except DataRequestException as e:
             self.temp_args.update({'errors': e.errors})
         else:
+            self.set_timerange()
+            start, end = self.parse_start_end_from_querystring()
             try:
                 self.set_site_or_aggregate_metadata()
             except DataRequestException:

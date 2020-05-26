@@ -14,3 +14,8 @@ def get_values(forecast_id, **kwargs):
 def post_values(uuid, values, json=True):
     req = post_request(f'/forecasts/cdf/single/{uuid}/values', values, json)
     return req
+
+
+def valid_times(forecast_id):
+    req = get_request(f'/forecasts/cdf/single/{forecast_id}/values/timerange')
+    return req
