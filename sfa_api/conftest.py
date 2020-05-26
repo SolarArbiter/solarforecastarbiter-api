@@ -481,8 +481,9 @@ def jobid():
 
 @pytest.fixture()
 def mocked_queuing(mocker):
-    mocked = mocker.patch('rq.Queue.enqueue')
-    yield
+    mocked = mocker.patch('rq.Queue.enqueue',
+                          autospec=True)
+    yield mocked
     assert mocked.called
 
 

@@ -20,7 +20,7 @@ REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
 
 
 def enqueue_report(report_id, base_url):
-    alt_base_url = current_app.config['JOB_BASE_URL']
+    alt_base_url = current_app.config.get('JOB_BASE_URL')
     if alt_base_url is not None:
         base_url = alt_base_url
     q = get_queue('reports')

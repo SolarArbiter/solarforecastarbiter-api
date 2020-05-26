@@ -1,12 +1,14 @@
-import hashlib
-import pytest
-
-
 from copy import deepcopy
-from sfa_api.conftest import BASE_URL
-from sfa_api.schema import ALLOWED_METRICS
+import hashlib
+
+
+import pytest
 from solarforecastarbiter.datamodel import (
     ALLOWED_CATEGORIES)
+
+
+from sfa_api.conftest import BASE_URL
+from sfa_api.schema import ALLOWED_METRICS
 
 
 @pytest.fixture()
@@ -239,3 +241,14 @@ def test_recompute_report_no_update(api, new_report, remove_all_perms):
     remove_all_perms('update', 'reports')
     res = api.get(f'/reports/{report_id}/recompute', base_url=BASE_URL)
     assert res.status_code == 404
+
+
+def test_post_report_alt_url(api, report_post_json, mocked_queuing,
+                             mocker, app):
+    mocker.patch.dict(app.config, {'JOB_BASE_URL': 'http://0.0.0.1'})
+    res = api.post('/reports/',
+                   base_url=BASE_URL,
+                   json=report_post_json)
+    assert res.status_code == 201
+    assert 'Location' in res.headers
+    assert mocked_queuing.call_args[1]['base_url'] == 'http://0.0.0.1'
