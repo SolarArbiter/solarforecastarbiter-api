@@ -175,7 +175,7 @@ def parse_values(decoded_data, mimetype):
     if values.index.size > current_app.config.get('MAX_POST_DATAPOINTS'):
         raise BadAPIRequest({
             'error': ('File exceeds maximum number of datapoints. '
-                      f'{current_app.config.get("MAXIMUM_POST_DATAPOINTS")} '
+                      f'{current_app.config.get("MAX_POST_DATAPOINTS")} '
                       f'datapoints allowed, {values.index.size} datapoints '
                       'found in file.')
         })
