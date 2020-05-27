@@ -462,3 +462,14 @@ def test_periodic_report_job(app_cli_runner, mocker, user_id,
         ['Val Job', user_id, '* * * * *', missing_id] + auth_args)
     assert result.exit_code == 0
     assert result.output == 'Job created with id jobid\n'
+
+
+def test_reference_persistence_job(app_cli_runner, mocker, user_id):
+    mocker.patch('sfa_api.jobs.create_job', return_value='jobid',
+                 autospec=True)
+    result = app_cli_runner.invoke(
+        admincli.reference_persistence_job,
+        ['Val Job', user_id, '* * * * *', '--base-url', 'http://test']
+        + auth_args)
+    assert result.exit_code == 0
+    assert result.output == 'Job created with id jobid\n'

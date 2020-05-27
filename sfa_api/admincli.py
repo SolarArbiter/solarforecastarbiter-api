@@ -417,3 +417,24 @@ def periodic_report_job(name, user_id, cron_string, report_id,
         'periodic_report', name, user_id, cron_string, timeout,
         report_id=str(report_id), base_url=base_url)
     click.echo(f'Job created with id {id_}')
+
+
+@create_jobs.command('reference-persistence')
+@with_default_options
+@base_url
+@timeout
+@name_arg
+@user_id_arg
+@cron_string
+def reference_persistence_job(
+        name, user_id, cron_string, base_url, timeout, **kwargs):
+    """
+    Create a reference persistence job named NAME to be executed by
+    USER_ID on a scheduled defined by CRON_STRING. Persistence
+    forecasts are made based on new observation values.
+    """
+    from sfa_api.jobs import create_job
+    id_ = create_job(
+        'reference_persistence', name, user_id, cron_string, timeout,
+        base_url=base_url)
+    click.echo(f'Job created with id {id_}')
