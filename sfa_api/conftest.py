@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import datetime as dt
 from functools import partial
 from io import StringIO
+import json
 
 
 from flask import _request_ctx_stack
@@ -2026,4 +2027,26 @@ def remove_all_perms(api, current_roles):
             for perm_id in to_remove:
                 api.delete(f'/roles/{role_id}/permissions/{perm_id}',
                            BASE_URL)
+    return fn
+
+
+@pytest.fixture
+def random_post_payload():
+    def fn(npts, mimetype, include_flags=True):
+        idx = pd.date_range(
+            start=pd.to_datetime('2017-01-01T00:00Z'),
+            periods=npts,
+            freq='1min'
+        )
+        data = {'value': np.random.uniform(0, 999.9, size=idx.size)}
+        if include_flags:
+            data['quality_flags'] = 0
+        df = pd.DataFrame(data=data, index=idx)
+        if mimetype == 'application/json':
+            value_string = json.dumps({
+                'values': df.to_dict(orient='records')
+            })
+        else:
+            value_string = df.to_csv(index=False)
+        return value_string
     return fn

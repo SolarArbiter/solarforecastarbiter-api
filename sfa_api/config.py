@@ -28,6 +28,8 @@ class Config(object):
     JOB_BASE_URL = os.getenv('JOB_BASE_URL', None)
     REPORT_JOB_TIMEOUT = int(os.getenv('REPORT_JOB_TIMEOUT', 600))
     VALIDATION_JOB_TIMEOUT = int(os.getenv('VALIDATION_JOB_TIMEOUT', 150))
+    MAX_POST_DATAPOINTS = int(os.getenv('MAX_POST_DATAPOINTS',
+                                        200000))
 
 
 class ProductionConfig(Config):

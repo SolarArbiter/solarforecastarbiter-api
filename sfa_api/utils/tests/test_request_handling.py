@@ -168,8 +168,9 @@ def test_parse_json_failure(json_input):
     (csv_string, 'application/vnd.ms-excel'),
     (json_string, 'application/json')
 ])
-def test_parse_values_success(data, mimetype):
-    test_df = request_handling.parse_values(data, mimetype)
+def test_parse_values_success(app, data, mimetype):
+    with app.test_request_context():
+        test_df = request_handling.parse_values(data, mimetype)
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
@@ -442,3 +443,18 @@ def test_restrict_upload_interval_label(mocker, now, first, label):
         'sfa_api.utils.request_handling._current_utc_timestamp',
         return_value=now)
     request_handling.restrict_forecast_upload_window(ep, lambda: fxd, first)
+
+
+@pytest.mark.parametrize('mimetype', [
+    'text/csv',
+    'application/vnd.ms-excel',
+    'application/json'
+])
+def test_parse_values_too_much_data(app, random_post_payload, mimetype):
+    with app.test_request_context():
+        data = random_post_payload(
+            app.config.get('MAX_POST_DATAPOINTS') + 1,
+            mimetype
+        )
+        with pytest.raises(request_handling.BadAPIRequest):
+            request_handling.parse_values(data, mimetype)
