@@ -1,29 +1,48 @@
-{% if messages is defined %}
+{% set flashed_messages = get_flashed_messages(category_filter=['message']) %}
+{% set flashed_warnings= get_flashed_messages(category_filter=['warning']) %}
+{% set flashed_errors = get_flashed_messages(category_filter=['error']) %}
+
+{% if messages is defined or (flashed_messages | length) > 0 %}
 <div class="messages">
   <ul class="message-list notification-list">
+    {% if messages is defined %}
     {% for title, message in messages.items() %}
       <li class="alert alert-success"><p><b>{{ title }}: </b>{{ message | join(', ') | safe}}</p></li> 
 	{% endfor %}
+    {% endif %}
+    {% for message in flashed_messages %}
+    <li class="alert alert-success">{{ message }}</li>
+    {% endfor %}
   </ul>
 </div>
 {% endif %}
-{% if warnings is defined %}
+
+{% if warnings is defined or (flashed_warnings | length) > 0 %}
 <div class="warnings">
   <ul class="warning-list notification-list">
-      {% for title, warning in warnings.items() %}
-      <li class="alert alert-warning"><p><b>{{ title }}: </b>{{ warning | join(', ') | safe}}</p></li>
-      {% endfor %}
+    {% if warnings is defined %}
+    {% for title, warning in warnings.items() %}
+    <li class="alert alert-warning"><p><b>{{ title }}: </b>{{ warning | join(', ') | safe}}</p></li>
+    {% endfor %}
+    {% endif %}
+    {% for warning in flashed_warnings %}
+    <li class="alert alert-warning">{{ warning }}</li>
+    {% endfor %}
   </ul>
 </div>
-
 {% endif %}
-{% if errors is defined %}
+
+{% if errors is defined or (flashed_errors | length) > 0 %}
 <div class="errors">
   <ul class="error-list notification-list">
-      {% for title, error in errors.items() %}
-      <li class="alert alert-danger"><p><b>{{ title }}: </b>{{ error | join(', ') | safe}}</p></li>
-      {% endfor %}
+    {% if errors is defined %}
+    {% for title, error in errors.items() %}
+    <li class="alert alert-danger"><p><b>{{ title }}: </b>{{ error | join(', ') | safe}}</p></li>
+    {% endfor %}
+    {% endif %}
+    {% for error in flashed_errors %}
+    <li class="alert alert-danger">{{ error }}</li>
+    {% endfor %}
   </ul>
 </div>
 {% endif %}
-

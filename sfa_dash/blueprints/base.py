@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 
-from flask import url_for, render_template, request
+from flask import url_for, render_template, request, flash
 from flask.views import MethodView
 import pandas as pd
 
@@ -184,6 +184,19 @@ class BaseView(MethodView):
         Where the order of the keys is rendered from left to right.
         """
         return OrderedDict()
+
+    def flash_api_errors(self, errors):
+        """Formats a dictionary of api errors and flashes them to the user on
+        the next request.
+
+        Parameters
+        ----------
+        errors: dict
+            Dict of errors returned by the API.
+        """
+        to_flash = [f'({key}) {", ".join(msg)}' for key, msg in errors.items()]
+        for error in to_flash:
+            flash(error, 'error')
 
     def template_args(self):
         return {}

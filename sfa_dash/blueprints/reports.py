@@ -1,5 +1,5 @@
 from flask import (request, redirect, url_for, render_template, send_file,
-                   current_app)
+                   current_app, flash)
 
 from solarforecastarbiter.datamodel import Report, RawReport
 from solarforecastarbiter.io.utils import load_report_values
@@ -220,12 +220,12 @@ class ReportView(BaseView):
         metadata['report_parameters']['object_pairs'] = []
         self.metadata = metadata
 
-    def get(self, uuid, **kwargs):
+    def get(self, uuid):
         try:
             self.set_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, uuid=uuid, errors=e.errors)
-        return super().get(**kwargs)
+        return super().get()
 
 
 class DownloadReportView(ReportView):
@@ -319,7 +319,8 @@ class RecomputeReportView(BaseView):
         try:
             reports.recompute(uuid)
         except DataRequestException as e:
-            return ReportView().get(uuid, errors=e.errors)
-        return ReportView().get(
-            uuid,
-            messages={'report': ['recomputed successfully']})
+            self.flash_api_errors(e.errors)
+        else:
+            flash('Report recomputed successfully.', 'message')
+        return redirect(url_for('data_dashboard.report_view',
+                                uuid=uuid))
