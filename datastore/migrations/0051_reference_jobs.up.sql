@@ -1,7 +1,7 @@
 SET @reforgid = (SELECT id FROM organizations WHERE name = 'Reference');
 SET @refauth0 = 'auth0|5cc8aeff0ec8b510a4c7f2f1';
 SET @refid = (SELECT id FROM users WHERE auth0_id = @refauth0);
-SET @baseurl = 'https://dev-api.solarforecastarbiter.org';
+SET @baseurl = 'https://sfa-worker-api.development.svc';
 
 SET @abqsite = UUID_TO_BIN(UUID(), 1);
 SET @nvsite = UUID_TO_BIN(UUID(), 1);
@@ -110,15 +110,31 @@ CALL makecvs(@vtcg);
 CALL makecvs(@flcg);
 
 
-INSERT INTO observations (organization_id, site_id, name, variable, interval_label, interval_length, interval_value_type, uncertainty, extra_parameters
+SET @abqobs = UUID_TO_BIN(UUID(), 1);
+SET @nvobs = UUID_TO_BIN(UUID(), 1);
+SET @vtobs = UUID_TO_BIN(UUID(), 1);
+SET @flobs = UUID_TO_BIN(UUID(), 1);
+
+INSERT INTO observations (id, organization_id, site_id, name, variable, interval_label, interval_length, interval_value_type, uncertainty, extra_parameters
 ) VALUES (
-  @reforgid, @abqsite, 'Albuquerque NM ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Albuquerque", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
+  @abqobs, @reforgid, @abqsite, 'Albuquerque NM ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Albuquerque", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
 ), (
-  @reforgid, @nvsite, 'Henderson NV ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Henderson", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
+  @nvobs, @reforgid, @nvsite, 'Henderson NV ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Henderson", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
 ), (
-  @reforgid, @vtsite, 'Williston VT ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Williston", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
+  @vtobs, @reforgid, @vtsite, 'Williston VT ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Williston", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
 ), (
-  @reforgid, @flsite, 'Cocoa FL ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Cocoa", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
+  @flobs, @reforgid, @flsite, 'Cocoa FL ac_power', 'ac_power', 'ending', 1, 'interval_mean', 0, '{"network": "DOE RTC", "network_api_id": "Cocoa", "network_api_abbreviation": "", "observation_interval_length": 1, "attribution": "", "module": "Suniva 270W"}'
+);
+
+-- persistence
+INSERT INTO forecasts (organization_id, site_id, name, variable, issue_time_of_day,
+lead_time_to_start, interval_label, interval_length, run_length,
+interval_value_type, extra_parameters
+) VALUES(
+   @reforgid, @abqsite, 'Albuquerque NM Hour Ahead Persistence ac_power', 'ac_power', '00:00', 60, 'beginning', 60, 60, 'interval_mean' , CONCAT('{"is_reference_persistence_forecast": true, "index_persistence": true, "observation_id": "', BIN_TO_UUID(@abqobs, 1), '"}')
+),(@reforgid, @nvsite, 'Henderson NV Hour Ahead Persistence ac_power', 'ac_power', '00:00', 60, 'beginning', 60, 60, 'interval_mean' , CONCAT('{"is_reference_persistence_forecast": true, "index_persistence": true, "observation_id": "', BIN_TO_UUID(@nvobs, 1), '"}')
+),(@reforgid, @vtsite, 'Williston VT Hour Ahead Persistence ac_power', 'ac_power', '00:00', 60, 'beginning', 60, 60, 'interval_mean' , CONCAT('{"is_reference_persistence_forecast": true, "index_persistence": true, "observation_id": "', BIN_TO_UUID(@vtobs,1), '"}')
+),(@reforgid, @flsite, 'Cocoa FL Hour Ahead Persistence ac_power', 'ac_power', '00:00', 60, 'beginning', 60, 60, 'interval_mean' , CONCAT('{"is_reference_persistence_forecast": true, "index_persistence": true, "observation_id": "', BIN_TO_UUID(@flobs, 1), '"}')
 );
 
 
@@ -178,6 +194,15 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     'reference_nwp',
     JSON_OBJECT('issue_time_buffer', '10min', 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "50 * * * *"}',
+    0
+), (
+    UUID_TO_BIN(UUID(), 1),
+    @reforgid,
+    @refid,
+    'Reference Persistence generation',
+    'reference_persistence',
+    JSON_OBJECT('base_url', @baseurl),
+    '{"type": "cron", "cron_string": "*/30 * * * *"}',
     0
 ), (
     UUID_TO_BIN(UUID(), 1),
