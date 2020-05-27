@@ -173,12 +173,15 @@ def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
      'sfa_api.jobs.compute_report'),
     pytest.param(
         'other_job', {}, 'sfa_api.app',
-        marks=pytest.mark.xfail(strict=True, raises=ValueError))
+        marks=pytest.mark.xfail(strict=True, raises=ValueError)),
+    ('reference_persistence',
+     {},
+     'sfa_api.jobs.make_latest_persistence_forecasts'),
 ])
-def test_execute_job_daily_obs(jtype, params, func, mocker, userid):
+def test_execute_job(jtype, params, func, mocker, userid):
     mocker.patch('sfa_api.jobs.exchange_token',
                  return_value='token')
-    ret = mocker.patch(func)
+    ret = mocker.patch(func, autospec=True)
     jobs.execute_job('test', jtype, userid, **params)
     assert ret.called
 
@@ -253,6 +256,7 @@ def test_full_run_through_job_timeout(app, queue, mocker):
     ('daily_observation_validation', {'start_td': '1h', 'end_td': '1h'}),
     ('reference_nwp', {'issue_time_buffer': '1h', 'base_url': 'hhtp'}),
     ('periodic_report', {'report_id': 'id'}),
+    ('reference_persistence', {'base_url': 'https://'}),
     pytest.param('badtype', {}, marks=pytest.mark.xfail(
         strict=True, raises=ValueError)),
     pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(
