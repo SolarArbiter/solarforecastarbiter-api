@@ -132,7 +132,7 @@ BEGIN
     DECLARE cur CURSOR FOR SELECT BIN_TO_UUID(id, 1) as id FROM forecasts WHERE site_id = siteid;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    SET baseparams = JSON_OBJECT('name', name, 'start', '2019-01-01T00:00Z', 'end', '2020-01-01T00:00Z', 'metrics', JSON_ARRAY('mae', 'rmse', 'mbe'), 'object_pairs', JSON_ARRAY());
+    SET baseparams = JSON_OBJECT('name', name, 'start', '2020-01-01T00:00Z', 'end', '2020-12-31T23:59Z', 'metrics', JSON_ARRAY('mae', 'rmse', 'mbe'), 'object_pairs', JSON_ARRAY());
     SET orgid = (SELECT organization_id FROM sites WHERE id = siteid);
     SET obsid = (SELECT BIN_TO_UUID(id, 1) FROM observations where site_id = siteid);
 
@@ -154,10 +154,10 @@ SET @nvrep = UUID_TO_BIN(UUID(), 1);
 SET @vtrep = UUID_TO_BIN(UUID(), 1);
 SET @flrep = UUID_TO_BIN(UUID(), 1);
 
-CALL doereport('Albuquerque NM AC Power 2019 Report', @abqsite, @abqrep);
-CALL doereport('Henderson NV AC Power 2019 Report', @nvsite, @nvrep);
-CALL doereport('Williston VT AC Power 2019 Report', @vtsite, @vtrep);
-CALL doereport('Cocoa FL AC Power 2019 Report', @flsite, @flrep);
+CALL doereport('Albuquerque NM AC Power 2020 Report', @abqsite, @abqrep);
+CALL doereport('Henderson NV AC Power 2020 Report', @nvsite, @nvrep);
+CALL doereport('Williston VT AC Power 2020 Report', @vtsite, @vtrep);
+CALL doereport('Cocoa FL AC Power 2020 Report', @flsite, @flrep);
 
 
 DELETE FROM scheduled_jobs WHERE id = UUID_TO_BIN('907a9340-0b11-11ea-9e88-f4939feddd82', 1);
@@ -183,7 +183,7 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     UUID_TO_BIN(UUID(), 1),
     @reforgid,
     @refid,
-    'ABQ 2019 report',
+    'ABQ 2020 report',
     'periodic_report',
     JSON_OBJECT('report_id', BIN_TO_UUID(@abqrep, 1), 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "0 7 * * *"}',
@@ -192,7 +192,7 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     UUID_TO_BIN(UUID(), 1),
     @reforgid,
     @refid,
-    'Henderson 2019 report',
+    'Henderson 2020 report',
     'periodic_report',
     JSON_OBJECT('report_id', BIN_TO_UUID(@nvrep, 1), 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "0 8 * * *"}',
@@ -201,7 +201,7 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     UUID_TO_BIN(UUID(), 1),
     @reforgid,
     @refid,
-    'Williston 2019 report',
+    'Williston 2020 report',
     'periodic_report',
     JSON_OBJECT('report_id', BIN_TO_UUID(@vtrep, 1), 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "0 5 * * *"}',
@@ -210,7 +210,7 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     UUID_TO_BIN(UUID(), 1),
     @reforgid,
     @refid,
-    'Cocoa 2019 report',
+    'Cocoa 2020 report',
     'periodic_report',
     JSON_OBJECT('report_id', BIN_TO_UUID(@flrep, 1), 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "0 5 * * *"}',
