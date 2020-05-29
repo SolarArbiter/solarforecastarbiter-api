@@ -187,9 +187,8 @@ class ForecastValuesView(MethodView):
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            dict_values = values.reset_index().to_dict(orient='records')
             data = ForecastValuesSchema().dump({"forecast_id": forecast_id,
-                                                "values": dict_values})
+                                                "values": values})
             return jsonify(data)
         else:
             meta_url = url_for('forecasts.metadata',
@@ -289,10 +288,8 @@ class ForecastLatestView(MethodView):
         """
         storage = get_storage()
         values = storage.read_latest_forecast_value(forecast_id)
-        values['timestamp'] = values.index
-        dict_values = values.to_dict(orient='records')
         data = ForecastValuesSchema().dump(
-            {"forecast_id": forecast_id, "values": dict_values})
+            {"forecast_id": forecast_id, "values": values})
         return jsonify(data)
 
 
@@ -546,10 +543,8 @@ class CDFForecastValues(MethodView):
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            values['timestamp'] = values.index
-            dict_values = values.to_dict(orient='records')
             data = CDFForecastValuesSchema().dump({"forecast_id": forecast_id,
-                                                   "values": dict_values})
+                                                   "values": values})
             return jsonify(data)
         else:
             meta_url = url_for('forecasts.single_cdf_metadata',
@@ -647,10 +642,8 @@ class CDFForecastLatestView(MethodView):
         """
         storage = get_storage()
         values = storage.read_latest_cdf_forecast_value(forecast_id)
-        values['timestamp'] = values.index
-        dict_values = values.to_dict(orient='records')
         data = CDFForecastValuesSchema().dump(
-            {"forecast_id": forecast_id, "values": dict_values})
+            {"forecast_id": forecast_id, "values": values})
         return jsonify(data)
 
 

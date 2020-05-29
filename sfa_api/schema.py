@@ -424,7 +424,7 @@ class ForecastValueSchema(ma.Schema):
 
 @spec.define_schema('ForecastValuesPost')
 class ForecastValuesPostSchema(ma.Schema):
-    values = ma.Nested(ForecastValueSchema, many=True)
+    values = TimeseriesField(ForecastValueSchema, many=True)
 
 
 @spec.define_schema('CDFForecastValues')
