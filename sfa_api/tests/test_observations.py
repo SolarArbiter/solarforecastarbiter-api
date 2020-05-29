@@ -385,7 +385,8 @@ def test_get_latest_observation_values_200(api, observation_id, ghi_obs_vals):
     data = r.get_json()
     assert data['observation_id'] == observation_id
     assert len(data['values']) == 1
-    assert data['values'][0]['timestamp'] == ghi_obs_vals.index[-1].isoformat()
+    assert data['values'][0]['timestamp'] == ghi_obs_vals.index[-1].strftime(
+        '%Y-%m-%dT%H:%M:%SZ')
 
 
 def test_get_latest_observation_values_404_fxid(api, forecast_id):

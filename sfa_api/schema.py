@@ -1,9 +1,10 @@
 from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
+import pandas as pd
 import pytz
 
 
-from sfa_api import spec, ma
+from sfa_api import spec, ma, json
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
     UncertaintyValidator, validate_if_event)
@@ -31,6 +32,32 @@ class ISODateTime(ma.AwareDateTime):
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
         return value.isoformat()
+
+
+class TimeseriesField(ma.Nested):
+    """Support serialization of schemas that include a DataFrame along
+    with other parameters. Does not support deserialization; see
+    sfa_api.utils.request_handling for functions that do.
+    """
+    def _serialize(self, value, attr, obj, **kwargs):
+        # errors are not handled. This should always be
+        # passed a dataframe with the right columns
+        cols = self.schema.declared_fields.keys()
+        if (
+            value.index.name in cols and
+            value.index.name not in value.columns
+        ):
+            if isinstance(value.index, pd.DatetimeIndex):
+                if value.index.tzinfo is None:
+                    value = value.tz_localize('UTC')
+                else:
+                    value = value.tz_convert('UTC')
+            value = value.reset_index()
+        out_json = value.reindex(columns=cols).to_json(
+            orient='records', date_format='iso', date_unit='s',
+            double_precision=8
+        )
+        return json.loads(out_json)
 
 
 # solarforecastarbiter.datamodel defines allowed variable as a dict of
@@ -268,7 +295,7 @@ class ObservationValueSchema(ma.Schema):
 
 @spec.define_schema('ObservationValuesPost')
 class ObservationValuesPostSchema(ma.Schema):
-    values = ma.Nested(ObservationValueSchema, many=True)
+    values = TimeseriesField(ObservationValueSchema, many=True)
 
 
 @spec.define_schema('ObservationValues')
