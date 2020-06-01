@@ -306,7 +306,9 @@ def test_get_forecast_values_400(api, start, end, mimetype, forecast_id):
 
 @pytest.mark.parametrize('start,end,mimetype', [
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
+    ('2019-01-30T05:00:00-07:00', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
+    ('2019-01-30T12:00:00', '2019-01-30T13:00:00', 'text/csv'),
 ])
 def test_get_forecast_values_200(api, start, end, mimetype, forecast_id):
     r = api.get(f'/forecasts/single/{forecast_id}/values',

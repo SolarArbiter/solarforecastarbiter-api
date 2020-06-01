@@ -219,6 +219,9 @@ def test_get_observation_values_400(api, start, end, mimetype, observation_id):
 @pytest.mark.parametrize('start,end,mimetype', [
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'application/json'),
     ('2019-01-30T12:00:00Z', '2019-01-30T12:00:00Z', 'text/csv'),
+    ('2019-01-30T12:00:00', '2019-01-30T12:00:00', 'application/json'),
+    ('2019-01-30T12:00:00Z', '2019-01-30T05:00:00-07:00', 'text/csv'),
+
 ])
 def test_get_observation_values_200(api, start, end, mimetype, observation_id):
     r = api.get(f'/observations/{observation_id}/values',

@@ -294,6 +294,19 @@ def test_get_aggregate_values(api, aggregate_id, startend):
     assert 'quality_flag' in res.json['values'][0]
 
 
+def test_get_aggregate_values_startendtz(api, aggregate_id, startend):
+    res = api.get(f'/aggregates/{aggregate_id}/values'
+                  '?start=20190101T0000Z&end=2020-01-01T00:00:00',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    assert res.json['aggregate_id'] == aggregate_id
+    assert 'values' in res.json
+    assert 'timestamp' in res.json['values'][0]
+    assert 'value' in res.json['values'][0]
+    assert 'quality_flag' in res.json['values'][0]
+
+
 def test_get_aggregate_values_csv(api, aggregate_id, startend):
     res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
                   headers={'Accept': 'text/csv'},
