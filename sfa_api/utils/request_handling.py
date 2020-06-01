@@ -260,6 +260,9 @@ def parse_to_timestamp(dt_string):
     timestamp = pd.Timestamp(dt_string)
     if pd.isnull(timestamp):
         raise ValueError
+    if timestamp.tzinfo is None:
+        # consinstent with schema ISODateTime
+        timestamp = timestamp.tz_localize('UTC')
     return timestamp
 
 
@@ -296,6 +299,11 @@ def validate_start_end():
         errors.update({'end': ['Must provide a end time']})
     if errors:
         raise BadAPIRequest(errors)
+
+    # parse_to_timestamp ensures there is a tz
+    if end.tzinfo != start.tzinfo:
+        end = end.tz_convert(start.tzinfo)
+
     if end - start > current_app.config['MAX_DATA_RANGE_DAYS']:
         raise BadAPIRequest({'end': [
             f'Only {current_app.config["MAX_DATA_RANGE_DAYS"].days} days of '

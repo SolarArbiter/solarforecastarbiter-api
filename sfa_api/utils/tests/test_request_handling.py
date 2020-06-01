@@ -24,6 +24,10 @@ def test_validate_start_end_fail(app, forecast_id, start, end):
 
 @pytest.mark.parametrize('start,end', [
     ('20190101T120000Z', '20190101T130000Z'),
+    ('20190101T120000', '20190101T130000'),
+    ('20190101T120000', '20190101T130000Z'),
+    ('20190101T120000Z', '20190101T130000+00:00'),
+    ('20190101T120000Z', '20190101T140000+01:00'),
 ])
 def test_validate_start_end_success(app, forecast_id, start, end):
     url = f'/forecasts/single/{forecast_id}/values?start={start}&end={end}'
@@ -202,7 +206,7 @@ def test_parse_values_failure(data, mimetype):
 
 @pytest.mark.parametrize('dt_string,expected', [
     ('20190101T1200Z', pd.Timestamp('20190101T1200Z')),
-    ('20190101T1200', pd.Timestamp('20190101T1200')),
+    ('20190101T1200', pd.Timestamp('20190101T1200Z')),
     ('20190101T1200+0700', pd.Timestamp('20190101T0500Z'))
 ])
 def test_parse_to_timestamp(dt_string, expected):
