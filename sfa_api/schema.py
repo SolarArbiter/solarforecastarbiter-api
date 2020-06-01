@@ -36,8 +36,8 @@ class ISODateTime(ma.AwareDateTime):
 
 class TimeseriesField(ma.Nested):
     """Support serialization of schemas that include a DataFrame along
-    with other parameters. Does not support deserialization; see
-    sfa_api.utils.request_handling for functions that do.
+    with other parameters. Does not support deserialization or validation;
+    see sfa_api.utils.request_handling for functions that do.
     """
     def _serialize(self, value, attr, obj, **kwargs):
         # errors are not handled. This should always be
