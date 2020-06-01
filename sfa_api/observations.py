@@ -184,11 +184,8 @@ class ObservationValuesView(MethodView):
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            values['timestamp'] = values.index
-            dict_values = values.to_dict(orient='records')
             data = ObservationValuesSchema().dump(
-                {"observation_id": observation_id, "values": dict_values})
-
+                {"observation_id": observation_id, "values": values})
             return jsonify(data)
         else:
             meta_url = url_for('observations.metadata',
@@ -254,7 +251,6 @@ class ObservationValuesView(MethodView):
             # but the validation task will post the quality flag
             # up a 2 byte unsigned int
             qf_range = [0, 2**16 - 1]
-
         observation_df = validate_observation_values(
             validate_parsable_values(), qf_range)
         observation_df = observation_df.set_index('timestamp')
@@ -308,10 +304,8 @@ class ObservationLatestView(MethodView):
         """
         storage = get_storage()
         values = storage.read_latest_observation_value(observation_id)
-        values['timestamp'] = values.index
-        dict_values = values.to_dict(orient='records')
         data = ObservationValuesSchema().dump(
-            {"observation_id": observation_id, "values": dict_values})
+            {"observation_id": observation_id, "values": values})
         return jsonify(data)
 
 

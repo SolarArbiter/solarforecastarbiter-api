@@ -110,13 +110,13 @@ VALID_OBS_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:54:00+00:00",
+         'timestamp': "2019-01-22T17:54:00Z",
          'value': 1.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T17:59:00+00:00",
+         'timestamp': "2019-01-22T17:59:00Z",
          'value': 32.0},
         {'quality_flag': 0,
-         'timestamp': "2019-01-22T18:04:00+00:00",
+         'timestamp': "2019-01-22T18:04:00Z",
          'value': 3.0}
     ]
 }
@@ -131,22 +131,22 @@ VALID_OBS_VALUE_CSV = (
 VALID_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
-        {'timestamp': "2019-01-22T17:54:00+00:00",
+        {'timestamp': "2019-01-22T17:54:00Z",
          'value': 1.0},
-        {'timestamp': "2019-01-22T17:59:00+00:00",
+        {'timestamp': "2019-01-22T17:59:00Z",
          'value': 32.0},
-        {'timestamp': "2019-01-22T18:04:00+00:00",
+        {'timestamp': "2019-01-22T18:04:00Z",
          'value': 3.0}
     ]
 }
 ADJ_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
-        {'timestamp': "2019-11-01T07:00:00+00:00",
+        {'timestamp': "2019-11-01T07:00:00Z",
          'value': 1.0},
-        {'timestamp': "2019-11-01T07:05:00+00:00",
+        {'timestamp': "2019-11-01T07:05:00Z",
          'value': 32.0},
-        {'timestamp': "2019-11-01T07:10:00+00:00",
+        {'timestamp': "2019-11-01T07:10:00Z",
          'value': 3.0}
     ]
 }
@@ -154,11 +154,11 @@ ADJ_FX_VALUE_JSON = {
 UNSORTED_FX_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
     'values': [
-        {'timestamp': "2019-01-22T17:59:00+00:00",
+        {'timestamp': "2019-01-22T17:59:00Z",
          'value': 32.0},
-        {'timestamp': "2019-01-22T17:54:00+00:00",
+        {'timestamp': "2019-01-22T17:54:00Z",
          'value': 1.0},
-        {'timestamp': "2019-01-22T18:04:00+00:00",
+        {'timestamp': "2019-01-22T18:04:00Z",
          'value': 3.0}
     ]
 }
@@ -2050,3 +2050,8 @@ def random_post_payload():
             value_string = df.to_csv(index=False)
         return value_string
     return fn
+
+
+@pytest.fixture()
+def startend():
+    return '?start=20190101T0000Z&end=20200101T0000Z'

@@ -285,13 +285,21 @@ def validate_start_end():
             start = parse_to_timestamp(start)
         except ValueError:
             errors.update({'start': ['Invalid start date format']})
+    else:
+        errors.update({'start': ['Must provide a start time']})
     if end is not None:
         try:
             end = parse_to_timestamp(end)
         except ValueError:
             errors.update({'end': ['Invalid end date format']})
+    else:
+        errors.update({'end': ['Must provide a end time']})
     if errors:
         raise BadAPIRequest(errors)
+    if end - start > current_app.config['MAX_DATA_RANGE_DAYS']:
+        raise BadAPIRequest({'end': [
+            f'Only {current_app.config["MAX_DATA_RANGE_DAYS"].days} days of '
+            'data may be requested per request']})
     return start, end
 
 

@@ -321,10 +321,9 @@ def read_observation_values(observation_id, start=None, end=None):
 
     Returns
     -------
-    list
-        A list of dictionaries representing data points.
-        Data points contain a timestamp, value and quality_flag.
-        Returns None if the Observation does not exist.
+    pandas.DataFrame
+        With 'value' and 'quality_flag' columns and a DatetimeIndex
+        named 'timestamp'.
     """
     if start is None:
         start = MINTIMESTAMP

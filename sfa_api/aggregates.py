@@ -190,11 +190,9 @@ class AggregateValuesView(MethodView):
         accepts = request.accept_mimetypes.best_match(['application/json',
                                                        'text/csv'])
         if accepts == 'application/json':
-            values['timestamp'] = values.index
-            dict_values = values.to_dict(orient='records')
+            values.index.name = 'timestamp'
             data = AggregateValuesSchema().dump(
-                {"aggregate_id": aggregate_id, "values": dict_values})
-
+                {"aggregate_id": aggregate_id, "values": values})
             return jsonify(data)
         else:
             meta_url = url_for('aggregates.metadata',

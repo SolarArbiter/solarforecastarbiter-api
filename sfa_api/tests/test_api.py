@@ -115,7 +115,7 @@ def test_create_site_unauthorized(sql_api, auth_header):
 
 
 def test_create_delete_observation(sql_api, auth_header, mocked_queuing,
-                                   obs_vals):
+                                   obs_vals, startend):
     post = sql_api.post('/observations/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -146,7 +146,7 @@ def test_create_delete_observation(sql_api, auth_header, mocked_queuing,
                                base_url=BASE_URL,
                                json={'values': json_values})
     assert post_values.status_code == 201
-    get_values = sql_api.get(f'/observations/{new_obs_id}/values',
+    get_values = sql_api.get(f'/observations/{new_obs_id}/values{startend}',
                              base_url=BASE_URL,
                              headers={'Accept': 'application/json',
                                       **auth_header})
@@ -161,7 +161,7 @@ def test_create_delete_observation(sql_api, auth_header, mocked_queuing,
                                         **auth_header},
                                data=csv_values)
     assert post_values.status_code == 201
-    get_values = sql_api.get(f'/observations/{new_obs_id}/values',
+    get_values = sql_api.get(f'/observations/{new_obs_id}/values{startend}',
                              base_url=BASE_URL,
                              headers={'Accept': 'text/csv', **auth_header})
     assert get_values.status_code == 200
@@ -171,7 +171,7 @@ def test_create_delete_observation(sql_api, auth_header, mocked_queuing,
     assert new_obs not in get_obs_list(sql_api, auth_header)
     assert new_obs not in get_site_obs(sql_api, auth_header,
                                        new_obs['site_id'])
-    get_values = sql_api.get(f'/observations/{new_obs_id}/values',
+    get_values = sql_api.get(f'/observations/{new_obs_id}/values{startend}',
                              base_url=BASE_URL,
                              headers={'Accept': 'text/csv', **auth_header})
     assert get_values.status_code == 404
@@ -203,7 +203,7 @@ def test_create_observation_site_dne(sql_api, auth_header, missing_id):
     assert observations == get_obs_list(sql_api, auth_header)
 
 
-def test_create_delete_forecast(sql_api, auth_header, fx_vals):
+def test_create_delete_forecast(sql_api, auth_header, fx_vals, startend):
     post = sql_api.post('/forecasts/single/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -228,14 +228,15 @@ def test_create_delete_forecast(sql_api, auth_header, fx_vals):
     fx_vals['timestamp'] = fx_vals.index
     json_values = fx_vals.to_dict(orient='records')
 
-    post_values = sql_api.post(f'/forecasts/single/{new_fx_id}/values',
-                               headers=auth_header,
-                               base_url=BASE_URL,
-                               json={'values': json_values})
+    post_values = sql_api.post(
+        f'/forecasts/single/{new_fx_id}/values',
+        headers=auth_header,
+        base_url=BASE_URL,
+        json={'values': json_values})
     assert post_values.status_code == 201
 
     # request json values
-    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
+    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values{startend}',
                              base_url=BASE_URL,
                              headers={'Accept': 'application/json',
                                       **auth_header})
@@ -252,7 +253,7 @@ def test_create_delete_forecast(sql_api, auth_header, fx_vals):
     assert post_values.status_code == 201
 
     # request csv values
-    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values',
+    get_values = sql_api.get(f'/forecasts/single/{new_fx_id}/values{startend}',
                              base_url=BASE_URL,
                              headers={'Accept': 'text/csv', **auth_header})
     assert get_values.status_code == 200
@@ -264,7 +265,7 @@ def test_create_delete_forecast(sql_api, auth_header, fx_vals):
                                      new_fx['site_id'])
 
     get_values = sql_api.get(
-        f'/forecasts/single/{new_fx_id}/values',
+        f'/forecasts/single/{new_fx_id}/values{startend}',
         base_url=BASE_URL,
         headers={'Accept': 'text/csv', **auth_header})
     assert get_values.status_code == 404
@@ -296,7 +297,7 @@ def test_post_forecast_site_dne(sql_api, auth_header, missing_id):
     assert forecasts == get_fx_list(sql_api, auth_header)
 
 
-def test_create_delete_cdf_forecast(sql_api, auth_header, fx_vals):
+def test_create_delete_cdf_forecast(sql_api, auth_header, fx_vals, startend):
     post = sql_api.post('/forecasts/cdf/',
                         headers=auth_header,
                         base_url=BASE_URL,
@@ -324,19 +325,20 @@ def test_create_delete_cdf_forecast(sql_api, auth_header, fx_vals):
             headers=auth_header,
             base_url=BASE_URL)
         assert get_const.status_code == 200
-        get_cdf_const_values = sql_api.get(value['_links']['values'],
-                                           headers=auth_header)
+        get_cdf_const_values = sql_api.get(
+            value['_links']['values'] + startend,
+            headers=auth_header)
         assert get_cdf_const_values.status_code == 200
 
         # Post values to the forecast
         fx_vals['timestamp'] = fx_vals.index
         json_values = fx_vals.to_dict(orient='records')
 
-        post_values = sql_api.post(value['_links']['values'],
+        post_values = sql_api.post(value['_links']['values'] + startend,
                                    headers=auth_header,
                                    json={'values': json_values})
         assert post_values.status_code == 201
-        get_values = sql_api.get(value['_links']['values'],
+        get_values = sql_api.get(value['_links']['values'] + startend,
                                  headers={'Accept': 'application/json',
                                           **auth_header})
         assert get_values.status_code == 200

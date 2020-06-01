@@ -1,6 +1,7 @@
 import os
 
 
+import pandas as pd
 import requests
 
 
@@ -30,6 +31,8 @@ class Config(object):
     VALIDATION_JOB_TIMEOUT = int(os.getenv('VALIDATION_JOB_TIMEOUT', 150))
     MAX_POST_DATAPOINTS = int(os.getenv('MAX_POST_DATAPOINTS',
                                         200000))
+    MAX_DATA_RANGE_DAYS = pd.Timedelta(os.getenv('MAX_DATA_RANGE_DAYS', '366')
+                                       + ' days')
 
 
 class ProductionConfig(Config):

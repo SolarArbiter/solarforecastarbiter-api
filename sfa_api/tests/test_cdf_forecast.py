@@ -244,8 +244,8 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id,
     assert r.status_code == 201
 
 
-def test_get_forecast_values_404(api, missing_id, mock_previous):
-    r = api.get(f'/forecasts/cdf/single/{missing_id}/values',
+def test_get_forecast_values_404(api, missing_id, mock_previous, startend):
+    r = api.get(f'/forecasts/cdf/single/{missing_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -317,7 +317,8 @@ def test_get_latest_cdf_forecast_value_200(api, cdf_forecast_id, fx_vals):
     data = r.get_json()
     assert data['forecast_id'] == cdf_forecast_id
     assert len(data['values']) == 1
-    assert data['values'][0]['timestamp'] == fx_vals.index[-1].isoformat()
+    assert data['values'][0]['timestamp'] == fx_vals.index[-1].strftime(
+        '%Y-%m-%dT%H:%M:%SZ')
 
 
 def test_get_latest_cdf_forecast_value_404(api, missing_id):

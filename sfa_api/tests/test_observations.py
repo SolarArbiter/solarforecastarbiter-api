@@ -197,8 +197,8 @@ def test_post_observation_values_valid_csv(api, observation_id,
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}/values',
+def test_get_observation_values_404(api, missing_id, startend):
+    r = api.get(f'/observations/{missing_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -385,7 +385,8 @@ def test_get_latest_observation_values_200(api, observation_id, ghi_obs_vals):
     data = r.get_json()
     assert data['observation_id'] == observation_id
     assert len(data['values']) == 1
-    assert data['values'][0]['timestamp'] == ghi_obs_vals.index[-1].isoformat()
+    assert data['values'][0]['timestamp'] == ghi_obs_vals.index[-1].strftime(
+        '%Y-%m-%dT%H:%M:%SZ')
 
 
 def test_get_latest_observation_values_404_fxid(api, forecast_id):

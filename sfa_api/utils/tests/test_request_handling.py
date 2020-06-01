@@ -31,6 +31,23 @@ def test_validate_start_end_success(app, forecast_id, start, end):
         request_handling.validate_start_end()
 
 
+@pytest.mark.parametrize('query,exc', [
+    ('?start=20200101T0000Z', {'end'}),
+    ('?end=20200101T0000Z', {'start'}),
+    ('?start=20200101T0000Z&end=20210102T0000Z', {'end'}),
+    ('', {'start', 'end'}),
+    pytest.param('?start=20200101T0000Z&end=20200102T0000Z', {},
+                 marks=pytest.mark.xfail(strict=True))
+])
+def test_validate_start_end_not_provided(app, forecast_id, query, exc):
+    url = f'/forecasts/single/{forecast_id}/values{query}'
+    with app.test_request_context(url):
+        with pytest.raises(BadAPIRequest) as err:
+            request_handling.validate_start_end()
+        if exc:
+            assert set(err.value.errors.keys()) == exc
+
+
 @pytest.mark.parametrize('content_type,payload', [
     ('text/csv', ''),
     ('application/json', '{}'),

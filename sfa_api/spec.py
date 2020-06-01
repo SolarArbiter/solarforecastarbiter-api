@@ -66,6 +66,7 @@ spec_components = {
         'start_time': {
             'in': 'query',
             'name': 'start',
+            'required': True,
             'description': 'Start of the period for which to request data.',
             'schema': {
                 'type': 'string',
@@ -75,6 +76,7 @@ spec_components = {
         'end_time': {
             'name': 'end',
             'in': 'query',
+            'required': True,
             'description': 'End of the period for which to request data.',
             'schema': {
                 'type': 'string',
