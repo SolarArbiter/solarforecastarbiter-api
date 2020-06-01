@@ -329,7 +329,8 @@ def test_get_aggregate_values_422(api, aggregate_id, startend):
         as_text=True)
 
 
-def test_get_aggregate_values_obs_deleted(api, aggregate_id, missing_id, startend):
+def test_get_aggregate_values_obs_deleted(api, aggregate_id, missing_id,
+                                          startend):
     res = api.delete('/observations/123e4567-e89b-12d3-a456-426655440000',
                      base_url=BASE_URL)
     assert res.status_code == 204
