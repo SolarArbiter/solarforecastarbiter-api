@@ -2050,3 +2050,8 @@ def random_post_payload():
             value_string = df.to_csv(index=False)
         return value_string
     return fn
+
+
+@pytest.fixture()
+def startend():
+    return '?start=20190101T0000Z&end=20200101T0000Z'

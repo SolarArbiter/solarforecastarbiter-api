@@ -244,8 +244,8 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id,
     assert r.status_code == 201
 
 
-def test_get_forecast_values_404(api, missing_id, mock_previous):
-    r = api.get(f'/forecasts/cdf/single/{missing_id}/values',
+def test_get_forecast_values_404(api, missing_id, mock_previous, startend):
+    r = api.get(f'/forecasts/cdf/single/{missing_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 

@@ -197,8 +197,8 @@ def test_post_observation_values_valid_csv(api, observation_id,
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}/values',
+def test_get_observation_values_404(api, missing_id, startend):
+    r = api.get(f'/observations/{missing_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
