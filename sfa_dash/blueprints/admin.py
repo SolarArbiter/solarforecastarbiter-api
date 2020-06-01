@@ -1,5 +1,5 @@
 from flask import (Blueprint, render_template, request,
-                   url_for, redirect, session)
+                   url_for, redirect, session, flash)
 from sfa_dash.api_interface import (
     sites, observations, forecasts,
     cdf_forecast_groups, roles, users,
@@ -162,27 +162,30 @@ class UserRoleRemoval(AdminView):
     def get(self, uuid, role_id, **kwargs):
         """Confirmation view for removing a role from a user
         """
-        user_req = users.get_metadata(uuid)
-        # Check if the user is readable. For roles shared outside
-        # an org this may not be true, but we still need to pass
-        # user_id to the template for building urls and display.
-        if user_req.status_code == 200:
-            user = user_req.json()
-        else:
-            user = {'user_id': uuid}
-        role_req = roles.get_metadata(role_id)
-        role = role_req.json()
         redirect_link = request.headers.get(
             'Referer', url_for('admin.roles'))
         # set a redirect link, because we can be directed here
         # from a role or user page.
+        try:
+            user = users.get_metadata(uuid)
+        except DataRequestException:
+            # Check if the user is readable. For roles shared outside
+            # an org this may not be true, but we still need to pass
+            # user_id to the template for building urls and display.
+            user = {'user_id': uuid}
+        try:
+            role = roles.get_metadata(role_id)
+        except DataRequestException as e:
+            self.flash_api_errors(e.errors)
+            return redirect(redirect_link)
         session['redirect_link'] = redirect_link
-        return render_template(self.template,
-                               user=user,
-                               role=role,
-                               redirect_link=redirect_link,
-                               **kwargs,
-                               **self.template_args())
+        return render_template(
+            self.template,
+            user=user,
+            role=role,
+            redirect_link=redirect_link,
+            **kwargs,
+            **self.template_args())
 
     def post(self, uuid, role_id):
         """Removes a role from a user
@@ -194,10 +197,12 @@ class UserRoleRemoval(AdminView):
             role_id=role_id)
         if request.headers.get('Referer') != confirmation_url:
             redirect(confirmation_url)
-        delete_request = users.remove_role(uuid, role_id)
-        if delete_request.status_code != 204:
-            errors = delete_request.json()
-            return self.get(uuid, role_id, errors=errors)
+        try:
+            users.remove_role(uuid, role_id)
+        except DataRequestException as e:
+            self.flash_api_errors(e.errors)
+            return redirect(url_for('admin.user_role_removal',
+                                    uuid=uuid, role_id=role_id))
         redirect_url = session.pop(
             'redirect_link',
             url_for("admin.user_view", uuid=uuid))
@@ -271,6 +276,7 @@ class RoleGrant(AdminView):
             role = roles.get_metadata(uuid)
         except DataRequestException as e:
             template_args['errors'] = e.errors
+            role = None
         redirect_link = request.headers.get(
             'Referer', url_for('admin.roles'))
         # set a redirect link, because we can be directed here
@@ -288,16 +294,20 @@ class RoleGrant(AdminView):
         try:
             users.add_role_by_email(user_email, uuid)
         except DataRequestException:
-            role = roles.get_metadata(uuid).json()
-            errors = {
-                'Error': ['Failed to grant role.'],
-            }
+            # flash a message that grant failed
+            flash('Failed to grant role', 'error')
+            try:
+                role = roles.get_metadata(uuid)
+            except DataRequestException as e:
+                # User could not read the role, flash a 404
+                self.flash_api_errors(e.errors)
             return render_template(
                 self.template,
                 role=role,
-                errors=errors,
                 form_data=form_data,
                 **self.template_args())
+        # flash success message and redirect to the referrer, or the role view
+        flash('Role granted successfully', 'message')
         redirect_url = session.pop(
             'redirect_link',
             url_for('admin.role_view', uuid=uuid))

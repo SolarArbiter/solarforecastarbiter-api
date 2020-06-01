@@ -1,6 +1,7 @@
 {% extends "dash/data.html" %}
 {% set page_title = 'Users' %}
 {% block content %}
+{% include "sections/notifications.html" %}
 <h3 class="my-3">Existing Users</h3>
 <div class="tools {{ table_type }}-tools mt-1">
   {% block tools %}

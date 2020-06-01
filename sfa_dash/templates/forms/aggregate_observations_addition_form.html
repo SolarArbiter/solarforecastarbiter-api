@@ -3,7 +3,7 @@
 {% block content %}
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
-{% if aggregate is not none %}
+{% if aggregate is defined and aggregate is not none %}
 <h3>Update Aggregate Observations</h3>
 <form action="{{ url_for('forms.add_aggregate_observations', uuid=aggregate['aggregate_id']) }}" method="post" enctype="application/json" id="update-aggregate-observations-form">
   <div class="form-group">

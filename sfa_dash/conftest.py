@@ -95,6 +95,10 @@ no_arg_routes_list = [
     '/forecasts/cdf/',
     '/reports/',
     '/aggregates/',
+    '/sites/create',
+    '/reports/deterministic/create',
+    '/reports/event/create',
+    '/aggregates/create',
 ]
 
 
@@ -122,10 +126,22 @@ def admin_route(request):
 
 
 admin_multiarg_route_list = [
-    '/admin/permissions/<uuid>/remove/<object_id>',
-    '/admin/roles/<uuid>/remove/<permission_id>',
-    '/admin/users/<uuid>/remove/<role_id>',
+    '/admin/permissions/{permission_id}/remove/{object_id}',
+    '/admin/roles/{role_id}/remove/{permission_id}',
+    '/admin/users/{user_id}/remove/{role_id}',
 ]
+
+
+@pytest.fixture(params=admin_multiarg_route_list)
+def admin_multiarg_route(request):
+    def fn(object_id, permission_id, user_id, role_id):
+        return request.param.format(
+            object_id=object_id,
+            permission_id=permission_id,
+            user_id=user_id,
+            role_id=role_id)
+
+    return fn
 
 
 user_id_route_list = [
@@ -170,27 +186,22 @@ def permission_id_route(request):
     return fn
 
 
-create_form_routes_list = [
-    '/sites/create',
-    '/reports/create',
-    '/aggregates/create',
-]
-
-
-single_object_routes_list = [
-    '/forecasts/cdf/single/<uuid>/upload',
-    '/forecasts/cdf/single/<uuid>',
-]
-
-
 report_id_route_list = [
-    '/reports/<uuid>'
-    '/reports/<uuid>/delete',
+    '/reports/{report_id}',
+    '/reports/{report_id}/delete',
 ]
+
+
+@pytest.fixture(params=report_id_route_list)
+def report_id_route(request):
+    def fn(report_id):
+        return request.param.format(report_id=report_id)
+    return fn
+
 
 site_id_route_list = [
     '/sites/{site_id}/',
-    '/sites/<uuid>/delete',
+    '/sites/{site_id}/delete',
     '/sites/{site_id}/forecasts/single/create',
     '/sites/{site_id}/forecasts/cdf/create',
     '/sites/{site_id}/observations/create',
@@ -246,10 +257,25 @@ def cdf_forecast_id_route(request):
     return fn
 
 
+cdf_forecast_single_id_routes_list = [
+    '/forecasts/cdf/single/{forecast_id}/upload',
+    '/forecasts/cdf/single/{forecast_id}',
+]
+
+
+@pytest.fixture(params=cdf_forecast_single_id_routes_list)
+def cdf_forecast_single_id_route(request):
+    def fn(forecast_id):
+        return request.param.format(forecast_id=forecast_id)
+    return fn
+
+
 aggregate_id_route_list = [
     '/aggregates/{aggregate_id}',
     '/aggregates/{aggregate_id}/delete',
     '/aggregates/{aggregate_id}/add',
+    '/aggregates/{aggregate_id}/forecasts/single/create',
+    '/aggregates/{aggregate_id}/forecasts/cdf/create',
 ]
 
 
@@ -323,6 +349,11 @@ def aggregate_id():
 
 
 @pytest.fixture()
+def report_id():
+    return '9f290dd4-42b8-11ea-abdf-f4939feddd82'
+
+
+@pytest.fixture()
 def test_url(app):
     def fn(view):
         with app.test_request_context():
@@ -373,3 +404,37 @@ def permission_id(cursor, role_id):
         '= UUID_TO_BIN(%s, 1) ) LIMIT 1', role_id)
     permission_id = cursor.fetchone()[0]
     return permission_id
+
+
+@pytest.fixture()
+def permission_object_type(cursor, permission_id):
+    cursor.execute(
+        'SELECT object_type FROM arbiter_data.permissions '
+        'WHERE id = UUID_TO_BIN(%s, 1)', permission_id)
+    return cursor.fetchone()[0]
+
+
+@pytest.fixture()
+def valid_permission_object_id(
+        observation_id, forecast_id, cdf_forecast_group_id, aggregate_id,
+        site_id, role_id, user_id, permission_id, report_id,
+        permission_object_type):
+    ot = permission_object_type
+    if ot == 'forecasts':
+        return forecast_id
+    if ot == 'observations':
+        return observation_id
+    if ot == 'cdf_forecasts':
+        return cdf_forecast_group_id
+    if ot == 'agggregates':
+        return aggregate_id
+    if ot == 'sites':
+        return site_id
+    if ot == 'reports':
+        return report_id
+    if ot == 'users':
+        return user_id
+    if ot == 'permissions':
+        return permission_id
+    if ot == 'roles':
+        return role_id

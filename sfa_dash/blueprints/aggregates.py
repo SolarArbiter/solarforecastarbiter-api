@@ -121,7 +121,6 @@ class AggregateObservationAdditionForm(BaseView):
         metadata = render_template(
             self.metadata_template, **self.metadata)
         aggregate = self.metadata.copy()
-        del aggregate['extra_parameters']
         template_arguments = {
             "observations": observations,
             "aggregate": aggregate,

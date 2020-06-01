@@ -221,9 +221,9 @@ class SingleCDFForecastGroupView(SingleObjectView):
                 self.set_site_or_aggregate_metadata()
             except DataRequestException:
                 pass
-        finally:
-            self.set_site_or_aggregate_link()
-            self.set_template_args()
+            finally:
+                self.set_site_or_aggregate_link()
+                self.set_template_args()
         return render_template(self.template, **self.temp_args)
 
 
