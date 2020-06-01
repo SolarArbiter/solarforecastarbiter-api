@@ -15,27 +15,27 @@ INSERT INTO sites (id, organization_id, name, latitude, longitude,
     backtrack, max_rotation_angle, dc_loss_factor, ac_loss_factor )
 VALUES (
     @abqsite, @reforgid, 'DOE RTC Albuquerque NM' , 35.050000 ,
-    -106.530000 , 1657.00 , 'America/Denver' , '{"network": "DOE RTC",
+    -106.530000 , 1657.00 , 'Etc/GMT+7' , '{"network": "DOE RTC",
     "network_api_id": "Albuquerque", "network_api_abbreviation": "",
     "observation_interval_length": 1, "attribution": "", "module":
     "Suniva 270W"}' , 0.003240 , 0.003240 , -0.420 , 'fixed' , 35.00 ,
     180.00 , NULL , NULL , NULL , NULL , NULL , 0.00 , 0.00
 ),(
     @nvsite, @reforgid, 'DOE RTC Henderson NV' , 36.040000 , -114.920000 , 538.00 ,
-    'America/Los_Angeles' , '{"network": "DOE RTC", "network_api_id":
+    'Etc/GMT+8' , '{"network": "DOE RTC", "network_api_id":
     "Henderson", "network_api_abbreviation": "",
     "observation_interval_length": 1, "attribution": "", "module":
     "Suniva 270W"}' , 0.003240 , 0.003240 , -0.420 , 'fixed' , 35.00 ,
     180.00 , NULL , NULL , NULL , NULL , NULL , 0.00 , 0.00
 ),(
     @vtsite, @reforgid, 'DOE RTC Williston VT' , 44.500000 , -73.100000 , 184.00 ,
-    'America/New_York' , '{"network": "DOE RTC", "network_api_id":
+    'Etc/GMT+5' , '{"network": "DOE RTC", "network_api_id":
     "Williston", "network_api_abbreviation": "",
     "observation_interval_length": 1, "attribution": "", "module":
     "Suniva 270W"}' , 0.003240 , 0.003240 , -0.420 , 'fixed' , 35.00 ,
     180.00 , NULL , NULL , NULL , NULL , NULL , 0.00 , 0.00
 ),(
-    @flsite, @reforgid, 'DOE RTC Cocoa FL' , 28.400000 , -80.770000 , 11.00 , 'America/New_York' ,
+    @flsite, @reforgid, 'DOE RTC Cocoa FL' , 28.400000 , -80.770000 , 11.00 , 'Etc/GMT+5' ,
     '{"network": "DOE RTC", "network_api_id": "Cocoa",
     "network_api_abbreviation": "", "observation_interval_length": 1,
     "attribution": "", "module": "Suniva 270W"}' , 0.003240 , 0.003240
