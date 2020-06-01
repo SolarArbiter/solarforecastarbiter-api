@@ -3,11 +3,12 @@ import datetime as dt
 
 import json
 import marshmallow
+import pandas as pd
 import pytest
 import uuid
 
 
-from sfa_api import schema
+from sfa_api import schema, ma
 
 
 @pytest.fixture()
@@ -110,3 +111,115 @@ def test_object_pair_with_invalid_uncertainty(uncertainty):
 def test_object_pair_test_validation(inp):
     with pytest.raises(marshmallow.exceptions.ValidationError):
         schema.ReportObjectPair().loads(inp)
+
+
+@pytest.fixture()
+def tseries():
+    nested = marshmallow.Schema.from_dict({'cola': ma.Int(),
+                                           'colb': ma.Float(),
+                                           'time': ma.AwareDateTime(),
+                                           })
+    tseries = marshmallow.Schema.from_dict(
+        {'tseries': schema.TimeseriesField(nested, many=True)})()
+    return tseries
+
+
+def test_timeseriesfield(tseries):
+    data = pd.DataFrame({'cola': [1, 2], 'colb': [1.0, pd.NA]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0001Z'),
+                             pd.Timestamp('20200501T0000Z')],
+                            name='time'))
+    out = tseries.dumps({'tseries': data})
+    dict_out = json.loads(out)
+    assert dict_out['tseries'] == [
+        {'cola': 1, 'colb': 1.0, 'time': '2020-04-01T00:01:00Z'},
+        {'cola': 2, 'colb': None, 'time': '2020-05-01T00:00:00Z'}
+    ]
+
+
+def test_timeseriesfield_no_index_name(tseries):
+    data = pd.DataFrame({'cola': [1, 2], 'colb': [1.0, pd.NA]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0001Z'),
+                             pd.Timestamp('20200501T0000Z')],
+                            ))
+    out = tseries.dumps({'tseries': data})
+    dict_out = json.loads(out)
+    assert dict_out['tseries'] == [
+        {'cola': 1, 'colb': 1.0, 'time': None},
+        {'cola': 2, 'colb': None, 'time': None}
+    ]
+
+
+def test_timeseriesfield_missing_col(tseries):
+    data = pd.DataFrame({'cola': [1, 2]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0001Z'),
+                             pd.Timestamp('20200501T0000Z')],
+                            name='time'))
+    out = tseries.dumps({'tseries': data})
+    dict_out = json.loads(out)
+    assert dict_out['tseries'] == [
+        {'cola': 1, 'colb': None, 'time': '2020-04-01T00:01:00Z'},
+        {'cola': 2, 'colb': None, 'time': '2020-05-01T00:00:00Z'}
+    ]
+
+
+def test_timeseriesfield_unlocalized(tseries):
+    data = pd.DataFrame({'cola': [1, 2], 'colb': [1.0, pd.NA]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0001'),
+                             pd.Timestamp('20200501T0000')],
+                            name='time'))
+    out = tseries.dumps({'tseries': data})
+    dict_out = json.loads(out)
+    assert dict_out['tseries'] == [
+        {'cola': 1, 'colb': 1.0, 'time': '2020-04-01T00:01:00Z'},
+        {'cola': 2, 'colb': None, 'time': '2020-05-01T00:00:00Z'}
+    ]
+
+
+def test_timeseriesfield_tz(tseries):
+    data = pd.DataFrame({'cola': [1, 2], 'colb': [1.0, pd.NA]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0301'),
+                             pd.Timestamp('20200501T0300')],
+                            tz='MST', name='time'))
+    out = tseries.dumps({'tseries': data})
+    dict_out = json.loads(out)
+    assert dict_out['tseries'] == [
+        {'cola': 1, 'colb': 1.0, 'time': '2020-04-01T10:01:00Z'},
+        {'cola': 2, 'colb': None, 'time': '2020-05-01T10:00:00Z'}
+    ]
+
+
+def test_timeseriesfield_notdf(tseries):
+    data = pd.Series([1, 2], name='cola',
+                     index=pd.DatetimeIndex(
+                         [pd.Timestamp('20200401T0301Z'),
+                          pd.Timestamp('20200501T0300Z')],
+                         name='time'))
+    with pytest.raises(AttributeError):
+        tseries.dumps({'tseries': data})
+
+
+def test_timeseriesfield_matches_old():
+    naive = marshmallow.Schema.from_dict(
+        {'tseries': ma.Nested(schema.ObservationValueSchema, many=True)})()
+    tseries = marshmallow.Schema.from_dict(
+        {'tseries': schema.TimeseriesField(
+            schema.ObservationValueSchema, many=True)})()
+    data = pd.DataFrame({'quality_flag': [0, 1], 'value': [1.0, None]},
+                        index=pd.DatetimeIndex(
+                            [pd.Timestamp('20200401T0301Z'),
+                             pd.Timestamp('20200501T0300Z')],
+                            name='timestamp'))
+    tout = tseries.dumps({'tseries': data})
+    ndata = data.copy()
+    ndata['timestamp'] = ndata.index
+    dict_values = ndata.to_dict(orient='records')
+    nout = naive.dumps({'tseries': dict_values})
+    # new replaces +00:00 with Z
+    # and NaN with null
+    assert tout == nout.replace('+00:00', 'Z').replace('NaN', 'null')

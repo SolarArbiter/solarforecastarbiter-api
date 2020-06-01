@@ -53,6 +53,9 @@ class TimeseriesField(ma.Nested):
                 else:
                     value = value.tz_convert('UTC')
             value = value.reset_index()
+        # annoying to dump to json, then load, then dump again
+        # via flask, but substantially (~1.5x - 2x) faster then dumping
+        # directly via flask/jsonify
         out_json = value.reindex(columns=cols).to_json(
             orient='records', date_format='iso', date_unit='s',
             double_precision=8
