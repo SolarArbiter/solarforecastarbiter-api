@@ -59,7 +59,7 @@
      <input type="checkbox" name="categories" value="{{ category }}" {% if form_data %}{% if category in form_data['report_parameters']['categories'] %}checked{% else %}{% endif %}{% else %}{% if category in default_categories %}checked{% endif %}{% endif %}> {{ label }}<br/>
      {% endfor %}
      </div>
-     <div class="form-element">
+     <div class="form-element full-width">
        <label>Quality Flag Filters</label><br>
        <p>Observation data flagged with any of the checked quality flags is excluded from analysis. The corresponding forecast data is also excluded.</p>
        {% for flag, label in quality_flags.items() %}
