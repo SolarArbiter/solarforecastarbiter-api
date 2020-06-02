@@ -38,7 +38,12 @@
 <script src="/static/js/table-search.js"></script>
 <script src="/static/js/table-checkall.js"></script>
 <script src="https://cdn.plot.ly/plotly-1.52.3.min.js"></script>
-
+{# block injecting global variables from app config, passed through
+template_globals #}
+<script>
+    var MAX_DATA_RANGE_DAYS = {{ MAX_DATA_RANGE_DAYS }};
+    var MAX_PLOT_DATAPOINTS = {{ MAX_PLOT_DATAPOINTS }};
+</script>
 {# inject the page_data json variable if provided by jinja #}
 {% if page_data is defined %}
 <script>

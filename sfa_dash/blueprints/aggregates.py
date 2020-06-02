@@ -284,12 +284,12 @@ class AggregateView(BaseView):
 
     def set_template_args(self, start, end, **kwargs):
         self.temp_args.update({
-            'metadata': render_template(
+            'metadata_block': render_template(
                 self.metadata_template, **self.metadata),
             'observations': self.observation_list,
             'breadcrumb': self.breadcrumb_html(
                 self.get_breadcrumb_dict()),
-            'aggregate': self.metadata,
+            'metadata': self.safe_metadata(),
             'subnav': self.format_subnav(
                 observations_url=url_for(
                     'data_dashboard.aggregate_view',

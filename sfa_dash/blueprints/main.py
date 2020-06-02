@@ -106,8 +106,10 @@ class SingleObjectView(DataDashView):
         self.temp_args['subnav'] = self.format_subnav(**kwargs)
         self.temp_args['breadcrumb'] = self.breadcrumb_html(
             self.get_breadcrumb_dict())
-        self.temp_args['metadata'] = render_template(self.metadata_template,
-                                                     **self.metadata)
+        self.temp_args['metadata_block'] = render_template(
+            self.metadata_template,
+            **self.metadata)
+        self.temp_args['metadata'] = self.safe_metadata()
         self.temp_args['upload_link'] = url_for(
             f'forms.upload_{self.data_type}_data',
             uuid=self.metadata[self.id_key])
@@ -144,7 +146,7 @@ class SingleObjectView(DataDashView):
             except DataRequestException:
                 self.temp_args.update({'plot': None})
             else:
-                self.insert_plot(uuid, start.isoformat(), end.isoformat())
+                self.insert_plot(uuid, start, end)
             finally:
                 self.set_site_or_aggregate_link()
                 self.set_template_args(start=start, end=end, **kwargs)
@@ -203,8 +205,10 @@ class SingleCDFForecastGroupView(SingleObjectView):
         self.temp_args['subnav'] = self.format_subnav(**kwargs)
         self.temp_args['breadcrumb'] = self.breadcrumb_html(
             self.get_breadcrumb_dict())
-        self.temp_args['metadata'] = render_template(self.metadata_template,
-                                                     **self.metadata)
+        self.temp_args['metadata_block'] = render_template(
+            self.metadata_template,
+            **self.metadata)
+        self.temp_args['metadata'] = self.safe_metadata()
         self.temp_args['constant_values'] = self.metadata['constant_values']
         self.temp_args['delete_link'] = url_for(
             f'data_dashboard.delete_cdf_forecast_group',

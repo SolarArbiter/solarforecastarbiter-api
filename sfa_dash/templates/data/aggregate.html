@@ -1,25 +1,25 @@
 {% extends "dash/data.html" %}
 {% block content %}
-
-{{ metadata | safe }}
+{{ metadata_block | safe }}
 {% include "sections/notifications.html" %}
-{% if aggregate is defined %}
+{% if metadata is defined %}
+<script>var metadata = JSON.parse('{{ metadata | tojson }}');</script>
 
 {% set update_allowed = is_allowed('update') %}
 {% if update_allowed %}
-<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.add_aggregate_observations', uuid=aggregate['aggregate_id'] ) }}">Add Observation</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.add_aggregate_observations', uuid=metadata['aggregate_id'] ) }}">Add Observation</a>
 {% endif %}
 
-<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_aggregate_forecast', uuid=aggregate['aggregate_id'] ) }}">Create Forecast</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_aggregate_forecast', uuid=metadata['aggregate_id'] ) }}">Create Forecast</a>
 
-<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_aggregate_cdf_forecast_group', uuid=aggregate['aggregate_id'] ) }}">Create Probabilistic Forecast</a>
+<a role="button" class="btn btn-primary btn-sm" href="{{ url_for('forms.create_aggregate_cdf_forecast_group', uuid=metadata['aggregate_id'] ) }}">Create Probabilistic Forecast</a>
 
 {% if upload_link is defined and is_allowed('write_values') %}
 <a role="button" class="btn btn-primary btn-sm" href="{{upload_link}}">Upload data</a>
 {% endif %}
 
 {% if is_allowed('delete') %}
-<a role="button" class="btn btn-danger btn-sm" href="{{ url_for('data_dashboard.delete_aggregate', uuid=aggregate['aggregate_id']) }}">Delete</a>
+<a role="button" class="btn btn-danger btn-sm" href="{{ url_for('data_dashboard.delete_aggregate', uuid=metadata['aggregate_id']) }}">Delete</a>
 {% endif %}
 
 <h3 class="mt-3">Observations</h3>
@@ -49,7 +49,7 @@
         <td scope="col" class="effective-until-column datetime-td">{{ obs["effective_until"] | format_datetime}}</td>
         {% else %}
         {% if update_allowed %}
-        <td scope="col"><a href="{{ url_for('forms.remove_aggregate_observations', uuid=aggregate['aggregate_id'], observation_id=obs['observation_id']) }}">Set Effective Until</a></td>
+        <td scope="col"><a href="{{ url_for('forms.remove_aggregate_observations', uuid=metadata['aggregate_id'], observation_id=obs['observation_id']) }}">Set Effective Until</a></td>
         {% endif %}
         {% endif %}
     </tr>

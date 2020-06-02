@@ -3,7 +3,7 @@
 # the template_variables function.
 
 import pytz
-from flask import g, request
+from flask import g, request, current_app
 
 import sfa_dash
 from sfa_dash import filters
@@ -83,4 +83,6 @@ def template_variables():
         'quality_flags': ALLOWED_QUALITY_FLAGS,
         'is_allowed': is_allowed,
         'current_path': request.path,
+        'MAX_DATA_RANGE_DAYS': current_app.config['MAX_DATA_RANGE_DAYS'].days,
+        'MAX_PLOT_DATAPOINTS': current_app.config['MAX_PLOT_DATAPOINTS'],
     }

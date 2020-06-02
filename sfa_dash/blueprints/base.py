@@ -1,7 +1,8 @@
 from collections import OrderedDict
+from copy import deepcopy
 
 
-from flask import url_for, render_template, request, flash
+from flask import url_for, render_template, request, flash, current_app
 from flask.views import MethodView
 import pandas as pd
 
@@ -19,34 +20,65 @@ class BaseView(MethodView):
 
         This inserts the rendered plot html and bokeh script into
         the temp_args keys plot and bokeh_script respectively.
+
+        Parameters
+        ----------
+        uuid: str
+            The UUID of the object to request data for.
+        start: datetime
+        end: datetime
         """
-        try:
-            values = self.api_handle.get_values(
-                uuid, params={'start': start, 'end': end})
-        except DataRequestException as e:
-            if e.status_code == 422:
-                self.temp_args.update({'warnings': e.errors})
+        # determine limit by number of datapoints in the maximum allowable
+        # time range based on interval length.
+        timerange_limit = current_app.config['MAX_DATA_RANGE_DAYS']
+        interval_length = self.metadata['interval_length']
+        max_pts = min(
+            timerange_limit / pd.Timedelta(f'{interval_length} minutes'),
+            current_app.config['MAX_PLOT_DATAPOINTS']
+        )
+
+        timerange_minutes = (end - start).total_seconds() / 60
+        total_points = timerange_minutes / interval_length
+
+        if total_points <= max_pts:
+            try:
+                values = self.api_handle.get_values(
+                    uuid, params={'start': start.isoformat(),
+                                  'end': end.isoformat()})
+            except DataRequestException as e:
+                if e.status_code == 422:
+                    self.temp_args.update({'warnings': e.errors})
+                else:
+                    self.temp_args.update({'warnings': {
+                        'Value Access': [
+                            f'{self.human_label} values inaccessible.']},
+                    })
             else:
-                self.temp_args.update({'warnings': {
-                    'Value Access': [
-                        f'{self.human_label} values inaccessible.']},
-                })
+                script_plot = timeseries_adapter(
+                    self.plot_type, self.metadata, values)
+                if script_plot is None:
+                    self.temp_args.update({
+                        'messages': {
+                            'Data': [
+                                ("No data available for this "
+                                 f"{self.human_label} during this period.")]},
+                    })
+                else:
+                    self.temp_args.update({
+                        'plot': script_plot[1],
+                        'includes_bokeh': True,
+                        'bokeh_script': script_plot[0]
+                    })
         else:
-            script_plot = timeseries_adapter(
-                self.plot_type, self.metadata, values)
-            if script_plot is None:
-                self.temp_args.update({
-                    'messages': {
-                        'Data': [
-                            (f"No data available for this {self.human_label} "
-                             "during this period.")]},
-                })
-            else:
-                self.temp_args.update({
-                    'plot': script_plot[1],
-                    'includes_bokeh': True,
-                    'bokeh_script': script_plot[0]
-                })
+            allowable_days = pd.Timedelta(f"{max_pts*interval_length} minutes")
+            self.temp_args.update({
+                'plot': '<div class="alert alert-warning">Too many datapoints '
+                        'to display. The maximum number of datapoints to plot '
+                        f'is {max_pts}. This amounts to {allowable_days.days} '
+                        f'days and {allowable_days.components.hours} hours of '
+                        f'data. The the requested data contains {total_points}'
+                        ' datapoints.</div>'
+            })
 
     def set_timerange(self):
         """Retrieve the available timerange for an object and set the
@@ -71,9 +103,14 @@ class BaseView(MethodView):
         start,end
             Tuple of ISO 8601 datetime strings representing the start, end.
         """
-        # set default arg to an invalid timestamp, to trigger ValueError
-        start_arg = request.args.get('start', 'x')
-        end_arg = request.args.get('end', 'x')
+        start_arg = request.args.get('start')
+        end_arg = request.args.get('end')
+        # if start and end are not present, set them to an invalid datetime
+        # to trigger value error
+        if not start_arg:
+            start_arg = "x"
+        if not end_arg:
+            end_arg = "x"
         try:
             end = pd.Timestamp(end_arg)
         except ValueError:
@@ -197,6 +234,20 @@ class BaseView(MethodView):
         to_flash = [f'({key}) {", ".join(msg)}' for key, msg in errors.items()]
         for error in to_flash:
             flash(error, 'error')
+
+    def safe_metadata(self):
+        """Creates a copy of the metadata attribute without the
+        `extra_parameters` keys.
+        """
+        def _pop_nonjson(meta_dict):
+            new_dict = deepcopy(meta_dict)
+            new_dict.pop('extra_parameters', None)
+            new_dict.pop('location_link', None)
+            for key, val in meta_dict.items():
+                if isinstance(val, dict):
+                    new_dict[key] = _pop_nonjson(val)
+            return new_dict
+        return _pop_nonjson(self.metadata)
 
     def template_args(self):
         return {}

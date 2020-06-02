@@ -2,6 +2,12 @@
 
 {% if is_allowed('read_values') %}
 {# Time widgets are used for either setting the bounds of the plot or download #}
+<p class="mt-3">
+Use the start and end selectors below to set the range of the plot above or
+download data. A maximum of one year of data may be downloaded.
+</p>
+{# TODO: generate a message about the correct plotting limit based on current
+         metadata #}
 <div class="form-group mt-3">
 <div class="form-element">
   <label for="start">Start (UTC):</label><br/>
@@ -15,9 +21,9 @@
 </div>
 {# form makes a post request to download data #}
 <div class="form-element full-width">
-  <button type="submit" form="plot-range-adjust" value="Submit" class="btn btn-primary">Update graph</button>
+  <button type="submit" id="plot-range-adjust-submit" form="plot-range-adjust" value="Submit" class="btn btn-primary">Update graph</button>
   <form action="" method="post" id="download-form" onsubmit="ParseStartEnd()">
-  <button type="submit" form="download-form" value="Submit" class="btn btn-primary">Download data</button>
+  <button type="submit" id="download-submit" form="download-form" value="Submit" class="btn btn-primary">Download data</button>
   <label for="format">Format: </label>
   <input type="radio" name="format" value="text/csv" checked>CSV</input>
   <input type="radio" name="format" value="application/json">JSON</input>
@@ -31,5 +37,7 @@
 <form action="" method="get" id="plot-range-adjust" onsubmit="ParseStartEnd()">
 <input type="text" class="start" name="start" hidden>
 <input type="text" class="end" name="end" hidden>
-<script src="/static/js/plot-bound-parsing.js"></script>
+</form>
+<div id="form-errors"></div>
+<script src="/static/js/timerange-handling.js"></script>
 {% endif %}
