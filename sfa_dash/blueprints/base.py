@@ -76,7 +76,7 @@ class BaseView(MethodView):
                         'to display. The maximum number of datapoints to plot '
                         f'is {max_pts}. This amounts to {allowable_days.days} '
                         f'days and {allowable_days.components.hours} hours of '
-                        f'data. The the requested data contains {total_points}'
+                        f'data. The requested data contains {total_points}'
                         ' datapoints.</div>'
             })
 
