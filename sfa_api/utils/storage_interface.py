@@ -182,7 +182,7 @@ def try_query(query_cmd):
         ecode = e.args[0]
         if ecode == 1142 or ecode == 1143 or ecode == 1411 or ecode == 1216:
             raise StorageAuthError(e.args[1])
-        elif ecode == 1451:
+        elif ecode == 1451 or ecode == 1217:
             raise DeleteRestrictionError
         elif ecode == 3140:
             raise BadAPIRequest({'error': e.args[1]})
