@@ -105,24 +105,26 @@ class BaseView(MethodView):
         """
         start_arg = request.args.get('start')
         end_arg = request.args.get('end')
-        # if start and end are not present, set them to an invalid datetime
-        # to trigger value error
-        if not start_arg:
-            start_arg = "x"
-        if not end_arg:
-            end_arg = "x"
+        utc_now = pd.Timestamp.utcnow()
         try:
             end = pd.Timestamp(end_arg)
         except ValueError:
+            end = None
+        if pd.isnull(end):
             meta_end = self.metadata.get('timerange_end')
             if meta_end is None:
-                end = pd.Timestamp.utcnow()
+                end = utc_now
             else:
                 end = pd.Timestamp(meta_end)
         try:
             start = pd.Timestamp(start_arg)
         except ValueError:
-            start = end - pd.Timedelta('3days')
+            start = None
+        if pd.isnull(start):
+            if end > utc_now:
+                start = utc_now - pd.Timedelta('1day')
+            else:
+                start = end - pd.Timedelta('3days')
         return start, end
 
     def format_download_params(self, form_data):
