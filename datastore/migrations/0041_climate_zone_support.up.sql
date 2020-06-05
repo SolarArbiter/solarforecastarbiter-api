@@ -4,7 +4,10 @@ CREATE TABLE arbiter_data.climate_zones (
     name varchar(255) NOT NULL UNIQUE,
     g GEOMETRY NOT NULL SRID 4326,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (name),
+    SPATIAL INDEX (g)
 ) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
 -- could later add an organization here for user defined zones and ids for permissions
 
@@ -123,6 +126,43 @@ GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites TO 'select_objects'@'localhos
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites TO 'apiuser'@'%';
 
 
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_sites_in_zone(
+    IN auth0id VARCHAR(32), IN thezone VARCHAR(255)
+)
+COMMENT 'List all sites within the climate zone that the user can read'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    IF ISNULL(thezone) OR thezone = '' THEN
+        SELECT BIN_TO_UUID(id, 1) as site_id, get_organization_name(organization_id) as provider,
+            name, latitude, longitude, elevation, timezone, extra_parameters, ac_capacity, dc_capacity,
+            temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt,
+            axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle,
+            dc_loss_factor, ac_loss_factor, created_at, modified_at, JSON_ARRAY() as climate_zones
+        FROM arbiter_data.sites WHERE id IN (
+            SELECT object_id from user_objects WHERE auth0_id = @auth0id AND object_type = 'sites'
+        ) AND id NOT IN (
+            SELECT site_id FROM arbiter_data.site_zone_mapping
+        );
+    ELSE
+        SELECT BIN_TO_UUID(id, 1) as site_id, get_organization_name(organization_id) as provider,
+            name, latitude, longitude, elevation, timezone, extra_parameters, ac_capacity, dc_capacity,
+            temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt,
+            axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle,
+            dc_loss_factor, ac_loss_factor, created_at, modified_at,
+            IFNULL(
+                (SELECT JSON_ARRAYAGG(zone) FROM arbiter_data.site_zone_mapping WHERE site_id = id),
+                JSON_ARRAY()
+            ) AS climate_zones -- still include other zones
+        FROM arbiter_data.sites WHERE id in (
+            SELECT object_id from user_objects WHERE auth0_id = auth0id AND object_type = 'sites'
+        ) AND id IN (
+            SELECT site_id FROM arbiter_data.site_zone_mapping WHERE zone = thezone
+        );
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites_in_zone TO 'select_objects'@'localhost';
+
+
 CREATE DEFINER = 'select_objects'@'localhost' FUNCTION arbiter_data.find_climate_zones(
     latitude FLOAT, longitude FLOAT
 )
@@ -142,7 +182,33 @@ END;
 GRANT SELECT ON arbiter_data.climate_zones TO 'select_objects'@'localhost';
 GRANT EXECUTE ON FUNCTION arbiter_data.find_climate_zones TO 'select_objects'@'localhost';
 
-
 -- set @testpoint = st_pointfromtext('point(42.43140199881 -105.28391000016)', 4326);
 -- also tests site outside climeate zones
--- procedure arbiter_data.list_sites_within_zone
+-- get zones as geojson
+
+CREATE DEFINER = 'select_objects'@'localhost' FUNCTION massage_geo_json(g JSON, properties JSON)
+RETURNS JSON
+COMMENT 'Transformas a GeometryCollection into a FeatureCollection and adds the properties to each Feature'
+READS SQL DATA SQL SECURITY DEFINER
+RETURN (SELECT JSON_OBJECT(
+    'type', 'FeatureCollection', 'crs', crs, 'features', JSON_ARRAYAGG(
+        JSON_OBJECT('geometry', geo, 'type', 'Feature', 'properties', properties)
+    )
+) FROM JSON_TABLE(g, '$' COLUMNS (
+    crs JSON PATH '$.crs',
+    NESTED PATH '$.geometries[*]' COLUMNS (
+        geo JSON PATH '$'))
+) AS jt GROUP BY crs); -- will require a mysql upgrade
+
+GRANT EXECUTE ON FUNCTION massage_geo_json TO 'select_objects'@'localhost';
+
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.read_climate_zone(
+    IN thezone VARCHAR(255)
+)
+COMMENT 'Return the reference climate zone as GeoJSON'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT(
+    'name', name, 'created_at', created_at, 'modified_at', modified_at))
+FROM arbiter_data.climate_zones WHERE name = thezone;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'select_objects'@'localhost';

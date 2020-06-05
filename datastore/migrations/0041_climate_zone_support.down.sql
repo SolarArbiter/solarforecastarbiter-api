@@ -1,4 +1,7 @@
+DROP FUNCTION massage_geo_json;
+DROP PROCEDURE read_climate_zone;
 DROP FUNCTION find_climate_zones;
+DROP PROCEDURE list_sites_in_zone;
 DROP PROCEDURE list_sites;
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE list_sites (IN auth0id VARCHAR(32))
 COMMENT 'List all sites and associated metadata that the user can read'
