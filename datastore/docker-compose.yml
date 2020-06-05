@@ -1,7 +1,7 @@
 version: '3'
 services:
   mysql:
-    image: percona:8.0.13-4-centos
+    image: percona:8.0-centos
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: 'testpassword'
