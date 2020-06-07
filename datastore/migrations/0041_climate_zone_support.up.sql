@@ -167,7 +167,7 @@ BEGIN
     END IF;
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites_in_zone TO 'select_objects'@'localhost';
-
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites_in_zone TO 'apiuser'@'%';
 
 CREATE DEFINER = 'select_objects'@'localhost' FUNCTION arbiter_data.find_climate_zones(
     latitude FLOAT, longitude FLOAT
@@ -218,7 +218,7 @@ SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name))
 FROM arbiter_data.climate_zones WHERE name = thezone;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'select_objects'@'localhost';
-
+GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'apiuser'@'%';
 
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.list_climate_zones()
 COMMENT 'Return a list of climate zones w/o the geojson'
@@ -226,3 +226,4 @@ READS SQL DATA SQL SECURITY DEFINER
 SELECT name, created_at, modified_at FROM arbiter_data.climate_zones;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_climate_zones TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_climate_zones TO 'apiuser'@'%';

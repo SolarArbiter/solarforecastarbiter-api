@@ -166,12 +166,12 @@ def insert_dict(cursor, table, thedict):
 
 @pytest.fixture()
 def new_site(cursor, new_organization):
-    def fcn(org=None):
+    def fcn(org=None, latitude=0, longitude=0):
         if org is None:
             org = new_organization()
         out = OrderedDict(id=newuuid(), organization_id=org['id'],
                           name=f'site{str(uuid1())[:10]}',
-                          latitude=0, longitude=0, elevation=0,
+                          latitude=latitude, longitude=longitude, elevation=0,
                           timezone='America/Denver', extra_parameters='',
                           ac_capacity=0, dc_capacity=0,
                           temperature_coefficient=0,

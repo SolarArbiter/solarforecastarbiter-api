@@ -106,10 +106,31 @@ def test_list_permissions(dictcursor, twosets):
     assert res == perms
 
 
-def test_list_sites(dictcursor, twosets):
+def test_list_sites(dictcursor, twosets, new_site):
     authid = twosets[0]['auth0_id']
     sites = twosets[3]
+    org = twosets[-3]
+    for site in sites: site['climate_zones'] = '[]'  # NOQA
+    sites += [new_site(org=org, latitude=32, longitude=-110)]
+    sites[-1]['climate_zone'] = '["Reference Region 3"]'
     dictcursor.callproc('list_sites', (authid,))
+    res = dictcursor.fetchall()
+    assert [str(bin_to_uuid(site['id'])) for site in sites] == [
+        r['site_id'] for r in res]
+    assert (
+        set(res[0].keys()) - set(
+            ('created_at', 'modified_at', 'provider', 'site_id')) ==
+        set(sites[0].keys()) - set(('organization_id', 'id')))
+
+
+def test_list_sites_in_zone(dictcursor, twosets, new_site):
+    authid = twosets[0]['auth0_id']
+    org = twosets[-3]
+    new_site(org=org, latitude=42, longitude=-103)
+    sites = [new_site(org=org, latitude=32, longitude=-110),
+             new_site(org=org, latitude=33, longitude=-115)]
+    for site in sites:  site['climate_zones'] = '["Reference Region 3"]'  # NOQA
+    dictcursor.callproc('list_sites_in_zone', (authid, 'Reference Region 3'))
     res = dictcursor.fetchall()
     assert [str(bin_to_uuid(site['id'])) for site in sites] == [
         r['site_id'] for r in res]
