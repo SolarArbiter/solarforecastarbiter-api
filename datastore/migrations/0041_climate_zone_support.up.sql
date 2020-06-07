@@ -169,28 +169,25 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites_in_zone TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_sites_in_zone TO 'apiuser'@'%';
 
-CREATE DEFINER = 'select_objects'@'localhost' FUNCTION arbiter_data.find_climate_zones(
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.find_climate_zones(
     latitude FLOAT, longitude FLOAT
 )
-RETURNS JSON
 COMMENT 'Return a JSON array of the climate zones the lat,lon point is within'
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
-    DECLARE outp JSON;
-    SELECT JSON_ARRAYAGG(name) INTO outp FROM arbiter_data.climate_zones WHERE ST_Within(
+    DECLARE zones JSON;
+    SELECT JSON_ARRAYAGG(name) INTO zones FROM arbiter_data.climate_zones WHERE ST_Within(
         ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
-    IF ISNULL(outp) THEN
-        RETURN JSON_ARRAY();
+    IF ISNULL(zones) THEN
+        SELECT JSON_ARRAY() as zones;
     ELSE
-        RETURN outp;
+        SELECT zones;
     END IF;
 END;
 GRANT SELECT ON arbiter_data.climate_zones TO 'select_objects'@'localhost';
-GRANT EXECUTE ON FUNCTION arbiter_data.find_climate_zones TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.find_climate_zones TO 'select_objects'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.find_climate_zones TO 'apiuser'@'%';
 
--- set @testpoint = st_pointfromtext('point(42.43140199881 -105.28391000016)', 4326);
--- also tests site outside climeate zones
--- get zones as geojson
 
 CREATE DEFINER = 'select_objects'@'localhost' FUNCTION massage_geo_json(g JSON, properties JSON)
 RETURNS JSON
