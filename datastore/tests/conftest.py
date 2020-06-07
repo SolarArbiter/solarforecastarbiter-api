@@ -184,6 +184,8 @@ def new_site(cursor, new_organization):
                           dc_loss_factor=0,
                           ac_loss_factor=0)
         insert_dict(cursor, 'sites', out)
+        # climate zone is not part of the site to insert, but there
+        out['climate_zones'] = '[]'
         return out
     return fcn
 

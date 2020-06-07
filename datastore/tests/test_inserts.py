@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import datetime as dt
+from decimal import Decimal
 import json
 import random
 import uuid
@@ -165,6 +166,7 @@ def site_callargs(insertuser, new_site):
     siteargs = new_site()
     del siteargs['id']
     del siteargs['organization_id']
+    del siteargs['climate_zones']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(siteargs)
     return callargs
@@ -285,6 +287,47 @@ def test_store_site(dictcursor, site_callargs, allow_create):
     res = dictcursor.fetchall()[0]
     for key in keys:
         assert res[key] == site_callargs[key]
+
+
+def test_store_site_within_zone(dictcursor, site_callargs, allow_create):
+    callargs = site_callargs.copy()
+    callargs['latitude'] = Decimal('32.2')
+    callargs['longitude'] = Decimal('-111')
+    strid = callargs['strid']
+    dictcursor.callproc('store_site', list(callargs.values()))
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',
+        (strid,))
+    keys = list(callargs.keys())[2:]
+    res = dictcursor.fetchall()[0]
+    for key in keys:
+        assert res[key] == callargs[key]
+
+    dictcursor.execute(
+        'SELECT zone FROM arbiter_data.site_zone_mapping WHERE '
+        'site_id = UUID_TO_BIN(%s, 1)',
+        (strid,))
+    res = dictcursor.fetchall()
+    assert len(res) == 1
+    assert res[0]['zone'] == 'Reference Region 3'
+
+    # update site
+    lat = Decimal('41')
+    lon = Decimal('-73')
+    callargs['latitude'] = lat
+    callargs['longitude'] = lon
+    dictcursor.execute(
+        'UPDATE sites SET latitude = %s, longitude = %s'
+        ' WHERE id = UUID_TO_BIN(%s, 1)', (lat, lon, strid)
+    )
+
+    dictcursor.execute(
+        'SELECT zone FROM arbiter_data.site_zone_mapping WHERE '
+        'site_id = UUID_TO_BIN(%s, 1)',
+        (strid,))
+    res = dictcursor.fetchall()
+    assert len(res) == 1
+    assert res[0]['zone'] == 'Reference Region 7'
 
 
 def test_store_site_denied_cant_create(dictcursor, site_callargs):
@@ -1471,3 +1514,71 @@ def test_store_job(dictcursor, new_user):
     assert out['organization_id'] == user['organization_id']
     assert 'created_at' in out
     assert 'modified_at' in out
+
+
+def test_insert_climate_zone(dictcursor):
+    # just test that climate zone triggers work
+    # if a new procedure is made for this, be more
+    # thorough
+    geojson = json.dumps({
+        "type": "FeatureCollection",
+        "crs": {"type": "name", "properties": {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+        "features": [
+            {"type": "Feature",
+             "properties": {"Name": "big"},
+             "geometry": {"type": "Polygon", "coordinates": [[
+                 [-130, 20], [-65, 20], [-65, 50], [-130, 50], [-130, 20]
+             ]]}
+            }
+        ]
+    })
+    dictcursor.execute(
+        'SELECT COUNT(DISTINCT(site_id)) as count FROM '
+        'arbiter_data.site_zone_mapping'
+    )
+    sitecount = dictcursor.fetchone()['count']
+    dictcursor.execute(
+        'INSERT INTO arbiter_data.climate_zones (name, g) VALUES '
+        '("big", ST_GeomFromGeoJSON(%s))',
+        geojson
+    )
+    dictcursor.execute(
+        'SELECT COUNT(DISTINCT(site_id)) as count FROM '
+        'arbiter_data.site_zone_mapping WHERE zone = "big"'
+    )
+    assert dictcursor.fetchone()['count'] == sitecount
+
+
+def test_update_climate_zone(dictcursor):
+    # just test that climate zone triggers work
+    # if a new procedure is made for this, be more
+    # thorough
+    geojson = json.dumps({
+        "type": "FeatureCollection",
+        "crs": {"type": "name", "properties": {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+        "features": [
+            {"type": "Feature",
+             "properties": {"Name": "other side world"},
+             "geometry": {"type": "Polygon", "coordinates": [[
+                 [130, 20], [65, 20], [65, 50], [130, 50], [130, 20]
+             ]]}
+            }
+        ]
+    })
+    dictcursor.execute(
+        'SELECT COUNT(site_id) as count FROM '
+        'arbiter_data.site_zone_mapping WHERE zone = "Reference Region 3"'
+    )
+    assert dictcursor.fetchone()['count'] > 0
+    dictcursor.execute(
+        'UPDATE arbiter_data.climate_zones SET g = ST_GeomFromGeoJSON(%s) '
+        'WHERE name = "Reference Region 3"',
+        geojson
+    )
+    dictcursor.execute(
+        'SELECT COUNT(site_id) as count FROM '
+        'arbiter_data.site_zone_mapping WHERE zone = "Reference Region 3"'
+    )
+    assert dictcursor.fetchone()['count'] == 0
