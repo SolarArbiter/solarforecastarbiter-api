@@ -122,10 +122,33 @@ def test_read_site(dictcursor, insertuser, allow_read_sites):
     del site['strid']
     del site['id']
     site['provider'] = insertuser[4]['name']
+    site['climate_zones'] = '[]'
     del site['organization_id']
     del res['created_at']
     del res['modified_at']
     assert res == site
+
+
+@pytest.mark.parametrize('lat,lon,zones', [
+    (0, 0, 0),
+    (25, -119, 1),
+    (32, -110, 2)
+])
+def test_read_site_zones(dictcursor, insertuser, allow_read_sites,
+                         lat, lon, zones, new_climzone):
+    new_climzone()
+    auth0id = insertuser[0]['auth0_id']
+    site = insertuser[1]
+    site['latitude'] = lat
+    site['longitude'] = lon
+    dictcursor.execute(
+        'UPDATE sites SET latitude = %s, longitude = %s WHERE '
+        'id = UUID_TO_BIN(%s, 1)',
+        (lat, lon, site['strid'])
+    )
+    dictcursor.callproc('read_site', (auth0id, site['strid']))
+    res = dictcursor.fetchall()[0]
+    assert len(json.loads(res['climate_zones'])) == zones
 
 
 def test_read_site_denied(cursor, insertuser):

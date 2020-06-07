@@ -184,8 +184,6 @@ def new_site(cursor, new_organization):
                           dc_loss_factor=0,
                           ac_loss_factor=0)
         insert_dict(cursor, 'sites', out)
-        # climate zone is not part of the site to insert, but there
-        out['climate_zones'] = '[]'
         return out
     return fcn
 
@@ -530,4 +528,34 @@ def new_job(cursor, new_user):
             'job_type, parameters, schedule, version) VALUES'
             ' (%s, %s, %s, %s, %s, %s, %s, %s)', list(out.values()))
         return out
+    return fnc
+
+
+@pytest.fixture()
+def new_climzone(cursor):
+    def fnc(name='USA', coords=(
+            (-130, 20), (-65, 20),
+            (-65, 50), (-130, 50), (-130, 20)),
+            insert=True
+            ):
+        geojson = {
+            "type": "FeatureCollection",
+            "crs": {"type": "name", "properties": {
+                "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+            "features": [
+                {"type": "Feature",
+                 "properties": {"Name": "big"},
+                 "geometry": {"type": "Polygon", "coordinates": [
+                     coords
+                 ]}
+                 }
+            ]
+        }
+        if insert:
+            cursor.execute(
+                'INSERT INTO climate_zones (name, g) VALUES '
+                '(%s, ST_GeomFromGeoJSON(%s))',
+                (name, json.dumps(geojson))
+            )
+        return geojson
     return fnc

@@ -166,7 +166,6 @@ def site_callargs(insertuser, new_site):
     siteargs = new_site()
     del siteargs['id']
     del siteargs['organization_id']
-    del siteargs['climate_zones']
     callargs = OrderedDict(auth0id=auth0id, strid=str(uuid.uuid1()))
     callargs.update(siteargs)
     return callargs
@@ -1516,33 +1515,17 @@ def test_store_job(dictcursor, new_user):
     assert 'modified_at' in out
 
 
-def test_insert_climate_zone(dictcursor):
+def test_insert_climate_zone(dictcursor, new_climzone):
     # just test that climate zone triggers work
     # if a new procedure is made for this, be more
     # thorough
-    geojson = json.dumps({
-        "type": "FeatureCollection",
-        "crs": {"type": "name", "properties": {
-            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
-        "features": [
-            {"type": "Feature",
-             "properties": {"Name": "big"},
-             "geometry": {"type": "Polygon", "coordinates": [[
-                 [-130, 20], [-65, 20], [-65, 50], [-130, 50], [-130, 20]
-             ]]}
-            }
-        ]
-    })
+
     dictcursor.execute(
         'SELECT COUNT(DISTINCT(site_id)) as count FROM '
         'arbiter_data.site_zone_mapping'
     )
     sitecount = dictcursor.fetchone()['count']
-    dictcursor.execute(
-        'INSERT INTO arbiter_data.climate_zones (name, g) VALUES '
-        '("big", ST_GeomFromGeoJSON(%s))',
-        geojson
-    )
+    new_climzone('big')
     dictcursor.execute(
         'SELECT COUNT(DISTINCT(site_id)) as count FROM '
         'arbiter_data.site_zone_mapping WHERE zone = "big"'
@@ -1550,32 +1533,24 @@ def test_insert_climate_zone(dictcursor):
     assert dictcursor.fetchone()['count'] == sitecount
 
 
-def test_update_climate_zone(dictcursor):
+def test_update_climate_zone(dictcursor, new_climzone):
     # just test that climate zone triggers work
     # if a new procedure is made for this, be more
     # thorough
-    geojson = json.dumps({
-        "type": "FeatureCollection",
-        "crs": {"type": "name", "properties": {
-            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
-        "features": [
-            {"type": "Feature",
-             "properties": {"Name": "other side world"},
-             "geometry": {"type": "Polygon", "coordinates": [[
-                 [130, 20], [65, 20], [65, 50], [130, 50], [130, 20]
-             ]]}
-            }
-        ]
-    })
     dictcursor.execute(
         'SELECT COUNT(site_id) as count FROM '
         'arbiter_data.site_zone_mapping WHERE zone = "Reference Region 3"'
     )
     assert dictcursor.fetchone()['count'] > 0
+    geojson = new_climzone(
+        'other side',
+        ([130, 20], [65, 20], [65, 50], [130, 50], [130, 20]),
+        False
+    )
     dictcursor.execute(
         'UPDATE arbiter_data.climate_zones SET g = ST_GeomFromGeoJSON(%s) '
         'WHERE name = "Reference Region 3"',
-        geojson
+        json.dumps(geojson)
     )
     dictcursor.execute(
         'SELECT COUNT(site_id) as count FROM '
