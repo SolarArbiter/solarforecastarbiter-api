@@ -30,18 +30,21 @@ CREATE TABLE arbiter_data.site_zone_mapping (
 ) ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
 
 
-GRANT INSERT, SELECT ON arbiter_data.site_zone_mapping TO 'climzones'@'localhost';
+GRANT INSERT, SELECT, DELETE ON arbiter_data.site_zone_mapping TO 'climzones'@'localhost';
 GRANT SELECT, TRIGGER ON arbiter_data.sites TO 'climzones'@'localhost';
 GRANT SELECT, TRIGGER ON arbiter_data.climate_zones TO 'climzones'@'localhost';
 
 CREATE DEFINER = 'climzones'@'localhost' PROCEDURE arbiter_data.update_site_zone_mapping_new_site(
-    site_id BINARY(16), latitude FLOAT, longitude FLOAT
+    siteid BINARY(16), latitude FLOAT, longitude FLOAT
 )
 COMMENT 'Update the site_zone_mapping table with the given site location'
 MODIFIES SQL DATA SQL SECURITY DEFINER
-INSERT IGNORE INTO arbiter_data.site_zone_mapping (site_id, zone)
-    SELECT site_id, name FROM arbiter_data.climate_zones WHERE ST_Within(
-        ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
+BEGIN
+    DELETE FROM arbiter_data.site_zone_mapping WHERE site_id = siteid;
+    INSERT INTO arbiter_data.site_zone_mapping (site_id, zone)
+        SELECT siteid, name FROM arbiter_data.climate_zones WHERE ST_Within(
+            ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
+END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_site_zone_mapping_new_site TO 'climzones'@'localhost';
 
 
@@ -50,9 +53,12 @@ CREATE DEFINER = 'climzones'@'localhost' PROCEDURE arbiter_data.update_site_zone
 )
 COMMENT 'Update the site_zone_mapping table with a new zone'
 MODIFIES SQL DATA SQL SECURITY DEFINER
-INSERT IGNORE INTO arbiter_data.site_zone_mapping (site_id, zone)
-    SELECT id, newzone FROM arbiter_data.sites WHERE ST_Within(
-        ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
+BEGIN
+    DELETE FROM arbiter_data.site_zone_mapping WHERE zone = newzone;
+    INSERT INTO arbiter_data.site_zone_mapping (site_id, zone)
+        SELECT id, newzone FROM arbiter_data.sites WHERE ST_Within(
+            ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
+END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_site_zone_mapping_new_zone TO 'climzones'@'localhost';
 
 
@@ -202,13 +208,21 @@ RETURN (SELECT JSON_OBJECT(
 
 GRANT EXECUTE ON FUNCTION massage_geo_json TO 'select_objects'@'localhost';
 
+
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.read_climate_zone(
     IN thezone VARCHAR(255)
 )
 COMMENT 'Return the reference climate zone as GeoJSON'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT(
-    'name', name, 'created_at', created_at, 'modified_at', modified_at))
+SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name))
 FROM arbiter_data.climate_zones WHERE name = thezone;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'select_objects'@'localhost';
+
+
+CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.list_climate_zones()
+COMMENT 'Return a list of climate zones w/o the geojson'
+READS SQL DATA SQL SECURITY DEFINER
+SELECT name, created_at, modified_at FROM arbiter_data.climate_zones;
+
+GRANT EXECUTE ON PROCEDURE arbiter_data.list_climate_zones TO 'select_objects'@'localhost';

@@ -1,5 +1,6 @@
-DROP FUNCTION massage_geo_json;
+DROP PROCEDURE list_climate_zones;
 DROP PROCEDURE read_climate_zone;
+DROP FUNCTION massage_geo_json;
 DROP FUNCTION find_climate_zones;
 DROP PROCEDURE list_sites_in_zone;
 DROP PROCEDURE list_sites;
