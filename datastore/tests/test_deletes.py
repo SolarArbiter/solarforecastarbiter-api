@@ -10,7 +10,7 @@ def site_obj(cursor, valueset, new_site):
     org = valueset[0][0]
     user = valueset[1][0]
     auth0id = user['auth0_id']
-    site = new_site(org=org)
+    site = new_site(org=org, latitude=32, longitude=-110)
     return auth0id, str(bin_to_uuid(site['id'])), site
 
 
@@ -133,9 +133,19 @@ def test_delete_site(cursor, site_obj, allow_delete_site):
         'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
         siteid)
     assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'SELECT COUNT(site_id) FROM arbiter_data.site_zone_mapping WHERE'
+        ' site_id = UUID_TO_BIN(%s, 1)',
+        siteid)
+    assert cursor.fetchone()[0] > 0
     cursor.callproc('delete_site', (auth0id, siteid))
     cursor.execute(
         'SELECT COUNT(id) FROM arbiter_data.sites WHERE id = UUID_TO_BIN(%s, 1)',  # NOQA
+        siteid)
+    assert cursor.fetchone()[0] == 0
+    cursor.execute(
+        'SELECT COUNT(site_id) FROM arbiter_data.site_zone_mapping WHERE'
+        ' site_id = UUID_TO_BIN(%s, 1)',
         siteid)
     assert cursor.fetchone()[0] == 0
 
@@ -817,3 +827,16 @@ def test_delete_job_job_dne(dictcursor):
         dictcursor.callproc('delete_job', (str(bin_to_uuid(newuuid())),))
     assert e.value.args[0] == 1305
     assert e.value.args[1] == "Job does not exist"
+
+
+def test_delete_climate_zone(cursor):
+    cursor.execute(
+        'SELECT COUNT(site_id) FROM site_zone_mapping WHERE '
+        'zone = "Reference Region 2"')
+    assert cursor.fetchone()[0] > 0
+    cursor.execute(
+        'DELETE FROM climate_zones WHERE name = "Reference Region 2"')
+    cursor.execute(
+        'SELECT COUNT(site_id) FROM site_zone_mapping WHERE '
+        'zone = "Reference Region 2"')
+    assert cursor.fetchone()[0] == 0
