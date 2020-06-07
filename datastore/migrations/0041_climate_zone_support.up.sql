@@ -214,7 +214,7 @@ CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.read_climat
 )
 COMMENT 'Return the reference climate zone as GeoJSON'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name))
+SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name)) as geojson
 FROM arbiter_data.climate_zones WHERE name = thezone;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'select_objects'@'localhost';

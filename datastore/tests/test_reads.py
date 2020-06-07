@@ -159,6 +159,19 @@ def test_read_site_denied(cursor, insertuser):
     assert e.value.args[0] == 1142
 
 
+def test_read_climate_zone(dictcursor, new_climzone):
+    geojson = new_climzone('other', [
+        [-110.0, 30.0], [-110.0, 32.0], [-111.0, 32.0],
+        [-111.0, 30.0], [-110.0, 30.0]])
+    dictcursor.callproc('read_climate_zone', ('other',))
+    res = json.loads(dictcursor.fetchone()['geojson'])
+    assert res == geojson
+    # check res geojson is valid
+    dictcursor.execute('select st_isvalid(st_geomfromgeojson(%s)) as valid',
+                       (json.dumps(res)))
+    assert dictcursor.fetchone()['valid']
+
+
 def test_read_observation(dictcursor, insertuser, allow_read_observations):
     auth0id = insertuser[0]['auth0_id']
     observation = insertuser[3]

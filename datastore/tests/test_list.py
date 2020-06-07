@@ -140,6 +140,14 @@ def test_list_sites_in_zone(dictcursor, twosets, new_site):
         set(sites[0].keys()) - set(('organization_id', 'id')))
 
 
+def test_list_climate_zones(dictcursor, new_climzone):
+    zones = {f'Reference Region {i}' for i in range(1, 10)}
+    new_climzone('other')
+    zones.add('other')
+    dictcursor.callproc('list_climate_zones')
+    assert {r['name'] for r in dictcursor.fetchall()} == zones
+
+
 def test_list_forecasts(dictcursor, twosets):
     authid = twosets[0]['auth0_id']
     fxs = twosets[4]

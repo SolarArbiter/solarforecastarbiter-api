@@ -541,10 +541,10 @@ def new_climzone(cursor):
         geojson = {
             "type": "FeatureCollection",
             "crs": {"type": "name", "properties": {
-                "name": "urn:ogc:def:crs:OGC:1.3:CRS84"}},
+                "name": "urn:ogc:def:crs:EPSG::4326"}},
             "features": [
                 {"type": "Feature",
-                 "properties": {"Name": "big"},
+                 "properties": {"Name": name},
                  "geometry": {"type": "Polygon", "coordinates": [
                      coords
                  ]}
