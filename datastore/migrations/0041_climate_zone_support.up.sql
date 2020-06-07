@@ -214,8 +214,19 @@ CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.read_climat
 )
 COMMENT 'Return the reference climate zone as GeoJSON'
 READS SQL DATA SQL SECURITY DEFINER
-SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name)) as geojson
-FROM arbiter_data.climate_zones WHERE name = thezone;
+BEGIN
+    DECLARE geojson JSON;
+    SET geojson = (
+        SELECT massage_geo_json(ST_AsGeoJSON(g, 8, 4), JSON_OBJECT('Name', name))
+        FROM arbiter_data.climate_zones WHERE name = thezone
+    );
+    IF geojson IS NULL THEN
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "read climate zone"',
+        MYSQL_ERRNO = 1142;
+    ELSE
+        SELECT geojson;
+    END IF;
+END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.read_climate_zone TO 'apiuser'@'%';

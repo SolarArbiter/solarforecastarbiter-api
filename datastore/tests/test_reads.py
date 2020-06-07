@@ -172,6 +172,12 @@ def test_read_climate_zone(dictcursor, new_climzone):
     assert dictcursor.fetchone()['valid']
 
 
+def test_read_climate_zone_invalid(dictcursor):
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('read_climate_zone', ('other',))
+    assert e.value.args[0] == 1142
+
+
 def test_read_observation(dictcursor, insertuser, allow_read_observations):
     auth0id = insertuser[0]['auth0_id']
     observation = insertuser[3]
