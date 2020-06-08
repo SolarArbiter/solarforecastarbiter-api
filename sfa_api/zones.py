@@ -81,6 +81,8 @@ class SearchZones(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/ZoneMetadata'
+          400:
+            $ref: '#/components/responses/400-BadRequest'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -105,7 +107,7 @@ spec.components.parameter(
     {
         'name': 'latitude',
         'required': True,
-        'description': 'The latitude (in degrees) of the location.',
+        'description': 'The latitude (in degrees North) of the location.',
         'schema': {
             'type': 'float',
         }
@@ -115,7 +117,8 @@ spec.components.parameter(
     {
         'name': 'longitude',
         'required': True,
-        'description': 'The longitude (in degrees) of the location.',
+        'description': 'The longitude (in degrees East of the Prime Meridian)'
+                       ' of the location.',
         'schema': {
             'type': 'float',
         }
