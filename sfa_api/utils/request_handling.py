@@ -459,3 +459,47 @@ def restrict_forecast_upload_window(extra_parameters, get_forecast,
             f'Currently only accepting forecasts issued for {next_issue_time}.'
             f' Expecting forecast series to start at {expected_start}.'
         )})
+
+
+def validate_latitude_longitude():
+    """Validates latitude and longitude parameters
+
+    Returns
+    -------
+    latitude: float
+    longitude: float
+
+    Raises
+    ------
+    BadAPIRequest
+        If latitude and longitude values are not provided
+        or not in range.
+    """
+    errors = {}
+    lat = request.args.get('latitude', None)
+    lon = request.args.get('longitude', None)
+    if lat is not None:
+        try:
+            lat = float(lat)
+        except ValueError:
+            errors.update({'latitude': ['Must be a float']})
+        else:
+            if lat > 90 or lat < -90:
+                errors.update({
+                    'latitude': ['Must be within [-90, 90].']})
+    else:
+        errors.update({'latitude': ['Must provide a latitude']})
+    if lon is not None:
+        try:
+            lon = float(lon)
+        except ValueError:
+            errors.update({'longitude': ['Must be a float']})
+        else:
+            if lon > 180 or lon < -180:
+                errors.update({'longitude':
+                               ['Must be within (-180, 180].']})
+    else:
+        errors.update({'longitude': ['Must provide a longitude']})
+    if errors:
+        raise BadAPIRequest(errors)
+    return lat, lon

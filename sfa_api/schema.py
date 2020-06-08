@@ -120,6 +120,7 @@ INTERVAL_VALUE_TYPE = ma.String(
     validate=validate.OneOf(INTERVAL_VALUE_TYPES),
     required=True)
 
+
 # Sites
 @spec.define_schema('ModelingParameters')
 class ModelingParameters(ma.Schema):
@@ -273,6 +274,23 @@ class SiteResponseSchema(SiteSchema):
     modified_at = MODIFIED_AT
     climate_zones = ma.List(
         ma.String(), description='Climate zones the site is within')
+
+
+@spec.define_schema('ZoneMetadata')
+class ZoneListSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    name = ma.String()
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+    _links = ma.Hyperlinks(
+        {
+            'geojson': ma.AbsoluteURLFor('climatezones.single',
+                                         zone='<name>')
+        },
+        description="Contains a link to the values endpoint."
+    )
 
 
 # Observations

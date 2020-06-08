@@ -265,16 +265,6 @@ spec.components.parameter(
         'required': 'true',
         'name': 'site_id'
     })
-spec.components.parameter(
-    'zone', 'path',
-    {
-        'schema': {
-            'type': 'string',
-        },
-        'description': "Climate zone name. Spaces may be replaced with +.",
-        'required': 'true',
-        'name': 'zone'
-    })
 
 site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',
