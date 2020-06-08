@@ -193,8 +193,12 @@ def test_all_sites_in_zone_get_200(api, zone, hassome):
         assert len(resp) == 0
 
 
-def test_all_sites_in_zone_get_404(api):
-    r = api.get(f'/sites/in/',
+@pytest.mark.parametrize('zone', [
+    ''.join(['a'] * 256),
+    ''
+])
+def test_all_sites_in_zone_get_404(api, zone):
+    r = api.get(f'/sites/in/{zone}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 

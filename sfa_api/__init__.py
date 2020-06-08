@@ -16,7 +16,8 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # NOQA
 from sfa_api.spec import spec  # NOQA
 from sfa_api.error_handlers import register_error_handlers  # NOQA
 from sfa_api.utils.auth import requires_auth  # NOQA
-from sfa_api.utils.url_converters import UUIDStringConverter  # NOQA
+from sfa_api.utils.url_converters import (  # NOQA
+    UUIDStringConverter, ZoneStringConverter)
 
 
 ma = Marshmallow()
@@ -54,6 +55,7 @@ def create_app(config_name='ProductionConfig'):
                       },
                       content_security_policy_nonce_in=['script-src'])
     app.url_map.converters['uuid_str'] = UUIDStringConverter
+    app.url_map.converters['zone_str'] = ZoneStringConverter
 
     from sfa_api.observations import obs_blp
     from sfa_api.forecasts import forecast_blp

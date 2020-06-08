@@ -128,5 +128,5 @@ zone_blp = Blueprint(
     'climatezones', 'climatezones', url_prefix='/climatezones',
 )
 zone_blp.add_url_rule('/', view_func=AllZonesView.as_view('all'))
-zone_blp.add_url_rule('/<zone>', view_func=ZoneView.as_view('single'))
+zone_blp.add_url_rule('/<zone_str:zone>', view_func=ZoneView.as_view('single'))
 zone_blp.add_url_rule('/search', view_func=SearchZones.as_view('search'))

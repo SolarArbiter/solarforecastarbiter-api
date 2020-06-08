@@ -271,7 +271,7 @@ site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',
 )
 site_blp.add_url_rule('/', view_func=AllSitesView.as_view('all'))
-site_blp.add_url_rule('/in/<zone>',
+site_blp.add_url_rule('/in/<zone_str:zone>',
                       view_func=AllSitesInZoneView.as_view('allinzone'))
 site_blp.add_url_rule(
     '/<uuid_str:site_id>', view_func=SiteView.as_view('single'))

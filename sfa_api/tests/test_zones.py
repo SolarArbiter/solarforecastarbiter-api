@@ -31,8 +31,12 @@ def test_get_zone_200(api, zone):
     assert resp['features'][0]['properties']['Name'] == zone.replace('+', ' ')
 
 
-def test_get_zone_404(api):
-    r = api.get('/climatezones/Reference Region 10',
+@pytest.mark.parametrize('zone', [
+    'Reference Region 10',
+    ''.join(['b'] * 256)
+])
+def test_get_zone_404(api, zone):
+    r = api.get(f'/climatezones/{zone}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
