@@ -660,6 +660,23 @@ def test_list_sites_invalid_user(sql_app, invalid_user):
     assert len(sites) == 0
 
 
+def test_list_sites_in_zone(sql_app, user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 3')
+    assert len(sites) > 0
+    for site in sites:
+        assert 'Reference Region 3' in site['climate_zones']
+
+
+def test_list_sites_in_zone_invalid_user(sql_app, invalid_user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 3')
+    assert len(sites) == 0
+
+
+def test_list_sites_in_zone_no_zone(sql_app, invalid_user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 11')
+    assert len(sites) == 0
+
+
 @pytest.mark.parametrize('site', demo_sites.values())
 def test_store_site(sql_app, user, site, nocommit_cursor):
     site = site.copy()

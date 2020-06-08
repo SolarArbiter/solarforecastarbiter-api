@@ -758,6 +758,24 @@ def list_sites():
     return sites
 
 
+def list_sites_in_zone(zone):
+    """List all sites within the given zone
+
+    Parameters
+    ----------
+    zone : str
+        The climate zone to get sites from
+
+    Returns
+    -------
+    list
+        List of Site metadata as dictionaries.
+    """
+    sites = [_set_modeling_parameters(site)
+             for site in _call_procedure('list_sites_in_zone', zone)]
+    return sites
+
+
 # CDF Forecasts
 def store_cdf_forecast_values(forecast_id, forecast_df):
     """Store CDF Forecast data
