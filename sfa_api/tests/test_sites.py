@@ -170,6 +170,9 @@ def test_all_sites_get_200(api):
     r = api.get('/sites/',
                 base_url=BASE_URL)
     assert r.status_code == 200
+    resp = r.get_json()
+    for r in resp:
+        assert 'climate_zones' in r
 
 
 def test_site_get_200(api, site_id):
@@ -179,6 +182,7 @@ def test_site_get_200(api, site_id):
     response = r.get_json()
     assert response['created_at'].endswith('+00:00')
     assert response['modified_at'].endswith('+00:00')
+    assert 'climate_zones' in response
 
 
 def test_site_get_404(api, missing_id):

@@ -271,6 +271,8 @@ class SiteResponseSchema(SiteSchema):
     provider = ma.String()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+    climate_zones = ma.List(
+        ma.String(), description='Climate zones the site is within')
 
 
 # Observations

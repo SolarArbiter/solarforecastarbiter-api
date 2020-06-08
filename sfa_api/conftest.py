@@ -537,7 +537,8 @@ demo_sites = {
         "timezone": "Etc/GMT+8",
         "site_id": '123e4567-e89b-12d3-a456-426655440001',
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 38)),
-        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 38))
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 38)),
+        "climate_zones": ["Reference Region 2"]
     },
     'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a': {
         "elevation": 786.0,
@@ -564,7 +565,8 @@ demo_sites = {
         "timezone": "America/Phoenix",
         "site_id": 'd2018f1d-82b1-422a-8ec4-4e8b3fe92a4a',
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 44)),
-        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 44))
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 44)),
+        "climate_zones": ["Reference Region 3"]
     },
     '123e4567-e89b-12d3-a456-426655440002': {
         "elevation": 786.0,
@@ -591,7 +593,8 @@ demo_sites = {
         "timezone": "Etc/GMT+6",
         "site_id": '123e4567-e89b-12d3-a456-426655440002',
         "created_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 46)),
-        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 46))
+        "modified_at": pytz.utc.localize(dt.datetime(2019, 3, 1, 11, 44, 46)),
+        "climate_zones": ["Reference Region 5"]
     }
 }
 
