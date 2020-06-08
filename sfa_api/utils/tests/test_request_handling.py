@@ -479,3 +479,39 @@ def test_parse_values_too_much_data(app, random_post_payload, mimetype):
         )
         with pytest.raises(request_handling.BadAPIRequest):
             request_handling.parse_values(data, mimetype)
+
+
+@pytest.mark.parametrize('lat,lon,exc', [
+    ('str', -110, {'latitude': ['Must be a float']}),
+    (32, 'str', {'longitude': ['Must be a float']}),
+    ('str', 'str', {'longitude': ['Must be a float'],
+                    'latitude': ['Must be a float']}),
+    (-110, -110, {'latitude': ['Must be within [-90, 90].']}),
+    (-110, -181, {'latitude': ['Must be within [-90, 90].'],
+                  'longitude': ['Must be within (-180, 180].']}),
+    (None, -181, {'latitude': ['Must provide a latitude'],
+                  'longitude': ['Must be within (-180, 180].']}),
+    (32, None, {'longitude': ['Must provide a longitude']}),
+])
+def test_validate_latitude_longitude_fail(app, lat, lon, exc):
+    url = '/climatezones/search?'
+    if lat is not None:
+        url += f'latitude={lat}&'
+    if lon is not None:
+        url += f'longitude={lon}'
+    with pytest.raises(request_handling.BadAPIRequest) as err:
+        with app.test_request_context(url):
+            request_handling.validate_latitude_longitude()
+    assert err.value.errors == exc
+
+
+@pytest.mark.parametrize('lat,lon', [
+    (32, -110),
+    (0, 0),
+    (-20, 170),
+    (-.01, 20.8)
+])
+def test_validate_latitude_longitude_success(app, lat, lon):
+    url = f'/climatezones/search?latitude={lat}&longitude={lon}'
+    with app.test_request_context(url):
+        request_handling.validate_latitude_longitude()

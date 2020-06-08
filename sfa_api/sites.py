@@ -95,6 +95,7 @@ class AllSitesInZoneView(MethodView):
                      the climate zone.
         tags:
         - Sites
+        - Climate Zones
         parameters:
         - zone
         responses:
