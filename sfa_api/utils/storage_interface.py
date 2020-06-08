@@ -182,7 +182,7 @@ def try_query(query_cmd):
         ecode = e.args[0]
         if ecode == 1142 or ecode == 1143 or ecode == 1411 or ecode == 1216:
             raise StorageAuthError(e.args[1])
-        elif ecode == 1451:
+        elif ecode == 1451 or ecode == 1217:
             raise DeleteRestrictionError
         elif ecode == 3140:
             raise BadAPIRequest({'error': e.args[1]})
@@ -208,12 +208,14 @@ def _call_procedure(
         return cursor.fetchall()
 
 
-def _call_procedure_for_single(procedure_name, *args, cursor_type='dict'):
+def _call_procedure_for_single(procedure_name, *args, cursor_type='dict',
+                               with_current_user=True):
     """Wrapper handling try/except logic when a single value is expected
     """
     try:
         result = _call_procedure(procedure_name, *args,
-                                 cursor_type=cursor_type)[0]
+                                 cursor_type=cursor_type,
+                                 with_current_user=with_current_user)[0]
     except IndexError:
         raise StorageAuthError()
     return result
@@ -755,6 +757,24 @@ def list_sites():
     """
     sites = [_set_modeling_parameters(site)
              for site in _call_procedure('list_sites')]
+    return sites
+
+
+def list_sites_in_zone(zone):
+    """List all sites within the given zone
+
+    Parameters
+    ----------
+    zone : str
+        The climate zone to get sites from
+
+    Returns
+    -------
+    list
+        List of Site metadata as dictionaries.
+    """
+    sites = [_set_modeling_parameters(site)
+             for site in _call_procedure('list_sites_in_zone', zone)]
     return sites
 
 
@@ -2020,3 +2040,48 @@ def get_user_actions_on_object(object_id):
         raise StorageAuthError()
     actions = list(set([perm['action'] for perm in permissions]))
     return actions
+
+
+def list_zones():
+    """List all climate zones
+
+    Returns
+    -------
+    list
+        List of the climate zone metadata as dictionaries.
+    """
+    return _call_procedure('list_climate_zones', with_current_user=False)
+
+
+def read_climate_zone(zone):
+    """Read the GeoJSON for a zone
+
+    Parameters
+    ----------
+    zone : str
+
+    Returns
+    -------
+    dict
+        The GeoJSON of the zone
+    """
+    return _call_procedure_for_single('read_climate_zone', zone,
+                                      with_current_user=False)['geojson']
+
+
+def find_climate_zones(latitude, longitude):
+    """Find the climate zones the point is within
+
+    Parameters
+    ----------
+    latitude : float
+    longitude: float
+
+    Returns
+    -------
+    list
+        List of zones the point is in
+    """
+    return _call_procedure(
+        'find_climate_zones', latitude, longitude,
+        with_current_user=False)

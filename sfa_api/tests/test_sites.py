@@ -170,6 +170,37 @@ def test_all_sites_get_200(api):
     r = api.get('/sites/',
                 base_url=BASE_URL)
     assert r.status_code == 200
+    resp = r.get_json()
+    for r in resp:
+        assert 'climate_zones' in r
+
+
+@pytest.mark.parametrize('zone,hassome', [
+    ('Reference Region 2', True),
+    ('Reference Region 99', False),
+    ('Reference+Region+3', True)
+])
+def test_all_sites_in_zone_get_200(api, zone, hassome):
+    r = api.get(f'/sites/in/{zone}',
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    resp = r.get_json()
+    if hassome:
+        assert len(resp) > 0
+        for r in resp:
+            assert 'climate_zones' in r
+    else:
+        assert len(resp) == 0
+
+
+@pytest.mark.parametrize('zone', [
+    ''.join(['a'] * 256),
+    ''
+])
+def test_all_sites_in_zone_get_404(api, zone):
+    r = api.get(f'/sites/in/{zone}',
+                base_url=BASE_URL)
+    assert r.status_code == 404
 
 
 def test_site_get_200(api, site_id):
@@ -179,6 +210,7 @@ def test_site_get_200(api, site_id):
     response = r.get_json()
     assert response['created_at'].endswith('+00:00')
     assert response['modified_at'].endswith('+00:00')
+    assert 'climate_zones' in response
 
 
 def test_site_get_404(api, missing_id):

@@ -660,6 +660,23 @@ def test_list_sites_invalid_user(sql_app, invalid_user):
     assert len(sites) == 0
 
 
+def test_list_sites_in_zone(sql_app, user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 3')
+    assert len(sites) > 0
+    for site in sites:
+        assert 'Reference Region 3' in site['climate_zones']
+
+
+def test_list_sites_in_zone_invalid_user(sql_app, invalid_user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 3')
+    assert len(sites) == 0
+
+
+def test_list_sites_in_zone_no_zone(sql_app, invalid_user):
+    sites = storage_interface.list_sites_in_zone('Reference Region 11')
+    assert len(sites) == 0
+
+
 @pytest.mark.parametrize('site', demo_sites.values())
 def test_store_site(sql_app, user, site, nocommit_cursor):
     site = site.copy()
@@ -1743,3 +1760,33 @@ def test_get_user_actions_on_object_no_actions(
         sql_app, user, nocommit_cursor, inaccessible_forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.get_user_actions_on_object(inaccessible_forecast_id)
+
+
+def test_list_zones(sql_app):
+    zones = storage_interface.list_zones()
+    assert {z['name'] for z in zones} == {f'Reference Region {i}'
+                                          for i in range(1, 10)}
+    for zone in zones:
+        assert 'created_at' in zone
+        assert 'modified_at' in zone
+
+
+def test_read_zone(sql_app):
+    geojson = storage_interface.read_climate_zone('Reference Region 9')
+    assert geojson['type'] == 'FeatureCollection'
+
+
+def test_read_zone_dne(sql_app):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_climate_zone('Reference Region 11')
+
+
+@pytest.mark.parametrize('lat,lon,zones', [
+    (32.2, -110.0, {'Reference Region 3'}),
+    (43, -73.0, {'Reference Region 7'}),
+    (20, -110, set())
+])
+def test_find_zone(sql_app, lat, lon, zones):
+    res = storage_interface.find_climate_zones(lat, lon)
+    szones = {r['name'] for r in res}
+    assert zones == szones

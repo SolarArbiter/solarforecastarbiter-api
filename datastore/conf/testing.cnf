@@ -8,4 +8,4 @@ keyring_file_data=/var/lib/mysql-keyring/keyring
 master_verify_checksum=ON
 binlog_checksum=crc32
 # encrypt by default
-innodb_encrypt_tables=ON
+default_table_encryption=ON

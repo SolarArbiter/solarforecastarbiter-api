@@ -166,12 +166,12 @@ def insert_dict(cursor, table, thedict):
 
 @pytest.fixture()
 def new_site(cursor, new_organization):
-    def fcn(org=None):
+    def fcn(org=None, latitude=0, longitude=0):
         if org is None:
             org = new_organization()
         out = OrderedDict(id=newuuid(), organization_id=org['id'],
                           name=f'site{str(uuid1())[:10]}',
-                          latitude=0, longitude=0, elevation=0,
+                          latitude=latitude, longitude=longitude, elevation=0,
                           timezone='America/Denver', extra_parameters='',
                           ac_capacity=0, dc_capacity=0,
                           temperature_coefficient=0,
@@ -528,4 +528,34 @@ def new_job(cursor, new_user):
             'job_type, parameters, schedule, version) VALUES'
             ' (%s, %s, %s, %s, %s, %s, %s, %s)', list(out.values()))
         return out
+    return fnc
+
+
+@pytest.fixture()
+def new_climzone(cursor):
+    def fnc(name='USA', coords=(
+            (-130, 20), (-65, 20),
+            (-65, 50), (-130, 50), (-130, 20)),
+            insert=True
+            ):
+        geojson = {
+            "type": "FeatureCollection",
+            "crs": {"type": "name", "properties": {
+                "name": "urn:ogc:def:crs:EPSG::4326"}},
+            "features": [
+                {"type": "Feature",
+                 "properties": {"Name": name},
+                 "geometry": {"type": "Polygon", "coordinates": [
+                     coords
+                 ]}
+                 }
+            ]
+        }
+        if insert:
+            cursor.execute(
+                'INSERT INTO climate_zones (name, g) VALUES '
+                '(%s, ST_GeomFromGeoJSON(%s))',
+                (name, json.dumps(geojson))
+            )
+        return geojson
     return fnc

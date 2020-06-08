@@ -86,6 +86,35 @@ class AllSitesView(MethodView):
         return response
 
 
+class AllSitesInZoneView(MethodView):
+    def get(self, zone, *args):
+        """
+        ---
+        summary: List sites in a climate zone
+        description: List all sites that the user has access to within
+                     the climate zone.
+        tags:
+        - Sites
+        - Climate Zones
+        parameters:
+        - zone
+        responses:
+          200:
+            description: A list of sites
+            content:
+              application/json:
+                schema:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SiteMetadata'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        storage = get_storage()
+        sites = storage.list_sites_in_zone(zone.replace('+', ' '))
+        return jsonify(SiteResponseSchema(many=True).dump(sites))
+
+
 class SiteView(MethodView):
     def get(self, site_id, *args):
         """
@@ -242,6 +271,8 @@ site_blp = Blueprint(
     'sites', 'sites', url_prefix='/sites',
 )
 site_blp.add_url_rule('/', view_func=AllSitesView.as_view('all'))
+site_blp.add_url_rule('/in/<zone_str:zone>',
+                      view_func=AllSitesInZoneView.as_view('allinzone'))
 site_blp.add_url_rule(
     '/<uuid_str:site_id>', view_func=SiteView.as_view('single'))
 site_blp.add_url_rule('/<uuid_str:site_id>/observations',
