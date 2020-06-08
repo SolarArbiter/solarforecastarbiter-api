@@ -115,7 +115,7 @@ def test_add_object_permission_to_default_user_role_create(
     (19.6, -155.9, {'Reference Region 9'}),
     (25, -119, {'USA'}),
 ])
-def test_find_climate_zones(lat, lon, zones, cursor, new_climzone):
+def test_find_climate_zones(lat, lon, zones, dictcursor, new_climzone):
     new_climzone()
-    cursor.callproc('find_climate_zones', (lat, lon))
-    assert set(json.loads(cursor.fetchone()[0])) == zones
+    dictcursor.callproc('find_climate_zones', (lat, lon))
+    assert {r['name'] for r in dictcursor.fetchall()} == zones

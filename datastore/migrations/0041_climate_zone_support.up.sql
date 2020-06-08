@@ -174,16 +174,8 @@ CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE arbiter_data.find_climat
 )
 COMMENT 'Return a JSON array of the climate zones the lat,lon point is within'
 READS SQL DATA SQL SECURITY DEFINER
-BEGIN
-    DECLARE zones JSON;
-    SELECT JSON_ARRAYAGG(name) INTO zones FROM arbiter_data.climate_zones WHERE ST_Within(
-        ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
-    IF ISNULL(zones) THEN
-        SELECT JSON_ARRAY() as zones;
-    ELSE
-        SELECT zones;
-    END IF;
-END;
+SELECT name, created_at, modified_at FROM arbiter_data.climate_zones WHERE ST_Within(
+    ST_PointFromText(CONCAT('point(', latitude, ' ', longitude, ')'), 4326), g);
 GRANT SELECT ON arbiter_data.climate_zones TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.find_climate_zones TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.find_climate_zones TO 'apiuser'@'%';
