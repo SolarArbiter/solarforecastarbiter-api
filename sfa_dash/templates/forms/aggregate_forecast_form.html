@@ -14,11 +14,11 @@
                 required=True, form_data=form_data) }}
 </div>
 <div class="form-element">
-  {{ form.time_of_day('Issue time of day', 'issue_time',
+  {{ form.time_of_day('Issue time of day', 'issue_time_of_day',
                       'The time of day that a forecast run is issued specified in UTC and in HH:MM format, e.g. 00:30. For forecast runs issued multiple times within one day (e.g. hourly), this specifies the first issue time of day. Additional issue times are uniquely determined by the first issue time and the run length & issue frequency attribute.') }}
 </div>
 <div class="form-element">
-    {{ form.timedelta('Lead time to start', 'lead_time',
+    {{ form.timedelta('Lead time to start', 'lead_time_to_start',
                       'The difference between the issue time and the start of the first forecast interval. Values must be integers.')}}
 </div>
 <div class="form-element">

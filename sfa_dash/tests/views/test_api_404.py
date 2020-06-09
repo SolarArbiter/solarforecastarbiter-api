@@ -165,3 +165,18 @@ def test_aggregate_id_routes(client, aggregate_id_route, dne_uuid):
 def test_report_id_routes(client, report_id_route, dne_uuid):
     resp = client.get(report_id_route(dne_uuid), base_url=BASE_URL)
     assert "<b>404: </b>" in resp.data.decode('utf-8')
+
+
+def test_clone_routes(client, clone_route, missing_id):
+    ids = {
+        'forecast_id': missing_id,
+        'observation_id': missing_id,
+        'site_id': missing_id
+    }
+    resp = client.get(clone_route(ids), base_url=BASE_URL,
+                      follow_redirects=True)
+    contains_404 = (
+        "<b>404: </b>" in resp.data.decode('utf-8') or
+        '<li class="alert alert-danger">(404)' in resp.data.decode('utf-8')
+    )
+    assert contains_404

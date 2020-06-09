@@ -1,102 +1,117 @@
 {% macro name_validation() %}pattern="[A-Za-z0-9(), \-_']+" maxlength=64{% endmacro %}
 
 {% macro help_button(name) %}
-<a data-toggle="collapse" data-target=".{{ name }}-help-text" role="button" href="" class="help-button">?</a>
+  <a data-toggle="collapse" data-target=".{{ name }}-help-text" role="button" href="" class="help-button">?</a>
 {% endmacro %}
 
+
 {% macro input(label, type, name, help_text=None, form_data=None, required=False, class='', default='', units=None) %}
-{% set extra_attr = '' %}
+  {% set extra_attr = '' %}
 
-{% if type == 'number' %}
-{% set extra_attr = extra_attr + 'step=any' %}
-{% endif %}
+  {% if type == 'number' %}
+  {% set extra_attr = extra_attr + 'step=any' %}
+  {% endif %}
 
-{% if required %}
-{% set extra_attr = extra_attr + ' required' %}
-{% endif %}
-<label>{{ label }}</label><br/>
-<div class="input-wrapper">
-<input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}"  {% if name == 'name' %}{{ name_validation() }}{% endif %} {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>{% if units is not none %}{{ units }}{% endif %}
-</div>
-{% if help_text is not none %}
-{{ help_button(name) }}
-<span class="{{ name }}-help-text form-text text-muted help-text collapse" aria-hidden>{{ help_text }}</span>
-{% endif %}
+  {% if required %}
+  {% set extra_attr = extra_attr + ' required' %}
+  {% endif %}
+  <label>{{ label }}</label><br/>
+  <div class="input-wrapper">
+    <input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}"  {% if name == 'name' %}{{ name_validation() }}{% endif %} {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>{% if units is not none %}{{ units }}{% endif %}
+  </div>
+  {% if help_text is not none %}
+  {{ help_button(name) }}
+  <span class="{{ name }}-help-text form-text text-muted help-text collapse" aria-hidden>{{ help_text }}</span>
+  {% endif %}
 {% endmacro %}
 
 {% macro select(label, name, options, default_value, help_text=None, required=False, form_data={}) %}
-<label>{{ label }}</label>
-<div class="input-wrapper">
-<select class="form-control {{ name }}-field" name="{{ name }}"{% if required %} required {% endif %}>
-  {% for option, option_label in options.items() %}
-  <option value="{{ option }}" {% if option == form_data.get(name, default_value)  %} selected="selected"{% endif %}>{{ option_label }}</option>
-  {% endfor %}
-</select>
-</div>
-{% if help_text is not none %}
-{{ help_button(name) }}
-<span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
-{% endif %}
+  <label>{{ label }}</label>
+  <div class="input-wrapper">
+    <select class="form-control {{ name }}-field" name="{{ name }}"{% if required %} required {% endif %}>
+      {% for option, option_label in options.items() %}
+      <option value="{{ option }}" {% if option == form_data.get(name, default_value)  %} selected="selected"{% endif %}>{{ option_label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  {% if help_text is not none %}
+  {{ help_button(name) }}
+  <span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
+  {% endif %}
 {% endmacro %}
 
 {% macro radio(label, name, options, help_text=None, required=False, form_data={}) %}
-<label>{{ label }}</label><br/>
-<div class="input-wrapper">
-{% for option, option_label in options.items() %}
-<input name="{{ name }}" type="radio" class="{{ name }}-field" {% if required %}required{% endif %} value="{{ option }}">{{ option_label }}</label>
-{% endfor %}
-</div>
-{% if help_text is not none %}
-{{ help_button(name) }}
-<span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
-{% endif %}
+  <label>{{ label }}</label><br/>
+  <div class="input-wrapper">
+    {% for option, option_label in options.items() %}
+    <input name="{{ name }}" type="radio" class="{{ name }}-field" {% if required %}required{% endif %} value="{{ option }}" {% if form_data.get(name) == option %} checked {% endif %}>{{ option_label }}</label>
+    {% endfor %}
+  </div>
+  {% if help_text is not none %}
+  {{ help_button(name) }}
+  <span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
+  {% endif %}
 {% endmacro %}
 
+{# Creates a number input and a select for capturing a timedelta. The number
+   field, named <name>_number will accept whole numbers. The select field,
+   named <name>_units has options for units of minutes, hours, and days. See
+   `sfa_dash.form_utils.utils.parse_timedelta_from_form` for parsing data
+   posted from this macro. See `sfa_dash.form_utils.utils.parse_timedelta_from_api`
+   for converting api response fields into values for prefilling these inputs.
+#}
 {% macro timedelta(label, name, help_text=None, form_data={}) %}
   <label>{{ label }}</label><br/>
   <div class="input-wrapper">
   <input type="number" name="{{ name }}_number" step="1" min="0" {% if name+'_number' in form_data %}value="{{ form_data[name+'_number'] }}"{% endif %} required class="form-control time-field {{name }}-value-field">
+  {% set selected = form_data.get(name+'_units') %}
   <select required name="{{ name }}_units" class="form-control time-field {{ name }}-units-field">
-    <option value="minutes">Minutes</option>
-    <option value="hours">Hours</option>
-    <option value="days">Days</option>
+    <option {% if selected == "minutes" %}selected{% endif %} value="minutes">Minutes</option>
+    <option {% if selected == "hours" %}selected{% endif %} value="hours">Hours</option>
+    <option {% if selected == "days" %}selected{% endif %} value="days">Days</option>
   </select>
   </div>
-{% if help_text is not none %}
-{{ help_button(name) }}
-<span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
-{% endif %}
+  {% if help_text is not none %}
+  {{ help_button(name) }}
+  <span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
+  {% endif %}
 {% endmacro %}
 
+{# Creates two select inputs <name>_hours and <name>_minutes for representing
+   a time of day. See `sfa_dash.form_utils.utils.parse_hhmm_from_form` for
+   parsing the posted data from this macro. See
+   `sfa_dash.form_utils.utils.parse_timedelta_from_api` for converting api
+   response fields into values for prefilling these inputs.
+#}
 {% macro time_of_day(label, name, help_text=None, required=False, form_data={}) %}
-<label>{{ label }}</label><br/>
-<div class="input-wrapper">
-<select {% if required %}required{% endif %} name="{{ name }}_hours" class="form-control time-field {{ name }}_hours-field">
-  {% for i in range(0,24) %}
-  <option value="{{ i }}">{{ '%02d' % i }}</option>
-  {% endfor %}
-</select>
-:
-<select {% if required %}required{% endif %} name="{{ name }}_minutes" class="form-control time-field {{ name }}_minutes-field">
-  {% for i in range(0,60) %}
-  <option value="{{ i }}">{{ '%02d' % i }}</option>
-  {% endfor %}
-</select>
-UTC
-</div>
-{% if help_text is not none %}
-{{ help_button(name) }}
-<span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
-{% endif %}
+  <label>{{ label }}</label><br/>
+  <div class="input-wrapper">
+    <select {% if required %}required{% endif %} name="{{ name }}_hours" class="form-control time-field {{ name }}_hours-field">
+      {% for i in range(0,24) %}
+      <option {% if i == form_data.get(name+'_hours') %}selected{% endif %} value="{{ i }}">{{ '%02d' % i }}</option>
+      {% endfor %}
+    </select>
+    :
+    <select {% if required %}required{% endif %} name="{{ name }}_minutes" class="form-control time-field {{ name }}_minutes-field">
+      {% for i in range(0,60) %}
+      <option {% if i == form_data.get(name+'_minutes') %}selected{% endif %} value="{{ i }}">{{ '%02d' % i }}</option>
+      {% endfor %}
+    </select>
+  UTC
+  </div>
+  {% if help_text is not none %}
+  {{ help_button(name) }}
+  <span class="help-text text-muted  time-field-help {{ name }}-help-text collapse">{{ help_text }}</span>
+  {% endif %}
 {% endmacro %}
 
 {% macro token() %}
-<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 {% endmacro %}
 
 {% macro extra_parameters() %}
-<div class="form-element full-width">                                           
-<label>Extra parameters (optional)</label>                                    
-<textarea cols="40" rows="5" name="extra_parameters" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
-</div>
+  <div class="form-element full-width">
+    <label>Extra parameters (optional)</label>
+    <textarea cols="40" rows="5" name="extra_parameters" class="form-control extra-parameters-field" placeholder="This field will store any ASCII text. We recommend using it to store other parameters you have collected in a format such as YAML or JSON."></textarea>
+  </div>
 {% endmacro %}

@@ -6,9 +6,10 @@ import pandas as pd
 
 from sfa_dash.api_interface import observations, sites, aggregates
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import (filter_form_fields, parse_timedelta,
+from sfa_dash.blueprints.util import (filter_form_fields,
                                       flatten_dict, download_timeseries)
 from sfa_dash.errors import DataRequestException
+from sfa_dash.form_utils.converters import AggregateConverter
 
 
 class AggregatesView(BaseView):
@@ -32,22 +33,9 @@ class AggregateForm(BaseView):
     """
     template = 'forms/aggregate_form.html'
 
-    def aggregate_formatter(self, form_data):
-        formatted = {}
-        formatted['name'] = form_data['name']
-        formatted['description'] = form_data['description']
-        formatted['interval_length'] = parse_timedelta(
-            form_data, 'interval_length')
-        formatted['interval_label'] = form_data['interval_label']
-        formatted['aggregate_type'] = form_data['aggregate_type']
-        formatted['timezone'] = form_data['timezone']
-        formatted['variable'] = form_data['variable']
-        formatted['extra_parameters'] = form_data['extra_parameters']
-        return formatted
-
     def post(self):
         form_data = request.form
-        api_payload = self.aggregate_formatter(form_data)
+        api_payload = AggregateConverter.formdata_to_payload(form_data)
         try:
             aggregate_id = aggregates.post_metadata(api_payload)
         except DataRequestException as e:

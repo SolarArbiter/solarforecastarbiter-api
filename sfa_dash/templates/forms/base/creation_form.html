@@ -7,7 +7,15 @@
 {{ metadata | safe }}
 {% include "sections/notifications.html" %}
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
-<form action="{% if data_type == 'site' %} {{ url_for('forms.create_' + data_type) }}{% else %}{{ url_for('forms.create_' + data_type, uuid=site_metadata['site_id']) }} {% endif %}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+{% if data_type in ['site', 'aggregate'] %}
+<form action="{{ url_for('forms.create_' + data_type) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+{% elif site_metadata is defined %}
+<form action="{{ url_for('forms.create_' + data_type, uuid=site_metadata['site_id']) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+  <input type="hidden" name="site_id" value="{{ site_metadata['site_id'] }}">
+{% elif aggregate_metadata is defined %}
+<form action="{{ url_for('forms.create_aggregate_' + data_type, uuid=aggregate_metadata['aggregate_id']) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
+  <input type="hidden" name="aggregate_id" value="{{ aggregate_metadata['aggregate_id'] }}">
+{% endif %}
   <div class="form-group">
     {% block fields %}
     {% endblock %}

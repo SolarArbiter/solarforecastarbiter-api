@@ -163,3 +163,13 @@ def test_report_id_routes(client, report_id_route, report_id):
         '<li class="alert alert-danger">(404)' in resp.data.decode('utf-8')
     )
     assert not contains_404
+
+
+def test_clone_routes(client, clone_route, all_metadata_ids):
+    resp = client.get(clone_route(all_metadata_ids), base_url=BASE_URL)
+    assert resp.status_code == 200
+    contains_404 = (
+        "<b>404: </b>" in resp.data.decode('utf-8') or
+        '<li class="alert alert-danger">(404)' in resp.data.decode('utf-8')
+    )
+    assert not contains_404
