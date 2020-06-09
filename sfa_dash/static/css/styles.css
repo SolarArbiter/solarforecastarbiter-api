@@ -313,17 +313,32 @@ a.help-button{
 .table-filters {
     position: absolute;
     background-color: white;
-    border: 1px solid #000;
-    border-radius: 5px;
+    border: 1px solid #cdd1d5;
     padding: .5rem;
+    min-width: 200px
+}
+.table-filters.collapsing{
+    transition: height .1s ease;
 }
 .table-option-collapse{
     font-family: monospace;
-    color: #000;
-    border: 1px solid black;
+    color: #a44;
+    border: 1px solid #dee2e6;
     border-radius: 3px;
     margin-left: 1rem;
     padding: .1rem 0.3rem;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+}
+.table-option-collapse:hover{
+    color: #c77;
+}
+a.select-filter-options:not([href]),a.deselect-filter-options:not([href]){
+    color: #FFF;
+}
+a.select-filter-options:not([href]):hover,a.deselect-filter-options:not([href]):hover{
+    color: #BBB;
 }
 #org-filter-collapse:hover{
     text-decoration: none;

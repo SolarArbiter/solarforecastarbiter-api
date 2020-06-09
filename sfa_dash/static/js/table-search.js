@@ -1,8 +1,8 @@
 /* Jquery for filtering and searching tables.
- * 
+ *
  * For simple column filtering, give an html table header an id of '<name>-header' and
  * give each td in its column the '<name>-column' class. add a call to the block of
- * createFilterOptions() functions at the bottom of the file with the <name> applied to 
+ * createFilterOptions() functions at the bottom of the file with the <name> applied to
  * your html.
  *
  * Defines filter functions that return a jquery object list of items that need to be hidden
@@ -31,7 +31,7 @@ $(document).ready(function() {
      */
     function searchTable() {
         /*
-         * Creates a list of rows to hide  based on which rows do not contain 
+         * Creates a list of rows to hide  based on which rows do not contain
          * the current search term.
          */
         var searchTerm = $(".search").val();
@@ -67,14 +67,14 @@ $(document).ready(function() {
     /*
      * END filter functions
      */
-    
+
     /*
      * Functions to apply filters.
      */
 
     // toHideFns is a list of functions that are to be iterated through to
     // collect a list of elements to hide after a filter or search has changed.
-    // Callbacks can be appended to this list to ensure that elements are 
+    // Callbacks can be appended to this list to ensure that elements are
     // hidden through updates.
     var toHideFns = []
 
@@ -102,12 +102,12 @@ $(document).ready(function() {
         visibleRows = allRows.not(rowsToHide);
         visibleRows.attr('visible', 'true');
         rowsToHide.attr('visible', 'false');
-        
+
         var jobCount = $('.results tbody tr[visible="true"]').length;
         if(jobCount == '0') {$('.no-result').show();}
         else {$('.no-result').hide();}
     }
-    
+
     function createFilterOptions(columnName){
         /*
          * Creates a collapsible filter menu if a table header exists with id
@@ -125,33 +125,43 @@ $(document).ready(function() {
             $(`#${columnName}-header`).wrapInner(
                 `<button type="button" class="btn btn-th dropdown-toggle table-option-toggle"
                   data-toggle="collapse" data-target="#${columnName}-filters">
-                  </button>`);                           
-            
+                  </button>`);
+
             // Create a Set of options from the contents of each of the column's
             // <td> elements
             var availableOptions = new Set($(`.${columnName}-column`).map(function(){
                 return $(this).text();
             }));
 
-            // Collapsible div containing the list of checkboxes, this is the 
+            // Collapsible div containing the list of checkboxes, this is the
             // target of the button that the table header was wrapped in.
             var filter_div = $(`
                 <div id='${columnName}-filters' class='collapse table-filters'>
-                    Filter by ${columnTitle}
+                    Filter by ${columnTitle}<br/>
+                    <a role="button" class="btn-sm btn-primary select-filter-options">Select all</a><br/>
+                    <a role="button" class="btn-sm btn-primary deselect-filter-options">Select none</a><br/>
+
                     <a href='#' role='button' id='${columnName}-filter-collapse' class="table-option-collapse">x</a>
-                    <br/><hr>
+                    <hr>
                     <ul class='${columnName}-filter-options table-filter-options'></ul>
                 </div>`);
             filter_div.appendTo(`#${columnName}-header`);
-
+            filter_div.find('.select-filter-options').click(function(){
+                $(`.${columnName}-filter-option`).attr('checked', true);
+                applyTableFilters();
+            });
+            filter_div.find('.deselect-filter-options').click(function(){
+                $(`.${columnName}-filter-option`).removeAttr('checked');
+                applyTableFilters();
+            });
             // Create a checkbox input for each option in the set.
             availableOptions.forEach(function (e) {
                 $(`.${columnName}-filter-options`).append(`
-                    <li><input class="${columnName}-filter-option" value="${e}" type="checkbox" checked>${e}</li>`)});
+                    <li><input class="${columnName}-filter-option" value="${e}" type="checkbox" checked> ${e}</li>`)});
             $(`#${columnName}-filter-collapse`).click(function() {
                 $(`#${columnName}-filters`).collapse('toggle');
             });
-            
+
             // Append a filtering function to the list of filter functions to
             // be called onChange
             toHideFns.push(function(){
@@ -168,13 +178,11 @@ $(document).ready(function() {
 
     //Always include a generic search for tables.
     toHideFns.push(searchTable);
-    
+
     // Call createFilterOptions with a column name here to have it
     // become automagically filterable.
     createFilterOptions('provider');
     createFilterOptions('variable');
-    createFilterOptions('site');
-    createFilterOptions('site-or-aggregate');
     createFilterOptions('action');
     createFilterOptions('object-type');
     createFilterOptions('applies-to-all');
@@ -186,5 +194,14 @@ $(document).ready(function() {
     if ($(".search").val() != null){
         // if searchbar is filled on page load, apply filters
         applyTableFilters();
+    }
+});
+// Handle a global click event, and collapse any table filters if they are not
+// an ancestor of the target of the click.
+$(document).click(function(event){
+    target = $(event.target);
+    filter_divs = $('div.table-filters.show');
+    if(!target.closest('div.table-filters.show').length){
+        filter_divs.collapse('hide');
     }
 });
