@@ -1,75 +1,8 @@
 {% import "forms/form_macros.jinja" as form %}
-{% extends "dash/data.html" %}
-{% block content %}
-<script src="/static/js/report-handling.js"></script>
-{{ metadata | safe }}
-{% include "sections/notifications.html" %}
-<h3>Create New Report</h3>
-{% include "forms/report_menu.html" %}
-<form action="{{ url_for('forms.create_report') }}" method="post" id="report-form" onSubmit="validateReport();">
-  <div class="form-group">
-     {% if form_data is not defined %} {% set form_data = {} %}{% endif %}
-     <div class="form-element full-width">
-       <div class="input-wrapper">
-           <input type="text" class="form-control  name-field" required="" name="name" value="{% if form_data %}{{form_data['report_parameters']['name']}}{% else %}{%endif%}"/>
-       </div>
-     </div>
-	 <div class="form-element">
-       <label for="start">Start (UTC):</label><br/>
-       <div class="input-wrapper">
-         <input type="text" name="period-start" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['start']}}"{% endif %}></input>
-       </div>
-       {{ form.help_button('period-start') }}
-       <span class="period-start-help-text form-text text-muted help-text collapse" aria-hidden>
-           The start of the analysis period as an ISO 8601 datetime.
-       </span>
-     </div>
-     <div class="form-element">
-       <label for="end">End (UTC)</label><br/>
-       <div class="input-wrapper">
-         <input type="text" name="period-end" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['end']}}"{% endif %}></input>
-       </div>
-       {{ form.help_button('period-end') }}
-       <span class="period-end-help-text form-text text-muted help-text collapse" aria-hidden>
-           The end of the analysis period as an ISO 8601 datetime.
-       </span>
-     </div>
-     {# The following empty list is a target for the javascript found in report-handling.js
-        list items are added dynamically on page load #}
 
-     <h5>Observation, Forecast pairs</h5>
-	 <div class="form-element full-width border" style="border-radius:10px;margin:.5em 1em;">
-       <div class="object-pair-list">
-         <div class="empty-reports-list alert alert-warning">No Pairs Selected</div>
-       </div>
-       <div class="object-pair-control">
-       </div>
-	 </div>
-     
-     <div class="form-element">
-     <label>Metrics</label><br>
-       {% for metric, label in deterministic_metrics.items() %}
-       <input type="checkbox" name="metrics" value="{{ metric }}" {% if form_data %}{% if metric in form_data['report_parameters']['metrics'] %}checked{% endif %}{% elif metric in default_deterministic_metrics  %}checked{% endif %}>
-       <a href="https://solarforecastarbiter.org/metrics/#{{ metric |replace('^', '') }}" target="_blank"> {{ label }}</a><br/>
-       {% endfor %}
-     </div>
-     <div class="form-element">
-     <label>Categories</label></br>
-     {% for category, label in metric_categories.items() %}
-     <input type="checkbox" name="categories" value="{{ category }}" {% if form_data %}{% if category in form_data['report_parameters']['categories'] %}checked{% else %}{% endif %}{% else %}{% if category in default_categories %}checked{% endif %}{% endif %}> {{ label }}<br/>
-     {% endfor %}
-     </div>
-     <div class="form-element full-width">
-       <label>Quality Flag Filters</label><br>
-       <p>Observation data flagged with any of the checked quality flags is excluded from analysis. The corresponding forecast data is also excluded.</p>
-       {% for flag, label in quality_flags.items() %}
-       <input type="checkbox" name="quality_flags" value="{{ flag }}" {% if form_data %}{% if flag in form_data['report_parameters']['filters']['quality_flags'] %}checked{% endif %}{%endif %}> {{ label }}<br/>
-       {% endfor %}
-     </div>
-    {{ form.token() }}
-  </div>
-</form>
-<ul id="form-errors">
-</ul>
-<button type="submit" form="report-form" value="Submit" class="btn btn-primary" >Submit</button>
-{% endblock %}
+{% set report_type = 'deterministic' %}
+{% set report_script = '/static/js/report-handling.js' %}
+{% set metric_options = deterministic_metrics %}
+{% set default_metrics = default_deterministic_metrics %}
+
+{% extends "forms/base_report_form.html" %}

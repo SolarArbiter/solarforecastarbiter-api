@@ -2,7 +2,6 @@
  *  Creates inputs for defining observation, forecast pairs for a report.
  */
 $(document).ready(function() {
-    
     function searchObjects(object_type, object_id){
         /* Get a json object from the page_data object.
          *
@@ -56,8 +55,9 @@ $(document).ready(function() {
         filterObservations();
     }
 
-    function addPair(truthType, truthName, truthId, fxName, fxId,
-                     db_label, db_value){
+    function addPair(
+        truthType, truthName, truthId, fxName, fxId, db_label, db_value,
+        forecast_type='event_forecast'){
         /*
          * Returns a Jquery object containing 5 input elements representing a forecast,
          * observation pair:
@@ -71,8 +71,7 @@ $(document).ready(function() {
          *  where index associates the pairs with eachother for easier parsing when the form
          *  is submitted.
          */
-
-        var new_object_pair = $(`<div class="object-pair object-pair-${pair_index}">
+        var new_object_pair = $(`<div class="object-pair pair-container object-pair-${pair_index}">
                 <div class="input-wrapper">
                   <div class="col-md-12">
                     <div class="object-pair-label forecast-name-${pair_index}"><b>Forecast: </b>${fxName}</div>
@@ -82,6 +81,7 @@ $(document).ready(function() {
                     <input type="hidden" class="form-control truth-type-value" name="truth-type-${pair_index}" required value="${truthType}"/>
                     <input type="hidden" class="form-control deadband-value" name="deadband-value-${pair_index}" required value="null"/>
                     <input type="hidden" class="form-control reference-forecast-value" name="reference-forecast-${pair_index}" required value="null"/>
+                    <input type="hidden" class="forecast-type-value" name="forecast-type-${pair_index}" required value="${forecast_type}"/>
                   </div>
                  </div>
                  <a role="button" class="object-pair-delete-button">remove</a>
@@ -350,12 +350,15 @@ function validateReport(){
      */
     // remove any existing errors
     $('#form-errors').empty();
-
+    var errors = 0;
     // assert at least one pair was selected.
     if($('.object-pair').length == 0){
         insertErrorMessage(
             "Analysis Pairs",
             "Must specify at least one Observation, Forecast pair.");
+        errors++;
     }
-    return false;
+    if (errors){
+       return false;
+    }
 }

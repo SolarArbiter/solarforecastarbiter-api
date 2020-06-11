@@ -173,7 +173,7 @@ ul.data-metadata-fields{
 }
 
 /* Forms */
-div.object-pair {
+div.pair-container {
   list-style: none;
   padding: .5em 1em;
   position: relative;
@@ -418,6 +418,17 @@ a:not([href]).collapser-button:hover{
 }
 .report-field-filters{
     display: inline-block;
+}
+ul.pair-constant-values{
+    padding-left: 2em;
+}
+li.object-pair{
+    position: relative;
+    list-style: none;
+    padding: .5em;
+    border: 1px solid rgb(206, 212, 218);
+    border-radius: .25rem;
+    margin-top: .5em;
 }
 th.selection-column{
     width: 2em;

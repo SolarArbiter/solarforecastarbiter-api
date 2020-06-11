@@ -42,7 +42,7 @@ function toggleDownloadUpdate(){
     days = miliseconds / (1000 * 60 * 60 * 24);
     if (days > 0){
         // limit maximum amount of data to download
-        if (days > MAX_DATA_RANGE_DAYS){
+        if (days > sfa_dash_config.MAX_DATA_RANGE_DAYS){
             // disable download and plot update
             $('#download-submit').attr('disabled', true);
             $('#plot-range-adjust-submit').attr('disabled', true);
@@ -63,13 +63,13 @@ function toggleDownloadUpdate(){
             }
             var intervals = miliseconds / (interval_length * 1000 * 60);
             
-            if (intervals > MAX_PLOT_DATAPOINTS){
+            if (intervals > sfa_dash_config.MAX_PLOT_DATAPOINTS){
                 $('#plot-range-adjust-submit').attr('disabled', true);
                 insertWarning(
                     'Plotting disabled',
                     `Maximum plottable points exceeded. Timerange includes 
                     ${intervals} data points and the maximum is 
-                    ${MAX_PLOT_DATAPOINTS}.`);
+                    ${sfa_dash_config.MAX_PLOT_DATAPOINTS}.`);
             } else {
                 $('#plot-range-adjust-submit').removeAttr('disabled');
             }

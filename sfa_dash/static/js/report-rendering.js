@@ -86,14 +86,13 @@ function humanReadableLabel(type, label){
     /* Converts the internal label for a metric or category to a human-friendly
      * format.
      *
-     * WARNING: This function requires that the global variables 'deterministic_metrics'
-     * and 'metric_categories' be supplied as json objects mapping internal
-     * labels to their human-friendly versions.
+     * WARNING: This function requires that the global sfa_dash_config variable
+     * contains the ALL_METRICS and METRIC_CATEGORIES attributes.
      */
     if (type == 'Metric'){
-        return all_metrics[label];
+        return sfa_dash_config.ALL_METRICS[label];
     } else if (type == 'Category'){
-        return metric_categories[label];
+        return sfa_dash_config.METRIC_CATEGORIES[label];
     } else {
         return label;
     }

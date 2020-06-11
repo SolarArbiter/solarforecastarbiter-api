@@ -12,8 +12,9 @@ from solarforecastarbiter.datamodel import (
     ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS,
     ALLOWED_PROBABILISTIC_METRICS,
+    ALLOWED_VARIABLES,
+    COMMON_NAMES,
 )
-
 
 TIMEZONES = pytz.country_timezones('US') + list(
     filter(lambda x: 'GMT' in x, pytz.all_timezones))
@@ -67,6 +68,34 @@ def is_allowed(action):
     return action in allowed
 
 
+def parse_quality_flags(form_dict):
+    """Parses quality flag filter values out of a parsed form_data
+    dictionary. This is necessary because filters are presented as a list
+    of dicts where a key designates filter type.
+
+    Parameters
+    ----------
+    form_dict: dict
+        The api payload parsed from form data in the form of a dictionary.
+
+    Returns
+    -------
+    list
+        List of quality flags.
+    """
+    filters = form_dict.get('report_parameters', {}).get('filters', {})
+    if filters:
+        quality_flag_filters = filter(
+            lambda x: 'quality_flags' in x,
+            filters,
+        )
+        quality_flags = [flag for filt in quality_flag_filters
+                         for flag in filt['quality_flags']]
+    else:
+        quality_flags = []
+    return quality_flags
+
+
 def template_variables():
     return {
         'dashboard_version': sfa_dash.__version__,
@@ -85,4 +114,7 @@ def template_variables():
         'current_path': request.path,
         'MAX_DATA_RANGE_DAYS': current_app.config['MAX_DATA_RANGE_DAYS'].days,
         'MAX_PLOT_DATAPOINTS': current_app.config['MAX_PLOT_DATAPOINTS'],
+        'parse_quality_flags': parse_quality_flags,
+        'variable_names': COMMON_NAMES,
+        'variable_unit_map': ALLOWED_VARIABLES,
     }

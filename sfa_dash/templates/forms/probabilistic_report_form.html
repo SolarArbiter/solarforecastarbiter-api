@@ -1,0 +1,29 @@
+{% import "forms/form_macros.jinja" as form %}
+
+{% set report_type = 'probabilistic' %}
+{% set report_script = '/static/js/probabilistic-report-handling.js' %}
+{% set constant_value_metric_options = probabilistic_metrics %}
+{% set excluded_constant_value_metrics = ['crps'] %}
+{% set full_group_metric_options = {'crps': 'CRPS'} %}
+
+
+{% extends "forms/base_report_form.html" %}
+
+{% block metrics_field %}
+<div class="form-element">
+<label>Distribution Metrics</label><br>
+  {% for metric, label in full_group_metric_options.items() %}
+    {% if metric not in excluded_full_group_metrics %}
+      <input type="checkbox" name="metrics" value="{{ metric }}" {% if form_data %}{% if metric in form_data['report_parameters']['metrics'] %}checked{% endif %}{% elif metric in default_metrics  %}checked{% endif %} disabled>
+      <a href="https://solarforecastarbiter.org/metrics/#{{ metric |replace('^', '') }}" target="_blank"> {{ label }}</a><br/>
+    {% endif %}
+  {% endfor %}
+<label>Binary Metrics</label><br>
+  {% for metric, label in constant_value_metric_options.items() %}
+    {% if metric not in excluded_constant_value_metrics %}
+      <input type="checkbox" name="metrics" value="{{ metric }}" {% if form_data %}{% if metric in form_data['report_parameters']['metrics'] %}checked{% endif %}{% elif metric in default_metrics  %}checked{% endif %}>
+      <a href="https://solarforecastarbiter.org/metrics/#{{ metric |replace('^', '') }}" target="_blank"> {{ label }}</a><br/>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

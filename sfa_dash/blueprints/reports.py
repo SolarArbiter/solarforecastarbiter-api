@@ -7,7 +7,7 @@ from solarforecastarbiter.reports.template import (
     get_template_and_kwargs, render_html, render_pdf)
 
 from sfa_dash.api_interface import (observations, forecasts, sites, reports,
-                                    aggregates)
+                                    aggregates, cdf_forecast_groups)
 from sfa_dash.utils import check_sign_zip
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.util import filter_form_fields
@@ -35,6 +35,8 @@ class ReportForm(BaseView):
     def set_template(self):
         if self.report_type == 'event':
             self.template = 'forms/event_report_form.html'
+        elif self.report_type == 'probabilistic':
+            self.template = 'forms/probabilistic_report_form.html'
         else:
             self.template = 'forms/report_form.html'
 
@@ -50,7 +52,10 @@ class ReportForm(BaseView):
         the api for injecting into the dom as a js variable
         """
         observation_list = observations.list_metadata()
-        forecast_list = forecasts.list_metadata()
+        if self.report_type == 'probabilistic':
+            forecast_list = cdf_forecast_groups.list_metadata()
+        else:
+            forecast_list = forecasts.list_metadata()
         site_list = sites.list_metadata()
         aggregate_list = aggregates.list_metadata()
         for obs in observation_list:
@@ -90,10 +95,12 @@ class ReportForm(BaseView):
                                                  form_data)
 
         uncertainty_values = filter_form_fields('deadband-value-', form_data)
+        forecast_types = filter_form_fields('forecast-type-', form_data)
         pairs = [{'forecast': f,
                   truth_types[i]: truth_ids[i],
                   'reference_forecast': reference_forecasts[i],
-                  'uncertainty': uncertainty_values[i]}
+                  'uncertainty': uncertainty_values[i],
+                  'forecast_type': forecast_types[i]}
                  for i, f in enumerate(fx)]
         return pairs
 
@@ -107,6 +114,18 @@ class ReportForm(BaseView):
             filters.append({'quality_flags': quality_flags})
         return filters
 
+    def apply_crps(self, params):
+        """Checks for "probabilistic_forecast' forecast_type in object pairs
+        and if found, appends the CRPS metric to the metrics options.
+        """
+        pair_fx_types = [f['forecast_type'] for f in params['object_pairs']]
+        if'probabilistic_forecast' in pair_fx_types:
+            new_params = params.copy()
+            new_params['metrics'].append('crps')
+            return new_params
+        else:
+            return params
+
     def parse_report_parameters(self, form_data):
         params = {}
         params['name'] = form_data['name']
@@ -117,6 +136,7 @@ class ReportForm(BaseView):
         params['filters'] = self.parse_filters(form_data)
         params['start'] = form_data['period-start']
         params['end'] = form_data['period-end']
+        params = self.apply_crps(params)
         return params
 
     def report_formatter(self, form_data):
@@ -133,7 +153,7 @@ class ReportForm(BaseView):
                 'error': [('Must include at least 1 Forecast, Observation '
                            'pair.')],
             }
-            return super().get(form_data=api_payload, errors=errors)
+            return self.get(form_data=api_payload, errors=errors)
         try:
             report_id = reports.post_metadata(api_payload)
         except DataRequestException as e:
@@ -146,7 +166,7 @@ class ReportForm(BaseView):
                 }
             else:
                 errors = e.errors
-            return super().get(form_data=api_payload, errors=errors)
+            return self.get(form_data=api_payload, errors=errors)
         return redirect(url_for(
             'data_dashboard.report_view',
             uuid=report_id,
