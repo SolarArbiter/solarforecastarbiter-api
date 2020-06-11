@@ -10,12 +10,13 @@ from sfa_api.utils.validators import (
     UncertaintyValidator, validate_if_event)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
-    ALLOWED_EVENT_METRICS)
+    ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS)
 
 
 ALLOWED_METRICS = {}
 ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
 ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
+ALLOWED_METRICS.update(ALLOWED_PROBABILISTIC_METRICS)
 
 
 class ISODateTime(ma.AwareDateTime):
@@ -73,6 +74,8 @@ INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
+FORECAST_TYPES = ['forecast', 'event_forecast', 'probabilistic_forecast',
+                  'probabilistic_forecast_constant_value']
 
 EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
@@ -805,6 +808,12 @@ class ReportObjectPair(ma.Schema):
         allow_none=True,
         missing=None,
         validate=UncertaintyValidator(),
+    )
+    forecast_type = ma.String(
+        title='Forecast type',
+        description='The type of forecast represented in the pair.',
+        missing='forecast',
+        validate=validate.OneOf(FORECAST_TYPES)
     )
 
 
