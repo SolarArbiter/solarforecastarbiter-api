@@ -1108,3 +1108,41 @@ class AggregateValuesSchema(ObservationValuesPostSchema):
 class ActionList(ma.Schema):
     object_id = ma.UUID(title="Object UUID")
     actions = ma.List(ma.String(), title="Actions allowed on the object.")
+
+
+class ValueGap(ma.Schema):
+    timestamp = ISODateTime(
+        title='Gap Start Timestamp',
+        description='First timestamp in a gap of values')
+    next_timestamp = ISODateTime(
+        title='Gap End Timestamp',
+        description='Last timestamp in a gap of values')
+
+
+class ValueGapListSchema(ma.Schema):
+    gaps = ma.Nested(ValueGap, many=True,
+                     title='Data Gaps')
+
+
+@spec.define_schema('ForecastValueGap')
+class ForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+
+
+@spec.define_schema('CDFForecastValueGap')
+class CDFForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description=("UUID of the probabilistic forecast constant value"
+                     " associated with this data."))
+
+
+@spec.define_schema('CDFGroupForecastValueGap')
+class CDFGroupForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description=("UUID of the probabilistic forecast associated "
+                     "with this data."))
+
