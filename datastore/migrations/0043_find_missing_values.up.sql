@@ -7,7 +7,7 @@ BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values'));
+    SET allowed = is_read_observation_values_allowed(auth0id, binid);
     IF allowed THEN
         SELECT DISTINCT(DATE(CONVERT_TZ(timestamp, 'UTC', tz))) as date
         FROM arbiter_data.observations_values WHERE id = binid AND timestamp BETWEEN start AND end
@@ -32,7 +32,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
 
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values')
+    SET allowed = (SELECT is_read_observation_values_allowed(auth0id, binid)
                       AND can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
         SET il = (SELECT interval_length FROM arbiter_data.observations WHERE id = binid);
@@ -63,7 +63,7 @@ BEGIN
     DECLARE allowed BOOLEAN DEFAULT FALSE;
 
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
-    SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values')
+    SET allowed = (SELECT is_read_forecast_values_allowed(auth0id, binid)
                       AND can_user_perform_action(auth0id, binid, 'read'));
     IF allowed THEN
         SET il = (SELECT interval_length FROM arbiter_data.forecasts WHERE id = binid);
@@ -97,7 +97,9 @@ BEGIN
 
     SET binid = (SELECT UUID_TO_BIN(strid, 1));
     SET allowed = (SELECT can_user_perform_action(auth0id, binid, 'read_values')
-                      AND can_user_perform_action(auth0id, binid, 'read'));
+                      AND can_user_perform_action(auth0id, binid, 'read')
+                      AND EXISTS(SELECT 1 FROM arbiter_data.cdf_forecasts_groups WHERE id = binid)
+                   );
     IF allowed THEN
         SET il = (SELECT interval_length FROM arbiter_data.cdf_forecasts_groups WHERE id = binid);
         SELECT j.timestamp, MAX(j.next_timestamp) as next_timestamp FROM (
