@@ -683,7 +683,7 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
             'site': ma.AbsoluteURLFor('sites.single',
                                       site_id='<site_id>'),
         },
-        description="Contains a link to the associated site."
+        description="Contains a link to associated endpoints."
     )
     forecast_id = ma.UUID()
     provider = ma.String()
@@ -1093,7 +1093,7 @@ class AggregateLinksSchema(ma.Schema):
 @spec.define_schema('AggregateValues')
 class AggregateValuesSchema(ObservationValuesPostSchema):
     aggregate_id = ma.UUID(
-        title='Obs ID',
+        title='Aggregate ID',
         description="UUID of the Aggregate associated with this data.")
     _links = ma.Hyperlinks(
         {
@@ -1146,3 +1146,15 @@ class CDFGroupForecastGapSchema(ValueGapListSchema):
         description=("UUID of the probabilistic forecast associated "
                      "with this data."))
 
+
+@spec.define_schema('ObservationValueGap')
+class ObservationGapSchema(ValueGapListSchema):
+    observation_id = ma.UUID(title="Observation ID")
+
+
+@spec.define_schema('ObservationUnflagged')
+class ObservationUnflaggedSchema(ma.Schema):
+    observation_id = ma.UUID(title="Observation ID")
+    dates = ma.List(ma.Date, title="Unflagged dates",
+                    description=("List of dates that includes data not flagged"
+                                 " with the given flag."))
