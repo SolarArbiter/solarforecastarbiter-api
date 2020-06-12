@@ -2085,3 +2085,40 @@ def find_climate_zones(latitude, longitude):
     return _call_procedure(
         'find_climate_zones', latitude, longitude,
         with_current_user=False)
+
+
+def find_unflagged_observation_dates(
+        observation_id, start, end, flag, timezone='UTC'):
+    """List the dates between start and end (in timezone) where the observations
+    values are not flagged with the given flag.
+
+    Parameters
+    ----------
+    Parameters
+    ----------
+    observation_id: string
+        UUID of associated observation.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+    flag: int
+        The integer quality flag to check if data has NOT been
+        flagged with
+    timezone: str
+        Timezone to adjust unflagged timestamps before retrieving date
+
+    Returns
+    -------
+    list of datetime.date
+        List of dates that contain observations not flagged
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the Observation
+        or if the Observation does not exists
+    """
+    return [d['date'] for d in _call_procedure(
+        'find_unflagged_observation_dates',
+        observation_id, start, end, flag, timezone)]

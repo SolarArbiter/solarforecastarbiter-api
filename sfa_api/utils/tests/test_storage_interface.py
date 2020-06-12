@@ -1801,3 +1801,43 @@ def test_find_zone(sql_app, lat, lon, zones):
     res = storage_interface.find_climate_zones(lat, lon)
     szones = {r['name'] for r in res}
     assert zones == szones
+
+
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_find_unflagged_observation_dates(sql_app, user, observation_id,
+                                          obs_vals):
+    start = pd.Timestamp('20190415T1205Z')
+    end = pd.Timestamp('20190418T1215Z')
+    # more varied qf
+    obs_vals['quality_flag'] = 2
+    obs_vals.loc[start:start+pd.Timedelta('1d'), 'quality_flag'] |= 8
+    storage_interface.store_observation_values(observation_id, obs_vals)
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 8)
+    assert dates == [dt.date(2019, 4, 16),
+                     dt.date(2019, 4, 17)]
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 1, 'Etc/GMT+12')
+    assert dates == [dt.date(2019, 4, 15),
+                     dt.date(2019, 4, 16)]
+    # all validated
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 2)
+    assert dates == []
+
+
+def test_read_unflagged_observation_dates_invalid_observation(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_unflagged_observation_dates(
+            str(uuid.uuid1()), start, end, 0)
+
+
+def test_read_unflagged_observation_dates_invalid_is_fx(sql_app, user,
+                                                        forecast_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_unflagged_observation_dates(
+            forecast_id, start, end, 0)
