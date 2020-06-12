@@ -1155,6 +1155,17 @@ def test_read_metadata_for_forecast_values(sql_app, user, nocommit_cursor,
     assert isinstance(ep, str)
 
 
+def test_read_metadata_for_forecast_values_w_obs(
+        sql_app, user, nocommit_cursor):
+    obs = list(demo_observations.values())[0]
+    start = pd.Timestamp('1970-01-02')
+    storage_interface.read_metadata_for_observation_values(
+            obs['observation_id'], start)
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_metadata_for_forecast_values(
+            obs['observation_id'], start)
+
+
 def test_read_metadata_for_forecast_values_start(
         sql_app, user, nocommit_cursor):
     forecast = list(demo_forecasts.values())[0]

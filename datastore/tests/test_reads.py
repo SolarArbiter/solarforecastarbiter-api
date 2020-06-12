@@ -1481,6 +1481,24 @@ def test_read_metadata_for_value_write_invalid(cursor, insertuser):
     assert e.value.args[0] == 1146
 
 
+def test_read_metadata_for_value_write_different_type(dictcursor, insertuser,
+                                                      allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
+                         '2019-09-30 13:00'))    
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('read_metadata_for_value_write',
+                            (insertuser.auth0id,
+                             insertuser.obs['strid'], 'forecasts',
+                             '2019-09-30 13:00'))
+    assert e.value.args[0] == 1142
+    
+
 def test_read_user_id(cursor, insertuser, new_user):
     u2 = new_user()
     cursor.callproc('read_user_id', (insertuser.auth0id, u2['auth0_id']))
