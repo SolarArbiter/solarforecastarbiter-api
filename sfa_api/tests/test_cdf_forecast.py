@@ -356,7 +356,8 @@ def test_get_cdf_forecast_timerange_404_obsid(api, observation_id):
     assert r.status_code == 404
 
 
-def test_get_cdf_forecast_gaps_200(api, cdf_forecast_id, fx_vals, addmayvalues):
+def test_get_cdf_forecast_gaps_200(api, cdf_forecast_id, fx_vals,
+                                   addmayvalues):
     r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values/gaps',
                 query_string={'start': '2019-04-01T00:00Z',
                               'end': '2019-06-01T00:00Z'},

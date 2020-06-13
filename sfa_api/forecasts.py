@@ -775,7 +775,8 @@ class CDFGroupForecastGapView(MethodView):
         """
         start, end = validate_start_end()
         storage = get_storage()
-        out = {'gaps': storage.find_cdf_forecast_group_gaps(forecast_id, start, end),
+        out = {'gaps': storage.find_cdf_forecast_group_gaps(
+            forecast_id, start, end),
                'forecast_id': forecast_id}
         data = CDFGroupForecastGapSchema().dump(out)
         return jsonify(data)
