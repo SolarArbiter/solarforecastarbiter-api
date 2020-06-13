@@ -451,9 +451,9 @@ EVENT_VARIABLE = copy_update(VALID_OBS_JSON, 'variable', 'event')
 
 
 @pytest.mark.parametrize('payload,message', [
-    (EVENT_VARIABLE, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_VARIABLE, ('{"events":["Both interval_label and variable must be '
                       'set to \'event\'."]}')),
-    (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_LABEL, ('{"events":["Both interval_label and variable must be '
                    'set to \'event\'."]}')),
 ])
 def test_observation_post_bad_event(api, payload, message):
@@ -462,3 +462,38 @@ def test_observation_post_bad_event(api, payload, message):
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_get_observation_gaps_200(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['gaps'] == [{'timestamp': '2019-04-17T06:55:00+00:00',
+                             'next_timestamp': '2019-05-01T00:00:00+00:00'}]
+
+
+def test_get_observation_gaps_none(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/gaps',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['gaps'] == []
+
+
+def test_get_observation_gaps_404(api, forecast_id, addmayvalues):
+    r = api.get(f'/observations/{forecast_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 404
