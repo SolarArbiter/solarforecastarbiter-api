@@ -354,3 +354,91 @@ def test_get_cdf_forecast_timerange_404_obsid(api, observation_id):
     r = api.get(f'/forecasts/cdf/single/{observation_id}/values/timerange',
                 base_url=BASE_URL)
     assert r.status_code == 404
+
+
+def test_get_cdf_forecast_gaps_200(api, cdf_forecast_id, fx_vals, addmayvalues):
+    r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['forecast_id'] == cdf_forecast_id
+    assert data['gaps'] == [{'timestamp': '2019-04-17T06:55:00+00:00',
+                             'next_timestamp': '2019-05-01T00:00:00+00:00'}]
+
+
+def test_get_cdf_forecast_gaps_none(api, cdf_forecast_id, addmayvalues):
+    r = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values/gaps',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['forecast_id'] == cdf_forecast_id
+    assert data['gaps'] == []
+
+
+def test_get_cdf_forecast_gaps_404(api, cdf_forecast_group_id, addmayvalues):
+    r = api.get(
+        f'/forecasts/cdf/single/{cdf_forecast_group_id}/values/gaps',
+        query_string={'start': '2019-04-01T00:00Z',
+                      'end': '2019-06-01T00:00Z'},
+        base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_forecast_gaps_404_obsid(api, observation_id, addmayvalues):
+    r = api.get(f'/forecasts/cdf/single/{observation_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_cdf_forecast_group_gaps_200(api, cdf_forecast_group_id, fx_vals,
+                                         addmayvalues):
+    r = api.get(f'/forecasts/cdf/{cdf_forecast_group_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['forecast_id'] == cdf_forecast_group_id
+    assert data['gaps'] == [{'timestamp': '2019-04-17T06:55:00+00:00',
+                             'next_timestamp': '2019-05-01T00:00:00+00:00'}]
+
+
+def test_get_cdf_forecast_group_gaps_none(api, cdf_forecast_group_id,
+                                          addmayvalues):
+    r = api.get(f'/forecasts/cdf/{cdf_forecast_group_id}/values/gaps',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert data['forecast_id'] == cdf_forecast_group_id
+    assert data['gaps'] == []
+
+
+def test_get_cdf_forecast_group_gaps_404(api, cdf_forecast_id, addmayvalues):
+    r = api.get(
+        f'/forecasts/cdf/{cdf_forecast_id}/values/gaps',
+        query_string={'start': '2019-04-01T00:00Z',
+                      'end': '2019-06-01T00:00Z'},
+        base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_forecast_group_gaps_404_obsid(api, observation_id, addmayvalues):
+    r = api.get(f'/forecasts/cdf/{observation_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 404

@@ -355,7 +355,7 @@ def _make_nocommit_cursor(mocker):
                  return_value=conn)
     special = partial(storage_interface.get_cursor, commit=False)
     mocker.patch('sfa_api.utils.storage_interface.get_cursor', special)
-    yield
+    yield conn.cursor()
     conn.rollback()
 
 
@@ -2058,3 +2058,34 @@ def random_post_payload():
 @pytest.fixture()
 def startend():
     return '?start=20190101T0000Z&end=20200101T0000Z'
+
+
+@pytest.fixture()
+def root_cursor(mocker):
+    app = create_app('TestingConfig')
+    app.config['MYSQL_USER'] = 'root'
+    app.config['MYSQL_PASSWORD'] = 'testpassword'
+    with app.app_context():
+        try:
+            storage_interface.mysql_connection()
+        except pymysql.err.OperationalError:
+            pytest.skip('No connection to test database')
+        else:
+            with _make_nocommit_cursor(mocker) as cursor:
+                yield cursor
+
+
+@pytest.fixture()
+def addmayvalues(root_cursor):
+    root_cursor.execute(
+        "INSERT INTO forecasts_values (id, timestamp, value) "
+        "SELECT id, '2019-05-01 00:00', 1.0 FROM forecasts"
+    )
+    root_cursor.execute(
+        "INSERT INTO observations_values (id, timestamp, value, quality_flag)"
+        " SELECT id, '2019-05-01 00:00', 1.0, 1 FROM observations"
+    )
+    root_cursor.execute(
+        "INSERT INTO cdf_forecasts_values (id, timestamp, value) "
+        "SELECT id, '2019-05-01 00:00', 1.0 FROM cdf_forecasts_singles"
+    )
