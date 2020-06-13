@@ -1805,7 +1805,7 @@ def test_find_zone(sql_app, lat, lon, zones):
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
 def test_find_unflagged_observation_dates(sql_app, user, observation_id,
-                                          obs_vals):
+                                          obs_vals, nocommit_cursor):
     start = pd.Timestamp('20190415T1205Z')
     end = pd.Timestamp('20190418T1215Z')
     # more varied qf
@@ -1844,7 +1844,7 @@ def test_read_unflagged_observation_dates_invalid_is_fx(sql_app, user,
 
 
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
-def test_find_observation_gaps(sql_app, user, observation_id):
+def test_find_observation_gaps(sql_app, user, observation_id, nocommit_cursor):
     start = pd.Timestamp('20190413T1205Z')
     end = pd.Timestamp('20190418T1215Z')
     obs_vals = pd.DataFrame({'value': 0, 'quality_flag': 2},
@@ -1878,7 +1878,7 @@ def test_find_observation_gaps_invalid_is_fx(sql_app, user,
 
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
-def test_find_forecast_gaps(sql_app, user, forecast_id):
+def test_find_forecast_gaps(sql_app, user, forecast_id, nocommit_cursor):
     start = pd.Timestamp('20180413T1205Z')
     end = pd.Timestamp('20180418T1215Z')
     il = pd.Timedelta(f"{demo_forecasts[forecast_id]['interval_length']}min")
@@ -1912,7 +1912,8 @@ def test_find_forecast_gaps_invalid_is_fx(sql_app, user,
 
 
 @pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
-def test_find_cdf_forecast_gaps(sql_app, user, cdf_forecast_id):
+def test_find_cdf_forecast_gaps(sql_app, user, cdf_forecast_id,
+                                nocommit_cursor):
     start = pd.Timestamp('20180413T1205Z')
     end = pd.Timestamp('20180418T1215Z')
     il = pd.Timedelta(
@@ -1947,7 +1948,8 @@ def test_find_cdf_forecast_gaps_invalid_is_fx(sql_app, user,
 
 
 @pytest.mark.parametrize('cdf_group_id', demo_group_cdf.keys())
-def test_find_cdf_forecast_group_gaps(sql_app, user, cdf_group_id):
+def test_find_cdf_forecast_group_gaps(sql_app, user, cdf_group_id,
+                                      nocommit_cursor):
     start = pd.Timestamp('20180413T1205Z')
     end = pd.Timestamp('20180418T1215Z')
     il = pd.Timedelta(
