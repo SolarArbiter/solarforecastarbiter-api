@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
 import pandas as pd
@@ -459,6 +462,7 @@ class ObservationUnflaggedSchema(ma.Schema):
                     description=("List of dates that includes data not flagged"
                                  " with the given flag."))
 
+
 # Forecasts
 FORECAST_LINKS = ma.Hyperlinks(
         {
@@ -633,26 +637,34 @@ AXIS_FIELD = ma.String(
     required=True,
     validate=validate.OneOf(['x', 'y'])
 )
+_cdf_links = {
+    'values': ma.AbsoluteURLFor(
+        'forecasts.single_cdf_value',
+        forecast_id='<forecast_id>'),
+    'timerange': ma.AbsoluteURLFor(
+        'forecasts.cdf_time_range',
+        forecast_id='<forecast_id>'),
+    'latest': ma.AbsoluteURLFor(
+        'forecasts.cdf_latest_value',
+        forecast_id='<forecast_id>'),
+    'gaps': ma.AbsoluteURLFor(
+        'forecasts.cdf_gaps',
+        forecast_id='<forecast_id>'),
+}
+_cdf_links_full = deepcopy(_cdf_links)
+_cdf_links_full['probability_forecast_group'] = ma.AbsoluteURLFor(
+    'forecasts.single_cdf_group',
+    forecast_id='<parent>')
 CDF_LINKS = ma.Hyperlinks(
-        {
-            'probability_forecast_group': ma.AbsoluteURLFor(
-                'forecasts.single_cdf_group',
-                forecast_id='<parent>'),
-            'values': ma.AbsoluteURLFor(
-                'forecasts.single_cdf_value',
-                forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor(
-                'forecasts.cdf_time_range',
-                forecast_id='<forecast_id>'),
-            'latest': ma.AbsoluteURLFor(
-                'forecasts.cdf_latest_value',
-                forecast_id='<forecast_id>'),
-            'gaps': ma.AbsoluteURLFor(
-                'forecasts.cdf_gaps',
-                forecast_id='<forecast_id>'),
-        },
-        description="Contains a link to the constant value endpoints."
-    )
+    _cdf_links,
+    name="Probabilistic constant value links",
+    description="Contains a link to the constant value endpoints."
+)
+CDF_LINKS_FULL = ma.Hyperlinks(
+    _cdf_links_full,
+    name="Full probabilistic constant value links",
+    description="Contains a link to the constant value endpoints."
+)
 
 
 @spec.define_schema('CDFForecastTimeRange')
@@ -685,7 +697,7 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
 
 @spec.define_schema('CDFForecastMetadata')
 class CDFForecastSchema(ForecastSchema):
-    _links = CDF_LINKS
+    _links = CDF_LINKS_FULL
     forecast_id = ma.UUID()
     axis = AXIS_FIELD
     parent = ma.UUID()
