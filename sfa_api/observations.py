@@ -15,6 +15,7 @@ from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_observation_values,
                                             validate_index_period)
+from sfa_api.utils.validators import ALLOWED_TIMEZONES
 from sfa_api.schema import (ObservationValuesSchema,
                             ObservationSchema,
                             ObservationPostSchema,
@@ -403,7 +404,32 @@ class ObservationUnflaggedView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        raise ValueError()
+        errors = {}
+        try:
+            start, end = validate_start_end()
+        except BadAPIRequest as err:
+            errors = err.errors
+        tz = request.args.get('timezone', 'UTC')
+        flag = request.args.get('flag', None)
+        if tz not in ALLOWED_TIMEZONES:
+            errors['timezone'] = f'Unknown timezone {tz}'
+        if flag is None:
+            errors['flag'] = 'Must provide the flag parameter'
+        else:
+            try:
+                int(flag)
+            except ValueError:
+                errors['flag'] = 'Flag must be an integer'
+        if errors:
+            raise BadAPIRequest(errors)
+        storage = get_storage()
+        out = {
+            'dates': storage.find_unflagged_observation_dates(
+                observation_id, start, end, flag, tz),
+            'observation_id': observation_id
+        }
+        data = ObservationUnflaggedSchema().dump(out)
+        return jsonify(data)
 
 
 class ObservationMetadataView(MethodView):
@@ -449,9 +475,9 @@ spec.components.parameter(
     'flag', 'query',
     {
         'schema': {
-            'type': 'string',
+            'type': 'integer',
         },
-        'description': "Observation quality flag",
+        'description': "Observation quality flag or compound quality flag",
         'required': 'true',
         'name': 'flag'
     }
@@ -463,7 +489,7 @@ spec.components.parameter(
             'type': 'string',
         },
         'description': "IANA Timezone",
-        'required': 'true',
+        'required': 'false',
         'name': 'timezone'
     }
 )

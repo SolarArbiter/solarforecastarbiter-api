@@ -1958,6 +1958,9 @@ def test_find_unflagged_observation_dates(cursor, obs_values, insertuser,
                     (auth0id, obsid, start, end, 2, 'UTC'))
     assert cursor.fetchall()[0] == (start.date(),)
     cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 3, 'UTC'))
+    assert cursor.fetchall()[0] == (start.date(),)
+    cursor.callproc('find_unflagged_observation_dates',
                     (auth0id, obsid, start, end, 2, 'Etc/GMT+7'))
     assert cursor.fetchall()[0] == (start.date(),)
     cursor.callproc('find_unflagged_observation_dates',

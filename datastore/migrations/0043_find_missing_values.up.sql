@@ -11,7 +11,7 @@ BEGIN
     IF allowed THEN
         SELECT DISTINCT(DATE(CONVERT_TZ(timestamp, 'UTC', tz))) as date
         FROM arbiter_data.observations_values WHERE id = binid AND timestamp BETWEEN start AND end
-        AND NOT (quality_flag & flag);
+        AND (quality_flag & flag) != flag;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "find unflagged observation dates"',
         MYSQL_ERRNO = 1142;

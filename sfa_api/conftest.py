@@ -2086,6 +2086,10 @@ def addmayvalues(root_cursor):
         " SELECT id, '2019-05-01 00:00', 1.0, 1 FROM observations"
     )
     root_cursor.execute(
+        "INSERT INTO observations_values (id, timestamp, value, quality_flag)"
+        " SELECT id, '2019-05-02 00:00', 1.0, 5 FROM observations"
+    )
+    root_cursor.execute(
         "INSERT INTO cdf_forecasts_values (id, timestamp, value) "
         "SELECT id, '2019-05-01 00:00', 1.0 FROM cdf_forecasts_singles"
     )

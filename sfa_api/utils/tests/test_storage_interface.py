@@ -1810,7 +1810,7 @@ def test_find_unflagged_observation_dates(sql_app, user, observation_id,
     end = pd.Timestamp('20190418T1215Z')
     # more varied qf
     obs_vals['quality_flag'] = 2
-    obs_vals.loc[start:start+pd.Timedelta('1d'), 'quality_flag'] |= 8
+    obs_vals.loc[start:start+pd.Timedelta('1d'), 'quality_flag'] |= 12
     storage_interface.store_observation_values(observation_id, obs_vals)
     dates = storage_interface.find_unflagged_observation_dates(
         observation_id, start, end, 8)
@@ -1824,6 +1824,13 @@ def test_find_unflagged_observation_dates(sql_app, user, observation_id,
     dates = storage_interface.find_unflagged_observation_dates(
         observation_id, start, end, 2)
     assert dates == []
+
+    # compound flag
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 9)
+    assert dates == [dt.date(2019, 4, 15),
+                     dt.date(2019, 4, 16),
+                     dt.date(2019, 4, 17)]
 
 
 def test_read_unflagged_observation_dates_invalid_observation(sql_app, user):
