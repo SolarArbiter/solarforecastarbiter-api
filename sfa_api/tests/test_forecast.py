@@ -483,3 +483,11 @@ def test_get_forecast_gaps_404_obsid(api, observation_id, addmayvalues):
                               'end': '2019-06-01T00:00Z'},
                 base_url=BASE_URL)
     assert r.status_code == 404
+
+
+def test_get_forecast_gaps_400(api, inaccessible_forecast_id):
+    r = api.get(
+        f'/forecasts/single/{inaccessible_forecast_id}/values/gaps',
+        query_string={'start': '2019-04-01T00:00Z'},
+        base_url=BASE_URL)
+    assert r.status_code == 400

@@ -400,6 +400,13 @@ def test_get_forecast_gaps_404_obsid(api, observation_id, addmayvalues):
     assert r.status_code == 404
 
 
+def test_get_cdf_forecast_gaps_400(api, cdf_forecast_group_id, addmayvalues):
+    r = api.get(
+        f'/forecasts/cdf/single/{cdf_forecast_group_id}/values/gaps',
+        base_url=BASE_URL)
+    assert r.status_code == 400
+
+
 def test_get_cdf_forecast_group_gaps_200(api, cdf_forecast_group_id, fx_vals,
                                          addmayvalues):
     r = api.get(f'/forecasts/cdf/{cdf_forecast_group_id}/values/gaps',
@@ -442,3 +449,10 @@ def test_get_forecast_group_gaps_404_obsid(api, observation_id, addmayvalues):
                               'end': '2019-06-01T00:00Z'},
                 base_url=BASE_URL)
     assert r.status_code == 404
+
+
+def test_get_cdf_forecast_group_gaps_400(api, cdf_forecast_id, addmayvalues):
+    r = api.get(
+        f'/forecasts/cdf/{cdf_forecast_id}/values/gaps',
+        base_url=BASE_URL)
+    assert r.status_code == 400
