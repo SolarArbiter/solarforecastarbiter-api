@@ -1909,8 +1909,8 @@ def test_find_forecast_gaps_invalid_forecast(sql_app, user):
             str(uuid.uuid1()), start, end)
 
 
-def test_find_forecast_gaps_invalid_is_fx(sql_app, user,
-                                          observation_id):
+def test_find_forecast_gaps_invalid_is_obs(sql_app, user,
+                                           observation_id):
     start = pd.Timestamp('20190414T1205Z')
     end = pd.Timestamp('20190417T1215Z')
     with pytest.raises(storage_interface.StorageAuthError):
@@ -1945,8 +1945,8 @@ def test_find_cdf_forecast_gaps_invalid_cdf_forecast(sql_app, user):
             str(uuid.uuid1()), start, end)
 
 
-def test_find_cdf_forecast_gaps_invalid_is_fx(sql_app, user,
-                                              observation_id):
+def test_find_cdf_forecast_gaps_invalid_is_obs(sql_app, user,
+                                               observation_id):
     start = pd.Timestamp('20190414T1205Z')
     end = pd.Timestamp('20190417T1215Z')
     with pytest.raises(storage_interface.StorageAuthError):
@@ -1984,8 +1984,8 @@ def test_find_cdf_forecast_group_gaps_invalid_cdf_forecast(sql_app, user):
             str(uuid.uuid1()), start, end)
 
 
-def test_find_cdf_forecast_group_gaps_invalid_is_fx(sql_app, user,
-                                                    observation_id):
+def test_find_cdf_forecast_group_gaps_invalid_is_obs(sql_app, user,
+                                                     observation_id):
     start = pd.Timestamp('20190414T1205Z')
     end = pd.Timestamp('20190417T1215Z')
     with pytest.raises(storage_interface.StorageAuthError):
