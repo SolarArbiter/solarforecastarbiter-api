@@ -540,6 +540,21 @@ def test_get_observation_unflagged_200_compound_flag(
     assert data['dates'] == ['2019-05-01']
 
 
+def test_get_observation_unflagged_200_flag_limit(
+        api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-05-01T00:00Z',
+                              'end': '2019-06-01T00:00Z',
+                              'flag': 65535},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['dates'] == ['2019-05-01', '2019-05-02']
+
+
 def test_get_observation_unflagged_200_tz(
         api, observation_id, addmayvalues):
     r = api.get(f'/observations/{observation_id}/values/unflagged',
@@ -573,6 +588,8 @@ def test_get_observation_unflagged_none(api, observation_id, addmayvalues):
 
 @pytest.mark.parametrize('qsup,err', [
     ({'flag': 'no'}, 'flag'),
+    ({'flag': 2**17}, 'flag'),
+    ({'flag': -1}, 'flag'),
     ({}, 'flag'),
     ({'flag': 1, 'timezone': 'bad'}, 'timezone'),
     ({'timezone': 'bad'}, 'timezone'),

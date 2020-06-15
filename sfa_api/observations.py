@@ -420,6 +420,10 @@ class ObservationUnflaggedView(MethodView):
                 int(flag)
             except ValueError:
                 errors['flag'] = 'Flag must be an integer'
+            else:
+                if int(flag) > (2**16 - 1) or int(flag) < 0:
+                    errors['flag'] = ('Flag must be a 2 byte unsigned '
+                                      'integer between 0 and 65535')
         if errors:
             raise BadAPIRequest(errors)
         storage = get_storage()

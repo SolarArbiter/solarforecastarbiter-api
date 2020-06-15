@@ -1,6 +1,6 @@
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE find_unflagged_observation_dates (
     IN auth0id VARCHAR(32), IN strid CHAR(36), IN start TIMESTAMP, IN end TIMESTAMP,
-    IN flag INT, IN tz VARCHAR(64))
+    IN flag SMALLINT UNSIGNED, IN tz VARCHAR(64))
 COMMENT 'Find all days (in TZ) where data is not flagged with FLAG'
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
