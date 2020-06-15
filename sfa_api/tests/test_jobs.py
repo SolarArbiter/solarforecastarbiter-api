@@ -163,7 +163,7 @@ def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
 @pytest.mark.parametrize('jtype,params,func', [
     ('daily_observation_validation',
      {'start_td': '-1h', 'end_td': '0h'},
-     'sfa_api.jobs.daily_observation_validation'),
+     'sfa_api.jobs.fetch_and_validate_all_observations'),
     ('reference_nwp',
      {'issue_time_buffer': '10min',
       'nwp_directory': '.'},
@@ -188,7 +188,7 @@ def test_execute_job(jtype, params, func, mocker, userid):
 
 def test_full_run_through(app, queue, mocker):
     mocker.patch('sfa_api.jobs.exchange_token', return_value='token')
-    validate = mocker.patch('sfa_api.jobs.daily_observation_validation')
+    validate = mocker.patch('sfa_api.jobs.fetch_and_validate_all_observations')
     gjq = mocker.patch('rq_scheduler.Scheduler.get_jobs_to_queue')
 
     class US(jobs.UpdateMixin, Scheduler):
@@ -223,7 +223,7 @@ def test_full_run_through_job_timeout(app, queue, mocker):
         time.sleep(5)
 
     mocker.patch('sfa_api.jobs.exchange_token', return_value='token')
-    mocker.patch('sfa_api.jobs.daily_observation_validation',
+    mocker.patch('sfa_api.jobs.fetch_and_validate_all_observations',
                  new=dosleep)
     fail = mocker.MagicMock()
     gjq = mocker.patch('rq_scheduler.Scheduler.get_jobs_to_queue')

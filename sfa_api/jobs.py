@@ -11,7 +11,7 @@ from solarforecastarbiter.io.utils import HiddenToken
 from solarforecastarbiter.reference_forecasts.main import (
     make_latest_nwp_forecasts, make_latest_persistence_forecasts)
 from solarforecastarbiter.reports.main import compute_report
-from solarforecastarbiter.validation.tasks import daily_observation_validation
+from solarforecastarbiter.validation.tasks import fetch_and_validate_all_observations
 
 
 from sfa_api.utils.auth0_info import exchange_refresh_token
@@ -145,7 +145,8 @@ def execute_job(name, job_type, user_id, **kwargs):
     if job_type == 'daily_observation_validation':
         start = utcnow() + pd.Timedelta(kwargs['start_td'])
         end = utcnow() + pd.Timedelta(kwargs['end_td'])
-        return daily_observation_validation(token, start, end, base_url)
+        return fetch_and_validate_all_observations(
+            token, start, end, base_url=base_url)
     elif job_type == 'reference_nwp':
         issue_buffer = pd.Timedelta(kwargs['issue_time_buffer'])
         run_time = utcnow()
