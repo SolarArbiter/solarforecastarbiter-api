@@ -1481,6 +1481,24 @@ def test_read_metadata_for_value_write_invalid(cursor, insertuser):
     assert e.value.args[0] == 1146
 
 
+def test_read_metadata_for_value_write_different_type(dictcursor, insertuser,
+                                                      allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
+                         '2019-09-30 13:00'))    
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc('read_metadata_for_value_write',
+                            (insertuser.auth0id,
+                             insertuser.obs['strid'], 'forecasts',
+                             '2019-09-30 13:00'))
+    assert e.value.args[0] == 1142
+    
+
 def test_read_user_id(cursor, insertuser, new_user):
     u2 = new_user()
     cursor.callproc('read_user_id', (insertuser.auth0id, u2['auth0_id']))
@@ -1925,4 +1943,331 @@ def test_read_forecast_time_range_denied_can_read_meta(
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('read_forecast_time_range', (auth0id, fxid))
     assert e.value.args[0] == 1142
+
+
+def test_find_unflagged_observation_dates(cursor, obs_values, insertuser,
+                                          allow_read_observation_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    cursor.execute(
+        'UPDATE observations_values SET quality_flag = 1 '
+        'WHERE id = UUID_TO_BIN(%s, 1)', obsid)
+    cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 1, 'UTC'))
+    assert len(cursor.fetchall()) == 0
+    cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 2, 'UTC'))
+    assert cursor.fetchall()[0] == (start.date(),)
+    cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 3, 'UTC'))
+    assert cursor.fetchall()[0] == (start.date(),)
+    cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 2, 'Etc/GMT+7'))
+    assert cursor.fetchall()[0] == (start.date(),)
+    cursor.callproc('find_unflagged_observation_dates',
+                    (auth0id, obsid, start, end, 2, 'Etc/GMT-12'))
+    assert cursor.fetchall()[0] == (start.date() + dt.timedelta(days=1),)
     
+
+def test_find_unflagged_observation_dates_denied(
+        cursor, obs_values, insertuser, allow_read_observations):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_unflagged_observation_dates',
+                        (auth0id, obsid, start, end, 1, 'UTC'))
+    assert e.value.args[0] == 1142
+
+
+def test_find_observation_gaps(
+        cursor, obs_values, insertuser, allow_read_observations,
+        allow_read_observation_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    start = start - dt.timedelta(minutes=10)
+    end = end + dt.timedelta(days=36)
+    mid = start + dt.timedelta(minutes=10)
+    cursor.executemany(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0, 0)', (
+            (obsid, start), (obsid, end + dt.timedelta(minutes=5)),
+            (obsid, str(mid))))
+    cursor.callproc('find_observation_gaps',
+                    (auth0id, obsid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 2
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, mid + dt.timedelta(seconds=20, minutes=8))
+
+    # single value
+    start = start + dt.timedelta(days=30)
+    cursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0, 0)', (obsid, start))
+    cursor.callproc('find_observation_gaps',
+                    (auth0id, obsid, start, end))
+    assert len(cursor.fetchall()) == 0
+
+
+def test_find_observation_gaps_no_read_obs(
+        cursor, obs_values, insertuser, 
+        allow_read_observation_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_observation_gaps',
+                        (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_observation_gaps_no_read_obs_vals(
+        cursor, obs_values, insertuser, 
+        allow_read_observations):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_observation_gaps',
+                        (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_observation_gaps_is_fx(
+        cursor, obs_values, insertuser, allow_read_forecast_values,
+        allow_read_forecasts):
+    auth0id, obsid, vals, start, end = obs_values(insertuser.obs['strid'])
+    fxid = insertuser.fx['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_observation_gaps',
+                        (auth0id, fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_forecast_gaps(
+        cursor, fx_values, insertuser, allow_read_forecasts,
+        allow_read_forecast_values):
+    auth0id, fxid, vals, start, end = fx_values
+    start = start - dt.timedelta(hours=3)
+    end = end + dt.timedelta(days=36)
+    mid = start + dt.timedelta(hours=2)
+    cursor.executemany(
+        'INSERT INTO forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (
+            (fxid, start), (fxid, end + dt.timedelta(minutes=5)),
+            (fxid, str(mid))))
+    cursor.callproc('find_forecast_gaps',
+                    (auth0id, fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 2
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, mid + dt.timedelta(hours=1, seconds=20, minutes=8))
+
+    # single value
+    start = start + dt.timedelta(days=30)
+    cursor.execute(
+        'INSERT INTO forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (fxid, start))
+    cursor.callproc('find_forecast_gaps',
+                    (auth0id, fxid, start, end))
+    assert len(cursor.fetchall()) == 0
+
+
+def test_find_forecast_gaps_no_read_fx(
+        cursor, fx_values, insertuser, 
+        allow_read_forecast_values):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_forecast_gaps',
+                        (auth0id, fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_forecast_gaps_no_read_fx_vals(
+        cursor, fx_values, insertuser, 
+        allow_read_forecasts):
+    auth0id, fxid, vals, start, end = fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_forecast_gaps',
+                        (auth0id, fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_forecast_gaps_is_obs(
+        cursor, fx_values, insertuser, allow_read_forecast_values,
+        allow_read_forecasts):
+    auth0id, fxid, vals, start, end = fx_values
+    obsid = insertuser.obs['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_forecast_gaps',
+                        (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_cdf_single_forecast_gaps(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecasts,
+        allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    start = start - dt.timedelta(hours=3)
+    end = end + dt.timedelta(days=36)
+    mid = start + dt.timedelta(hours=2)
+    cursor.executemany(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (
+            (cdf_fxid, start), (cdf_fxid, end + dt.timedelta(minutes=5)),
+            (cdf_fxid, str(mid))))
+    cursor.callproc('find_cdf_single_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 2
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, mid + dt.timedelta(hours=1, seconds=20, minutes=8))
+
+    # singles value
+    start = start + dt.timedelta(days=30)
+    cursor.execute(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (cdf_fxid, start))
+    cursor.callproc('find_cdf_single_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    assert len(cursor.fetchall()) == 0
+
+
+def test_find_cdf_single_forecast_gaps_no_read_cdf_fx(
+        cursor, cdf_fx_values, insertuser, 
+        allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_single_forecast_gaps',
+                        (auth0id, cdf_fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_cdf_single_forecast_gaps_no_read_cdf_fx_vals(
+        cursor, cdf_fx_values, insertuser,
+        allow_read_cdf_forecasts):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_single_forecast_gaps',
+                        (auth0id, cdf_fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_cdf_single_forecast_gaps_is_obs(
+        cursor, cdf_fx_values, insertuser, allow_read_cdf_forecast_values,
+        allow_read_cdf_forecasts):
+    auth0id, cdf_fxid, vals, start, end = cdf_fx_values
+    obsid = insertuser.obs['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_single_forecast_gaps',
+                        (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142
+
+
+@pytest.fixture()
+def cdf_grp_fx_values(cursor, insertuser, request):
+    auth0id = insertuser[0]['auth0_id']
+    forecast = insertuser.cdf
+    strid = forecast['strid']
+    start = dt.datetime(2020, 1, 30, 12, 20)
+    for sid in forecast['constant_values'].keys():
+        vals = tuple([
+            (sid, start + dt.timedelta(hours=i),
+             float(random.randint(0, 100))) for i in range(10)])
+        cursor.executemany(
+            'INSERT INTO cdf_forecasts_values (id, timestamp, value) '
+            'VALUES (UUID_TO_BIN(%s, 1), %s, %s)', vals)
+    end = dt.datetime(2020, 1, 30, 23, 20)
+    return auth0id, strid, vals, start, end
+
+
+def test_find_cdf_forecast_gaps(
+        cursor, cdf_grp_fx_values, insertuser, allow_read_cdf_forecasts,
+        allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, start, end = cdf_grp_fx_values
+    start = start - dt.timedelta(hours=6)
+    end = end + dt.timedelta(days=36)
+    mid = start + dt.timedelta(hours=2)
+    for sid in insertuser.cdf['constant_values'].keys():
+        cursor.executemany(
+            'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+            ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (
+                (sid, start), (sid, end + dt.timedelta(hours=1)),
+                (sid, str(mid))))
+    cursor.callproc('find_cdf_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 2
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, mid + dt.timedelta(hours=4))
+    
+    # difference between singles
+    start = start + dt.timedelta(days=2)
+    mid = start + dt.timedelta(hours=2)
+    fin = mid + dt.timedelta(hours=8)
+
+    cursor.callproc('find_cdf_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 0
+
+    sid = list(insertuser.cdf['constant_values'].keys())[0]
+    cursor.executemany(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (
+            (sid, start), (sid, mid), (sid, fin)))
+    cursor.callproc('find_cdf_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 2
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, fin)
+
+    # add some data to a different cv
+    sid = list(insertuser.cdf['constant_values'].keys())[1]
+    inter = mid + dt.timedelta(hours=2)
+    cursor.executemany(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+        ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (
+            (sid, start), (sid, inter)))
+    cursor.callproc('find_cdf_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    out = cursor.fetchall()
+    assert len(out) == 3
+    assert out[0] == (start, mid)
+    assert out[1] == (mid, inter)
+    assert out[2] == (inter, fin)
+    
+    # single value
+    start = start + dt.timedelta(days=30)
+    for sid in insertuser.cdf['constant_values'].keys():
+        cursor.execute(
+            'INSERT INTO cdf_forecasts_values (id, timestamp, value)'
+            ' VALUES (uuid_to_bin(%s, 1), %s, 0)', (sid, start))
+    cursor.callproc('find_cdf_forecast_gaps',
+                    (auth0id, cdf_fxid, start, end))
+    assert len(cursor.fetchall()) == 0
+
+
+def test_find_cdf_forecast_gaps_no_read_cdf_fx(
+        cursor, cdf_grp_fx_values, insertuser, 
+        allow_read_cdf_forecast_values):
+    auth0id, cdf_fxid, vals, start, end = cdf_grp_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_forecast_gaps',
+                        (auth0id, cdf_fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_cdf_forecast_gaps_no_read_cdf_fx_vals(
+        cursor, cdf_grp_fx_values, insertuser,
+        allow_read_cdf_forecasts):
+    auth0id, cdf_fxid, vals, start, end = cdf_grp_fx_values
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_forecast_gaps',
+                        (auth0id, cdf_fxid, start, end))
+    assert e.value.args[0] == 1142
+
+
+def test_find_cdf_forecast_gaps_is_obs(
+        cursor, cdf_grp_fx_values, insertuser, allow_read_cdf_forecast_values,
+        allow_read_cdf_forecasts):
+    auth0id, cdf_fxid, vals, start, end = cdf_grp_fx_values
+    obsid = insertuser.obs['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('find_cdf_forecast_gaps',
+                        (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142

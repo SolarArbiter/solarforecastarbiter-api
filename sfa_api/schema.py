@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 from marshmallow import validate, validates_schema
 from marshmallow.exceptions import ValidationError
 import pandas as pd
@@ -296,6 +299,20 @@ class ZoneListSchema(ma.Schema):
     )
 
 
+class ValueGap(ma.Schema):
+    timestamp = ISODateTime(
+        title='Gap Start Timestamp',
+        description='First timestamp in a gap of values')
+    next_timestamp = ISODateTime(
+        title='Gap End Timestamp',
+        description='Last timestamp in a gap of values')
+
+
+class ValueGapListSchema(ma.Schema):
+    gaps = ma.Nested(ValueGap, many=True,
+                     title='Data Gaps')
+
+
 # Observations
 @spec.define_schema('ObservationValue')
 class ObservationValueSchema(ma.Schema):
@@ -324,20 +341,31 @@ class ObservationValuesPostSchema(ma.Schema):
     values = TimeseriesField(ObservationValueSchema, many=True)
 
 
-@spec.define_schema('ObservationValues')
-class ObservationValuesSchema(ObservationValuesPostSchema):
-    observation_id = ma.UUID(
-        title='Obs ID',
-        description="UUID of the Observation associated with this data.")
-    _links = ma.Hyperlinks(
+OBSERVATION_LINKS = ma.Hyperlinks(
         {
             'metadata': ma.AbsoluteURLFor('observations.metadata',
                                           observation_id='<observation_id>'),
+            'values': ma.AbsoluteURLFor('observations.values',
+                                        observation_id='<observation_id>'),
             'timerange': ma.AbsoluteURLFor('observations.time_range',
                                            observation_id='<observation_id>'),
+            'latest': ma.AbsoluteURLFor('observations.latest_value',
+                                        observation_id='<observation_id>'),
+            'gaps': ma.AbsoluteURLFor('observations.gaps',
+                                      observation_id='<observation_id>'),
+            'unflagged': ma.AbsoluteURLFor('observations.unflagged',
+                                           observation_id='<observation_id>'),
         },
-        description="Contains a link to the values endpoint."
+        description="Contains a link to the Observation endpoints."
     )
+
+
+@spec.define_schema('ObservationValues')
+class ObservationValuesSchema(ObservationValuesPostSchema):
+    observation_id = ma.UUID(
+        title='Observation ID',
+        description="UUID of the Observation associated with this data.")
+    _links = OBSERVATION_LINKS
 
 
 class TimeRangeSchema(ma.Schema):
@@ -361,6 +389,7 @@ class ObservationTimeRangeSchema(TimeRangeSchema):
     observation_id = ma.UUID(
         title='Obs ID',
         description="UUID of the Observation associated with this data.")
+    _links = OBSERVATION_LINKS
 
 
 @spec.define_schema('ObservationDefinition')
@@ -416,20 +445,42 @@ class ObservationLinksSchema(ma.Schema):
         strict = True
         ordered = True
     observation_id = ma.UUID()
-    _links = ma.Hyperlinks(
-        {
-            'metadata': ma.AbsoluteURLFor('observations.metadata',
-                                          observation_id='<observation_id>'),
-            'values': ma.AbsoluteURLFor('observations.values',
-                                        observation_id='<observation_id>'),
-            'timerange': ma.AbsoluteURLFor('observations.time_range',
-                                           observation_id='<observation_id>'),
-        },
-        description="Contains links to the values and metadata endpoints."
-    )
+    _links = OBSERVATION_LINKS
+
+
+@spec.define_schema('ObservationValueGap')
+class ObservationGapSchema(ValueGapListSchema):
+    observation_id = ma.UUID(title="Observation ID")
+    _links = OBSERVATION_LINKS
+
+
+@spec.define_schema('ObservationUnflagged')
+class ObservationUnflaggedSchema(ma.Schema):
+    _links = OBSERVATION_LINKS
+    observation_id = ma.UUID(title="Observation ID")
+    dates = ma.List(ma.Date, title="Unflagged dates",
+                    description=("List of dates that includes data not flagged"
+                                 " with the given flag."))
 
 
 # Forecasts
+FORECAST_LINKS = ma.Hyperlinks(
+        {
+            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
+                                          forecast_id='<forecast_id>'),
+            'values': ma.AbsoluteURLFor('forecasts.values',
+                                        forecast_id='<forecast_id>'),
+            'timerange': ma.AbsoluteURLFor('forecasts.time_range',
+                                           forecast_id='<forecast_id>'),
+            'latest': ma.AbsoluteURLFor('forecasts.latest_value',
+                                        forecast_id='<forecast_id>'),
+            'gaps': ma.AbsoluteURLFor('forecasts.gaps',
+                                      forecast_id='<forecast_id>'),
+        },
+        description="Contains a link to the Forecast endpoints."
+    )
+
+
 @spec.define_schema('ForecastValue')
 class ForecastValueSchema(ma.Schema):
     class Meta:
@@ -453,36 +504,12 @@ class ForecastValuesPostSchema(ma.Schema):
     values = TimeseriesField(ForecastValueSchema, many=True)
 
 
-@spec.define_schema('CDFForecastValues')
-class CDFForecastValuesSchema(ForecastValuesPostSchema):
-    forecast_id = ma.UUID(
-        title="Forecast ID",
-        description="UUID of the forecast associated with this data.")
-    _links = ma.Hyperlinks(
-        {
-            'metadata': ma.AbsoluteURLFor('forecasts.single_cdf_metadata',
-                                          forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor('forecasts.cdf_time_range',
-                                           forecast_id='<forecast_id>'),
-        },
-        description="Contains a link to the metadata endpoint."
-    )
-
-
 @spec.define_schema('ForecastValues')
 class ForecastValuesSchema(ForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
-    _links = ma.Hyperlinks(
-        {
-            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                          forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor('forecasts.time_range',
-                                           forecast_id='<forecast_id>'),
-        },
-        description="Contains a link to the metadata endpoint."
-    )
+    _links = FORECAST_LINKS
 
 
 @spec.define_schema('ForecastTimeRange')
@@ -490,14 +517,6 @@ class ForecastTimeRangeSchema(TimeRangeSchema):
     forecast_id = ma.UUID(
         title='Forecast ID',
         description="UUID of the forecast associated with this data.")
-
-
-@spec.define_schema('CDFForecastTimeRange')
-class CDFForecastTimeRangeSchema(TimeRangeSchema):
-    forecast_id = ma.UUID(
-        title='Forecast ID',
-        description=(
-            "UUID of the probabilistic forecast associated with this data."))
 
 
 @spec.define_schema('ForecastDefinition')
@@ -596,17 +615,15 @@ class ForecastLinksSchema(ma.Schema):
         string = True
         ordered = True
     forecast_id = ma.UUID()
-    _links = ma.Hyperlinks(
-        {
-            'metadata': ma.AbsoluteURLFor('forecasts.metadata',
-                                          forecast_id='<forecast_id>'),
-            'values': ma.AbsoluteURLFor('forecasts.values',
-                                        forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor('forecasts.time_range',
-                                           forecast_id='<forecast_id>'),
-        },
-        description="Contains links to the values and metadata endpoints."
-    )
+    _links = FORECAST_LINKS
+
+
+@spec.define_schema('ForecastValueGap')
+class ForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+    _links = FORECAST_LINKS
 
 
 # Probabilistic Forecasts
@@ -620,6 +637,50 @@ AXIS_FIELD = ma.String(
     required=True,
     validate=validate.OneOf(['x', 'y'])
 )
+_cdf_links = {
+    'values': ma.AbsoluteURLFor(
+        'forecasts.single_cdf_value',
+        forecast_id='<forecast_id>'),
+    'timerange': ma.AbsoluteURLFor(
+        'forecasts.cdf_time_range',
+        forecast_id='<forecast_id>'),
+    'latest': ma.AbsoluteURLFor(
+        'forecasts.cdf_latest_value',
+        forecast_id='<forecast_id>'),
+    'gaps': ma.AbsoluteURLFor(
+        'forecasts.cdf_gaps',
+        forecast_id='<forecast_id>'),
+}
+_cdf_links_full = deepcopy(_cdf_links)
+_cdf_links_full['probability_forecast_group'] = ma.AbsoluteURLFor(
+    'forecasts.single_cdf_group',
+    forecast_id='<parent>')
+CDF_LINKS = ma.Hyperlinks(
+    _cdf_links,
+    name="Probabilistic constant value links",
+    description="Contains a link to the constant value endpoints."
+)
+CDF_LINKS_FULL = ma.Hyperlinks(
+    _cdf_links_full,
+    name="Full probabilistic constant value links",
+    description="Contains a link to the constant value endpoints."
+)
+
+
+@spec.define_schema('CDFForecastTimeRange')
+class CDFForecastTimeRangeSchema(TimeRangeSchema):
+    forecast_id = ma.UUID(
+        title='Forecast ID',
+        description=(
+            "UUID of the probabilistic forecast associated with this data."))
+
+
+@spec.define_schema('CDFForecastValues')
+class CDFForecastValuesSchema(ForecastValuesPostSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description="UUID of the forecast associated with this data.")
+    _links = CDF_LINKS
 
 
 @spec.define_schema('CDFForecastGroupDefinition')
@@ -636,21 +697,7 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
 
 @spec.define_schema('CDFForecastMetadata')
 class CDFForecastSchema(ForecastSchema):
-    _links = ma.Hyperlinks(
-        {
-            'probability_forecast_group': ma.AbsoluteURLFor(
-                'forecasts.single_cdf_group',
-                forecast_id='<parent>'),
-            'values': ma.AbsoluteURLFor(
-                'forecasts.single_cdf_value',
-                forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor(
-                'forecasts.cdf_time_range',
-                forecast_id='<forecast_id>'),
-        },
-        description=("Contains a link to the associated Probabilistic "
-                     "Forecast Group."),
-    )
+    _links = CDF_LINKS_FULL
     forecast_id = ma.UUID()
     axis = AXIS_FIELD
     parent = ma.UUID()
@@ -665,15 +712,7 @@ class CDFForecastSchema(ForecastSchema):
 class CDFForecastSingleSchema(ma.Schema):
     forecast_id = ma.UUID()
     constant_value = ma.Float()
-    _links = ma.Hyperlinks(
-        {
-            'values': ma.AbsoluteURLFor('forecasts.single_cdf_value',
-                                        forecast_id='<forecast_id>'),
-            'timerange': ma.AbsoluteURLFor('forecasts.cdf_time_range',
-                                           forecast_id='<forecast_id>'),
-        },
-        description="Contains a link to the values endpoint."
-    )
+    _links = CDF_LINKS
 
 
 @spec.define_schema('CDFForecastGroupMetadata')
@@ -682,8 +721,10 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
         {
             'site': ma.AbsoluteURLFor('sites.single',
                                       site_id='<site_id>'),
+            'gaps': ma.AbsoluteURLFor('forecasts.cdf_group_gaps',
+                                      forecast_id='<forecast_id>'),
         },
-        description="Contains a link to the associated site."
+        description="Contains a link to associated endpoints."
     )
     forecast_id = ma.UUID()
     provider = ma.String()
@@ -692,6 +733,24 @@ class CDFForecastGroupSchema(CDFForecastGroupPostSchema):
     modified_at = MODIFIED_AT
 
 
+@spec.define_schema('CDFForecastValueGap')
+class CDFForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description=("UUID of the probabilistic forecast constant value"
+                     " associated with this data."))
+    _links = CDF_LINKS
+
+
+@spec.define_schema('CDFGroupForecastValueGap')
+class CDFGroupForecastGapSchema(ValueGapListSchema):
+    forecast_id = ma.UUID(
+        title="Forecast ID",
+        description=("UUID of the probabilistic forecast associated "
+                     "with this data."))
+
+
+# Permissions
 @spec.define_schema('UserSchema')
 class UserSchema(ma.Schema):
     user_id = ma.UUID(
@@ -1093,7 +1152,7 @@ class AggregateLinksSchema(ma.Schema):
 @spec.define_schema('AggregateValues')
 class AggregateValuesSchema(ObservationValuesPostSchema):
     aggregate_id = ma.UUID(
-        title='Obs ID',
+        title='Aggregate ID',
         description="UUID of the Aggregate associated with this data.")
     _links = ma.Hyperlinks(
         {

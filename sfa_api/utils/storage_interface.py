@@ -2085,3 +2085,152 @@ def find_climate_zones(latitude, longitude):
     return _call_procedure(
         'find_climate_zones', latitude, longitude,
         with_current_user=False)
+
+
+def find_unflagged_observation_dates(
+        observation_id, start, end, flag, timezone='UTC'):
+    """List the dates between start and end (in timezone) where the observations
+    values are not flagged with the given flag.
+
+    Parameters
+    ----------
+    observation_id: string
+        UUID of associated observation.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+    flag: int
+        The integer quality flag to check if data has NOT been
+        flagged with
+    timezone: str
+        Timezone to adjust unflagged timestamps before retrieving date
+
+    Returns
+    -------
+    list of datetime.date
+        List of dates that contain observations not flagged
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the Observation
+        or if the Observation does not exists
+    """
+    return [d['date'] for d in _call_procedure(
+        'find_unflagged_observation_dates',
+        observation_id, start, end, flag, timezone)]
+
+
+def find_observation_gaps(observation_id, start, end):
+    """Find gaps in the observation values between start and end
+
+    Parameters
+    ----------
+    observation_id: string
+        UUID of associated observation.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    list of dicts
+        With keys 'timestamp' and 'next_timestamp' which indicate
+        the range where data is missing.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the Observation
+        or the user does not have permission to read the Observation metadata
+        or if the Observation does not exists
+    """
+    return _call_procedure('find_observation_gaps', observation_id, start, end)
+
+
+def find_forecast_gaps(forecast_id, start, end):
+    """Find gaps in the forecast values between start and end
+
+    Parameters
+    ----------
+    forecast_id: string
+        UUID of associated forecast.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    list of dicts
+        With keys 'timestamp' and 'next_timestamp' which indicate
+        the range where data is missing.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the Forecast
+        or the user does not have permission to read the Forecast metadata
+        or if the Forecast does not exists
+    """
+    return _call_procedure('find_forecast_gaps', forecast_id, start, end)
+
+
+def find_cdf_forecast_gaps(cdf_forecast_id, start, end):
+    """Find gaps in the single CDF forecast values between start and end
+
+    Parameters
+    ----------
+    cdf_forecast_id: string
+        UUID of associated cdf_forecast.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    list of dicts
+        With keys 'timestamp' and 'next_timestamp' which indicate
+        the range where data is missing.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the CDF Forecast
+        or the user does not have permission to read the CDF Forecast metadata
+        or if the CDF Forecast does not exists
+    """
+    return _call_procedure('find_cdf_single_forecast_gaps', cdf_forecast_id,
+                           start, end)
+
+
+def find_cdf_forecast_group_gaps(cdf_group_id, start, end):
+    """Find gaps in the CDF forecast group values between start and end
+
+    Parameters
+    ----------
+    cdf_group_id: string
+        UUID of associated CDF forecast group.
+    start: datetime
+        Beginning of the period for which to request data.
+    end: datetime
+        End of the period for which to request data.
+
+    Returns
+    -------
+    list of dicts
+        With keys 'timestamp' and 'next_timestamp' which indicate
+        the range where data is missing.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read values on the CDF Forecast
+        or the user does not have permission to read the CDF Forecast metadata
+        or if the CDF Forecast does not exists
+    """
+    return _call_procedure('find_cdf_forecast_gaps', cdf_group_id,
+                           start, end)

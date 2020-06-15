@@ -451,9 +451,9 @@ EVENT_VARIABLE = copy_update(VALID_OBS_JSON, 'variable', 'event')
 
 
 @pytest.mark.parametrize('payload,message', [
-    (EVENT_VARIABLE, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_VARIABLE, ('{"events":["Both interval_label and variable must be '
                       'set to \'event\'."]}')),
-    (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_LABEL, ('{"events":["Both interval_label and variable must be '
                    'set to \'event\'."]}')),
 ])
 def test_observation_post_bad_event(api, payload, message):
@@ -462,3 +462,157 @@ def test_observation_post_bad_event(api, payload, message):
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_get_observation_gaps_200(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['gaps'] == [
+        {'timestamp': '2019-04-17T06:55:00+00:00',
+         'next_timestamp': '2019-05-01T00:00:00+00:00'},
+        {'timestamp': '2019-05-01T00:00:00+00:00',
+         'next_timestamp': '2019-05-02T00:00:00+00:00'}
+    ]
+
+
+def test_get_observation_gaps_none(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/gaps',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['gaps'] == []
+
+
+def test_get_observation_gaps_404(api, forecast_id, addmayvalues):
+    r = api.get(f'/observations/{forecast_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_observation_gaps_400(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/gaps',
+                base_url=BASE_URL)
+    assert r.status_code == 400
+
+
+def test_get_observation_unflagged_200(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-04-30T00:00Z',
+                              'flag': 1},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['dates'] == ['2019-04-14', '2019-04-15',
+                             '2019-04-16', '2019-04-17']
+
+
+def test_get_observation_unflagged_200_compound_flag(
+        api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-05-01T00:00Z',
+                              'end': '2019-06-01T00:00Z',
+                              'flag': 5},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    # 5/2 is flagged with 5, 5/1 only 1
+    assert data['dates'] == ['2019-05-01']
+
+
+def test_get_observation_unflagged_200_flag_limit(
+        api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-05-01T00:00Z',
+                              'end': '2019-06-01T00:00Z',
+                              'flag': 65535},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['dates'] == ['2019-05-01', '2019-05-02']
+
+
+def test_get_observation_unflagged_200_tz(
+        api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-05-01T00:00Z',
+                              'end': '2019-06-01T00:00Z',
+                              'flag': 6,
+                              'timezone': 'Etc/GMT+5'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    # 5/2 is flagged with 5, 5/1 only 1, tz shifts
+    assert data['dates'] == ['2019-04-30', '2019-05-01']
+
+
+def test_get_observation_unflagged_none(api, observation_id, addmayvalues):
+    r = api.get(f'/observations/{observation_id}/values/unflagged',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z',
+                              'flag': 1},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['observation_id'] == observation_id
+    assert data['dates'] == []
+
+
+@pytest.mark.parametrize('qsup,err', [
+    ({'flag': 'no'}, 'flag'),
+    ({'flag': 2**17}, 'flag'),
+    ({'flag': -1}, 'flag'),
+    ({}, 'flag'),
+    ({'flag': 1, 'timezone': 'bad'}, 'timezone'),
+    ({'timezone': 'bad'}, 'timezone'),
+    ({'timezone': 'bad'}, 'flag'),
+    ({'start': ''}, 'start'),
+    ({'end': ''}, 'end')
+])
+def test_get_observation_unflagged_400(api, observation_id, addmayvalues,
+                                       qsup, err):
+    query_string = {'start': '2019-04-01T00:00Z',
+                    'end': '2019-06-01T00:00Z'}
+    query_string.update(qsup)
+    res = api.get(f'/observations/{observation_id}/values/unflagged',
+                  query_string=query_string,
+                  base_url=BASE_URL)
+    assert res.status_code == 400
+    assert err in res.get_data(as_text=True).lower()
+
+
+def test_get_observation_unflagged_404_fxid(api, forecast_id, addmayvalues):
+    r = api.get(f'/observations/{forecast_id}/values/unflagged',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z',
+                              'flag': 1},
+                base_url=BASE_URL)
+    assert r.status_code == 404

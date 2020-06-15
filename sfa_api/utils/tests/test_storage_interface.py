@@ -1155,6 +1155,17 @@ def test_read_metadata_for_forecast_values(sql_app, user, nocommit_cursor,
     assert isinstance(ep, str)
 
 
+def test_read_metadata_for_forecast_values_w_obs(
+        sql_app, user, nocommit_cursor):
+    obs = list(demo_observations.values())[0]
+    start = pd.Timestamp('1970-01-02')
+    storage_interface.read_metadata_for_observation_values(
+            obs['observation_id'], start)
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.read_metadata_for_forecast_values(
+            obs['observation_id'], start)
+
+
 def test_read_metadata_for_forecast_values_start(
         sql_app, user, nocommit_cursor):
     forecast = list(demo_forecasts.values())[0]
@@ -1790,3 +1801,193 @@ def test_find_zone(sql_app, lat, lon, zones):
     res = storage_interface.find_climate_zones(lat, lon)
     szones = {r['name'] for r in res}
     assert zones == szones
+
+
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_find_unflagged_observation_dates(sql_app, user, observation_id,
+                                          obs_vals, nocommit_cursor):
+    start = pd.Timestamp('20190415T1205Z')
+    end = pd.Timestamp('20190418T1215Z')
+    # more varied qf
+    obs_vals['quality_flag'] = 2
+    obs_vals.loc[start:start+pd.Timedelta('1d'), 'quality_flag'] |= 12
+    storage_interface.store_observation_values(observation_id, obs_vals)
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 8)
+    assert dates == [dt.date(2019, 4, 16),
+                     dt.date(2019, 4, 17)]
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 1, 'Etc/GMT+12')
+    assert dates == [dt.date(2019, 4, 15),
+                     dt.date(2019, 4, 16)]
+    # all validated
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 2)
+    assert dates == []
+
+    # compound flag
+    dates = storage_interface.find_unflagged_observation_dates(
+        observation_id, start, end, 9)
+    assert dates == [dt.date(2019, 4, 15),
+                     dt.date(2019, 4, 16),
+                     dt.date(2019, 4, 17)]
+
+
+def test_read_unflagged_observation_dates_invalid_observation(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_unflagged_observation_dates(
+            str(uuid.uuid1()), start, end, 0)
+
+
+def test_read_unflagged_observation_dates_invalid_is_fx(sql_app, user,
+                                                        forecast_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_unflagged_observation_dates(
+            forecast_id, start, end, 0)
+
+
+@pytest.mark.parametrize('observation_id', demo_observations.keys())
+def test_find_observation_gaps(sql_app, user, observation_id, nocommit_cursor):
+    start = pd.Timestamp('20190413T1205Z')
+    end = pd.Timestamp('20190418T1215Z')
+    obs_vals = pd.DataFrame({'value': 0, 'quality_flag': 2},
+                            index=[start, start + pd.Timedelta('10min')])
+    storage_interface.store_observation_values(observation_id, obs_vals)
+    ds = storage_interface.find_observation_gaps(observation_id, start, end)
+    assert ds[0]['timestamp'] == start.to_pydatetime()
+    assert ds[0]['next_timestamp'] == (
+        start + pd.Timedelta('10min')).to_pydatetime()
+    assert ds[1]['timestamp'] == (
+        start + pd.Timedelta('10min')).to_pydatetime()
+    assert ds[1]['next_timestamp'] == (
+        pd.Timestamp('20190414T07:00Z')).to_pydatetime()
+
+
+def test_find_observation_gaps_invalid_observation(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_observation_gaps(
+            str(uuid.uuid1()), start, end)
+
+
+def test_find_observation_gaps_invalid_is_fx(sql_app, user,
+                                             forecast_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_observation_gaps(
+            forecast_id, start, end)
+
+
+@pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
+def test_find_forecast_gaps(sql_app, user, forecast_id, nocommit_cursor):
+    start = pd.Timestamp('20180413T1205Z')
+    end = pd.Timestamp('20180418T1215Z')
+    il = pd.Timedelta(f"{demo_forecasts[forecast_id]['interval_length']}min")
+    vals = pd.DataFrame({'value': 0},
+                        index=[start, start + 3 * il,
+                               start + 4 * il,
+                               start + 7 * il])
+    storage_interface.store_forecast_values(forecast_id, vals)
+    ds = storage_interface.find_forecast_gaps(forecast_id, start, end)
+    assert ds[0]['timestamp'] == start.to_pydatetime()
+    assert ds[0]['next_timestamp'] == vals.index[1].to_pydatetime()
+    assert ds[1]['timestamp'] == vals.index[2].to_pydatetime()
+    assert ds[1]['next_timestamp'] == vals.index[3].to_pydatetime()
+
+
+def test_find_forecast_gaps_invalid_forecast(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_forecast_gaps(
+            str(uuid.uuid1()), start, end)
+
+
+def test_find_forecast_gaps_invalid_is_obs(sql_app, user,
+                                           observation_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_forecast_gaps(
+            observation_id, start, end)
+
+
+@pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
+def test_find_cdf_forecast_gaps(sql_app, user, cdf_forecast_id,
+                                nocommit_cursor):
+    start = pd.Timestamp('20180413T1205Z')
+    end = pd.Timestamp('20180418T1215Z')
+    il = pd.Timedelta(
+        f"{demo_group_cdf[demo_single_cdf[cdf_forecast_id]['parent']]['interval_length']}min")  # NOQA
+    vals = pd.DataFrame({'value': 0},
+                        index=[start, start + 3 * il,
+                               start + 4 * il,
+                               start + 7 * il])
+    storage_interface.store_cdf_forecast_values(cdf_forecast_id, vals)
+    ds = storage_interface.find_cdf_forecast_gaps(cdf_forecast_id, start, end)
+    assert ds[0]['timestamp'] == start.to_pydatetime()
+    assert ds[0]['next_timestamp'] == vals.index[1].to_pydatetime()
+    assert ds[1]['timestamp'] == vals.index[2].to_pydatetime()
+    assert ds[1]['next_timestamp'] == vals.index[3].to_pydatetime()
+
+
+def test_find_cdf_forecast_gaps_invalid_cdf_forecast(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_cdf_forecast_gaps(
+            str(uuid.uuid1()), start, end)
+
+
+def test_find_cdf_forecast_gaps_invalid_is_obs(sql_app, user,
+                                               observation_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_cdf_forecast_gaps(
+            observation_id, start, end)
+
+
+@pytest.mark.parametrize('cdf_group_id', demo_group_cdf.keys())
+def test_find_cdf_forecast_group_gaps(sql_app, user, cdf_group_id,
+                                      nocommit_cursor):
+    start = pd.Timestamp('20180413T1205Z')
+    end = pd.Timestamp('20180418T1215Z')
+    il = pd.Timedelta(
+        f"{demo_group_cdf[cdf_group_id]['interval_length']}min")  # NOQA
+    vals = pd.DataFrame({'value': 0},
+                        index=[start, start + 3 * il,
+                               start + 4 * il,
+                               start + 7 * il])
+    cdf_forecast_id = [k for k, v in demo_single_cdf.items()
+                       if v['parent'] == cdf_group_id][0]
+    storage_interface.store_cdf_forecast_values(cdf_forecast_id, vals)
+    ds = storage_interface.find_cdf_forecast_group_gaps(
+        cdf_group_id, start, end)
+    assert ds[0]['timestamp'] == start.to_pydatetime()
+    assert ds[0]['next_timestamp'] == vals.index[1].to_pydatetime()
+    assert ds[1]['timestamp'] == vals.index[2].to_pydatetime()
+    assert ds[1]['next_timestamp'] == vals.index[3].to_pydatetime()
+
+
+def test_find_cdf_forecast_group_gaps_invalid_cdf_forecast(sql_app, user):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_cdf_forecast_group_gaps(
+            str(uuid.uuid1()), start, end)
+
+
+def test_find_cdf_forecast_group_gaps_invalid_is_obs(sql_app, user,
+                                                     observation_id):
+    start = pd.Timestamp('20190414T1205Z')
+    end = pd.Timestamp('20190417T1215Z')
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.find_cdf_forecast_group_gaps(
+            observation_id, start, end)

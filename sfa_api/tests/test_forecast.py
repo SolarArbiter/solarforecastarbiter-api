@@ -428,9 +428,9 @@ EVENT_VARIABLE = copy_update(VALID_FORECAST_JSON, 'variable', 'event')
 
 
 @pytest.mark.parametrize('payload,message', [
-    (EVENT_VARIABLE, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_VARIABLE, ('{"events":["Both interval_label and variable must be '
                       'set to \'event\'."]}')),
-    (EVENT_LABEL, (f'{{"events":["Both interval_label and variable must be '
+    (EVENT_LABEL, ('{"events":["Both interval_label and variable must be '
                    'set to \'event\'."]}')),
 ])
 def test_forecast_post_bad_event(api, payload, message):
@@ -439,3 +439,55 @@ def test_forecast_post_bad_event(api, payload, message):
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_get_forecast_gaps_200(api, forecast_id, addmayvalues):
+    r = api.get(f'/forecasts/single/{forecast_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['forecast_id'] == forecast_id
+    assert data['gaps'] == [{'timestamp': '2019-04-17T06:55:00+00:00',
+                             'next_timestamp': '2019-05-01T00:00:00+00:00'}]
+
+
+def test_get_forecast_gaps_none(api, forecast_id, addmayvalues):
+    r = api.get(f'/forecasts/single/{forecast_id}/values/gaps',
+                query_string={'start': '2019-07-01T00:00Z',
+                              'end': '2019-10-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 200
+    assert r.mimetype == 'application/json'
+    data = r.get_json()
+    assert '_links' in data
+    assert data['forecast_id'] == forecast_id
+    assert data['gaps'] == []
+
+
+def test_get_forecast_gaps_404(api, inaccessible_forecast_id):
+    r = api.get(
+        f'/forecasts/single/{inaccessible_forecast_id}/values/gaps',
+        query_string={'start': '2019-04-01T00:00Z',
+                      'end': '2019-06-01T00:00Z'},
+        base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_forecast_gaps_404_obsid(api, observation_id, addmayvalues):
+    r = api.get(f'/forecasts/single/{observation_id}/values/gaps',
+                query_string={'start': '2019-04-01T00:00Z',
+                              'end': '2019-06-01T00:00Z'},
+                base_url=BASE_URL)
+    assert r.status_code == 404
+
+
+def test_get_forecast_gaps_400(api, inaccessible_forecast_id):
+    r = api.get(
+        f'/forecasts/single/{inaccessible_forecast_id}/values/gaps',
+        query_string={'start': '2019-04-01T00:00Z'},
+        base_url=BASE_URL)
+    assert r.status_code == 400

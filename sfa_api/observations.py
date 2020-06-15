@@ -15,11 +15,14 @@ from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_observation_values,
                                             validate_index_period)
+from sfa_api.utils.validators import ALLOWED_TIMEZONES
 from sfa_api.schema import (ObservationValuesSchema,
                             ObservationSchema,
                             ObservationPostSchema,
                             ObservationLinksSchema,
-                            ObservationTimeRangeSchema)
+                            ObservationTimeRangeSchema,
+                            ObservationGapSchema,
+                            ObservationUnflaggedSchema)
 
 
 class AllObservationsView(MethodView):
@@ -339,6 +342,100 @@ class ObservationTimeRangeView(MethodView):
         return jsonify(data)
 
 
+class ObservationGapView(MethodView):
+    def get(self, observation_id, *args):
+        """
+        ---
+        summary: Get the gaps in Observation data.
+        description: |
+          Get the timestamps indicating where gaps in Observation
+          data between start and end.
+        tags:
+        - Observations
+        parameters:
+          - observation_id
+          - start_time
+          - end_time
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationValueGap'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        start, end = validate_start_end()
+        storage = get_storage()
+        out = {
+            'gaps': storage.find_observation_gaps(observation_id, start, end),
+            'observation_id': observation_id
+        }
+        data = ObservationGapSchema().dump(out)
+        return jsonify(data)
+
+
+class ObservationUnflaggedView(MethodView):
+    def get(self, observation_id, *args):
+        """
+        ---
+        summary: Get dates where flag not present.
+        description: |
+          Get the dates where and Observation data is NOT
+          flagged with the given flag.
+        tags:
+        - Observations
+        parameters:
+          - observation_id
+          - start_time
+          - end_time
+          - flag
+          - timezone
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationUnflagged'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        errors = {}
+        try:
+            start, end = validate_start_end()
+        except BadAPIRequest as err:
+            errors = err.errors
+        tz = request.args.get('timezone', 'UTC')
+        flag = request.args.get('flag', None)
+        if tz not in ALLOWED_TIMEZONES:
+            errors['timezone'] = f'Unknown timezone {tz}'
+        if flag is None:
+            errors['flag'] = 'Must provide the flag parameter'
+        else:
+            try:
+                int(flag)
+            except ValueError:
+                errors['flag'] = 'Flag must be an integer'
+            else:
+                if int(flag) > (2**16 - 1) or int(flag) < 0:
+                    errors['flag'] = ('Flag must be a 2 byte unsigned '
+                                      'integer between 0 and 65535')
+        if errors:
+            raise BadAPIRequest(errors)
+        storage = get_storage()
+        out = {
+            'dates': storage.find_unflagged_observation_dates(
+                observation_id, start, end, flag, tz),
+            'observation_id': observation_id
+        }
+        data = ObservationUnflaggedSchema().dump(out)
+        return jsonify(data)
+
+
 class ObservationMetadataView(MethodView):
     def get(self, observation_id, *args):
         """
@@ -376,7 +473,30 @@ spec.components.parameter(
         'description': "Resource's unique identifier.",
         'required': 'true',
         'name': 'observation_id'
-    })
+    }
+)
+spec.components.parameter(
+    'flag', 'query',
+    {
+        'schema': {
+            'type': 'integer',
+        },
+        'description': "Observation quality flag or compound quality flag",
+        'required': 'true',
+        'name': 'flag'
+    }
+)
+spec.components.parameter(
+    'timezone', 'query',
+    {
+        'schema': {
+            'type': 'string',
+        },
+        'description': "IANA Timezone",
+        'required': 'false',
+        'name': 'timezone'
+    }
+)
 
 obs_blp = Blueprint(
     'observations', 'observations', url_prefix='/observations',
@@ -394,6 +514,12 @@ obs_blp.add_url_rule(
 obs_blp.add_url_rule(
     '/<uuid_str:observation_id>/values/timerange',
     view_func=ObservationTimeRangeView.as_view('time_range'))
+obs_blp.add_url_rule(
+    '/<uuid_str:observation_id>/values/unflagged',
+    view_func=ObservationUnflaggedView.as_view('unflagged'))
+obs_blp.add_url_rule(
+    '/<uuid_str:observation_id>/values/gaps',
+    view_func=ObservationGapView.as_view('gaps'))
 obs_blp.add_url_rule(
     '/<uuid_str:observation_id>/metadata',
     view_func=ObservationMetadataView.as_view('metadata'))

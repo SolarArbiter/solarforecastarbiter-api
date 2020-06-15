@@ -1,0 +1,5 @@
+DROP PROCEDURE arbiter_data.find_cdf_single_forecast_gaps;
+DROP PROCEDURE arbiter_data.find_cdf_forecast_gaps;
+DROP PROCEDURE arbiter_data.find_forecast_gaps;
+DROP PROCEDURE arbiter_data.find_observation_gaps;
+DROP PROCEDURE arbiter_data.find_unflagged_observation_dates;

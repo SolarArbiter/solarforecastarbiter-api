@@ -15,7 +15,10 @@ from sfa_api.schema import (ForecastValuesSchema,
                             CDFForecastGroupSchema,
                             CDFForecastSchema,
                             CDFForecastValuesSchema,
-                            CDFForecastTimeRangeSchema)
+                            CDFForecastTimeRangeSchema,
+                            ForecastGapSchema,
+                            CDFForecastGapSchema,
+                            CDFGroupForecastGapSchema)
 
 from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
@@ -323,6 +326,39 @@ class ForecastTimeRangeView(MethodView):
         return jsonify(data)
 
 
+class ForecastGapView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get the gaps in Forecast data.
+        description: |
+          Get the timestamps indicating where gaps in Forecast
+          data between start and end.
+        tags:
+        - Forecasts
+        parameters:
+          - forecast_id
+          - start_time
+          - end_time
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastValueGap'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        start, end = validate_start_end()
+        storage = get_storage()
+        out = {'gaps': storage.find_forecast_gaps(forecast_id, start, end),
+               'forecast_id': forecast_id}
+        data = ForecastGapSchema().dump(out)
+        return jsonify(data)
+
+
 class ForecastMetadataView(MethodView):
     def get(self, forecast_id, *args):
         """
@@ -623,8 +659,8 @@ class CDFForecastLatestView(MethodView):
         ---
         summary: Get latest Probabilistic Forecast value.
         description: |
-          Get the most recent timeseries value from the Probabilistic
-          Forecast entry.
+          Get the most recent timeseries value for one constant value
+          from the Probabilistic Forecast entry.
         tags:
           - Probabilistic Forecasts
         parameters:
@@ -653,8 +689,8 @@ class CDFForecastTimeRangeView(MethodView):
         ---
         summary: Get the time range of an Probabilistic Forecast.
         description: |
-          Get the minimum and maximum timestamps of Probabilistic Forecast
-          values stored in the Arbiter.
+          Get the minimum and maximum timestamps for one constant value
+          of a Probabilistic Forecast values stored in the Arbiter.
         tags:
         - Probabilistic Forecasts
         parameters:
@@ -674,6 +710,75 @@ class CDFForecastTimeRangeView(MethodView):
         timerange = storage.read_cdf_forecast_time_range(forecast_id)
         timerange['forecast_id'] = forecast_id
         data = CDFForecastTimeRangeSchema().dump(timerange)
+        return jsonify(data)
+
+
+class CDFForecastGapView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get the gaps in Probabilistic Forecast
+        description: |
+          Get the timestamps indicating where gaps in the data
+          of one constant value from the probabilistic forecast
+          between start and end.
+        tags:
+        - Probabilistic Forecasts
+        parameters:
+          - forecast_id
+          - start_time
+          - end_time
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CDFForecastValueGap'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        start, end = validate_start_end()
+        storage = get_storage()
+        out = {'gaps': storage.find_cdf_forecast_gaps(forecast_id, start, end),
+               'forecast_id': forecast_id}
+        data = CDFForecastGapSchema().dump(out)
+        return jsonify(data)
+
+
+class CDFGroupForecastGapView(MethodView):
+    def get(self, forecast_id, *args):
+        """
+        ---
+        summary: Get the gaps in Probabilistic Forecast Group
+        description: |
+          Get the timestamps indicating where gaps in the data
+          for all constant values of a Probabilistic Forecast
+          group between start and end.
+        tags:
+        - Probabilistic Forecasts
+        parameters:
+          - forecast_id
+          - start_time
+          - end_time
+        responses:
+          200:
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CDFGroupForecastValueGap'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        start, end = validate_start_end()
+        storage = get_storage()
+        out = {'gaps': storage.find_cdf_forecast_group_gaps(
+            forecast_id, start, end),
+               'forecast_id': forecast_id}
+        data = CDFGroupForecastGapSchema().dump(out)
         return jsonify(data)
 
 
@@ -708,6 +813,9 @@ forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/values/timerange',
     view_func=ForecastTimeRangeView.as_view('time_range'))
 forecast_blp.add_url_rule(
+    '/single/<uuid_str:forecast_id>/values/gaps',
+    view_func=ForecastGapView.as_view('gaps'))
+forecast_blp.add_url_rule(
     '/single/<uuid_str:forecast_id>/metadata',
     view_func=ForecastMetadataView.as_view('metadata'))
 
@@ -717,6 +825,9 @@ forecast_blp.add_url_rule(
 forecast_blp.add_url_rule(
     '/cdf/<uuid_str:forecast_id>',
     view_func=CDFForecastGroupMetadataView.as_view('single_cdf_group'))
+forecast_blp.add_url_rule(
+    '/cdf/<uuid_str:forecast_id>/values/gaps',
+    view_func=CDFGroupForecastGapView.as_view('cdf_group_gaps'))
 forecast_blp.add_url_rule(
     '/cdf/single/<uuid_str:forecast_id>',
     view_func=CDFForecastMetadata.as_view('single_cdf_metadata'))
@@ -729,3 +840,6 @@ forecast_blp.add_url_rule(
 forecast_blp.add_url_rule(
     '/cdf/single/<uuid_str:forecast_id>/values/timerange',
     view_func=CDFForecastTimeRangeView.as_view('cdf_time_range'))
+forecast_blp.add_url_rule(
+    '/cdf/single/<uuid_str:forecast_id>/values/gaps',
+    view_func=CDFForecastGapView.as_view('cdf_gaps'))
