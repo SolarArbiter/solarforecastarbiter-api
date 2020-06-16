@@ -1,11 +1,7 @@
 {% extends "dash/data.html" %}
 {% import "forms/form_macros.jinja" as form %}
-{% block content %}
-{% if metadata is defined %}
 {% set page_title = 'Delete ' + data_type %}
-{{ metadata | safe }}
-{% endif %}
-{% include 'sections/notifications.html' %}
+{% block content %}
 {% if data_type and uuid %}
 {# setting data_type and uuid prints deletion links #}
 <form action="{{ url_for('data_dashboard.delete_'+data_type, uuid=uuid) }}" method="post" id="delete-form", enctype='application/json'>

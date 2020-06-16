@@ -8,15 +8,15 @@ from flask import render_template, request, url_for
 class DataDashView(BaseView):
     subnav_format = {}
 
-    def template_args(self, **kwargs):
-        temp_args = {}
-        temp_args['current_path'] = request.path
-        temp_args['subnav'] = self.format_subnav(**kwargs)
-        temp_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
-        return temp_args
+    def set_template_args(self, **kwargs):
+        self.template_args = {}
+        self.template_args['current_path'] = request.path
+        self.template_args['subnav'] = self.format_subnav(**kwargs)
+        self.template_args['breadcrumb'] = self.breadcrumb_html(**kwargs)
 
     def get(self, **kwargs):
-        return render_template(self.template, **self.template_args(**kwargs))
+        self.set_template_args(**kwargs)
+        return render_template(self.template, **self.template_args)
 
 
 class SiteDashView(BaseView):
@@ -27,10 +27,8 @@ class SiteDashView(BaseView):
         '{cdf_forecasts_url}': 'Probabilistic Forecasts',
     }
 
-    def template_args(self, **kwargs):
-        """
-        """
-        temp_args = {}
+    def set_template_args(self, **kwargs):
+        self.template_args = {}
         subnav_kwargs = {
             'forecasts_url': url_for('data_dashboard.forecasts',
                                      site_id=self.metadata['site_id']),
@@ -39,10 +37,10 @@ class SiteDashView(BaseView):
             'cdf_forecasts_url': url_for('data_dashboard.cdf_forecast_groups',
                                          site_id=self.metadata['site_id'])
         }
-        temp_args['subnav'] = self.format_subnav(**subnav_kwargs)
-        temp_args['breadcrumb'] = self.breadcrumb_html()
-        temp_args['metadata'] = render_template(
+        self.template_args['subnav'] = self.format_subnav(**subnav_kwargs)
+        self.template_args['breadcrumb'] = self.breadcrumb_html()
+        self.template_args['metadata'] = self.safe_metadata()
+        self.template_args['metadata_block'] = render_template(
             'data/metadata/site_metadata.html',
             **self.metadata)
-        temp_args['site_id'] = self.metadata['site_id']
-        return temp_args
+        self.template_args['site_id'] = self.metadata['site_id']

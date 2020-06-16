@@ -2,7 +2,6 @@
 {% import "forms/form_macros.jinja" as form %}
 {% set page_title = 'Users' %}
 {% block content %}
-{% include "sections/notifications.html" %}
 {% if role is not none %}
 {% if 'organization' not in user %}
 <div class="alert alert-warning" role="alert">It appears you do not have access to read the metadata of this user. They may not exist or may be outside your organization. Please ensure the user id is correct before continuing. </div>

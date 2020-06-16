@@ -20,7 +20,7 @@ class BaseView(MethodView):
         key with the full site metadata to create a plot.
 
         This inserts the rendered plot html and bokeh script into
-        the temp_args keys plot and bokeh_script respectively.
+        the template_args keys plot and bokeh_script respectively.
 
         Parameters
         ----------
@@ -48,9 +48,9 @@ class BaseView(MethodView):
                                   'end': end.isoformat()})
             except DataRequestException as e:
                 if e.status_code == 422:
-                    self.temp_args.update({'warnings': e.errors})
+                    self.template_args.update({'warnings': e.errors})
                 else:
-                    self.temp_args.update({'warnings': {
+                    self.template_args.update({'warnings': {
                         'Value Access': [
                             f'{self.human_label} values inaccessible.']},
                     })
@@ -58,21 +58,21 @@ class BaseView(MethodView):
                 script_plot = timeseries_adapter(
                     self.plot_type, self.metadata, values)
                 if script_plot is None:
-                    self.temp_args.update({
+                    self.template_args.update({
                         'messages': {
                             'Data': [
                                 ("No data available for this "
                                  f"{self.human_label} during this period.")]},
                     })
                 else:
-                    self.temp_args.update({
+                    self.template_args.update({
                         'plot': script_plot[1],
                         'includes_bokeh': True,
                         'bokeh_script': script_plot[0]
                     })
         else:
             allowable_days = pd.Timedelta(f"{max_pts*interval_length} minutes")
-            self.temp_args.update({
+            self.template_args.update({
                 'plot': '<div class="alert alert-warning">Too many datapoints '
                         'to display. The maximum number of datapoints to plot '
                         f'is {max_pts}. This amounts to {allowable_days.days} '
@@ -263,7 +263,7 @@ class BaseView(MethodView):
                 self.metadata['site'] = sites.get_metadata(
                     self.metadata['site_id'])
             except DataRequestException:
-                self.temp_args.update({
+                self.template_args.update({
                     'warnings': {
                         'Site Access': [
                             'Site inaccessible. Plots will not be displayed.']
@@ -275,7 +275,7 @@ class BaseView(MethodView):
                 self.metadata['aggregate'] = aggregates.get_metadata(
                     self.metadata['aggregate_id'])
             except DataRequestException:
-                self.temp_args.update({
+                self.template_args.update({
                     'warnings': {
                         'Aggregate Access': [
                             'Aggregate inaccessible. Plots will not be '
@@ -283,6 +283,14 @@ class BaseView(MethodView):
                     },
                 })
                 raise
+        else:
+            self.template_args.update({
+                'warnings': {
+                    'Warning': [
+                        'Site or aggregate has been deleted.'],
+                }
+            })
+            raise DataRequestException(404)
 
     def set_site_or_aggregate_link(self):
         """Creates a url to the forecast's site or aggregate. For injection
@@ -320,13 +328,14 @@ class BaseView(MethodView):
             link_html = 'Object Deleted'
         self.metadata['location_link'] = link_html
 
-    def template_args(self):
-        return {}
+    def set_template_args(self):
+        self.template_args = {}
 
     def get(self, **kwargs):
         if hasattr(self, 'subnav') and self.subnav is not None:
             subnav = self.subnav
         else:
             subnav = {}
+        self.set_template_args()
         return render_template(self.template, subnav=subnav,
-                               **self.template_args(), **kwargs)
+                               **self.template_args, **kwargs)

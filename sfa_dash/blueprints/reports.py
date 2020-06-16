@@ -18,14 +18,14 @@ ALLOWED_REPORT_TYPES = ['deterministic', 'probabilistic', 'event']
 
 
 class ReportsView(BaseView):
-    template = 'dash/reports.html'
+    template = 'data/reports.html'
 
-    def template_args(self):
+    def set_template_args(self):
         try:
             reports_list = reports.list_metadata()
         except DataRequestException as e:
             return {'errors': e.errors}
-        return {
+        self.template_args = {
             "page_title": 'Reports',
             "reports": reports_list,
         }
@@ -73,8 +73,8 @@ class ReportForm(BaseView):
             'aggregates': aggregate_list
         }
 
-    def template_args(self):
-        return {
+    def set_template_args(self):
+        self.template_args = {
             "page_data": self.get_pairable_objects(),
         }
 
@@ -200,7 +200,7 @@ class ReportView(BaseView):
             total_data_points = total_data_points + fxobs_data_points
         return total_data_points < current_app.config['REPORT_DATA_LIMIT']
 
-    def template_args(self):
+    def set_template_args(self):
         include_timeseries = self.should_include_timeseries()
         report_object = build_report(self.metadata)
         report_template, report_kwargs = get_template_and_kwargs(
@@ -229,7 +229,7 @@ class ReportView(BaseView):
                 'timeseries_div': div,
                 'timeseries_script': script,
             })
-        return report_kwargs
+        self.template_args = report_kwargs
 
     def set_metadata(self, uuid):
         """Loads all necessary data for loading a
@@ -295,8 +295,8 @@ class DeleteReportView(BaseView):
     template = 'forms/deletion_form.html'
     metadata_template = 'data/metadata/report_metadata.html'
 
-    def template_args(self):
-        return {
+    def set_template_args(self):
+        self.template_args = {
             'data_type': 'report',
             'uuid': self.metadata['report_id'],
             'metadata': render_template(

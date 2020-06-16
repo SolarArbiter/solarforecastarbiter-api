@@ -1,9 +1,8 @@
 {# Simple template for printing the contents of a table, see data/table
    directory for templates related to actual table formatting.
 #}
-{% extends "dash/site.html" %}
+{% extends "dash/data.html" %}
 {% set sidebar = True %}
 {% block content %}
-{% include "sections/notifications.html" %}
 {{ data_table | safe }}
 {% endblock %}

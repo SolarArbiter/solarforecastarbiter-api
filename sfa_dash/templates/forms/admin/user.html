@@ -1,7 +1,6 @@
 {% extends "dash/data.html" %}
 {% set page_title = 'Users' %}
 {% block content %}
-{% include 'sections/notifications.html' %}
 {% if user is defined %}
 {% include "data/metadata/user_metadata.html" %}
 <a href="{{ url_for('admin.user_role_update', uuid=user['user_id']) }}" class="btn btn-primary">Add Roles</a>

@@ -1,8 +1,6 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
 {% block content %}
-{{ metadata | safe }}
-{% include "sections/notifications.html" %}
 {% if aggregate is defined and observation is defined %}
 <h3>Remove an Observation from an Aggregate</h3>
 <p>Set the date that the observation, <b>{{ observation['name'] }}</b>, will no longer contribute to the aggregate.</p>

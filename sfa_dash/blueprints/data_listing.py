@@ -85,10 +85,10 @@ class DataListingView(BaseView):
             site_id=site_id, aggregate_id=aggregate_id)
         return subnav_kwargs
 
-    def get_template_args(self, site_id=None, aggregate_id=None):
+    def set_template_args(self, site_id=None, aggregate_id=None):
         """Builds a dictionary of the appropriate template arguments.
         """
-        template_args = {}
+        self.template_args = {}
         # If an id was passed in, set the breadcrumb. The request for location
         # metadata may triggers an error if the object doesnt exist or the user
         # does not have access. So we can handle with a 404 message instead of
@@ -98,18 +98,17 @@ class DataListingView(BaseView):
                 location_metadata = sites.get_metadata(site_id)
             else:
                 location_metadata = aggregates.get_metadata(aggregate_id)
-            template_args['breadcrumb'] = self.breadcrumb_html(
+            self.template_args['breadcrumb'] = self.breadcrumb_html(
                 self.get_breadcrumb_dict(location_metadata))
         else:
-            template_args['page_title'] = 'Forecasts and Observations'
+            self.template_args['page_title'] = 'Forecasts and Observations'
 
-        template_args['subnav'] = self.format_subnav(
+        self.template_args['subnav'] = self.format_subnav(
             **self.get_subnav_kwargs(site_id=site_id,
                                      aggregate_id=aggregate_id))
-        template_args['data_table'] = self.table_function(
+        self.template_args['data_table'] = self.table_function(
             site_id, aggregate_id)
-        template_args['current_path'] = request.path
-        return template_args
+        self.template_args['current_path'] = request.path
 
     def get(self):
         """This endpoints results in creating a table of the datatype passed to
@@ -117,9 +116,9 @@ class DataListingView(BaseView):
         list of the given type for that site or aggregate.
         """
         try:
-            temp_args = self.get_template_args(
+            self.set_template_args(
                 request.args.get('site_id'),
                 request.args.get('aggregate_id'))
         except DataRequestException as e:
-            temp_args = {'errors': e.errors}
-        return render_template(self.template, **temp_args)
+            return render_template(self.template, errors=e.errors)
+        return render_template(self.template, **self.template_args)

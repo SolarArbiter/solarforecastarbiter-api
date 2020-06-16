@@ -4,8 +4,6 @@
 <script src="/static/js/form-validation.js"></script>
 {% endblock %}
 {% block content %}
-{{ metadata | safe }}
-{% include "sections/notifications.html" %}
 {% if form_title %}<h3>{{ form_title }}</h3> {% endif %}
 <form action="{{ url_for('forms.create_aggregate_' + data_type, uuid=aggregate_metadata['aggregate_id'] ) }}" method="post" enctype='{{ form_enc }}' id="{{ data_type }}-form">
   <div class="form-group">

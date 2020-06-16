@@ -1,8 +1,6 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
 {% block content %}
-{{ metadata | safe }}
-{% include "sections/notifications.html" %}
 <h3>Create New Aggregate</h3>
 <form action="{{ url_for('forms.create_aggregate') }}" method="post" id="aggregate-form">
   <div class="form-group">

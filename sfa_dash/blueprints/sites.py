@@ -17,21 +17,20 @@ class SitesListingView(SiteDashView):
             text='Sites')
         return breadcrumb
 
-    def get_template_args(self):
+    def set_template_args(self):
         """Create a dictionary containing the required arguments for the template
         """
-        template_args = {}
-        template_args['data_table'] = DataTables.get_site_table()
-        template_args['current_path'] = request.path
-        template_args['breadcrumb'] = self.breadcrumb_html()
-        return template_args
+        self.template_args = {}
+        self.template_args['data_table'] = DataTables.get_site_table()
+        self.template_args['current_path'] = request.path
+        self.template_args['breadcrumb'] = self.breadcrumb_html()
 
     def get(self):
         try:
-            temp_args = self.get_template_args()
+            self.set_template_args()
         except DataRequestException as e:
-            temp_args = {'errors': e.errors}
-        return render_template(self.template, **temp_args)
+            return render_template(self.template, errors=e.errors)
+        return render_template(self.template, **self.template_args)
 
 
 class SingleSiteView(SiteDashView):
@@ -56,4 +55,5 @@ class SingleSiteView(SiteDashView):
             self.metadata = sites.get_metadata(uuid)
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
-        return render_template(self.template, **self.template_args(**kwargs))
+        self.set_template_args(**kwargs)
+        return render_template(self.template, **self.template_args)

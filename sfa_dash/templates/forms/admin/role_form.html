@@ -6,7 +6,6 @@
 {% set form_data = {} %}
 {% endif %}
 {% block content %}
-{% include "sections/notifications.html" %}
 <p>Create a new role with a name and description. You may add permissions to
 the role and grant the role to users after creation.</p>
 <form action="{{ url_for('admin.create_role') }}" method="post" enctype="application/json" id="role-form">

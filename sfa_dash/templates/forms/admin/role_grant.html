@@ -2,7 +2,6 @@
 {% set page_title = 'Roles' %}
 {% import "forms/form_macros.jinja" as form %}
 {% block content %}
-{% include 'sections/notifications.html' %}
 {% if role is not none %}
 {% include 'data/metadata/role_metadata.html' %}
 <h3>Granting role "{{ role['name'] }}"</h3>

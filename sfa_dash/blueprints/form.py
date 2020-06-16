@@ -6,8 +6,7 @@ from flask import (Blueprint, render_template, request,
 from sfa_dash.api_interface import (sites, observations, forecasts,
                                     cdf_forecasts, cdf_forecast_groups,
                                     aggregates)
-from sfa_dash.blueprints.aggregates import (AggregateForm,
-                                            AggregateObservationAdditionForm,
+from sfa_dash.blueprints.aggregates import (AggregateObservationAdditionForm,
                                             AggregateObservationRemovalForm)
 from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.reports import ReportForm, RecomputeReportView
@@ -15,47 +14,82 @@ from sfa_dash.errors import DataRequestException
 from sfa_dash.form_utils import converters
 
 
-class MetadataForm(BaseView):
-    """Base form view.
-    """
-    def __init__(self, data_type):
+class CreateForm(BaseView):
+    def __init__(self, data_type, location_type=None):
+        """Sets the appropriate instance variables based on data_type.
+
+        Parameters
+        ----------
+        data_type: str
+            Passed to MetadataForm.__init__ to set the proper template,
+            api_handle, metadata_template, formatter, and id_key.
+        location_type: str
+            The type of location to use either 'site' or 'aggregate'
+
+        Notes
+        -----
+        Instance variables:
+            template
+                The path to the form template to be rendered. tempaltes are
+                found in sfa_dash/templates/forms.
+            id_key
+                The key used to reference the object's uuid. For example,
+                observations have an id_key of 'observation_id'.
+            api_handle
+                The module in `sfa_dash.api_interface` that handles api
+                interaction for the datatype.
+            formatter
+                The class in `sfa_dash.form_utils.converters` used to process
+                form data into an api payload and vice versa.
+            metadata_template
+                The path to the template for rendering metadata to display to
+                the user on the form. For exmaple, displaying site metadata
+                when creating a new observation. Note that this field is
+                is not used for sites or aggregates, which do not reference
+                other objects at creation.
+            metadata_handler
+                 The module in `sfa_dash.api_interface` that handles api
+                 interaction for a site or aggregate.
+        """
         self.data_type = data_type
+        if location_type is not None:
+            if location_type in ['site', 'aggregate']:
+                self.location_type = location_type
+                if location_type == 'site':
+                    self.metadata_handler = sites
+                    self.metadata_template = 'data/metadata/site_metadata.html'
+                else:
+                    self.metadata_handler = aggregates
+                    self.metadata_template = 'data/metadata/aggregate_metadata.html'  # noqa
+            else:
+                raise ValueError('Invalid location_type.')
         if data_type == 'forecast':
             self.template = 'forms/forecast_form.html'
             self.id_key = 'forecast_id'
             self.api_handle = forecasts
             self.formatter = converters.ForecastConverter
-            self.metadata_template = 'data/metadata/site_metadata.html'
         elif data_type == 'cdf_forecast_group':
             self.template = 'forms/cdf_forecast_group_form.html'
             self.id_key = 'forecast_id'
             self.api_handle = cdf_forecast_groups
             self.formatter = converters.CDFForecastConverter
-            self.metadata_template = 'data/metadata/site_metadata.html'
         elif data_type == 'observation':
             self.template = 'forms/observation_form.html'
             self.id_key = 'observation_id'
             self.api_handle = observations
             self.formatter = converters.ObservationConverter
-            self.metadata_template = 'data/metadata/site_metadata.html'
         elif data_type == 'site':
             self.template = 'forms/site_form.html'
             self.id_key = 'site_id'
             self.api_handle = sites
             self.formatter = converters.SiteConverter
+        elif data_type == 'aggregate':
+            self.template = 'forms/aggregate_form.html'
+            self.id_key = 'aggregate_id'
+            self.api_handle = aggregates
+            self.formatter = converters.AggregateConverter
         else:
             raise ValueError(f'No metadata form defined for {data_type}')
-
-    def get(self):
-        raise NotImplementedError
-
-    def post(self):
-        raise NotImplementedError
-
-
-class CreateForm(MetadataForm):
-    def __init__(self, data_type):
-        super().__init__(data_type)
 
     def render_metadata_section(self, metadata, template=None):
         metadata_template = template or self.metadata_template
@@ -65,15 +99,16 @@ class CreateForm(MetadataForm):
         template_args = {}
         if uuid is not None:
             try:
-                site_metadata = sites.get_metadata(uuid)
+                loc_metadata = self.metadata_handler.get_metadata(uuid)
             except DataRequestException as e:
                 self.flash_api_errors(e.errors)
                 return redirect(url_for(
                     f'data_dashboard.{self.data_type}s'))
             else:
-                template_args['site_metadata'] = site_metadata
-                template_args['metadata'] = self.render_metadata_section(
-                    site_metadata)
+                template_args[f'{self.location_type}_metadata'] = loc_metadata
+                template_args['metadata_block'] = render_template(
+                    self.metadata_template,
+                    **loc_metadata)
         return render_template(self.template, **template_args)
 
     def post(self, uuid=None):
@@ -99,90 +134,14 @@ class CreateForm(MetadataForm):
                 template_args['errors'] = self.flatten_dict(errors)
             if uuid is not None:
                 try:
-                    site_metadata = sites.get_metadata(uuid)
+                    loc_metadata = self.metadata_handler.get_metadata(uuid)
                 except DataRequestException as e:
                     template_args['errors'].update(self.flatten_dict(e.errors))
                 else:
-                    template_args['site_metadata'] = site_metadata
-                    template_args['metadata'] = self.render_metadata_section(
-                        site_metadata)
-            return render_template(
-                self.template, form_data=form_data, **template_args)
-        return redirect(url_for(f'data_dashboard.{self.data_type}_view',
-                                uuid=created_uuid))
-
-
-class CreateAggregateForecastForm(MetadataForm):
-    """Endpoint for creating Forecasts that reference aggregates.
-    """
-    def __init__(self, data_type):
-        self.data_type = data_type
-        if data_type == 'forecast':
-            self.template = 'forms/aggregate_forecast_form.html'
-            self.id_key = 'forecast_id'
-            self.api_handle = forecasts
-            self.formatter = converters.ForecastConverter
-            self.metadata_template = 'data/metadata/aggregate_metadata.html'
-        elif data_type == 'cdf_forecast_group':
-            self.template = 'forms/aggregate_cdf_forecast_group_form.html'
-            self.id_key = 'forecast_id'
-            self.api_handle = cdf_forecast_groups
-            self.formatter = converters.CDFForecastConverter
-            self.metadata_template = 'data/metadata/aggregate_metadata.html'
-        else:
-            raise ValueError(f'No metadata form defined for {data_type}')
-
-    def get_aggregate_metadata(self, aggregate_id):
-        return aggregates.get_metadata(aggregate_id)
-
-    def render_metadata_section(self, metadata):
-        return render_template(
-            self.metadata_template, **metadata)
-
-    def get(self, uuid=None):
-        template_args = {}
-        if uuid is not None:
-            try:
-                aggregate_metadata = self.get_aggregate_metadata(uuid)
-            except DataRequestException as e:
-                self.flash_api_errors(e.errors)
-                return redirect(url_for(f'data_dashboard.aggregates'))
-            else:
-                template_args['aggregate_metadata'] = aggregate_metadata
-                template_args['metadata'] = self.render_metadata_section(
-                    aggregate_metadata)
-        return render_template(self.template, **template_args)
-
-    def post(self, uuid=None):
-        form_data = request.form
-        formatted_form = self.formatter.formdata_to_payload(form_data)
-        template_args = {}
-        try:
-            created_uuid = self.api_handle.post_metadata(formatted_form)
-        except DataRequestException as e:
-            if e.status_code == 404:
-                errors = {
-                    '404': [('You do not have permission to create '
-                            f'{self.data_type}s. You may need to request '
-                             'permissions from your organization '
-                             'administrator.')]
-                }
-            else:
-                errors = e.errors
-            if 'errors' in template_args:
-                template_args['errors'].update(
-                    self.flatten_dict(errors))
-            else:
-                template_args['errors'] = self.flatten_dict(errors)
-            if uuid is not None:
-                try:
-                    aggregate_metadata = self.get_aggregate_metadata(uuid)
-                except DataRequestException as e:
-                    template_args['errors'].update(self.flatten_dict(e.errors))
-                else:
-                    template_args['aggregate_metadata'] = aggregate_metadata
-                    template_args['metadata'] = self.render_metadata_section(
-                        aggregate_metadata)
+                    template_args[f'{self.location_type}_metadata'] = loc_metadata  # noqa
+                    template_args['metadata_block'] = render_template(
+                        self.metadata_template,
+                        **loc_metadata)
             return render_template(
                 self.template, form_data=form_data, **template_args)
         return redirect(url_for(f'data_dashboard.{self.data_type}_view',
@@ -207,21 +166,24 @@ class UploadForm(BaseView):
         else:
             raise ValueError(f'No upload form defined for {data_type}')
 
-    def render_metadata_section(self, metadata):
-        return render_template(self.metadata_template, **metadata)
+    def set_template_args(self):
+        self.template_args = {}
+        self.template_args['metadata_block'] = render_template(
+            self.metadata_template,
+            **self.metadata),
+        self.template_args['metadata'] = self.safe_metadata()
 
     def get(self, uuid, **kwargs):
-        temp_args = {}
         try:
-            metadata_dict = self.api_handle.get_metadata(uuid)
-            metadata_dict['site_link'] = self.generate_site_link(
-                metadata_dict)
+            self.metadata = self.api_handle.get_metadata(uuid)
+            self.metadata['site_link'] = self.generate_site_link(
+                self.metadata)
         except DataRequestException as e:
-            temp_args = {'errors': e.errors}
+            return render_template(self.template, errors=e.errors)
         else:
-            temp_args.update(
-                {'metadata': self.render_metadata_section(metadata_dict)})
-        return render_template(self.template, uuid=uuid, **temp_args, **kwargs)
+            self.set_template_args()
+        return render_template(self.template, uuid=uuid, **self.template_args,
+                               **kwargs)
 
     def post(self, uuid):
         errors = {}
@@ -286,8 +248,40 @@ class CloneForm(CreateForm):
     def fill_nested_metadata(self):
         pass
 
+    def set_template_args(self):
+        """Attempts to fetch and render the site or aggregate metadata if
+        needed, then converts metadata into form data for prefilling a form.
+
+        Raises
+        ------
+        DataRequestException
+            If the site or aggregate metadata could not be read.
+        """
+        self.template_args = {}
+        if(
+            self.data_type != 'site'
+            and self.data_type != 'aggregate'
+        ):
+            self.set_site_or_aggregate_metadata()
+            self.set_site_or_aggregate_link()
+
+        # We must pass a metadata template path here, because we must
+        # parse a site or aggregate from the object being cloned,
+        # instead of relying on metadata_template being set by init.
+        if 'site' in self.metadata:
+            self.template_args['site_metadata'] = self.metadata['site']
+            self.template_args['metadata'] = self.render_metadata_section(
+                self.template_args['site_metadata'],
+                'data/metadata/site_metadata.html')
+        elif 'aggregate' in self.metadata:
+            self.template_args['aggregate_metadata'] = self.metadata['aggregate']  # noqa
+            self.template_args['metadata'] = self.render_metadata_section(
+                self.template_args['aggregate_metadata'],
+                'data/metadata/aggregate_metadata.html')
+            form_data = self.formatter.payload_to_formdata(self.metadata)
+            self.template_args['form_data'] = form_data
+
     def get(self, uuid=None):
-        template_args = {}
         if uuid is not None:
             try:
                 self.metadata = self.api_handle.get_metadata(uuid)
@@ -296,47 +290,51 @@ class CloneForm(CreateForm):
                 return redirect(url_for(
                     f'data_dashboard.{self.data_type}s'))
             else:
-                if(
-                    self.data_type != 'site'
-                    and self.data_type != 'aggregate'
-                ):
-                    try:
-                        self.set_site_or_aggregate_metadata()
-                    except DataRequestException:
-                        flash('Could not read site metadata. Cloning failed.',
-                              'error')
-                        return redirect(f'data_dashboard.{self.data_type}',
-                                        uuid=uuid)
-                    self.set_site_or_aggregate_link()
-
-                if 'site' in self.metadata:
-                    template_args['site_metadata'] = self.metadata['site']
-                    template_args['metadata'] = self.render_metadata_section(
-                        template_args['site_metadata'])
-                elif 'aggregate' in self.metadata:
-                    template_args['aggregate_metadata'] = self.metadata['aggregate']  # noqa
-                    template_args['metadata'] = self.render_metadata_section(
-                        template_args['aggregate_metadata'],
-                        'data/metadata/aggregate_metadata.html')
-                form_data = self.formatter.payload_to_formdata(self.metadata)
-        return render_template(self.template, form_data=form_data,
-                               **template_args)
+                try:
+                    self.set_template_args()
+                except DataRequestException:
+                    flash('Could not read site metadata. Cloning failed.',
+                          'error')
+                    return redirect(
+                        url_for(f'data_dashboard.{self.data_type}', uuid=uuid))
+        return render_template(self.template, **self.template_args)
 
 
 forms_blp = Blueprint('forms', 'forms')
 forms_blp.add_url_rule('/sites/create',
                        view_func=CreateForm.as_view('create_site',
                                                     data_type='site'))
+forms_blp.add_url_rule('/aggregates/create',
+                       view_func=CreateForm.as_view('create_aggregate',
+                                                    data_type='aggregate',
+                                                    location_type='site'))
 forms_blp.add_url_rule('/sites/<uuid>/observations/create',
                        view_func=CreateForm.as_view('create_observation',
-                                                    data_type='observation'))
+                                                    data_type='observation',
+                                                    location_type='site'))
 forms_blp.add_url_rule('/sites/<uuid>/forecasts/single/create',
                        view_func=CreateForm.as_view('create_forecast',
-                                                    data_type='forecast'))
+                                                    data_type='forecast',
+                                                    location_type='site'))
 forms_blp.add_url_rule('/sites/<uuid>/forecasts/cdf/create',
                        view_func=CreateForm.as_view(
                            'create_cdf_forecast_group',
-                           data_type='cdf_forecast_group'))
+                           data_type='cdf_forecast_group',
+                           location_type='site'))
+
+forms_blp.add_url_rule('/aggregates/<uuid>/forecasts/single/create',
+                       view_func=CreateForm.as_view(
+                           'create_aggregate_forecast',
+                           data_type='forecast',
+                           location_type='aggregate'))
+forms_blp.add_url_rule('/aggregates/<uuid>/forecasts/cdf/create',
+                       view_func=CreateForm.as_view(
+                           'create_aggregate_cdf_forecast_group',
+                           data_type='cdf_forecast_group',
+                           location_type='aggregate'))
+
+
+# cloning endpoints
 forms_blp.add_url_rule('/sites/<uuid>/clone',
                        view_func=CloneForm.as_view('clone_site',
                                                    data_type='site'))
@@ -350,7 +348,7 @@ forms_blp.add_url_rule('/forecasts/cdf/<uuid>/clone',
                        view_func=CloneForm.as_view(
                            'clone_cdf_forecast_group',
                            data_type='cdf_forecast_group'))
-
+# upload endpoints
 forms_blp.add_url_rule('/observations/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_observation_data',
                                                     data_type='observation'))
@@ -360,6 +358,7 @@ forms_blp.add_url_rule('/forecasts/single/<uuid>/upload',
 forms_blp.add_url_rule('/forecasts/cdf/single/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_cdf_forecast_data',
                                                     data_type='cdf_forecast'))
+# Report specific forms
 forms_blp.add_url_rule('/reports/deterministic/create',
                        view_func=ReportForm.as_view(
                            'create_deterministic_report',
@@ -372,23 +371,13 @@ forms_blp.add_url_rule('/reports/probabilistic/create',
                        view_func=ReportForm.as_view(
                            'create_probabilistic_report',
                            report_type='probabilistic'))
-forms_blp.add_url_rule('/aggregates/create',
-                       view_func=AggregateForm.as_view(
-                           'create_aggregate'))
+forms_blp.add_url_rule('/reports/<uuid>/recompute',
+                       view_func=RecomputeReportView.as_view(
+                           'recompute_report'))
+# Aggregate specific forms
 forms_blp.add_url_rule('/aggregates/<uuid>/add',
                        view_func=AggregateObservationAdditionForm.as_view(
                            'add_aggregate_observations'))
 forms_blp.add_url_rule('/aggregates/<uuid>/remove/<observation_id>',
                        view_func=AggregateObservationRemovalForm.as_view(
                            'remove_aggregate_observations'))
-forms_blp.add_url_rule('/aggregates/<uuid>/forecasts/single/create',
-                       view_func=CreateAggregateForecastForm.as_view(
-                           'create_aggregate_forecast',
-                           data_type='forecast'))
-forms_blp.add_url_rule('/aggregates/<uuid>/forecasts/cdf/create',
-                       view_func=CreateAggregateForecastForm.as_view(
-                           'create_aggregate_cdf_forecast_group',
-                           data_type='cdf_forecast_group'))
-forms_blp.add_url_rule('/reports/<uuid>/recompute',
-                       view_func=RecomputeReportView.as_view(
-                           'recompute_report'))
