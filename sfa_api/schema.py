@@ -77,8 +77,7 @@ INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
 AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
 INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
                         'interval_median', 'instantaneous']
-FORECAST_TYPES = ['deterministic_forecast', 'event_forecast',
-                  'probabilistic_forecast',
+FORECAST_TYPES = ['forecast', 'event_forecast', 'probabilistic_forecast',
                   'probabilistic_forecast_constant_value']
 
 EXTRA_PARAMETERS_FIELD = ma.String(
