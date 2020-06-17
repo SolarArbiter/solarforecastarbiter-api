@@ -11,7 +11,8 @@ from solarforecastarbiter.io.utils import HiddenToken
 from solarforecastarbiter.reference_forecasts.main import (
     make_latest_nwp_forecasts, make_latest_persistence_forecasts)
 from solarforecastarbiter.reports.main import compute_report
-from solarforecastarbiter.validation.tasks import fetch_and_validate_all_observations
+from solarforecastarbiter.validation.tasks import \
+    fetch_and_validate_all_observations
 
 
 from sfa_api.utils.auth0_info import exchange_refresh_token
