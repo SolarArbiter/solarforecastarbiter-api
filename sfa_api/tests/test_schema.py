@@ -51,7 +51,7 @@ def test_object_pair_deserialization(inp):
             bool('aggregate' in deserialized))
     assert deserialized['reference_forecast'] is None
     assert deserialized['uncertainty'] is None
-    assert deserialized['forecast_type'] == 'deterministic_forecast'
+    assert deserialized['forecast_type'] == 'forecast'
 
 
 @pytest.mark.parametrize('inp', [
@@ -71,7 +71,7 @@ def test_object_pair_with_ref(inp):
       "observation": "123e4567-e89b-12d3-a456-426655440000",
       "reference_forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",
       "uncertainty": '0.1',
-      "forecast_type": "deteministic_forecast"}),
+      "forecast_type": "forecast"}),
 ])
 def test_object_pair_serialization(inp):
     dumped = schema.ReportObjectPair().dumps(inp)
@@ -90,7 +90,7 @@ def test_object_pair_serialization_defaults(inp):
     assert out['observation'] == inp['observation']
     assert out['reference_forecast'] is None
     assert out['uncertainty'] is None
-    assert out['forecast_type'] == 'deterministic_forecast'
+    assert out['forecast_type'] == 'forecast'
 
 
 base_pair_dict = {
@@ -121,6 +121,19 @@ def test_object_pair_with_uncertainty(uncertainty, exp_type):
 def test_object_pair_with_invalid_uncertainty(uncertainty):
     pair_dict = base_pair_dict.copy()
     pair_dict.update({'uncertainty': uncertainty})
+    pair_json = json.dumps(pair_dict)
+    with pytest.raises(marshmallow.exceptions.ValidationError):
+        schema.ReportObjectPair().loads(pair_json)
+
+
+@pytest.mark.parametrize('forecast_type', [
+    'bad string',
+    'probabilistic',
+    'event',
+])
+def test_object_pair_with_invalid_forecast_type(forecast_type):
+    pair_dict = base_pair_dict.copy()
+    pair_dict.update({'forecast_type': forecast_type})
     pair_json = json.dumps(pair_dict)
     with pytest.raises(marshmallow.exceptions.ValidationError):
         schema.ReportObjectPair().loads(pair_json)
