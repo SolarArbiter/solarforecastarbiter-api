@@ -269,7 +269,7 @@ class ObservationValuesView(MethodView):
         if run_validation:
             q = get_queue()
             q.enqueue(
-                tasks.immediate_observation_validation,
+                tasks.fetch_and_validate_observation,
                 HiddenToken(current_access_token),
                 observation_id,
                 observation_df.index[0].isoformat(),

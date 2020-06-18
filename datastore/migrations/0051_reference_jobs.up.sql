@@ -183,7 +183,7 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     @refid,
     'Reference data daily validation',
     'daily_observation_validation',
-    JSON_OBJECT('start_td', '-28h', 'end_td', '0h', 'base_url', @baseurl),
+    JSON_OBJECT('start_td', '-14D', 'end_td', '0h', 'base_url', @baseurl),
     '{"type": "cron", "cron_string": "0 4 * * *"}',
     0
 ), (
