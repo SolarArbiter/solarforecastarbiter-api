@@ -855,7 +855,8 @@ class ReportObjectPair(ma.Schema):
     aggregate = ma.UUID(title="Aggregate UUID")
     reference_forecast = ma.UUID(title="Reference Forecast UUID",
                                  allow_none=True,
-                                 missing=None)
+                                 missing=None,
+                                 default=None)
     uncertainty = ma.String(
         title='Uncertainty',
         description=(
@@ -867,12 +868,14 @@ class ReportObjectPair(ma.Schema):
         allow_none=True,
         missing=None,
         validate=UncertaintyValidator(),
+        default=None,
     )
     forecast_type = ma.String(
         title='Forecast type',
         description='The type of forecast represented in the pair.',
-        missing='forecast',
-        validate=validate.OneOf(FORECAST_TYPES)
+        validate=validate.OneOf(FORECAST_TYPES),
+        default=FORECAST_TYPES[0],
+        missing=FORECAST_TYPES[0],
     )
 
 
