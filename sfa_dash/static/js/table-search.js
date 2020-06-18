@@ -147,11 +147,11 @@ $(document).ready(function() {
                 </div>`);
             filter_div.appendTo(`#${columnName}-header`);
             filter_div.find('.select-filter-options').click(function(){
-                $(`.${columnName}-filter-option`).attr('checked', true);
+                $(`.${columnName}-filter-option`).prop('checked', true);
                 applyTableFilters();
             });
             filter_div.find('.deselect-filter-options').click(function(){
-                $(`.${columnName}-filter-option`).removeAttr('checked');
+                $(`.${columnName}-filter-option`).prop('checked', false);
                 applyTableFilters();
             });
             // Create a checkbox input for each option in the set.
@@ -186,6 +186,7 @@ $(document).ready(function() {
     createFilterOptions('action');
     createFilterOptions('object-type');
     createFilterOptions('applies-to-all');
+    createFilterOptions('climate-zones');
 
     /*
      * Register DOM element callbacks

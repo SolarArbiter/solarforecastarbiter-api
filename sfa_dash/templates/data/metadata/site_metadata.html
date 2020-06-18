@@ -8,6 +8,15 @@
   {{ macro.li('Longitude', longitude | string,  '&deg;E') }}
   {{ macro.li('Timezone', timezone) }}
   {{ macro.li('Elevation', elevation | string, 'm') }}
+  {% if climate_zones %}
+  <li><b>Climate Zones:</b>
+    <ul>
+      {% for zone in climate_zones %}
+      <li>{{ zone }}</li>
+      {% endfor %}
+    </ul>
+  </li>
+  {% endif %}
 </ul>
 <ul class="data-metadata-fields col-md-6 col-xs-12">
   {% if modeling_parameters and modeling_parameters['ac_capacity'] is not none %}

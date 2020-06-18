@@ -1,9 +1,29 @@
-{% extends "data/table/forecast_data_table.html" %}
-{% block tools %}
+<div class="tools forecast-tools mt-1">
 <input type="text" placeholder="Search" class="search">
 {% if creation_link is not none %}
 <a role="button" class="btn btn-primary btn-sm" href="{{ creation_link }}">Create new Forecast</a>
 {% endif %}
-{% endblock %}
-{% import "data/table/forecast_macro.jinja" as table_macro %}
-{% set table_type='forecast' %}
+</div>
+<table class="forecast-table table results">
+  <thead class="forecast-thead">
+    <tr>
+      <th class="name-column" scope="col">Name</th>
+      <th scope="col" id="variable-header" class="filterable-header">Variable</th>
+      <th scope="col" id="provider-header" class="filterable-header">Provider</th>
+      <th scope="col" id="site-or-aggregate-header" class="filterable-header">Site/Aggregate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="warning no-result">
+      <td colspan="4"><i class="fa fa-warning"></i>No result</td>
+    </tr>
+	{% for row in table_rows %}
+    <tr>
+      <td class="name-column"><a href="{{ row['link'] }}">{{ row['name'] }}</a></td>
+      <td class="variable-column">{{ row['variable'] | convert_varname }}</td>
+      <td class="provider-column">{{ row['provider'] }}</td>
+      <td class="site-or-aggregate-column">{{ row['location'] |safe}}</td>
+    </tr>
+	{% endfor %}
+  </tbody>
+</table>

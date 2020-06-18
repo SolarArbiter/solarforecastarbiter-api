@@ -18,10 +18,12 @@ class SitesListingView(SiteDashView):
         return breadcrumb
 
     def set_template_args(self):
-        """Create a dictionary containing the required arguments for the template
+        """Create a dictionary containing the required arguments for the
+        template.
         """
         self.template_args = {}
-        self.template_args['data_table'] = DataTables.get_site_table()
+        table, _ = DataTables.get_site_table()
+        self.template_args['data_table'] = table
         self.template_args['current_path'] = request.path
         self.template_args['breadcrumb'] = self.breadcrumb_html()
 

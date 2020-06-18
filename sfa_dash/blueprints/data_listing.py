@@ -106,8 +106,8 @@ class DataListingView(BaseView):
         self.template_args['subnav'] = self.format_subnav(
             **self.get_subnav_kwargs(site_id=site_id,
                                      aggregate_id=aggregate_id))
-        self.template_args['data_table'] = self.table_function(
-            site_id, aggregate_id)
+        table, _ = self.table_function(site_id, aggregate_id)
+        self.template_args['data_table'] = table
         self.template_args['current_path'] = request.path
 
     def get(self):

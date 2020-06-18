@@ -1,8 +1,0 @@
-{% macro tr(row) %}
-<tr>
-  <td class="name-column"><a href="{{ row['link'] }}">{{ row['name'] }}</a></td>
-  <td class="variable-column">{{ row['variable'] | convert_varname }}</td>
-  <td class="provider-column">{{ row['provider'] }}</td>
-  <td class="site-column">{{ row['location'] }}</td>
-</tr>
-{% endmacro %}
