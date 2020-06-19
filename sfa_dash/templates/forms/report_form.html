@@ -1,8 +1,8 @@
 {% import "forms/form_macros.jinja" as form %}
 
 {% set report_type = 'deterministic' %}
-{% set report_script = '/static/js/report-handling.js' %}
+{% set report_script = '/static/js/report-form-handling.js' %}
 {% set metric_options = deterministic_metrics %}
 {% set default_metrics = default_deterministic_metrics %}
 
-{% extends "forms/base_report_form.html" %}
+{% extends "forms/base/base_report_form.html" %}

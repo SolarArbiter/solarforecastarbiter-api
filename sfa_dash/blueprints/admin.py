@@ -6,8 +6,8 @@ from sfa_dash.api_interface import (
     permissions, reports, aggregates
 )
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import filter_form_fields
 from sfa_dash.errors import DataRequestException
+from sfa_dash.form_utils.utils import filter_form_fields
 
 
 class AdminView(BaseView):

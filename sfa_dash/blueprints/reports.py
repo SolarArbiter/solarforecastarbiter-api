@@ -1,17 +1,16 @@
 from flask import (request, redirect, url_for, render_template, send_file,
                    current_app, flash)
 
+from sfa_dash.api_interface import (observations, forecasts, sites, reports,
+                                    aggregates, cdf_forecast_groups)
+from sfa_dash.blueprints.base import BaseView
+from sfa_dash.errors import DataRequestException
+from sfa_dash.form_utils import converters
+from sfa_dash.utils import check_sign_zip
 from solarforecastarbiter.datamodel import Report, RawReport
 from solarforecastarbiter.io.utils import load_report_values
 from solarforecastarbiter.reports.template import (
     get_template_and_kwargs, render_html, render_pdf)
-
-from sfa_dash.api_interface import (observations, forecasts, sites, reports,
-                                    aggregates, cdf_forecast_groups)
-from sfa_dash.utils import check_sign_zip
-from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.util import filter_form_fields
-from sfa_dash.errors import DataRequestException
 
 
 ALLOWED_REPORT_TYPES = ['deterministic', 'probabilistic', 'event']
@@ -39,6 +38,7 @@ class ReportForm(BaseView):
             self.template = 'forms/probabilistic_report_form.html'
         else:
             self.template = 'forms/report_form.html'
+        self.converter = converters.ReportConverter
 
     def __init__(self, report_type):
         if report_type not in ALLOWED_REPORT_TYPES:
@@ -76,84 +76,20 @@ class ReportForm(BaseView):
     def set_template_args(self):
         self.template_args = {
             "page_data": self.get_pairable_objects(),
+            "report_type": self.report_type,
         }
-
-    def zip_object_pairs(self, form_data):
-        """Create a list of object pair dictionaries containing a
-        forecast and either an observation or aggregate.
-        """
-        # Forecasts can be parsed directly
-        fx = filter_form_fields('forecast-id-', form_data)
-
-        # observations and aggregates are passed in as truth-id-{index}
-        # and truth-type-{index}, so we must match these with the
-        # appropriately indexed forecast.
-        truth_ids = filter_form_fields('truth-id-', form_data)
-        truth_types = filter_form_fields('truth-type-', form_data)
-
-        reference_forecasts = filter_form_fields('reference-forecast-',
-                                                 form_data)
-
-        uncertainty_values = filter_form_fields('deadband-value-', form_data)
-        forecast_types = filter_form_fields('forecast-type-', form_data)
-        pairs = [{'forecast': f,
-                  truth_types[i]: truth_ids[i],
-                  'reference_forecast': reference_forecasts[i],
-                  'uncertainty': uncertainty_values[i],
-                  'forecast_type': forecast_types[i]}
-                 for i, f in enumerate(fx)]
-        return pairs
-
-    def parse_filters(self, form_data):
-        """Create a list of dictionary filters. Currently just supports
-        `quality_flags` which supports a list of quality flag names to exclude.
-        """
-        filters = []
-        quality_flags = request.form.getlist('quality_flags')
-        if quality_flags:
-            filters.append({'quality_flags': quality_flags})
-        return filters
-
-    def apply_crps(self, params):
-        """Checks for "probabilistic_forecast' forecast_type in object pairs
-        and if found, appends the CRPS metric to the metrics options.
-        """
-        pair_fx_types = [f['forecast_type'] for f in params['object_pairs']]
-        if'probabilistic_forecast' in pair_fx_types:
-            new_params = params.copy()
-            new_params['metrics'].append('crps')
-            return new_params
-        else:
-            return params
-
-    def parse_report_parameters(self, form_data):
-        params = {}
-        params['name'] = form_data['name']
-        params['object_pairs'] = self.zip_object_pairs(form_data)
-        params['metrics'] = request.form.getlist('metrics')
-        params['categories'] = request.form.getlist('categories')
-        # filters do not currently work in API
-        params['filters'] = self.parse_filters(form_data)
-        params['start'] = form_data['period-start']
-        params['end'] = form_data['period-end']
-        params = self.apply_crps(params)
-        return params
-
-    def report_formatter(self, form_data):
-        formatted = {}
-        formatted['report_parameters'] = self.parse_report_parameters(
-            form_data)
-        return formatted
 
     def post(self):
         form_data = request.form
-        api_payload = self.report_formatter(form_data)
+        api_payload = self.converter.formdata_to_payload(form_data)
         if len(api_payload['report_parameters']['object_pairs']) == 0:
             errors = {
                 'error': [('Must include at least 1 Forecast, Observation '
                            'pair.')],
             }
-            return self.get(form_data=api_payload, errors=errors)
+            return self.get(
+                form_data=self.converter.payload_to_formdata(api_payload),
+                errors=errors)
         try:
             report_id = reports.post_metadata(api_payload)
         except DataRequestException as e:
@@ -166,7 +102,9 @@ class ReportForm(BaseView):
                 }
             else:
                 errors = e.errors
-            return self.get(form_data=api_payload, errors=errors)
+            return self.get(
+                form_data=self.converter.payload_to_formdata(api_payload),
+                errors=errors)
         return redirect(url_for(
             'data_dashboard.report_view',
             uuid=report_id,
@@ -344,3 +282,46 @@ class RecomputeReportView(BaseView):
             flash('Report recomputed successfully.', 'message')
         return redirect(url_for('data_dashboard.report_view',
                                 uuid=uuid))
+
+
+class ReportCloneView(ReportForm):
+    def __init__(self):
+        # skip ReportForm init process to determine the applicable form based
+        # on metadata
+        pass
+
+    def set_report_type(self):
+        """Set the `report_type` instance variable based on the forecast types
+        included in its `object_pairs`. Defaults to 'deterministic'.
+        """
+        object_pairs = self.metadata['report_parameters']['object_pairs']
+        forecast_types = [pair['forecast_type'] for pair in object_pairs]
+        if 'event_forecast' in forecast_types:
+            self.report_type = 'event'
+        elif ('probabilistic_forecast' in forecast_types
+              or 'probabilistic_forecast_constant_value' in forecast_types):
+            self.report_type = 'probabilistic'
+        else:
+            self.report_type = 'deterministic'
+
+    def set_template_args(self):
+        super().set_template_args()
+        form_data = self.converter.payload_to_formdata(self.metadata)
+        self.template_args.update({
+            'form_data': form_data,
+            'report_type': self.report_type,
+        })
+
+    def get(self, uuid):
+        try:
+            self.metadata = reports.get_metadata(uuid)
+        except DataRequestException as e:
+            self.flash_api_errors(e.errors)
+            return redirect(url_for('data_dashboard.report_view',
+                                    uuid=uuid))
+
+        else:
+            self.set_report_type()
+            self.set_template()
+            self.set_template_args()
+            return render_template(self.template, **self.template_args)

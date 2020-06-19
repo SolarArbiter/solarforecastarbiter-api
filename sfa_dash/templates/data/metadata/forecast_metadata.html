@@ -1,13 +1,13 @@
 {% extends "data/metadata/data_metadata.html" %}
 {# Since we might extend this template, check before overwriting data_tpye #}
-{% if data_type is not defined %} 
+{% if data_type is not defined %}
 {% set data_type = 'Forecast' %}
 {% endif %}
 {% block extra_fields %}
 {{ macro.li('Issue time of day', issue_time_of_day+'Z') }}
 {{ macro.li('Run length / Issue frequency', run_length | display_timedelta) }}
 {{ macro.li('Lead time to start', lead_time_to_start | display_timedelta) }}
-{# 
+{#
 We don't expect cdf_fields to be defined on a regular forecast,
 but we'll extend this template with extra probabilistic forecast
 fields.

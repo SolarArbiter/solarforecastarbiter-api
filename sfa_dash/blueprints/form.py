@@ -9,7 +9,8 @@ from sfa_dash.api_interface import (sites, observations, forecasts,
 from sfa_dash.blueprints.aggregates import (AggregateObservationAdditionForm,
                                             AggregateObservationRemovalForm)
 from sfa_dash.blueprints.base import BaseView
-from sfa_dash.blueprints.reports import ReportForm, RecomputeReportView
+from sfa_dash.blueprints.reports import (ReportForm, RecomputeReportView,
+                                         ReportCloneView)
 from sfa_dash.errors import DataRequestException
 from sfa_dash.form_utils import converters
 
@@ -170,12 +171,13 @@ class UploadForm(BaseView):
         self.template_args = {}
         self.template_args['metadata_block'] = render_template(
             self.metadata_template,
-            **self.metadata),
+            **self.metadata)
         self.template_args['metadata'] = self.safe_metadata()
 
     def get(self, uuid, **kwargs):
         try:
             self.metadata = self.api_handle.get_metadata(uuid)
+            self.set_site_or_aggregate_metadata()
             self.metadata['site_link'] = self.generate_site_link(
                 self.metadata)
         except DataRequestException as e:
@@ -278,8 +280,8 @@ class CloneForm(CreateForm):
             self.template_args['metadata'] = self.render_metadata_section(
                 self.template_args['aggregate_metadata'],
                 'data/metadata/aggregate_metadata.html')
-            form_data = self.formatter.payload_to_formdata(self.metadata)
-            self.template_args['form_data'] = form_data
+        form_data = self.formatter.payload_to_formdata(self.metadata)
+        self.template_args['form_data'] = form_data
 
     def get(self, uuid=None):
         if uuid is not None:
@@ -348,6 +350,8 @@ forms_blp.add_url_rule('/forecasts/cdf/<uuid>/clone',
                        view_func=CloneForm.as_view(
                            'clone_cdf_forecast_group',
                            data_type='cdf_forecast_group'))
+forms_blp.add_url_rule('/reports/<uuid>/clone',
+                       view_func=ReportCloneView.as_view('clone_report'))
 # upload endpoints
 forms_blp.add_url_rule('/observations/<uuid>/upload',
                        view_func=UploadForm.as_view('upload_observation_data',

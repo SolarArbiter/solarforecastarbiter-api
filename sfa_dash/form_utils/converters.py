@@ -362,9 +362,94 @@ class AggregateConverter(FormConverter):
 
 class ReportConverter(FormConverter):
     @classmethod
-    def payload_to_formdata(cls, payload_dict):
-        pass
+    def zip_object_pairs(cls, form_data):
+        """Create a list of object pair dictionaries containing a
+        forecast and either an observation or aggregate.
+        """
+        # Forecasts can be parsed directly
+        fx = utils.filter_form_fields('forecast-id-', form_data)
+
+        # observations and aggregates are passed in as truth-id-{index}
+        # and truth-type-{index}, so we must match these with the
+        # appropriately indexed forecast.
+        truth_ids = utils.filter_form_fields('truth-id-', form_data)
+        truth_types = utils.filter_form_fields('truth-type-', form_data)
+
+        reference_forecasts = utils.filter_form_fields(
+            'reference-forecast-', form_data)
+
+        uncertainty_values = utils.filter_form_fields(
+            'deadband-value-', form_data)
+        forecast_types = utils.filter_form_fields(
+            'forecast-type-', form_data)
+        pairs = [{'forecast': f,
+                  truth_types[i]: truth_ids[i],
+                  'reference_forecast': reference_forecasts[i],
+                  'uncertainty': uncertainty_values[i],
+                  'forecast_type': forecast_types[i]}
+                 for i, f in enumerate(fx)]
+        return pairs
+
+    @classmethod
+    def parse_api_filters(cls, report_parameters):
+        quality_flags = []
+        for f in report_parameters['filters']:
+            if 'quality_flags' in f.keys():
+                quality_flags = quality_flags + f['quality_flags']
+        return {
+            'quality_flags': quality_flags
+        }
+
+    @classmethod
+    def parse_form_filters(cls, form_data):
+        """Create a list of dictionary filters. Currently just supports
+        `quality_flags` which supports a list of quality flag names to exclude.
+        """
+        filters = []
+        quality_flags = form_data.getlist('quality_flags')
+        if quality_flags:
+            filters.append({'quality_flags': quality_flags})
+        return filters
+
+    @classmethod
+    def apply_crps(cls, params):
+        """Checks for "probabilistic_forecast' forecast_type in object pairs
+        and if found, appends the CRPS metric to the metrics options.
+        """
+        pair_fx_types = [f['forecast_type'] for f in params['object_pairs']]
+        if'probabilistic_forecast' in pair_fx_types:
+            new_params = params.copy()
+            new_params['metrics'].append('crps')
+            return new_params
+        else:
+            return params
 
     @classmethod
     def formdata_to_payload(cls, form_dict):
-        pass
+        report_params = {}
+        report_params['name'] = form_dict['name']
+        report_params['object_pairs'] = cls.zip_object_pairs(form_dict)
+        report_params['metrics'] = form_dict.getlist('metrics')
+        report_params['categories'] = form_dict.getlist('categories')
+        report_params['filters'] = cls.parse_form_filters(form_dict)
+        report_params['start'] = form_dict['period-start']
+        report_params['end'] = form_dict['period-end']
+        report_params = cls.apply_crps(report_params)
+        report_dict = {'report_parameters': report_params}
+        return report_dict
+
+    @classmethod
+    def payload_to_formdata(cls, payload_dict):
+        form_params = {}
+        report_parameters = payload_dict['report_parameters']
+        form_params['name'] = report_parameters['name']
+        form_params['categories'] = report_parameters['categories']
+        form_params['metrics'] = report_parameters['metrics']
+        form_params['period-start'] = report_parameters['start']
+        form_params['period-end'] = report_parameters['end']
+
+        # Objects pairs are left in the api format for parsing in javascript
+        # see sfa_dash/static/js/report-utilities.js fill_object_pairs function
+        form_params['object_pairs'] = report_parameters['object_pairs']
+        form_params.update(cls.parse_api_filters(report_parameters))
+        return {'report_parameters': form_params}

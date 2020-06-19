@@ -1,13 +1,21 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "dash/data.html" %}
-{% if form_data is not defined %} {% set form_data = {} %}{% endif %}
+{% if form_data is not defined %}
+{% set form_data = {} %}
+{% endif %}
 {% block content %}
+{# include common report form parsing utilities #}
+<script src="/static/js/report-form-utilities.js"></script>
+
+{# load form_data for prefilling if it exists #}
+<script>var form_data = JSON.parse('{{ form_data | tojson }}');</script>
+
+{# load the report script for handling the specific report type #}
 <script src="{{ report_script }}"></script>
-{{ metadata | safe }}
-{% include "sections/notifications.html" %}
+
 <h3>Create New Report</h3>
-{% include "forms/report_menu.html" %}
-<form action="{{ url_for('forms.create_'+report_type+'_report') }}" method="post" id="report-form" onSubmit="return validateReport();">
+{% include "sections/report_menu.html" %}
+<form action="{{ url_for('forms.create_'+report_type+'_report') }}" method="post" id="report-form" onSubmit="return report_utils.validateReport();">
   <div class="form-group">
      <div class="form-element full-width">
        <div class="input-wrapper">
@@ -17,7 +25,7 @@
 	 <div class="form-element">
        <label for="start">Start (UTC):</label><br/>
        <div class="input-wrapper">
-         <input type="text" name="period-start" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['start']}}"{% endif %}></input>
+         <input type="text" name="period-start" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['period-start']}}"{% endif %}></input>
        </div>
        {{ form.help_button('period-start') }}
        <span class="period-start-help-text form-text text-muted help-text collapse" aria-hidden>
@@ -27,7 +35,7 @@
      <div class="form-element">
        <label for="end">End (UTC)</label><br/>
        <div class="input-wrapper">
-         <input type="text" name="period-end" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['end']}}"{% endif %}></input>
+         <input type="text" name="period-end" class="form-control" placeholder="YYYY-MM-DDTHH:MMZ" required {% if form_data %}value="{{form_data['report_parameters']['period-end']}}"{% endif %}></input>
        </div>
        {{ form.help_button('period-end') }}
        <span class="period-end-help-text form-text text-muted help-text collapse" aria-hidden>
@@ -72,12 +80,11 @@
      </div>
      {% endblock %}
      {% block quality_flag_field %}
-     <div class="form-element">
+     <div class="form-element full-width">
        <label>Quality Flag Filters</label><br>
        <p>Observation data flagged with any of the checked quality flags is excluded from analysis. The corresponding forecast data is also excluded.</p>
-       {% set checked_flags = parse_quality_flags(form_data) %}
        {% for flag, label in quality_flags.items() %}
-       <input type="checkbox" name="quality_flags" value="{{ flag }}" {% if form_data %}{% if flag in checked_flags %}checked{% endif %}{%endif %}> {{ label }}<br/>
+       <input type="checkbox" name="quality_flags" value="{{ flag }}" {% if form_data %}{% if flag in form_data['report_parameters']['quality_flags'] %}checked{% endif %}{%endif %}> {{ label }}<br/>
        {% endfor %}
      </div>
      {% endblock %}

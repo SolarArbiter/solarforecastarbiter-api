@@ -2,11 +2,11 @@
 
 {% set report_type = 'event' %}
 {% set post_path = '/reports/event/create' %}
-{% set report_script = '/static/js/event-report-handling.js' %}
+{% set report_script = '/static/js/event-report-form-handling.js' %}
 {% set metric_options = event_metrics %}
 {% set default_metrics = event_metrics.keys() %}
 
-{% extends "forms/base_report_form.html" %}
+{% extends "forms/base/base_report_form.html" %}
 
 {% block quality_flag_field %}
 <div class="form-element full-width">

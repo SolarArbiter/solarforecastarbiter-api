@@ -1,6 +1,10 @@
 from copy import deepcopy
 
 
+import pandas as pd
+from werkzeug.datastructures import ImmutableMultiDict
+
+
 from sfa_dash.form_utils import converters
 
 
@@ -343,3 +347,57 @@ def test_aggregate_converter_formdata_to_payload():
         'name': 'Test Aggregate ghi',
         'timezone': 'America/Denver',
         'variable': 'ghi'}
+
+
+def test_report_converter_formdata_to_payload(report):
+    form_data = ImmutableMultiDict([
+        ('name', 'NREL MIDC OASIS GHI Forecast Analysis'),
+        ('period-start', '2019-04-01T07:00Z'),
+        ('period-end', '2019-06-01T06:59Z'),
+        ('forecast-id-0', '11c20780-76ae-4b11-bef1-7a75bdc784e3'),
+        ('truth-id-0', '123e4567-e89b-12d3-a456-426655440000'),
+        ('truth-type-0', 'observation'),
+        ('reference-forecast-0', 'null'),
+        ('deadband-value-0', 'null'),
+        ('forecast-type-0', 'forecast'),
+        ('observation-aggregate-radio', 'observation'),
+        ('site-select', '123e4567-e89b-12d3-a456-426655440001'),
+        ('forecast-select', '11c20780-76ae-4b11-bef1-7a75bdc784e3'),
+        ('observation-select', '123e4567-e89b-12d3-a456-426655440000'),
+        ('deadband-select', 'null'),
+        ('deadband-value', ''),
+        ('metrics', 'mae'),
+        ('metrics', 'rmse'),
+        ('categories', 'total'),
+        ('categories', 'date'),
+        ('quality_flags', 'USER FLAGGED'),
+        ('_csrf_token', '8a0771df3643d252cbafe4838263dbf7097f4982')]
+    )
+    api_payload = converters.ReportConverter.formdata_to_payload(form_data)
+    expected = report['report_parameters']
+    params = api_payload['report_parameters']
+    assert params['categories'] == expected['categories']
+    assert params['metrics'] == expected['metrics']
+    assert params['filters'] == expected['filters']
+    assert pd.Timestamp(params['start']) == pd.Timestamp(expected['start'])
+    assert pd.Timestamp(params['end']) == pd.Timestamp(expected['end'])
+    assert params['object_pairs'] == expected['object_pairs']
+    assert params['name'] == expected['name']
+
+
+def test_report_converter_payload_to_formdata(report):
+    form_data = converters.ReportConverter.payload_to_formdata(report)
+    form_data = form_data['report_parameters']
+    assert form_data['name'] == 'NREL MIDC OASIS GHI Forecast Analysis'
+    assert form_data['period-start'] == '2019-04-01T07:00:00+00:00'
+    assert form_data['period-end'] == '2019-06-01T06:59:00+00:00'
+    assert form_data['metrics'] == ['mae', 'rmse']
+    assert form_data['categories'] == ['total', 'date']
+    assert form_data['quality_flags'] == ['USER FLAGGED']
+    assert form_data['object_pairs'] == [{
+        'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3',
+        'observation': '123e4567-e89b-12d3-a456-426655440000',
+        'reference_forecast': None,
+        'uncertainty': None,
+        'forecast_type': 'forecast',
+    }]

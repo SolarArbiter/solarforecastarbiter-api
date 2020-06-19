@@ -633,3 +633,46 @@ def aggregate():
         'provider': 'Organization 1',
         'timezone': 'America/Denver',
         'variable': 'ghi'}
+
+
+@pytest.fixture()
+def report():
+    return {
+        'created_at': '2020-01-22T13:48:00+00:00',
+        'modified_at': '2020-01-22T13:50:00+00:00',
+        'provider': 'Organization 1',
+        'raw_report': {
+            'data_checksum': None,
+            'generated_at': '2019-07-01T12:00:00+00:00',
+            'messages': [
+                {'function': 'fcn',
+                 'level': 'error',
+                 'message': 'FAILED',
+                 'step': 'dunno'}],
+            'metrics': [],
+            'plots': None,
+            'processed_forecasts_observations': [],
+            'timezone': 'Etc/GMT+8',
+            'versions': []},
+        'report_id': '9f290dd4-42b8-11ea-abdf-f4939feddd82',
+        'report_parameters': {
+            'categories': ['total', 'date'],
+            'end': '2019-06-01T06:59:00+00:00',
+            'filters': [{'quality_flags': ['USER FLAGGED']}],
+            'metrics': ['mae', 'rmse'],
+            'name': 'NREL MIDC OASIS GHI Forecast Analysis',
+            'object_pairs': [
+               {'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3',
+                'observation': '123e4567-e89b-12d3-a456-426655440000',
+                'reference_forecast': None,
+                'uncertainty': None,
+                'forecast_type': 'forecast',
+                }],
+            'start': '2019-04-01T07:00:00+00:00'
+        },
+        'status': 'failed',
+        'values': [
+            {'id': 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82',
+             'object_id': '123e4567-e89b-12d3-a456-426655440000',
+             'processed_values': 'superencodedvalues'}]
+    }

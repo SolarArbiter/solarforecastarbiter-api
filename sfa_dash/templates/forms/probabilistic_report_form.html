@@ -1,13 +1,13 @@
 {% import "forms/form_macros.jinja" as form %}
 
 {% set report_type = 'probabilistic' %}
-{% set report_script = '/static/js/probabilistic-report-handling.js' %}
+{% set report_script = '/static/js/probabilistic-report-form-handling.js' %}
 {% set constant_value_metric_options = probabilistic_metrics %}
 {% set excluded_constant_value_metrics = ['crps'] %}
 {% set full_group_metric_options = {'crps': 'CRPS'} %}
 
 
-{% extends "forms/base_report_form.html" %}
+{% extends "forms/base/base_report_form.html" %}
 
 {% block metrics_field %}
 <div class="form-element">
