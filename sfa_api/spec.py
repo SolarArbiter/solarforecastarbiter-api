@@ -38,6 +38,12 @@ spec_components = {
         '404-NotFound': {
             'description': 'The resource could not be found.',
         },
+        '413-PayloadTooLarge':{
+            'description': 'Payload exceeds maximum of 16MB.',
+        },
+        '400-TimerangeTooLarge':{
+            'description': 'Requested more than maximum of 1 year of data.',
+        },
     },
     'securitySchemes': {
         'auth0': {

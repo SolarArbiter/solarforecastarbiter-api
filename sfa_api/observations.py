@@ -176,6 +176,8 @@ class ObservationValuesView(MethodView):
                   2018-10-29T12:00:00Z,32.93,0
                   2018-10-29T13:00:00Z,25.17,0
 
+          400:
+            $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
@@ -245,6 +247,8 @@ class ObservationValuesView(MethodView):
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
+          413:
+            $ref: '#/components/responses/413-PayloadTooLarge'
         """
         run_validation = 'donotvalidate' not in request.args
         if run_validation:

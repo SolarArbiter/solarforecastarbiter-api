@@ -168,6 +168,8 @@ class AggregateValuesView(MethodView):
                   2018-10-29T12:00:00Z,32.93,0
                   2018-10-29T13:00:00Z,25.17,0
 
+          400:
+            $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
