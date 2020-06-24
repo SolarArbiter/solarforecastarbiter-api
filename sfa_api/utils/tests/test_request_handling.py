@@ -2,6 +2,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 import pytz
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 from sfa_api.conftest import (
@@ -61,8 +62,23 @@ def test_validate_start_end_not_provided(app, forecast_id, query, exc):
 def test_validate_parsable_fail(app, content_type, payload, forecast_id):
     url = f'/forecasts/single/{forecast_id}/values/'
     with pytest.raises(request_handling.BadAPIRequest):
-        with app.test_request_context(url, content_type=content_type,
-                                      data=payload, method='POST'):
+        with app.test_request_context(
+                url, content_type=content_type, data=payload, method='POST',
+                content_length=len(payload)):
+            request_handling.validate_parsable_values()
+
+
+@pytest.mark.parametrize('content_type', [
+    ('text/csv'),
+    ('application/json'),
+    ('application/json'),
+])
+def test_validate_parsable_fail_too_large(app, content_type, forecast_id):
+    url = f'/forecasts/single/{forecast_id}/values/'
+    with pytest.raises(RequestEntityTooLarge):
+        with app.test_request_context(
+                url, content_type=content_type, method='POST',
+                content_length=17*1024*1024):
             request_handling.validate_parsable_values()
 
 
