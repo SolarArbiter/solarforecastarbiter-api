@@ -457,3 +457,16 @@ def test_get_cdf_forecast_group_gaps_400(api, cdf_forecast_id, addmayvalues):
         f'/forecasts/cdf/{cdf_forecast_id}/values/gaps',
         base_url=BASE_URL)
     assert r.status_code == 400
+
+
+@pytest.mark.parametrize('content_type,payload', [
+    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
+    ('text/csv', 'timestamp,value\n'+"1"*17*1024*1024),
+])
+def test_post_forecast_too_large(
+        api, cdf_forecast_id, content_type, payload):
+    req = api.post(
+            f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+            content_type=content_type,
+            data=payload, base_url=BASE_URL)
+    assert req.status_code == 413

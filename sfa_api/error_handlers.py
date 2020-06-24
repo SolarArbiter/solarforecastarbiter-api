@@ -34,7 +34,7 @@ def entity_too_large_handler(error):
     return jsonify({
         'errors': {
             '413': f'Payload Too Large. Maximum payload size is {max_payload}'
-                    ' bytes.'
+                   ' bytes.'
         }
     }), 413
 
