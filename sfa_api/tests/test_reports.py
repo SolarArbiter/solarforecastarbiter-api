@@ -211,6 +211,12 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
         f'{{"0":["Must be one of: {metrics_list}."]}}'),
     ('categories', ["bad"],
         f'{{"0":["Must be one of: {categories_list}."]}}'),
+    ('object_pairs', [{"observation": "123e4567-e89b-12d3-a456-426655440000",
+                       "forecast": "123e4567-e89b-12d3-a456-426655440000",
+                       "cost": "nocost"}],
+     '{"0":{"cost":["Must specify a \'cost\' that is present in report parameters \'costs\'"]}}'),  # NOQA: E501
+    ('metrics', ['mae', 'cost'],
+     '["Must specify \'costs\' parameters to calculate cost metric"]')
 ])
 def test_post_report_invalid_report_params(
         api, key, value, error, report_post_json):

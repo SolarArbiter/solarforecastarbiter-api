@@ -1132,8 +1132,8 @@ class ReportParameters(ma.Schema):
                 'cost' in data.get('metrics', []) and
                 len(data.get('costs', [])) == 0
         ):
-            raise ValidationError({'costs': [
-                'Must specify cost parameters to calculate cost metric']})
+            raise ValidationError({'metrics': [
+                'Must specify \'costs\' parameters to calculate cost metric']})
         cost_names = [c['name'] for c in data.get('costs', [])
                       if 'name' in c] + [None]
         errs = []
@@ -1141,9 +1141,10 @@ class ReportParameters(ma.Schema):
             if op.get('cost', None) not in cost_names:
                 errs.append(i)
         if errs:
-            text = "Must provide a 'cost' present in report parameters 'costs'"
+            text = ("Must specify a 'cost' that is present in"
+                    " report parameters 'costs'")
             raise ValidationError({
-                'object_pairs': {str(i): {"cost": text} for i in errs}
+                'object_pairs': {str(i): {"cost": [text]} for i in errs}
             })
 
 
