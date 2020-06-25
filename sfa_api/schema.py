@@ -863,7 +863,7 @@ class ReportObjectPair(ma.Schema):
         title='Cost Parameters',
         description=(
             'Must match a cost from the report ["report_parameters"]["costs"][*]["name"]'),
-        validate=UserstringValidator,
+        validate=UserstringValidator(),
         missing=None,
         required=False,
         allow_none=True
