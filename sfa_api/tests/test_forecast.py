@@ -491,3 +491,17 @@ def test_get_forecast_gaps_400(api, inaccessible_forecast_id):
         query_string={'start': '2019-04-01T00:00Z'},
         base_url=BASE_URL)
     assert r.status_code == 400
+
+
+@pytest.mark.parametrize('content_type,payload', [
+    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
+    ('text/csv', 'timestamp,value\n'+"1"*17*1024*1024),
+])
+def test_post_forecast_too_large(
+        api, forecast_id, content_type, payload):
+    req = api.post(
+            f'/forecasts/single/{forecast_id}/values',
+            environ_base={'Content-Type': content_type,
+                          'Content-Length': 17*1024*1024},
+            data=payload, base_url=BASE_URL)
+    assert req.status_code == 413

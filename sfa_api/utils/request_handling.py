@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from solarforecastarbiter.datamodel import Forecast, Site
 from solarforecastarbiter.reference_forecasts import utils as fx_utils
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 from sfa_api.utils.errors import (
@@ -231,7 +232,14 @@ def validate_parsable_values():
     ------
     BadAPIRequest
         If the data cannot be parsed.
+    werkzeug.exceptions.RequestEntityTooLarge
+        If the `Content-Length` header is greater than the application's
+        `MAX_CONTENT_LENGTH` config variable.
     """
+    # Default for content length in case of empty body
+    content_length = int(request.headers.get('Content-Length', 0))
+    if (content_length > current_app.config['MAX_CONTENT_LENGTH']):
+        raise RequestEntityTooLarge
     if request.mimetype == 'multipart/form-data':
         decoded_data, mimetype = decode_file_in_request_body()
     else:

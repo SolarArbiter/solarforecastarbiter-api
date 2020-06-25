@@ -616,3 +616,17 @@ def test_get_observation_unflagged_404_fxid(api, forecast_id, addmayvalues):
                               'flag': 1},
                 base_url=BASE_URL)
     assert r.status_code == 404
+
+
+@pytest.mark.parametrize('content_type,payload', [
+    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
+    ('text/csv', 'timestamp,value,quality_flag\n'+"1"*17*1024*1024),
+])
+def test_post_observation_too_large(
+        api, observation_id, content_type, payload):
+    req = api.post(
+            f'/observations/{observation_id}/values',
+            environ_base={'Content-Type': content_type,
+                          'Content-Length': 17*1024*1024},
+            data=payload, base_url=BASE_URL)
+    assert req.status_code == 413

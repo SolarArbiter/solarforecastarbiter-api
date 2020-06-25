@@ -1,4 +1,7 @@
-from flask import jsonify
+from flask import jsonify, current_app
+from werkzeug.exceptions import RequestEntityTooLarge
+
+
 from sfa_api.utils.errors import (BaseAPIException, StorageAuthError,
                                   DeleteRestrictionError)
 
@@ -25,8 +28,21 @@ def auth_existence_handler(error):
     return jsonify({'errors': {'404': 'Not Found'}}), 404
 
 
+def entity_too_large_handler(error):
+    """Returns a 413 when the content length exceeds maximum"""
+    max_payload = current_app.config['MAX_CONTENT_LENGTH']
+    return jsonify({
+        'errors': {
+            '413': f'Payload Too Large. Maximum payload size is {max_payload}'
+                   ' bytes.'
+        }
+    }), 413
+
+
 def register_error_handlers(app):
     app.register_error_handler(BaseAPIException, base_error_handler)
     app.register_error_handler(StorageAuthError, auth_existence_handler)
     app.register_error_handler(DeleteRestrictionError,
                                delete_restriction_handler)
+    app.register_error_handler(RequestEntityTooLarge,
+                               entity_too_large_handler)
