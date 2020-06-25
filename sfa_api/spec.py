@@ -10,8 +10,8 @@ from sfa_api import __version__
 class APISpec(apispec.APISpec):
     _views = set()
 
-    def define_schema(self, name):
-        def decorator(schema, **kwargs):
+    def define_schema(self, name, **kwargs):
+        def decorator(schema):
             self.components.schema(name, schema=schema, **kwargs)
             return schema
         return decorator
