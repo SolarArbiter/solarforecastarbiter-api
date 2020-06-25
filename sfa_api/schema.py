@@ -1102,7 +1102,8 @@ class ReportParameters(ma.Schema):
             'have a "cost" key matching the name of one of these '
             'cost definitions.')
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True)
+    object_pairs = ma.Nested(ReportObjectPair, many=True,
+                             required=True)
     # TODO: Validate with options from core
     filters = ma.List(
         ma.Dict(),
@@ -1124,6 +1125,29 @@ class ReportParameters(ma.Schema):
         description="List of categories with which to group metrics.",
         required=True
     )
+
+    @validates_schema
+    def validate_cost(self, data, **kwargs):
+        if (
+                'cost' in data.get('metrics', []) and
+                len(data.get('costs', [])) == 0
+        ):
+            raise ValidationError({'costs': [
+                'Must specify cost parameters to calculate cost metric']})
+        cost_names = [c['name'] for c in data.get('costs', [])
+                      if 'name' in c] + [None]
+        errs = []
+        for i, op in enumerate(data.get('object_pairs', [])):
+            if op.get('cost', None) not in cost_names:
+                errs.append(i)
+        if errs:
+            text = "Must provide a 'cost' present in report parameters 'costs'"
+            raise ValidationError({
+                'object_pairs': {str(i): {"cost": text} for i in errs}
+            })
+
+
+
 
 
 @spec.define_schema('ReportValuesPostSchema')
