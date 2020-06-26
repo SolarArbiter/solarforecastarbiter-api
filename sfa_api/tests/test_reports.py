@@ -399,7 +399,7 @@ def test_post_cost_report_params_invalid_type_for_params(
         make_cost_report, fail_queue, api):
     types = ('constant', 'timeofday', 'datetime',
              'errorband', 'not')
-    for combo in itertools.combinations(types, 2):
+    for combo in itertools.permutations(types, 2):
         if combo[0] == 'not':
             continue
         payload = make_cost_report(combo[0])
@@ -514,7 +514,7 @@ def test_post_cost_report_errorband_bad_cost_type(
     payload = make_cost_report('errorband')
     types = ('constant', 'timeofday', 'datetime',
              'errorband', 'not')
-    for combo in itertools.combinations(types, 2):
+    for combo in itertools.permutations(types, 2):
         if combo[0] == 'not':
             continue
         params = make_cost_report(combo[0])['report_parameters'][
