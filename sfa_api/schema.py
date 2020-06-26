@@ -984,6 +984,8 @@ class ParametersField(ma.Field):
 
 
 class BaseCostBand(ma.Schema):
+    # actually validates the band schema.
+    # other *CostBand are for API docs
     error_range = ma.Tuple((ma.Float(allow_nan=True),
                             ma.Float(allow_nan=True)),
                            required=True)
@@ -994,8 +996,6 @@ class BaseCostBand(ma.Schema):
     )
     cost_function_parameters = ParametersField('cost_function',
                                                required=True)
-
-# all to set API schema properly
 
 
 @spec.define_schema('ConstantCostBand')
