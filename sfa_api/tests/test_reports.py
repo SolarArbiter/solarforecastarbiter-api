@@ -1,5 +1,6 @@
 from copy import deepcopy
 import hashlib
+import math
 
 
 import pytest
@@ -92,7 +93,7 @@ def report_post_json_cost(report_post_json, request):
                  {'error_range': [2, 4],
                   'cost_function': 'datetime',
                   'cost_function_parameters': costsparams['datetime']},
-                 {'error_range': [3, 99],
+                 {'error_range': [3, math.inf],
                   'cost_function': 'timeofday',
                   'cost_function_parameters': costsparams['timeofday']},
              ]}}]
