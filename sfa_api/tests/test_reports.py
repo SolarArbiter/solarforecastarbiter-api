@@ -534,7 +534,6 @@ def test_post_cost_report_errorband_bad_cost_type(
             '{"parameters":{"bands":{"0"')
 
 
-
 def test_recompute(api, new_report):
     report_id = new_report()
     res = api.get(f'/reports/{report_id}/recompute', base_url=BASE_URL)

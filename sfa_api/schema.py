@@ -1059,26 +1059,22 @@ class BaseCostSchema(ma.Schema):
 
 
 @spec.define_schema('ConstantCost')
-class ConstantCostSchema(BaseCostSchema):
-    # simplify API schema
+class ConstantCostSchema(BaseCostSchema):  # this and similar for API spec
     parameters = ma.Nested(ConstantCostParams, required=True)
 
 
 @spec.define_schema('TimeOfDayCost')
 class TimeOfDayCostSchema(BaseCostSchema):
-    # simplify API schema
     parameters = ma.Nested(TimeOfDayCostParams, required=True)
 
 
 @spec.define_schema('DatetimeCost')
 class DatetimeCostSchema(BaseCostSchema):
-    # simplify API schema
     parameters = ma.Nested(DatetimeCostParams, required=True)
 
 
 @spec.define_schema('ErrorBandCost')
 class ErrorBandCostSchema(BaseCostSchema):
-    # simplify API schema
     parameters = ma.Nested(ErrorBandCostParams, required=True)
 
 
