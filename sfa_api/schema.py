@@ -35,6 +35,8 @@ class ISODateTime(ma.AwareDateTime):
     def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
             return None
+        if isinstance(value, str):
+            value = pd.Timestamp(value)
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
         return value.isoformat()
@@ -1237,7 +1239,7 @@ class ReportSchema(ReportPostSchema):
         ordered = True
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
-    raw_report = ma.Nested(RawReportSchema())
+    raw_report = ma.Nested(RawReportSchema, allow_none=True)
     status = ma.String(validate=validate.OneOf(
         ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
