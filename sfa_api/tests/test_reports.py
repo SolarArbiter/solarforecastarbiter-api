@@ -13,10 +13,10 @@ from sfa_api.schema import ALLOWED_METRICS
 
 @pytest.fixture()
 def new_report(api, report_post_json, mocked_queuing):
-    def fn():
+    def fn(rpj=report_post_json):
         res = api.post('/reports/',
                        base_url=BASE_URL,
-                       json=report_post_json)
+                       json=rpj)
         return res.data.decode()
     return fn
 
@@ -43,6 +43,94 @@ def test_get_report(api, new_report):
     assert 'modified_at' in report
     assert report['created_at'].endswith('+00:00')
     assert report['modified_at'].endswith('+00:00')
+
+
+@pytest.fixture(
+    params=['constant', 'datetime', 'timeofday', 'errorband', 'many'])
+def report_post_json_cost(report_post_json, request):
+    repdict = deepcopy(report_post_json)
+    repdict['report_parameters']['object_pairs'][0]['cost'] = 'testcost'
+
+    costsparams = {
+        'constant': {
+            'cost': 10.9,
+            'net': False,
+            'aggregation': 'mean'
+        },
+        'datetime': {
+            'cost': [10.9, 11],
+            'times': ['2020-04-05T00:23Z', '2020-05-12T12:33-07:00'],
+            'fill': 'forward',
+            'net': False,
+            'aggregation': 'mean',
+            'timezone': 'Etc/GMT-5'
+        },
+        'timeofday': {
+            'cost': [10.9, 11, 33],
+            'times': ['12:00', '06:33', '14:00'],
+            'fill': 'backward',
+            'net': True,
+            'aggregation': 'sum',
+            'timezone': 'Etc/GMT-5'
+        },
+    }
+    if request.param in costsparams:
+        repdict['report_parameters']['costs'] = [
+            {'name': 'testcost', 'type': request.param,
+             'parameters': costsparams[request.param]}
+        ]
+    elif request.param == 'errorband':
+        repdict['report_parameters']['costs'] = [
+            {'name': 'testcost', 'type': 'errorband',
+             'parameters': {'bands': [
+                 {'error_range': [1, 2],
+                  'cost_function': 'constant',
+                  'cost_function_parameters': costsparams['constant']},
+                 {'error_range': ['-inf', 2],
+                  'cost_function': 'constant',
+                  'cost_function_parameters': costsparams['constant']},
+                 {'error_range': [2, 4],
+                  'cost_function': 'datetime',
+                  'cost_function_parameters': costsparams['datetime']},
+                 {'error_range': [3, 99],
+                  'cost_function': 'timeofday',
+                  'cost_function_parameters': costsparams['timeofday']},
+             ]}}]
+    elif request.param == 'many':
+        repdict['report_parameters']['costs'] = [
+            {'name': 'testcost', 'type': 'constant',
+             'parameters': costsparams['constant']},
+            {'name': 'othercost', 'type': 'timeofday',
+             'parameters': costsparams['timeofday']}
+        ]
+    return repdict
+
+
+def test_post_report_cost(api, report_post_json_cost,
+                          mocked_queuing):
+    res = api.post('/reports/',
+                   base_url=BASE_URL,
+                   json=report_post_json_cost)
+    assert res.status_code == 201
+    assert 'Location' in res.headers
+
+
+def test_get_report_cost(api, new_report,
+                         report_post_json_cost):
+    report_id = new_report(report_post_json_cost)
+    res = api.get(f'/reports/{report_id}',
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    report = res.json
+    assert 'report_id' in report
+    assert 'provider' in report
+    assert 'raw_report' in report
+    assert 'status' in report
+    assert 'created_at' in report
+    assert 'modified_at' in report
+    assert report['created_at'].endswith('+00:00')
+    assert report['modified_at'].endswith('+00:00')
+    assert len(report['report_parameters']['costs']) > 0
 
 
 def test_get_report_dne(api, missing_id):
