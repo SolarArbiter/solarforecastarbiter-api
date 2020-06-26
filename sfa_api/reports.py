@@ -91,11 +91,12 @@ class AllReportsView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        data = request.get_json()
-        try:
-            report = ReportPostSchema().load(data)
-        except ValidationError as err:
-            raise BadAPIRequest(err.messages)
+        report = request.get_json()
+        # report already valid json, so just store that
+        # if validates properly
+        errs = ReportPostSchema().validate(report)
+        if errs:
+            raise BadAPIRequest(errs)
         storage = get_storage()
         report_id = storage.store_report(report)
         response = make_response(report_id, 201)

@@ -13,7 +13,9 @@ from sfa_api.utils.validators import (
     UncertaintyValidator, validate_if_event)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
-    ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS)
+    ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
+    ALLOWED_COST_AGG_OPTIONS, ALLOWED_COST_FILL_OPTIONS,
+    ALLOWED_COST_FUNCTIONS)
 
 
 ALLOWED_METRICS = {}
@@ -33,6 +35,8 @@ class ISODateTime(ma.AwareDateTime):
     def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
             return None
+        if isinstance(value, str):
+            value = pd.Timestamp(value)
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
         return value.isoformat()
@@ -857,6 +861,16 @@ class ReportObjectPair(ma.Schema):
                                  allow_none=True,
                                  missing=None,
                                  default=None)
+    cost = ma.String(
+        title='Cost Parameters',
+        description=(
+            'Must match a cost from the report '
+            '["report_parameters"]["costs"][*]["name"]'),
+        validate=UserstringValidator(),
+        missing=None,
+        required=False,
+        allow_none=True
+    )
     uncertainty = ma.String(
         title='Uncertainty',
         description=(
@@ -879,6 +893,209 @@ class ReportObjectPair(ma.Schema):
     )
 
 
+net = ma.Boolean(required=True)
+aggregation = ma.String(
+    required=True,
+    validate=validate.OneOf(ALLOWED_COST_AGG_OPTIONS)
+)
+manycosts = ma.List(ma.Float(), required=True)
+fill = ma.String(
+    required=True,
+    validate=validate.OneOf(ALLOWED_COST_FILL_OPTIONS)
+)
+costtimezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        required=False,
+        validate=TimezoneValidator()
+    )
+
+
+class ConstantCostParams(ma.Schema):
+    cost = ma.Float(required=True)
+    aggregation = aggregation
+    net = net
+
+
+class TimeOfDayCostParams(ma.Schema):
+    times = ma.List(ma.String(validate=TimeFormat('%H:%M')), required=True)
+    cost = manycosts
+    aggregation = aggregation
+    net = net
+    fill = fill
+    timezone = costtimezone
+
+    @validates_schema
+    def validate_lengths(self, data, **kwargs):
+        if len(data['cost']) != len(data['times']):
+            raise ValidationError(
+                {'cost': ["'cost' must have same length as 'times'"],
+                 'times': ["'times' must have same length as 'cost"]})
+
+
+class DatetimeCostParams(ma.Schema):
+    datetimes = ma.List(ISODateTime(), required=True)
+    cost = manycosts
+    aggregation = aggregation
+    net = net
+    fill = fill
+    timezone = costtimezone
+
+    @validates_schema
+    def validate_lengths(self, data, **kwargs):
+        if len(data['cost']) != len(data['datetimes']):
+            raise ValidationError(
+                {'cost': ["'cost' must have same length as 'datetimes'"],
+                 'datetimes': ["'datetimes' must have same length as 'cost"]})
+
+
+class ParametersField(ma.Field):
+    def __init__(self, type_field, *args, **kwargs):
+        self.type_field = type_field
+        super().__init__(*args, **kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        type_ = data.get(self.type_field)
+        # should not be possible to be none, but just in case
+        if type_ == 'constant':
+            return ConstantCostParams().load(value)
+        elif type_ == 'timeofday':
+            return TimeOfDayCostParams().load(value)
+        elif type_ == 'datetime':
+            return DatetimeCostParams().load(value)
+        elif type_ == 'errorband':
+            return ErrorBandCostParams().load(value)
+        else:
+            raise ValidationError(
+                {self.type_field: ['Invalid cost parameters type']})
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        type_ = obj.get(self.type_field)
+        if type_ == 'constant':
+            return ConstantCostParams().dump(value)
+        elif type_ == 'timeofday':
+            return TimeOfDayCostParams().dump(value)
+        elif type_ == 'datetime':
+            return DatetimeCostParams().dump(value)
+        elif type_ == 'errorband':
+            return ErrorBandCostParams().dump(value)
+        else:  # pragma: no cover
+            return value
+
+
+class BaseCostBand(ma.Schema):
+    # actually validates the band schema.
+    # other *CostBand are for API docs
+    error_range = ma.Tuple((ma.Float(allow_nan=True),
+                            ma.Float(allow_nan=True)),
+                           required=True)
+    cost_function = ma.String(
+        name='Cost Function',
+        required=True,
+        validate=validate.OneOf(set(ALLOWED_COST_FUNCTIONS) - set('errorband'))
+    )
+    cost_function_parameters = ParametersField('cost_function',
+                                               required=True)
+
+
+@spec.define_schema('ConstantCostBand')
+class ConstantCostBand(BaseCostBand):
+    cost_function_parameters = ma.Nested(ConstantCostParams,
+                                         required=True)
+
+
+@spec.define_schema('TimeOfDayCostBand')
+class TimeOfDayCostBand(BaseCostBand):
+    cost_function_parameters = ma.Nested(TimeOfDayCostParams,
+                                         required=True)
+
+
+@spec.define_schema('DatetimeCostBand')
+class DatetimeCostBand(BaseCostBand):
+    cost_function_parameters = ma.Nested(DatetimeCostParams,
+                                         required=True)
+
+
+@spec.define_schema('CostBand', component={
+    "discriminator": {
+        "propertyName": "cost_function",
+        "mapping": {
+            "constant": "#/components/schemas/ConstantCostBand",
+            "timeofday": "#/components/schemas/TimeOfDayCostBand",
+            "datetime": "#/components/schemas/DatetimeCostBand"
+        }},
+    "oneOf": [
+        {"$ref": "#/components/schemas/ConstantCostBand"},
+        {"$ref": "#/components/schemas/TimeOfDayCostBand"},
+        {"$ref": "#/components/schemas/DatetimeCostBand"},
+    ]})
+class CostBand(BaseCostBand):
+    pass
+
+
+class ErrorBandCostParams(ma.Schema):
+    bands = ma.Nested(CostBand, many=True, required=True)
+
+    @validates_schema
+    def at_least_one_band(self, data, **kwargs):
+        if len(data['bands']) == 0:
+            raise ValidationError(
+                {'bands': ["Must provide at least one band"]})
+
+
+class BaseCostSchema(ma.Schema):
+    name = ma.String(
+        required=True,
+        validate=UserstringValidator(),
+        description='Name to match to for object_pairs'
+    )
+    type = ma.String(
+        description=(
+            "Type of cost that determines the parameters that must be set"),
+        required=True,
+        validate=validate.OneOf(ALLOWED_COST_FUNCTIONS)
+    )
+    parameters = ParametersField('type', required=True)
+
+
+@spec.define_schema('ConstantCost')
+class ConstantCostSchema(BaseCostSchema):  # this and similar for API spec
+    parameters = ma.Nested(ConstantCostParams, required=True)
+
+
+@spec.define_schema('TimeOfDayCost')
+class TimeOfDayCostSchema(BaseCostSchema):
+    parameters = ma.Nested(TimeOfDayCostParams, required=True)
+
+
+@spec.define_schema('DatetimeCost')
+class DatetimeCostSchema(BaseCostSchema):
+    parameters = ma.Nested(DatetimeCostParams, required=True)
+
+
+@spec.define_schema('ErrorBandCost')
+class ErrorBandCostSchema(BaseCostSchema):
+    parameters = ma.Nested(ErrorBandCostParams, required=True)
+
+
+@spec.define_schema('Cost', component={
+    "discriminator": {
+        "propertyName": "type", "mapping": {
+            "constant": "#/components/schemas/ConstantCost",
+            "timeofday": "#/components/schemas/TimeOfDayCost",
+            "datetime": "#/components/schemas/DatetimeCost",
+            "errorband": "#/components/schemas/ErrorBandCost"
+        }},
+    "oneOf": [
+        {"$ref": "#/components/schemas/ConstantCost"},
+        {"$ref": "#/components/schemas/TimeOfDayCost"},
+        {"$ref": "#/components/schemas/DatetimeCost"},
+        {"$ref": "#/components/schemas/ErrorBandCost"}
+    ]})
+class CostSchema(BaseCostSchema):
+    pass
+
+
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
     name = ma.String(
@@ -899,7 +1116,17 @@ class ReportParameters(ma.Schema):
             " Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True)
+    costs = ma.Nested(
+        CostSchema,
+        many=True,
+        description=(
+            'Cost definitions to use for object_pairs. '
+            'If cost is to be calculated, each object pair must '
+            'have a "cost" key matching the name of one of these '
+            'cost definitions.')
+    )
+    object_pairs = ma.Nested(ReportObjectPair, many=True,
+                             required=True)
     # TODO: Validate with options from core
     filters = ma.List(
         ma.Dict(),
@@ -921,6 +1148,27 @@ class ReportParameters(ma.Schema):
         description="List of categories with which to group metrics.",
         required=True
     )
+
+    @validates_schema
+    def validate_cost(self, data, **kwargs):
+        if (
+                'cost' in data.get('metrics', []) and
+                len(data.get('costs', [])) == 0
+        ):
+            raise ValidationError({'metrics': [
+                'Must specify \'costs\' parameters to calculate cost metric']})
+        cost_names = [c['name'] for c in data.get('costs', [])
+                      if 'name' in c] + [None]
+        errs = []
+        for i, op in enumerate(data.get('object_pairs', [])):
+            if op.get('cost', None) not in cost_names:
+                errs.append(i)
+        if errs:
+            text = ("Must specify a 'cost' that is present in"
+                    " report parameters 'costs'")
+            raise ValidationError({
+                'object_pairs': {str(i): {"cost": [text]} for i in errs}
+            })
 
 
 @spec.define_schema('ReportValuesPostSchema')
@@ -1009,7 +1257,7 @@ class ReportSchema(ReportPostSchema):
         ordered = True
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
-    raw_report = ma.Nested(RawReportSchema())
+    raw_report = ma.Nested(RawReportSchema, allow_none=True)
     status = ma.String(validate=validate.OneOf(
         ['pending', 'complete', 'failed']))
     created_at = CREATED_AT

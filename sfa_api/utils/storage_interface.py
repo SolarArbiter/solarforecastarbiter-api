@@ -1479,16 +1479,11 @@ def store_report(report):
           or the user lacks permissions to read the data.
     """
     report_id = generate_uuid()
-    rep = deepcopy(report)
-    iso_start = rep['report_parameters']['start'].isoformat()
-    iso_end = rep['report_parameters']['end'].isoformat()
-    rep['report_parameters']['start'] = iso_start
-    rep['report_parameters']['end'] = iso_end
     _call_procedure(
         'store_report',
         report_id,
-        rep['report_parameters']['name'],
-        dump_json_replace_nan(rep['report_parameters']),
+        report['report_parameters']['name'],
+        dump_json_replace_nan(report['report_parameters'])
     )
     return report_id
 
