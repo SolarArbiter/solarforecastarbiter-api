@@ -316,6 +316,8 @@ class RoleGrant(AdminView):
             except DataRequestException as e:
                 # User could not read the role, flash a 404
                 self.flash_api_errors(e.errors)
+                role = None
+            self.set_template_args()
             return render_template(
                 self.template,
                 role=role,

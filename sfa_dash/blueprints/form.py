@@ -12,7 +12,7 @@ from sfa_dash.blueprints.base import BaseView
 from sfa_dash.blueprints.reports import (ReportForm, RecomputeReportView,
                                          ReportCloneView)
 from sfa_dash.errors import DataRequestException
-from sfa_dash.form_utils import converters
+from sfa_dash.form_utils import converters, utils
 
 
 class CreateForm(BaseView):
@@ -130,14 +130,15 @@ class CreateForm(BaseView):
                 errors = e.errors
             if 'errors' in template_args:
                 template_args['errors'].update(
-                    self.flatten_dict(errors))
+                    utils.flatten_dict(errors))
             else:
-                template_args['errors'] = self.flatten_dict(errors)
+                template_args['errors'] = utils.flatten_dict(errors)
             if uuid is not None:
                 try:
                     loc_metadata = self.metadata_handler.get_metadata(uuid)
                 except DataRequestException as e:
-                    template_args['errors'].update(self.flatten_dict(e.errors))
+                    template_args['errors'].update(
+                        utils.flatten_dict(e.errors))
                 else:
                     template_args[f'{self.location_type}_metadata'] = loc_metadata  # noqa
                     template_args['metadata_block'] = render_template(
