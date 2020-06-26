@@ -1,9 +1,11 @@
 from copy import deepcopy
 import hashlib
+import itertools
 import math
 
 
 import pytest
+from solarforecastarbiter import datamodel
 from solarforecastarbiter.datamodel import (
     ALLOWED_CATEGORIES)
 
@@ -46,65 +48,78 @@ def test_get_report(api, new_report):
     assert report['modified_at'].endswith('+00:00')
 
 
+@pytest.fixture()
+def make_cost_report(report_post_json):
+    def make(type_):
+        repdict = deepcopy(report_post_json)
+        repdict['report_parameters']['object_pairs'][0]['cost'] = 'testcost'
+
+        costsparams = {
+            'constant': {
+                'cost': 10.9,
+                'net': False,
+                'aggregation': 'mean'
+            },
+            'datetime': {
+                'cost': [10.9, 11],
+                'datetimes': ['2020-04-05T00:23Z', '2020-05-12T12:33-07:00'],
+                'fill': 'forward',
+                'net': False,
+                'aggregation': 'mean',
+                'timezone': 'Etc/GMT-5'
+            },
+            'timeofday': {
+                'cost': [10.9, 11, 33],
+                'times': ['12:00', '06:33', '14:00'],
+                'fill': 'backward',
+                'net': True,
+                'aggregation': 'sum',
+                'timezone': 'Etc/GMT-5'
+            },
+        }
+        costsparams['errorband'] = {
+            'bands': [
+                {'error_range': [1, 2],
+                 'cost_function': 'constant',
+                 'cost_function_parameters': costsparams['constant']},
+                {'error_range': ['-inf', 2],
+                 'cost_function': 'constant',
+                 'cost_function_parameters': costsparams['constant']},
+                {'error_range': [2, 4],
+                 'cost_function': 'datetime',
+                 'cost_function_parameters': costsparams['datetime']},
+                {'error_range': [3, math.inf],
+                 'cost_function': 'timeofday',
+                 'cost_function_parameters': costsparams['timeofday']},
+            ]
+        }
+        if type_ in costsparams:
+            repdict['report_parameters']['costs'] = [
+                {'name': 'testcost', 'type': type_,
+                 'parameters': costsparams[type_]}
+            ]
+        elif type_ == 'many':
+            repdict['report_parameters']['costs'] = [
+                {'name': 'testcost', 'type': 'errorband',
+                 'parameters': costsparams['errorband']},
+                {'name': 'othercost', 'type': 'timeofday',
+                 'parameters': costsparams['timeofday']}
+            ]
+        return repdict
+    return make
+
+
 @pytest.fixture(
     params=['constant', 'datetime', 'timeofday', 'errorband', 'many'])
-def report_post_json_cost(report_post_json, request):
-    repdict = deepcopy(report_post_json)
-    repdict['report_parameters']['object_pairs'][0]['cost'] = 'testcost'
+def report_post_json_cost(request, make_cost_report):
+    return make_cost_report(request.param)
 
-    costsparams = {
-        'constant': {
-            'cost': 10.9,
-            'net': False,
-            'aggregation': 'mean'
-        },
-        'datetime': {
-            'cost': [10.9, 11],
-            'times': ['2020-04-05T00:23Z', '2020-05-12T12:33-07:00'],
-            'fill': 'forward',
-            'net': False,
-            'aggregation': 'mean',
-            'timezone': 'Etc/GMT-5'
-        },
-        'timeofday': {
-            'cost': [10.9, 11, 33],
-            'times': ['12:00', '06:33', '14:00'],
-            'fill': 'backward',
-            'net': True,
-            'aggregation': 'sum',
-            'timezone': 'Etc/GMT-5'
-        },
-    }
-    if request.param in costsparams:
-        repdict['report_parameters']['costs'] = [
-            {'name': 'testcost', 'type': request.param,
-             'parameters': costsparams[request.param]}
-        ]
-    elif request.param == 'errorband':
-        repdict['report_parameters']['costs'] = [
-            {'name': 'testcost', 'type': 'errorband',
-             'parameters': {'bands': [
-                 {'error_range': [1, 2],
-                  'cost_function': 'constant',
-                  'cost_function_parameters': costsparams['constant']},
-                 {'error_range': ['-inf', 2],
-                  'cost_function': 'constant',
-                  'cost_function_parameters': costsparams['constant']},
-                 {'error_range': [2, 4],
-                  'cost_function': 'datetime',
-                  'cost_function_parameters': costsparams['datetime']},
-                 {'error_range': [3, math.inf],
-                  'cost_function': 'timeofday',
-                  'cost_function_parameters': costsparams['timeofday']},
-             ]}}]
-    elif request.param == 'many':
-        repdict['report_parameters']['costs'] = [
-            {'name': 'testcost', 'type': 'constant',
-             'parameters': costsparams['constant']},
-            {'name': 'othercost', 'type': 'timeofday',
-             'parameters': costsparams['timeofday']}
-        ]
-    return repdict
+
+def test_cost_report_valid_datamodel(report_post_json_cost):
+    # just verify that examples are aligned with expectations from
+    # core datamodel
+    for c in report_post_json_cost['report_parameters']['costs']:
+        datamodel.Cost.from_dict(c)
 
 
 def test_post_report_cost(api, report_post_json_cost,
@@ -316,6 +331,208 @@ def test_post_report_invalid_report_params(
     expected = ('{"errors":{"report_parameters":[{"%s":%s}]}}\n' %
                 (key, error))
     assert res.get_data(as_text=True) == expected
+
+
+@pytest.fixture()
+def fail_queue(mocker):
+    mocker.patch('rq.Queue.enqueue',
+                 autospec=True)
+
+
+def test_post_cost_report_missing_params(report_post_json_cost, api,
+                                         fail_queue):
+    payload = deepcopy(report_post_json_cost)
+    payload['report_parameters']['costs'][0]['parameters'] = {}
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith('{"errors":{"report_parameters":')
+    assert 'Missing data for required field' in errtext
+
+
+@pytest.mark.parametrize('type_,keys', [
+    ('constant', ('cost', 'net', 'aggregation')),
+    ('timeofday', ('cost', 'net', 'aggregation', 'times', 'fill')),
+    ('datetime', ('cost', 'net', 'aggregation', 'datetimes', 'fill')),
+])
+def test_post_cost_report_missing_keys(
+        type_, keys, api, make_cost_report, fail_queue):
+    rep = make_cost_report(type_)
+    for i in range(1, 4):
+        for combo in itertools.combinations(keys, i):
+            payload = deepcopy(rep)
+            for k in combo:
+                del payload['report_parameters']['costs'][0]['parameters'][k]
+            res = api.post('/reports/', base_url=BASE_URL, json=payload)
+            assert res.status_code == 400
+            errtext = res.get_data(as_text=True)
+            assert errtext.startswith('{"errors":{"report_parameters":')
+            assert 'Missing data for required field' in errtext
+            for k in combo:
+                assert k in errtext
+
+
+@pytest.mark.parametrize('type_', ('constant', 'timeofday', 'datetime',
+                                   'errorband'))
+@pytest.mark.parametrize('key,val', [
+    ('cost', 'notfloat'),
+    ('aggregation', 'min'),
+    ('net', 'notbool'),
+    ('cost', None),
+    ('aggregation', None),
+    ('net', None),
+    ('extra', 'valid?')
+])
+def test_post_cost_report_params_invalid_common(
+        make_cost_report, fail_queue, api, key, val, type_):
+    payload = make_cost_report(type_)
+    payload['report_parameters']['costs'][0]['parameters'][key] = val
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":{"parameters":{"%s"'
+        % key)
+
+
+def test_post_cost_report_params_invalid_type_for_params(
+        make_cost_report, fail_queue, api):
+    types = ('constant', 'timeofday', 'datetime',
+             'errorband', 'not')
+    for combo in itertools.combinations(types, 2):
+        if combo[0] == 'not':
+            continue
+        payload = make_cost_report(combo[0])
+        payload['report_parameters']['costs'][0]['type'] = combo[1]
+        res = api.post('/reports/', base_url=BASE_URL, json=payload)
+        assert res.status_code == 400
+        errtext = res.get_data(as_text=True)
+        assert errtext.startswith(
+            '{"errors":{"report_parameters":[{"costs":{"0":{"parameters"')
+
+
+@pytest.mark.parametrize('key,val', [
+    ('fill', 'no'),
+    ('fill', 0),
+    ('fill', None),
+    ('times', ['12:00', '06:33', 0]),
+    ('times', ['12:00', '06:33', '06:61']),
+    # too short
+    ('cost', 1.0),
+    ('cost', [1.0, 2.0]),
+    ('cost', [1.0, 2.0, 3.0, 1.0]),
+    ('times', ['00:00', '09:00']),
+    ('times', ['00:00', '09:00', '10:00', '11:00']),
+    ('timezone', 'notatz')
+])
+def test_post_cost_report_timeofday_invalid(
+        make_cost_report, fail_queue, api, key, val):
+    payload = make_cost_report('timeofday')
+    payload['report_parameters']['costs'][0]['parameters'][key] = val
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":{"parameters":{')
+    assert key in errtext
+
+
+@pytest.mark.parametrize('key,val', [
+    ('fill', 'no'),
+    ('fill', 0),
+    ('fill', None),
+    ('datetimes', ['2020-01-01T00:00Z', 'nottime']),
+    ('datetimes', ['2020-01-01T00:00Z', 0]),
+    ('cost', 1.0),
+    ('cost', [1.0, 2.0, 3.0]),
+    ('datetimes', ['2020-01-01T00:00Z']),
+    ('datetimes', ['2020-01-01T00:00Z', '2020-01-01T12:00Z',
+                   '2020-01-02T00:00Z']),
+    ('timezone', 'notatz')
+])
+def test_post_cost_report_datetime_invalid(
+        make_cost_report, fail_queue, api, key, val):
+    payload = make_cost_report('datetime')
+    payload['report_parameters']['costs'][0]['parameters'][key] = val
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":{"parameters":{')
+    assert key in errtext
+
+
+def test_post_cost_report_errorband_no_bands(
+        make_cost_report, fail_queue, api):
+    payload = make_cost_report('errorband')
+    payload['report_parameters']['costs'][0]['parameters']['bands'] = []
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":{"parameters":{"bands"')
+
+
+def test_post_cost_report_errorband_recurs(
+        make_cost_report, fail_queue, api):
+    payload = make_cost_report('errorband')
+    payload['report_parameters']['costs'][0]['parameters']['bands'][0][
+        'cost_function'] = 'errorband'
+    payload['report_parameters']['costs'][0]['parameters']['bands'][0][
+        'cost_function_parameters'] = deepcopy(
+            payload['report_parameters']['costs'][0]['parameters'])
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":'
+        '{"parameters":{"bands":{"0"')
+
+
+@pytest.mark.parametrize('range_', [
+    [],
+    (0,),
+    (1, 'no'),
+    (1, 1, 1),
+    pytest.param(('-inf', 'inf'), marks=pytest.mark.xfail(strict=True)),
+])
+def test_post_cost_report_errorband_errorrange(
+        make_cost_report, fail_queue, api, range_):
+    payload = make_cost_report('errorband')
+    payload['report_parameters']['costs'][0]['parameters']['bands'][0][
+        'error_range'] = range_
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errtext = res.get_data(as_text=True)
+    assert errtext.startswith(
+        '{"errors":{"report_parameters":[{"costs":{"0":'
+        '{"parameters":{"bands":{"0":{"error_range"')
+
+
+def test_post_cost_report_errorband_bad_cost_type(
+        make_cost_report, fail_queue, api):
+    payload = make_cost_report('errorband')
+    types = ('constant', 'timeofday', 'datetime',
+             'errorband', 'not')
+    for combo in itertools.combinations(types, 2):
+        if combo[0] == 'not':
+            continue
+        params = make_cost_report(combo[0])['report_parameters'][
+            'costs'][0]['parameters']
+        payload['report_parameters']['costs'][0]['parameters']['bands'] = [
+            {
+                'error_range': (0, 1),
+                'cost_function': combo[1],
+                'cost_function_parameters': params
+            }
+        ]
+        res = api.post('/reports/', base_url=BASE_URL, json=payload)
+        assert res.status_code == 400
+        errtext = res.get_data(as_text=True)
+        assert errtext.startswith(
+            '{"errors":{"report_parameters":[{"costs":{"0":'
+            '{"parameters":{"bands":{"0"')
+
 
 
 def test_recompute(api, new_report):
