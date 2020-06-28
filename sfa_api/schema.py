@@ -118,14 +118,14 @@ INTERVAL_LABEL = ma.String(
 
 INTERVAL_LENGTH = ma.Integer(
     title='Interval length',
-    description=('The length of time that each data point represents in'
+    description=('The length of time that each data point represents in '
                  'minutes, e.g. 5 for 5 minutes.'),
     required=True)
 
 INTERVAL_VALUE_TYPE = ma.String(
     title='Interval Value Type',
-    description=('For data that represents intervals, what that data'
-                 'represesnts e.g. interval mean, min, max, etc.'
+    description=('For data that represents intervals, what that data '
+                 'represents e.g. interval mean, min, max, etc. '
                  'instantaneous for instantaneous data'),
     validate=validate.OneOf(INTERVAL_VALUE_TYPES),
     required=True)
@@ -553,7 +553,7 @@ class ForecastPostSchema(ma.Schema):
         required=True,
         validate=TimeFormat('%H:%M'),
         description=('The time of day that a forecast run is issued specified '
-                     'in UTC in HH:MM format, e.g. 00:30.'
+                     'in UTC in HH:MM format, e.g. 00:30. '
                      'For forecast runs issued multiple times within one day '
                      '(e.g. hourly), this specifies the first issue time of '
                      'day. Additional issue times are uniquely determined by '
@@ -562,7 +562,7 @@ class ForecastPostSchema(ma.Schema):
     lead_time_to_start = ma.Integer(
         title='Lead time to start',
         description=("The difference between the issue time and the start of "
-                     "the first forecast interval in minutes, e.g. 60 for one"
+                     "the first forecast interval in minutes, e.g. 60 for one "
                      "hour."),
         required=True)
     interval_label = INTERVAL_LABEL
@@ -571,8 +571,8 @@ class ForecastPostSchema(ma.Schema):
     run_length = ma.Integer(
         title='Run Length / Issue Frequency',
         description=('The total length of a single issued forecast run in '
-                     'minutes, e.g. 60 for 1 hour. To enforce a continuous,'
-                     'non-overlapping sequence, this is equal to the forecast'
+                     'minutes, e.g. 60 for 1 hour. To enforce a continuous, '
+                     'non-overlapping sequence, this is equal to the forecast '
                      'run issue frequency.'),
         required=True
     )
@@ -707,7 +707,7 @@ class CDFForecastSchema(ForecastSchema):
     parent = ma.UUID()
     constant_value = ma.Float(
         title='Constant Value',
-        description=('The variable value or percentile for the probabilistic'
+        description=('The variable value or percentile for the probabilistic '
                      'forecast'),
     )
 
@@ -1105,7 +1105,7 @@ class ReportParameters(ma.Schema):
     )
     start = ISODateTime(
         title="Start",
-        description=("The beginning of the analysis period as an ISO 8601"
+        description=("The beginning of the analysis period as an ISO 8601 "
                      "datetime. Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
     )

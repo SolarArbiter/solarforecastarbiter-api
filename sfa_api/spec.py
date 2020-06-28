@@ -73,20 +73,22 @@ spec_components = {
             'in': 'query',
             'name': 'start',
             'required': True,
-            'description': 'Start of the period for which to request data.',
+            'description': ('Start of the period (inclusive) for which to '
+                            'request data as an ISO8601 date-time.'),
             'schema': {
                 'type': 'string',
-                'format': 'datetime',
+                'format': 'date-time',
             },
         },
         'end_time': {
             'name': 'end',
             'in': 'query',
             'required': True,
-            'description': 'End of the period for which to request data.',
+            'description': ('End of the period (inclusive) for which to '
+                            'request data as an ISO8601 date-time.'),
             'schema': {
                 'type': 'string',
-                'format': 'datetime',
+                'format': 'date-time',
             },
         },
         'accepts': {
