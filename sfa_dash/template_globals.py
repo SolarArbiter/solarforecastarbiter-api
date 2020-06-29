@@ -50,6 +50,13 @@ ALLOWED_QUALITY_FLAGS = {
     'DAYTIME INTERPOLATED VALUES': 'DAYTIME INTERPOLATED VALUES'
 }
 
+INTERVAL_LABEL_OPTIONS = {
+    'beginning': 'Beginning',
+    'ending': 'Ending',
+    'instant': 'Instant',
+    'event': 'Event',
+}
+
 
 def is_allowed(action):
     """Returns if the action is allowed or not on the current object.
@@ -88,4 +95,5 @@ def template_variables():
         'MAX_PLOT_DATAPOINTS': current_app.config['MAX_PLOT_DATAPOINTS'],
         'variable_names': COMMON_NAMES,
         'variable_unit_map': ALLOWED_VARIABLES,
+        'interval_label_options': INTERVAL_LABEL_OPTIONS,
     }

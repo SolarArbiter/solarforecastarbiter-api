@@ -1,5 +1,5 @@
 {% import "forms/form_macros.jinja" as form %}
-{% extends "dash/data.html" %}
+{% extends "forms/base/creation_form.html" %}
 {% block content %}
 <h3>Create New Aggregate</h3>
 <form action="{{ url_for('forms.create_aggregate') }}" method="post" id="aggregate-form">
@@ -13,11 +13,13 @@
         <input type="text" class="form-control" name="description">
      </div>
      <div class="form-element">
-       {{ form.select('Interval label', 'interval_label',
-                      {'beginning': 'Beginning',
-                       'ending': 'Ending',
-                       'instant': 'Instant'},
-                       'Indicates if a time labels the start or the end of an interval of the aggregate values. Constituent observations will be normalized.') }}
+       {{ form.select(
+              'Interval label', 'interval_label',
+              interval_label_options, null,
+              'Indicates the alignment of time labels, beginning or ending '
+              'of the interval or instantaneous. An interval_label of '
+              '"event" will be set when variable is set to "event". '
+              'Constituent observations will be normalized.') }}
      </div>
      <div class="form-element">
        {{ form.timedelta('Interval length', 'interval_length',

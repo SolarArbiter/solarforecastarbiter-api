@@ -1,0 +1,9 @@
+{# Assumes that form_macros.jinja is available in the `form` template
+   variable
+#}
+<div class="form-element">
+{{ form.select('Interval label', 'interval_label',
+               interval_label_options, null,
+               'Indicates the alignment of time labels, beginning or ending of the interval or instantaneous. An interval_label of "event" will be set when variable is set to "event".',
+               form_data=form_data) }}
+</div>

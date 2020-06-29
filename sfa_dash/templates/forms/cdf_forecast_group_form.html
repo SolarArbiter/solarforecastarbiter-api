@@ -42,14 +42,9 @@
                     'The length of time that each data point represents. Values must be integers.',
                     form_data=form_data) }}
 </div>
-<div class="form-element">
-  {{ form.select('Interval label', 'interval_label',
-                 {'beginning': 'Beginning',
-                  'ending': 'Ending',
-                  'instant': 'Instant'},
-                  'Indicates if a time labels the start or the end of an interval.',
-                  form_data=form_data) }}
-</div>
+
+{% include "forms/interval_label.html" %}
+
 <div class="form-element">
   {{ form.select('Interval value type', 'interval_value_type',
                   {"interval_mean": "Mean",
