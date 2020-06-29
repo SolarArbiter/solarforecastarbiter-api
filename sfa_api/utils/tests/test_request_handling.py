@@ -401,13 +401,12 @@ def test_restrict_upload_window(mocker, now, first):
 @pytest.mark.parametrize('now,first', [
     (pd.Timestamp('2019-11-01T11:59Z'), pd.Timestamp('2019-11-01T13:00Z')),
     (pd.Timestamp('2019-11-01T12:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
-    # the fx specification does not allow for forecasts from midnight to noon
-    pytest.param(
-        pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T01:00Z'),
-        marks=pytest.mark.xfail
-    ),
-    (pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T13:00Z')),
+    # as currently and previously (pre-rc1) implemented in core, midnight is a
+    # valid forecast init time even if doesn't start until mid-day
+    # pre-rc1 did not 11/1 00:00, but would include 11/2 00:00 in issue times
+    (pd.Timestamp('2019-11-01T00:00Z'), pd.Timestamp('2019-11-01T01:00Z')),
     (pd.Timestamp('2019-11-01T22:01Z'), pd.Timestamp('2019-11-02T00:00Z')),
+    (pd.Timestamp('2019-11-01T23:20Z'), pd.Timestamp('2019-11-02T01:00Z'))
 ])
 def test_restrict_upload_window_freq(mocker, now, first):
     fxd = demo_forecasts['f8dd49fa-23e2-48a0-862b-ba0af6dec276'].copy()
