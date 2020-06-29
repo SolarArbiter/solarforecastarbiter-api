@@ -393,7 +393,7 @@ class ReportConverter(FormConverter):
     @classmethod
     def parse_api_filters(cls, report_parameters):
         quality_flags = []
-        for f in report_parameters['filters']:
+        for f in report_parameters.get('filters', []):
             if 'quality_flags' in f.keys():
                 quality_flags = quality_flags + f['quality_flags']
         return {
@@ -443,8 +443,8 @@ class ReportConverter(FormConverter):
         form_params = {}
         report_parameters = payload_dict['report_parameters']
         form_params['name'] = report_parameters['name']
-        form_params['categories'] = report_parameters['categories']
-        form_params['metrics'] = report_parameters['metrics']
+        form_params['categories'] = report_parameters.get('categories', [])
+        form_params['metrics'] = report_parameters.get('metrics', [])
         form_params['period-start'] = report_parameters['start']
         form_params['period-end'] = report_parameters['end']
 

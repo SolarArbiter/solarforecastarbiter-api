@@ -401,3 +401,15 @@ def test_report_converter_payload_to_formdata(report):
         'uncertainty': None,
         'forecast_type': 'forecast',
     }]
+
+
+def test_report_converter_payload_to_formdata_defaults(report):
+    report = deepcopy(report)
+    report['report_parameters'].pop('metrics')
+    report['report_parameters'].pop('categories')
+    report['report_parameters'].pop('filters')
+    form_data = converters.ReportConverter.payload_to_formdata(report)
+    form_data = form_data['report_parameters']
+    assert form_data['metrics'] == []
+    assert form_data['categories'] == []
+    assert form_data['quality_flags'] == []
