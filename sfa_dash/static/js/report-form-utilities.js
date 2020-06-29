@@ -449,7 +449,7 @@ report_utils.determine_forecast_units = function(forecast){
      *
      */
     var units = '%';
-    if (!forecast.hasOwnProperty('axis') || forecast['axis'] == 'y'){
+    if (!forecast.hasOwnProperty('axis') || forecast['axis'] == 'x'){
         units = sfa_dash_config.VARIABLE_UNIT_MAP[forecast['variable']];
     }
     return units;
