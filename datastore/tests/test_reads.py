@@ -26,7 +26,7 @@ def insertuser(cursor, new_permission, valueset, new_user):
     obs = valueset[6][0]
     cdf = valueset[7][0]
     agg_cdf = valueset[7][2]
-    report = valueset[8][0]
+    report = valueset[8][2]
     agg = valueset[9][0]
     for thing in (user, site, fx, obs, cdf, agg_fx, agg_cdf):
         thing['strid'] = str(bin_to_uuid(thing['id']))
@@ -715,6 +715,26 @@ def test_read_report_values(
     res = dictcursor.fetchall()
     res_objects = [r['object_id'] for r in res]
     for (obs, fx) in object_pairs:
+        assert obs in res_objects
+        assert fx in res_objects
+
+
+def test_read_report_values_no_cdf_read(
+        dictcursor, valueset, new_report, allow_read_reports,
+        allow_read_observations, allow_read_observation_values,
+        allow_read_forecasts, allow_read_forecast_values,
+        allow_read_cdf_forecasts,
+        allow_read_report_values, insertuser):
+    user = insertuser[0]
+    report = insertuser[7]
+    object_pairs = json.loads(report['report_parameters'])['object_pairs']
+    dictcursor.callproc(
+        'read_report_values',
+        (user['auth0_id'], str(bin_to_uuid(report['id'])))
+    )
+    res = dictcursor.fetchall()
+    res_objects = [r['object_id'] for r in res]
+    for (obs, fx) in object_pairs[:-4]:
         assert obs in res_objects
         assert fx in res_objects
 

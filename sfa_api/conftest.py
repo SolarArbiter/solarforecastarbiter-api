@@ -207,10 +207,36 @@ def report_post_json():
                 'date'
             ],
             'object_pairs': [
-                {'observation': '123e4567-e89b-12d3-a456-426655440000',
-                 'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'}],
+                {
+                    'observation': '123e4567-e89b-12d3-a456-426655440000',
+                    'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'
+                }
+            ]
         }
     }
+
+
+@pytest.fixture()
+def report_json_w_cdf(cdf_forecast_group_id, cdf_forecast_id,
+                      report_post_json):
+    rpj = report_post_json.copy()
+    rpj['report_parameters']['object_pairs'] = [
+        {
+            'observation': '123e4567-e89b-12d3-a456-426655440000',
+            'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'
+        },
+        {
+            'observation': '123e4567-e89b-12d3-a456-426655440000',
+            'forecast_type': 'probabilistic_forecast',
+            'forecast': cdf_forecast_group_id
+        },
+        {
+            'observation': '123e4567-e89b-12d3-a456-426655440000',
+            'forecast_type': 'probabilistic_forecast_constant_value',
+            'forecast': cdf_forecast_id
+        }
+    ]
+    return rpj
 
 
 @pytest.fixture()

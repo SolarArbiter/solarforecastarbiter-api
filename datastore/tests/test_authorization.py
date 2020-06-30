@@ -1,7 +1,10 @@
+from uuid import UUID
+
+
 import pytest
 
 
-from conftest import newuuid
+from conftest import newuuid, uuid_to_bin
 
 
 @pytest.fixture()
@@ -103,8 +106,10 @@ def test_list_objects_user_can_read_same_org(cursor, make_test_permissions,
         assert out == fxobjs
 
 
-@pytest.mark.parametrize('action', ['read', 'update', 'delete'])
-@pytest.mark.parametrize('other', ['read', 'update', 'delete'])
+@pytest.mark.parametrize('action', ['read', 'update', 'delete',
+                                    'read_values', 'write_values'])
+@pytest.mark.parametrize('other', ['read', 'update', 'delete',
+                                   'read_values', 'write_values'])
 def test_can_user_perform_action(cursor, make_user_roles, action, getfcn,
                                  other):
     """That that a user can (and can not) perform the specified action"""
@@ -409,3 +414,64 @@ def test_is_permission_allowed_cant_update_perm(
     cursor.execute('SELECT is_permission_allowed(%s, %s, %s)',
                    (auth0id, perm['id'], oid))
     assert cursor.fetchone()[0] == 0
+
+
+@pytest.mark.parametrize('other_obj', [
+    'forecasts', 'observations', 'cdf_forecasts', 'aggregates', 'reports',
+    'roles', 'users', 'sites'])
+def test_is_read_values_any_allowed(
+        cursor, make_user_roles, getfcn, other_obj):
+    """That that a user can (and can not) perform the specified action"""
+    newfcn, obj_type = getfcn
+    info = make_user_roles('read_values', other_obj, True)
+    authid = info['user']['auth0_id']
+    obj = newfcn(org=info['org'])
+    cursor.execute('SELECT is_read_values_any_allowed(%s, %s)',
+                   (authid, obj['id']))
+    if other_obj == obj_type:
+        assert cursor.fetchone()[0] == 1
+    else:
+        assert cursor.fetchone()[0] == 0
+
+
+@pytest.mark.parametrize('other_obj', [
+    'forecasts', 'observations', 'cdf_forecasts', 'aggregates', 'reports',
+    'roles', 'users', 'sites'])
+def test_is_read_values_any_allowed_cdf_single(
+        cursor, make_user_roles, new_cdf_forecast, other_obj):
+    """That that a user can (and can not) perform the specified action"""
+    info = make_user_roles('read_values', other_obj, True)
+    authid = info['user']['auth0_id']
+    obj = new_cdf_forecast(org=info['org'])
+    for id_ in obj['constant_values'].keys():
+        binid = uuid_to_bin(UUID(id_))
+        cursor.execute('SELECT is_read_values_any_allowed(%s, %s)',
+                       (authid, binid))
+        if other_obj == 'cdf_forecasts':
+            assert cursor.fetchone()[0] == 1
+        else:
+            assert cursor.fetchone()[0] == 0
+
+
+@pytest.mark.parametrize('issame', [0, 1])
+def test_is_read_values_any_allowed_cdf_single_specific(
+        cursor, make_user_roles, new_cdf_forecast, issame):
+    """That that a user can (and can not) perform the specified action"""
+    perm = make_user_roles('read_values', 'cdf_forecasts', False)
+    authid = perm['user']['auth0_id']
+    firstobj = new_cdf_forecast(org=perm['org'])
+    cursor.execute(
+        'INSERT INTO permission_object_mapping (permission_id, object_id)'
+        ' VALUES (%s, %s)', (perm['permission']['id'], firstobj['id'])
+    )
+    if issame:
+        # permission has been added for firstobj cdf fx, but not
+        obj = firstobj
+    else:
+        obj = new_cdf_forecast(org=perm['org'])
+
+    for id_ in obj['constant_values'].keys():
+        binid = uuid_to_bin(UUID(id_))
+        cursor.execute('SELECT is_read_values_any_allowed(%s, %s)',
+                       (authid, binid))
+        assert cursor.fetchone()[0] == issame

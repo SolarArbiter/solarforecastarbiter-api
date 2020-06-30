@@ -68,14 +68,15 @@ def new_organization(cursor):
 def new_report(
         cursor, new_organization, new_observation,
         new_forecast, new_cdf_forecast):
-    def fcn(org=None, observation=None, forecasts=None, cdf_forecasts=None):
+    def fcn(org=None, observation=None, forecasts=None, cdf_forecasts=None,
+            cdf_forecast_single=None):
         if org is None:
             org = new_organization()
         if observation is None:
             obs = new_observation()
         else:
             obs = observation
-        if not forecasts:
+        if forecasts is None:
             fx1 = new_forecast()
             fx2 = new_forecast()
             fx_list = [fx1, fx2]
@@ -87,6 +88,9 @@ def new_report(
         else:
             cdf_fx = cdf_forecasts.copy()
         fx_list.extend(cdf_fx)
+        if cdf_forecast_single is not None:
+            cdfsingle = cdf_forecast_single.copy()
+            fx_list.extend(cdfsingle)
         name = f'report{str(uuid1())[:10]}'
         report_parameters = {
             'name': name,
@@ -379,6 +383,8 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
     cdf2 = new_cdf_forecast(aggregate=agg0)
     rep0 = new_report(org0, obs0, forecasts0, [cdf0])
     rep1 = new_report(org1, obs2, forecasts1, [cdf1])
+    kv = [{'id': uuid_to_bin(UUID(k))} for k in cdf0['constant_values'].keys()]
+    rep2 = new_report(org0, obs0, forecasts0, [cdf0], kv)
     cursor.executemany(
         "INSERT INTO role_permission_mapping (role_id, permission_id) "
         "VALUES (%s, %s)",
@@ -398,7 +404,7 @@ def valueset(cursor, new_organization, new_user, new_role, new_permission,
             (site0, site1),
             (perm0, perm1, perm2, crossperm, createperm),
             forecasts0 + forecasts1 + [forecasts2, forecasts3],
-            (obs0, obs1, obs2), (cdf0, cdf1, cdf2), (rep0, rep1),
+            (obs0, obs1, obs2), (cdf0, cdf1, cdf2), (rep0, rep1, rep2),
             (agg0, agg1))
 
 

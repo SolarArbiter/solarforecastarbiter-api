@@ -1306,23 +1306,31 @@ def test_update_report_values(
     assert res[0]['report_id'] == report['id']
 
 
-def test_store_report_values_wrong_type(
+def test_store_report_values_cdf_single(
         dictcursor, insertuser, allow_write_values,
         allow_read_observation_values):
     user, _, _, obs, org, role, cdf, report, _ = insertuser
     value = b'\x00\x0F\xFF'
     cdf_singles = list(cdf['constant_values'].keys())
     object_id = cdf_singles[0]
-    with pytest.raises(pymysql.err.InternalError) as e:
-        dictcursor.callproc(
-            'store_report_values',
-            (user['auth0_id'],
-             str(uuid.uuid1()),
-             str(bin_to_uuid(report['id'])),
-             object_id,
-             value)
-        )
-    assert e.value.args[0] == 1210
+    value_id = uuid_to_bin(uuid.uuid1())
+    dictcursor.callproc(
+        'store_report_values',
+        (user['auth0_id'],
+         str(bin_to_uuid(value_id)),
+         str(bin_to_uuid(report['id'])),
+         object_id,
+         value)
+    )
+
+    dictcursor.execute(
+        'SELECT * FROM arbiter_data.report_values WHERE id = %s',
+        (value_id))
+    res = dictcursor.fetchall()
+    assert res[0]['id'] == value_id
+    assert res[0]['processed_values'] == value
+    assert bin_to_uuid(res[0]['object_id']) == object_id
+    assert res[0]['report_id'] == report['id']
 
 
 def test_store_report_values_no_write_report(
