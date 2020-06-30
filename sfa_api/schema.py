@@ -1143,6 +1143,7 @@ class ReportParameters(ma.Schema):
         title='Forecast Fill Method',
         description=(
             'How to fill missing forecast values before calculating metrics.'),
+        default='drop'
     )
     costs = ma.Nested(
         CostSchema,
