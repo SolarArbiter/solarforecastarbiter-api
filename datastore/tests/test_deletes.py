@@ -1,8 +1,11 @@
+from uuid import UUID
+
+
 import pytest
 import pymysql
 
 
-from conftest import bin_to_uuid, newuuid
+from conftest import bin_to_uuid, newuuid, uuid_to_bin
 
 
 @pytest.fixture()
@@ -393,6 +396,42 @@ def test_delete_cdf_forecast_single(cursor, cdf_obj, allow_delete_cdf_group,
         'cdf_forecast_group_id = UUID_TO_BIN(%s, 1)',
         cdfgroupid)
     assert cursor.fetchone()[0] == 0
+
+
+def test_delete_cdf_forecast_single_in_report_vals(
+        cursor, cdf_obj, allow_delete_cdf_group,
+        allow_update_cdf_group, new_report):
+    auth0id, cdfgroupid, cdf = cdf_obj
+    cdf_singles = list(cdf['constant_values'].keys())
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_singles WHERE '
+        'cdf_forecast_group_id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    num = cursor.fetchone()[0]
+    assert num > 0
+    assert num == len(cdf_singles)
+
+    rep = new_report(forecasts=[], cdf_forecasts=[], cdf_forecast_single=[
+        {'id': uuid_to_bin(UUID(c))} for c in cdf_singles])
+    cursor.execute(
+        'SELECT count(object_id) from arbiter_data.report_values '
+        'WHERE report_id = %s', rep['id'])
+    num_rep_items = cursor.fetchone()[0]
+    assert num_rep_items == len(cdf_singles) + 1  # obs
+
+    for cid in cdf_singles:
+        cursor.callproc('delete_cdf_forecasts_single', (auth0id, cid))
+    cursor.execute(
+        'SELECT COUNT(id) FROM arbiter_data.cdf_forecasts_singles WHERE '
+        'cdf_forecast_group_id = UUID_TO_BIN(%s, 1)',
+        cdfgroupid)
+    assert cursor.fetchone()[0] == 0
+
+    cursor.execute(
+        'SELECT count(object_id) from arbiter_data.report_values '
+        'WHERE report_id = %s', rep['id'])
+    num_rep_items = cursor.fetchone()[0]
+    assert num_rep_items == 1  # only obs left
 
 
 def test_delete_cdf_forecast_single_denied_no_delete(
