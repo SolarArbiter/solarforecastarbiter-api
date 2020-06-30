@@ -174,9 +174,9 @@ REPORT_VALUESET = [
 
 
 @pytest.mark.parametrize('values', REPORT_VALUESET)
-def test_post_report_values(api, new_report, values, report_post_json):
-    report_id = new_report()
-    object_pairs = report_post_json['report_parameters']['object_pairs']
+def test_post_report_values(api, new_report, values, report_json_w_cdf):
+    report_id = new_report(report_json_w_cdf)
+    object_pairs = report_json_w_cdf['report_parameters']['object_pairs']
 
     value_ids = []
     for op in object_pairs:
