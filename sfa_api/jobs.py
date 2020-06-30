@@ -9,7 +9,8 @@ import pandas as pd
 from solarforecastarbiter.io import nwp
 from solarforecastarbiter.io.utils import HiddenToken
 from solarforecastarbiter.reference_forecasts.main import (
-    make_latest_nwp_forecasts, make_latest_persistence_forecasts)
+    make_latest_nwp_forecasts, make_latest_persistence_forecasts,
+    make_latest_probabilistic_persistence_forecasts)
 from solarforecastarbiter.reports.main import compute_report
 from solarforecastarbiter.validation.tasks import \
     fetch_and_validate_all_observations
@@ -97,7 +98,8 @@ def create_job(job_type, name, user_id, cron_string, timeout=None, **kwargs):
     elif job_type == 'periodic_report':
         # report must already exist
         keys = ('report_id',)
-    elif job_type == 'reference_persistence':
+    elif job_type in ('reference_persistence',
+                      'reference_probabilistic_persistence'):
         keys = ()
     else:
         raise ValueError(f'Job type {job_type} is not supported')
@@ -159,6 +161,10 @@ def execute_job(name, job_type, user_id, **kwargs):
     elif job_type == 'reference_persistence':
         max_run_time = utcnow()
         return make_latest_persistence_forecasts(
+            token, max_run_time, base_url=base_url)
+    elif job_type == 'reference_probabilistic_persistence':
+        max_run_time = utcnow()
+        return make_latest_probabilistic_persistence_forecasts(
             token, max_run_time, base_url=base_url)
     else:
         raise ValueError(f'Job type {job_type} is not supported')
