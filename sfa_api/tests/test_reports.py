@@ -320,7 +320,9 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
                        "cost": "nocost"}],
      '{"0":{"cost":["Must specify a \'cost\' that is present in report parameters \'costs\'"]}}'),  # NOQA: E501
     ('metrics', ['mae', 'cost'],
-     '["Must specify \'costs\' parameters to calculate cost metric"]')
+     '["Must specify \'costs\' parameters to calculate cost metric"]'),
+    ('forecast_fill_method', 'invalid',
+     '["Must be a float or one of \'drop\', \'forward\'"]')
 ])
 def test_post_report_invalid_report_params(
         api, key, value, error, report_post_json):
@@ -563,3 +565,16 @@ def test_post_report_alt_url(api, report_post_json, mocked_queuing,
     assert res.status_code == 201
     assert 'Location' in res.headers
     assert mocked_queuing.call_args[1]['base_url'] == 'http://0.0.0.1'
+
+
+@pytest.mark.parametrize('fill', [
+    '1.0', 0.1, 'inf', 'drop', 'forward', 9999.99,
+    -1.9, 4, '99', '-82.8'
+])
+def test_post_report_forecast_fill(
+        fill, api, report_post_json, mocked_queuing):
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['forecast_fill_method'] = fill
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 201
+    assert 'Location' in res.headers

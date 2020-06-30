@@ -1101,7 +1101,6 @@ class ForecastFillField(ma.Field):
         super().__init__(*args, **kwargs)
         self.metadata.update({
             'oneOf': [
-                {"type": "bool"},
                 {"type": "float"},
                 {"type": "string", "enum": ["drop", "forward"]}
             ]
@@ -1111,19 +1110,13 @@ class ForecastFillField(ma.Field):
         if value in ('drop', 'forward'):
             return value
         # handles numeric types and nan/inf
+        # use pd.to_numeric for compatibility w/ core
+        # e.g. 'nan' is ok for float() but not to_numeric
         try:
-            val = float(value)
+            return pd.to_numeric(value)
         except ValueError:
-            pass
-        else:
-            return val
-        if value in (True, 'true', 'True'):
-            return True
-        elif value in (False, 'false', 'False'):
-            return False
-        else:
             raise ValidationError(
-                ["Must be a bool, float or one of 'drop', 'forward'"])
+                ["Must be a float or one of 'drop', 'forward'"])
 
 
 @spec.define_schema('ReportParameters')

@@ -45,7 +45,7 @@ spec_components = {
         '413-PayloadTooLarge': {
             'description': 'Payload exceeds maximum of 16MB.',
         },
-        '400-TimerangeTooLarge':{
+        '400-TimerangeTooLarge': {
             'description': 'Requested more than maximum of 1 year of data.',
         },
     },
