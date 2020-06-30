@@ -1,10 +1,14 @@
 import apispec
-from apispec.ext.marshmallow import MarshmallowPlugin
+from apispec.ext.marshmallow import MarshmallowPlugin, field_converter
 from apispec_webframeworks.flask import FlaskPlugin
 from flask_marshmallow.fields import URLFor, AbsoluteURLFor, Hyperlinks
 
 
 from sfa_api import __version__
+
+
+# monkey-patch to allow oneOf property
+field_converter._VALID_PROPERTIES.add('oneOf')
 
 
 class APISpec(apispec.APISpec):
@@ -38,7 +42,7 @@ spec_components = {
         '404-NotFound': {
             'description': 'The resource could not be found.',
         },
-        '413-PayloadTooLarge':{
+        '413-PayloadTooLarge': {
             'description': 'Payload exceeds maximum of 16MB.',
         },
         '400-TimerangeTooLarge':{
