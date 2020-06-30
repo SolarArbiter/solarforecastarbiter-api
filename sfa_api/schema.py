@@ -1096,6 +1096,29 @@ class CostSchema(BaseCostSchema):
     pass
 
 
+class ForecastFillField(ma.Field):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.metadata.update({
+            'oneOf': [
+                {"type": "float"},
+                {"type": "string", "enum": ["drop", "forward"]}
+            ]
+        })
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        if value in ('drop', 'forward'):
+            return value
+        # handles numeric types and nan/inf
+        # use pd.to_numeric for compatibility w/ core
+        # e.g. 'nan' is ok for float() but not to_numeric
+        try:
+            return pd.to_numeric(value)
+        except ValueError:
+            raise ValidationError(
+                ["Must be a float or one of 'drop', 'forward'"])
+
+
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
     name = ma.String(
@@ -1115,6 +1138,12 @@ class ReportParameters(ma.Schema):
             "The end of the analysis period as an ISO 8601 datetime."
             " Unlocalized times are assumed to be UTC."),
         validate=TimeLimitValidator()
+    )
+    forecast_fill_method = ForecastFillField(
+        title='Forecast Fill Method',
+        description=(
+            'How to fill missing forecast values before calculating metrics.'),
+        default='drop'
     )
     costs = ma.Nested(
         CostSchema,
