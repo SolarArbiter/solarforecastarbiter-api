@@ -177,21 +177,28 @@ REPORT_VALUESET = [
 def test_post_report_values(api, new_report, values, report_post_json):
     report_id = new_report()
     object_pairs = report_post_json['report_parameters']['object_pairs']
-    obj_id = object_pairs[0]['observation']
-    report_values = {
-        'object_id': obj_id,
-        'processed_values': values,
-    }
-    res = api.post(f'/reports/{report_id}/values',
-                   base_url=BASE_URL,
-                   json=report_values)
-    assert res.status_code == 201
-    value_id = res.data.decode()
+
+    value_ids = []
+    for op in object_pairs:
+        for k in ('forecast', 'observation'):
+            obj_id = op[k]
+            report_values = {
+                'object_id': obj_id,
+                'processed_values': values,
+            }
+            res = api.post(f'/reports/{report_id}/values',
+                           base_url=BASE_URL,
+                           json=report_values)
+            assert res.status_code == 201
+            value_ids.append(res.data.decode())
+
     values_res = api.get(
         f'/reports/{report_id}',
         base_url=BASE_URL)
     report_with_values = values_res.get_json()
-    assert report_with_values['values'][0]['id'] == value_id
+    out_ids = [v['id'] for v in report_with_values['values']]
+    assert len(out_ids) == 2 * len(object_pairs)
+    assert out_ids == value_ids
 
 
 @pytest.mark.parametrize('values', REPORT_VALUESET[:1])
