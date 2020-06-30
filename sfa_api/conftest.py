@@ -217,7 +217,8 @@ def report_post_json():
 
 
 @pytest.fixture()
-def report_json_w_cdf(cdf_forecast_group_id, cdf_forecast_id, report_post_json):
+def report_json_w_cdf(cdf_forecast_group_id, cdf_forecast_id,
+                      report_post_json):
     rpj = report_post_json.copy()
     rpj['report_parameters']['object_pairs'] = [
         {
