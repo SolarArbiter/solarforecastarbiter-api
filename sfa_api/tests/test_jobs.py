@@ -177,6 +177,9 @@ def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
     ('reference_persistence',
      {},
      'sfa_api.jobs.make_latest_persistence_forecasts'),
+    ('reference_probabilistic_persistence',
+     {},
+     'sfa_api.jobs.make_latest_probabilistic_persistence_forecasts'),
 ])
 def test_execute_job(jtype, params, func, mocker, userid):
     mocker.patch('sfa_api.jobs.exchange_token',
@@ -257,6 +260,7 @@ def test_full_run_through_job_timeout(app, queue, mocker):
     ('reference_nwp', {'issue_time_buffer': '1h', 'base_url': 'hhtp'}),
     ('periodic_report', {'report_id': 'id'}),
     ('reference_persistence', {'base_url': 'https://'}),
+    ('reference_probabilistic_persistence', {'base_url': 'https://'}),
     pytest.param('badtype', {}, marks=pytest.mark.xfail(
         strict=True, raises=ValueError)),
     pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(

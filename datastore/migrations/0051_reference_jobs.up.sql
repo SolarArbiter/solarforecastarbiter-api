@@ -208,6 +208,15 @@ INSERT INTO scheduled_jobs (id, organization_id, user_id, name, job_type, parame
     UUID_TO_BIN(UUID(), 1),
     @reforgid,
     @refid,
+    'Reference Prob Persistence generation',
+    'reference_probabilistic_persistence',
+    JSON_OBJECT('base_url', @baseurl),
+    '{"type": "cron", "cron_string": "5/30 * * * *"}',
+    0
+), (
+    UUID_TO_BIN(UUID(), 1),
+    @reforgid,
+    @refid,
     'ABQ 2020 report',
     'periodic_report',
     JSON_OBJECT('report_id', BIN_TO_UUID(@abqrep, 1), 'base_url', @baseurl),
