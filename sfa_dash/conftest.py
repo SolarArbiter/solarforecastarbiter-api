@@ -668,7 +668,16 @@ def report():
                 'uncertainty': None,
                 'forecast_type': 'forecast',
                 }],
-            'start': '2019-04-01T07:00:00+00:00'
+            'start': '2019-04-01T07:00:00+00:00',
+            'costs': [{
+                'name': 'example cost',
+                'type': 'constant',
+                'parameters': {
+                    "cost": 1.1,
+                    "aggregation": "sum",
+                    "net": False,
+                },
+            }],
         },
         'status': 'failed',
         'values': [

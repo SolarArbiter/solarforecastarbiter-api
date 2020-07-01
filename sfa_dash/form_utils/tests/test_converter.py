@@ -381,7 +381,8 @@ def test_report_converter_formdata_to_payload(report):
     assert params['filters'] == expected['filters']
     assert pd.Timestamp(params['start']) == pd.Timestamp(expected['start'])
     assert pd.Timestamp(params['end']) == pd.Timestamp(expected['end'])
-    assert params['object_pairs'] == expected['object_pairs']
+    assert params['object_pairs'] == [{'cost': None, **pair}
+                                      for pair in expected['object_pairs']]
     assert params['name'] == expected['name']
 
 
@@ -401,6 +402,15 @@ def test_report_converter_payload_to_formdata(report):
         'uncertainty': None,
         'forecast_type': 'forecast',
     }]
+    assert form_data['costs'] == [{
+        'name': 'example cost',
+        'type': 'constant',
+        'parameters': {
+            'cost': 1.1,
+            'aggregation': 'sum',
+            'net': False,
+        }
+    }]
 
 
 def test_report_converter_payload_to_formdata_defaults(report):
@@ -413,3 +423,116 @@ def test_report_converter_payload_to_formdata_defaults(report):
     assert form_data['metrics'] == []
     assert form_data['categories'] == []
     assert form_data['quality_flags'] == []
+
+
+def test_report_converter_formdata_to_payload_costs(report):
+    form_data = ImmutableMultiDict([
+        ('name', 'NREL MIDC OASIS GHI Forecast Analysis'),
+        ('period-start', '2019-04-01T07:00Z'),
+        ('period-end', '2019-06-01T06:59Z'),
+        ('forecast-id-0', '11c20780-76ae-4b11-bef1-7a75bdc784e3'),
+        ('truth-id-0', '123e4567-e89b-12d3-a456-426655440000'),
+        ('truth-type-0', 'observation'),
+        ('reference-forecast-0', 'null'),
+        ('deadband-value-0', 'null'),
+        ('forecast-type-0', 'forecast'),
+        ('observation-aggregate-radio', 'observation'),
+        ('site-select', '123e4567-e89b-12d3-a456-426655440001'),
+        ('forecast-select', '11c20780-76ae-4b11-bef1-7a75bdc784e3'),
+        ('observation-select', '123e4567-e89b-12d3-a456-426655440000'),
+        ('deadband-select', 'null'),
+        ('deadband-value', ''),
+        ('metrics', 'mae'),
+        ('metrics', 'rmse'),
+        ('categories', 'total'),
+        ('categories', 'date'),
+        ('quality_flags', 'USER FLAGGED'),
+        ('cost-primary-type', 'timeofday'),
+        ('cost-primary-name', 'this is a cost'),
+        ('cost-times', '06:00,18:00'),
+        ('cost-net', False),
+        ('cost-costs', '1.5,3.0'),
+        ('cost-aggregation', 'sum'),
+        ('cost-fill', 'forward'),
+        ('cost-timezone', 'null'),
+        ('_csrf_token', '8a0771df3643d252cbafe4838263dbf7097f4982')]
+    )
+    api_payload = converters.ReportConverter.formdata_to_payload(form_data)
+    params = api_payload['report_parameters']
+    assert params['costs'] == [{
+        'name': 'this is a cost',
+        'type': 'timeofday',
+        'parameters': {
+            'times': ['06:00', '18:00'],
+            'cost': [1.5, 3.0],
+            'aggregation': 'sum',
+            'fill': 'forward',
+            'net': False,
+        }
+    }]
+    for object_pair in params['object_pairs']:
+        assert object_pair['cost'] == 'this is a cost'
+
+
+def test_report_converter_parse_form_errorband_costs():
+    form_data = ImmutableMultiDict([
+        ('cost-band-error-start-0', 1),
+        ('cost-band-error-end-0', 5),
+        ('cost-band-cost-function-0', 'constant'),
+        ('cost-value-0', '1.0'),
+        ('cost-aggregation-0', 'sum'),
+        ('cost-net-0', True),
+        ('cost-band-error-start-1', 5),
+        ('cost-band-error-end-1', 10),
+        ('cost-band-cost-function-1', 'timeofday'),
+        ('cost-times-1', '00:00,12:00'),
+        ('cost-costs-1', '1.5,2.5'),
+        ('cost-aggregation-1', 'mean'),
+        ('cost-fill-1', 'forward'),
+        ('cost-net-1', False),
+        ('cost-timezone-1', 'America/Denver'),
+        ('cost-band-error-start-2', -5),
+        ('cost-band-error-end-2', 1),
+        ('cost-band-cost-function-2', 'datetime'),
+        ('cost-datetimes-2', '2020-01-01T00:00Z,2020-01-01T12:00Z'),
+        ('cost-costs-2', '1.0,3.0'),
+        ('cost-aggregation-2', 'sum'),
+        ('cost-net-2', True),
+        ('cost-fill-2', 'forward'),
+        ('cost-timezone-2', 'GMT'),
+    ])
+    params = converters.ReportConverter.parse_form_errorband_cost(form_data)
+    bands = params['bands']
+    assert bands[0] == {
+        'error_range': [1, 5],
+        'cost_function': 'constant',
+        'cost_function_parameters': {
+            'cost': 1.0,
+            'aggregation': 'sum',
+            'net': True,
+        }
+    }
+    assert bands[1] == {
+        'error_range': [5, 10],
+        'cost_function': 'timeofday',
+        'cost_function_parameters': {
+            'times': ['00:00', '12:00'],
+            'cost': [1.5, 2.5],
+            'aggregation': 'mean',
+            'fill': 'forward',
+            'net': False,
+            'timezone': 'America/Denver',
+        }
+    }
+    assert bands[2] == {
+        'error_range': [-5, 1],
+        'cost_function': 'datetime',
+        'cost_function_parameters': {
+            'datetimes': ['2020-01-01T00:00Z', '2020-01-01T12:00Z'],
+            'cost': [1.0, 3.0],
+            'aggregation': 'sum',
+            'fill': 'forward',
+            'net': True,
+            'timezone': 'GMT',
+        }
+    }

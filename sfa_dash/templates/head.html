@@ -50,6 +50,7 @@
       METRIC_CATEGORIES: JSON.parse('{{ metric_categories | tojson }}'),
       DETERMINISTIC_METRICS: JSON.parse('{{ deterministic_metrics | tojson }}'),
       ALL_METRICS: JSON.parse('{{ all_metrics | tojson }}'),
+      TIMEZONES: JSON.parse('{{ timezone_options | tojson }}'),
     }
 </script>
 {# inject the page_data json variable if provided by jinja #}

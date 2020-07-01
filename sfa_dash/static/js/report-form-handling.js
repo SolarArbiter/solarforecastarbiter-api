@@ -576,4 +576,5 @@ $(document).ready(function() {
     report_utils.registerDatetimeValidator('period-end')
     report_utils.fill_existing_pairs();
     report_utils.register_uncertainty_handler('#observation-select');
+    report_utils.insert_cost_widget();
 });

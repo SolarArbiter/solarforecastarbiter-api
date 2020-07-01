@@ -188,7 +188,7 @@ div.object-pair-list{
   padding-left: 0;
   margin-bottom: 1em;
 }
-a.object-pair-delete-button{
+a.object-pair-delete-button, a.error-band-delete-button{
     position: absolute;
     top: 5px;
     right: 20px;
@@ -227,11 +227,10 @@ a.object-pair-delete-button{
   width: 100%;
 }
 fieldset{
-  float: left;
   background-color: #f8f9fa;
   box-shadow: 0 1px 3px #DDD;
   margin: 1em 0;
-  padding: 1em 0; 
+  padding: 1em 0;
 }
 pre.example-text{
   background-color: #f8f9fa;
@@ -293,6 +292,9 @@ a.help-button{
   margin-left: 1em;
   min-width: 250px;
   width: 46%;
+}
+.form-control.unset-width{
+    width: unset;
 }
 .input-wrapper{
   width: calc(100% - 29px);
@@ -657,4 +659,18 @@ div.report-header{
     background-color: #EEE;
     border: 1px solid #AAA;
     padding: .5em;
+}
+.error-band-container, .cost-definition{
+    border: 1px solid #dee2e6;
+    padding: .5em;
+    position: relative;
+}
+.primary-cost-container label {
+    padding: 0 5px;
+}
+.primary-cost-container a[role=button]{
+    margin: .25em 0;
+}
+.primary-cost-container a[role=button].help-button{
+  margin-left: .25em;
 }

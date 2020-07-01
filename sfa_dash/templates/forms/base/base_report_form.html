@@ -79,6 +79,21 @@
      {% endfor %}
      </div>
      {% endblock %}
+
+     {% if report_type == 'deterministic' %}
+     <div id='cost-block' class="collapse form-element full-width">
+     <label>Cost Parameters</label>
+     <p>Cost parameters will allow you to calculate the cost of forecast
+     errors. Please see the <a target="_blank" href="https://solarforecastarbiter-core.readthedocs.io/en/latest/cost.html">Solar Forecast Arbiter core documentation on cost</a>
+     for an in-depth explanation of these parameters.
+     </p>
+     <fieldset id="cost-container" disabled>
+     {# Container to act as target for inserting cost metrics widget #}
+     </fieldset>
+     <hr>
+     </div>
+     {% endif %}
+
      {% block quality_flag_field %}
      <div class="form-element full-width">
        <label>Quality Flag Filters</label><br>
