@@ -40,7 +40,7 @@ function hideMetricsOnSearch(){
     // Hide the headers of non-matching forecasts to avoid empty sections
     noMatchHeaderClasses = new Set(noMatch.map(function(){return $(this).data('forecast')}));
     noMatchHeaderClasses.forEach(function(fx){
-        headers = $(`.collapse-forecast-${fx.replace(/ /g,"-").toLowerCase()}`);
+        headers = $(`.collapse-forecast-${replaceSpecial(fx)}`);
         noMatch = noMatch.add(headers);
     });
     noMatch.attr('hidden', true);
@@ -98,6 +98,21 @@ function humanReadableLabel(type, label){
     }
 }
 
+function replaceSpecial(value){
+    return value.replace(/ |\^/g, "-")
+        .replace(/\./g, "dot")
+        .replace(/\%/g, "percent")
+        .replace(/</g, "lt")
+        .replace(/>/g, "gt")
+        .replace(/=/g, "eq")
+        .replace(/\(/g, "lp")
+        .replace(/\)/g, "rp")
+        .replace(/\//g, "fsl")
+        .replace(/\\/g, "bsl")
+        .replace(/[^\w-]/g, "special")
+        .toLowerCase();
+}
+
 function createContainerDiv(parentValue, type, value){
     /* Creates a heading and div for the type and value. The heading acts as a
      * collapse button for each div. When parentValue is not null, parentValue
@@ -109,11 +124,11 @@ function createContainerDiv(parentValue, type, value){
      * to select the specific category to expand like so:
      *     'data-wrapper-category-total.{metric name}'
      */
-    parentValueClass = parentValue ? ' '+parentValue.replace(/ |\^/g, "-") : "";
-    wrapperClass = `data-wrapper-${type.toLowerCase()}-${value.replace(/ |\^/g,"-").toLowerCase()}${parentValueClass}`
+    parentValueClass = parentValue ? ' ' + replaceSpecial(parentValue) : "";
+    wrapperClass = `data-wrapper-${type.toLowerCase()}-${replaceSpecial(value)}${parentValueClass}`
 
     label = humanReadableLabel(type, value);
-    collapse_button = $(`<a role="button" data-toggle="collapse" class="report-plot-section-heading collapse-${type.toLowerCase()}-${value.replace(/ |\^/g,"-").toLowerCase()} collapsed"
+    collapse_button = $(`<a role="button" data-toggle="collapse" class="report-plot-section-heading collapse-${type.toLowerCase()}-${replaceSpecial(value)} collapsed"
                             data-target=".${wrapperClass.replace(/ /g,".")}">
                          <p class="h4 report-plot-section-heading-text">${type}: ${label}</p></a>`)
     wrapper = $(`<div class="plot-attribute-wrapper ${wrapperClass} collapse"></div>`);
@@ -170,9 +185,9 @@ function containerSelector(sortOrder, metricBlock){
      * in to.
      */
     firstType = sortOrder[0].toLowerCase();
-    firstValue = metricBlock.dataset[firstType].replace(/\s+|\^/g, '-').toLowerCase();
+    firstValue = replaceSpecial(metricBlock.dataset[firstType]);
     secondType = sortOrder[1].toLowerCase();
-    secondValue = metricBlock.dataset[secondType].replace(/\s+|\^/g, '-').toLowerCase();
+    secondValue = replaceSpecial(metricBlock.dataset[secondType]);
     return `.data-wrapper-${firstType}-${firstValue} .data-wrapper-${secondType}-${secondValue}`;
 }
 
