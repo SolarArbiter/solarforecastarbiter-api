@@ -187,13 +187,14 @@ function createPairSelector(){
         if (forecast[0]){
             // collect the site or aggregate id, variable and interval_length
             // of the currently selected forecast.
-            if(forecast.data.hasOwnProperty('siteId')){
+            if(forecast.data().hasOwnProperty('siteId')){
                 var site_id = forecast.data().siteId;
             }else{
                 var aggregate_id = forecast.data().aggregateId;
             }
             var variable = forecast.data().variable;
             var interval_length = forecast.data().intervalLength;
+            var interval_label = forecast.data().intervalLabel;
 
             // hide the "please select forecast" prompt"
             $('#no-reference-forecast-forecast-selection').attr('hidden', true);
@@ -217,14 +218,19 @@ function createPairSelector(){
                     reference_forecasts.not(
                         `[data-aggregate-id=${aggregate_id}]`));
             }
-
             // Filter out reference forecasts that don't have the same
             // interval length
-            mismatched_intervals = reference_forecasts.filter(function(){
+            var mismatched_intervals = reference_forecasts.filter(function(){
                 return $(this).data().intervalLength != interval_length ||
                     $(this).attr('value') == forecast_select.val();
             });
             toHide = toHide.add(mismatched_intervals);
+
+            var mismatched_labels = reference_forecasts.filter(function(){
+                return $(this).data().intervalLabel != interval_label ||
+                    $(this).attr('value') == forecast_select.val();
+            });
+            toHide = toHide.add(mismatched_labels);
         }else{
             // No forecast was selected, hide all reference forecasts
             // and display a message.
@@ -354,6 +360,11 @@ function createPairSelector(){
     var dbSelector = report_utils.deadbandSelector();
     fxSelector.find('.report-field-filters').append(fxVariableSelector);
 
+    refFxSelector.append(
+        $('<a role="button" id="ref-clear">Clear reference forecast selection</a>').click(
+            function(){$('#reference-forecast-select').val('');})
+    );
+
     // Buttons for adding an obs/fx pair for observations or aggregates
     var addObsButton = $('<a role="button" class="btn btn-primary" id="add-obs-object-pair" style="padding-left: 1em">Add a Forecast, Observation pair</a>');
     var addAggButton = $('<a role="button" class="btn btn-primary" id="add-agg-object-pair" style="padding-left: 1em">Add a Forecast, Aggregate pair</a>');
@@ -438,6 +449,7 @@ function createPairSelector(){
                 .attr('data-site-id', this.site_id)
                 .attr('data-aggregate-id', this.aggregate_id)
                 .attr('data-interval-length', this.interval_length)
+                .attr('data-interval-label', this.interval_label)
                 .attr('data-variable', this.variable));
     });
     $.each(nonevent_forecasts, function(){
@@ -448,6 +460,7 @@ function createPairSelector(){
                 .attr('data-site-id', this.site_id)
                 .attr('data-aggregate-id', this.aggregate_id)
                 .attr('data-interval-length', this.interval_length)
+                .attr('data-interval-label', this.interval_label)
                 .attr('data-variable', this.variable));
     });
     $.each(page_data['aggregates'], function(){

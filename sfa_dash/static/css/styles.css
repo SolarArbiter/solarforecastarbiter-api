@@ -681,3 +681,6 @@ div.report-header{
     width: 300px;
     left: calc(-300px + 100%);
 }
+a#ref-clear{
+  color: #007bff;
+}
