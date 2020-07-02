@@ -72,6 +72,7 @@ def display_timedelta(minutes):
     time_string = ' '.join(time_elements)
     return time_string
 
+
 def is_number(num):
     return str(num).isnumeric()
 

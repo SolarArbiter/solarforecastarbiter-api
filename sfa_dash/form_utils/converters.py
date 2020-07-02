@@ -7,6 +7,7 @@ the converter is expected to parse.
 """
 from abc import ABC, abstractmethod
 from functools import reduce
+from math import isinf
 
 
 from sfa_dash.form_utils import utils
@@ -564,6 +565,23 @@ class ReportConverter(FormConverter):
         return fill_method
 
     @classmethod
+    def stringify_infinite_error_ranges(cls, payload_costs):
+        """Necessary for loading data into front end javascript. The js value
+        Infinity is not valid JSON, and must be manually converted to the
+        string "Infinity".
+        """
+        for cost in payload_costs:
+            if cost['type'] == 'errorband':
+                for band in cost['parameters']['bands']:
+                    for i, bound in enumerate(band['error_range']):
+                        if isinf(float(bound)):
+                            if float(bound) > 0:
+                                band['error_range'][i] = "Infinity"
+                            else:
+                                band['error_range'][i] = "-Infinity"
+        return payload_costs
+
+    @classmethod
     def formdata_to_payload(cls, form_dict):
         report_params = {}
         report_params['name'] = form_dict['name']
@@ -597,7 +615,8 @@ class ReportConverter(FormConverter):
         form_params['metrics'] = report_parameters.get('metrics', [])
         form_params['period-start'] = report_parameters['start']
         form_params['period-end'] = report_parameters['end']
-        form_params['costs'] = report_parameters['costs']
+        form_params['costs'] = cls.stringify_infinite_error_ranges(
+            report_parameters.get('costs', []))
         form_params['forecast_fill_method'] = report_parameters.get(
             'forecast_fill_method',
             'drop'

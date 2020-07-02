@@ -551,3 +551,21 @@ def test_report_converter_parse_form_fill_method(form_vals, expected):
     form_data = ImmutableMultiDict(form_vals)
     parsed = converters.ReportConverter.parse_fill_method(form_data)
     assert parsed == expected
+
+
+@pytest.mark.parametrize('error_range,expected', [
+    ([1, float('inf')], [1, "Infinity"]),
+    ([float('-inf'), 0], ["-Infinity", 0]),
+    ([-5, 5], [-5, 5]),
+])
+def test_report_converter_stringify_infinity(error_range, expected):
+    result = converters.ReportConverter.stringify_infinite_error_ranges(
+        [{'type': 'errorband',
+          'parameters': {
+              'bands': [{
+                  'error_range': error_range}
+                ]
+            }}
+         ]
+    )
+    assert result[0]['parameters']['bands'][0]['error_range'] == expected

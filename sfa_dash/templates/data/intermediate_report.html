@@ -8,6 +8,7 @@
 <h1 id="report-title">{{ report['report_parameters']['name'] }}</h1>
 {% endif %}
 {% if is_allowed('update') %}<a class="btn btn-primary btn-sm" href="{{url_for('forms.recompute_report', uuid=report['report_id'])}}">Recompute report</a>{% endif %}
+{% if is_allowed('read') %}<a class="btn btn-primary btn-sm" href="{{url_for('forms.clone_report', uuid=report['report_id'])}}">Clone report parameters</a>{% endif %}
 </div>
 {% endblock %}
 {% block download %}
