@@ -72,6 +72,9 @@ def display_timedelta(minutes):
     time_string = ' '.join(time_elements)
     return time_string
 
+def is_number(num):
+    return str(num).isnumeric()
+
 
 def register_jinja_filters(app):
     app.jinja_env.filters['convert_varname'] = api_to_dash_varname
@@ -79,3 +82,4 @@ def register_jinja_filters(app):
     app.jinja_env.filters['display_timedelta'] = display_timedelta
     app.jinja_env.filters['convert_data_type'] = human_friendly_datatype
     app.jinja_env.filters['format_datetime'] = format_datetime
+    app.jinja_env.filters['is_number'] = is_number

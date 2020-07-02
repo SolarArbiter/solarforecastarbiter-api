@@ -577,4 +577,5 @@ $(document).ready(function() {
     report_utils.fill_existing_pairs();
     report_utils.register_uncertainty_handler('#observation-select');
     report_utils.insert_cost_widget();
+    report_utils.register_forecast_fill_method_validator('deterministic');
 });

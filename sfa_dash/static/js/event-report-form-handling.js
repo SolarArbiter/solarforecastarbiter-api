@@ -287,4 +287,5 @@ $(document).ready(function() {
     report_utils.registerDatetimeValidator('period-start');
     report_utils.registerDatetimeValidator('period-end')
     report_utils.fill_existing_pairs();
+    report_utils.register_forecast_fill_method_validator('event');
 });

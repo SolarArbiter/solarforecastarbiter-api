@@ -103,6 +103,21 @@
        {% endfor %}
      </div>
      {% endblock %}
+     {% block forecast_fill_method_field %}
+     <div class="form-element full-width">
+       <label>Forecast Fill Method</label><br>
+       {% if form_data %}
+       {% set selected_fill_method = form_data['report_parameters'].get('forecast_fill_method', 'drop') %}
+       {% else %}
+       {% set selected_fill_method = 'drop' %}
+       {% endif %}
+       All missing or NaN forecast intervals should be:<br>
+       <input name="forecast_fill_method" type="radio" value="drop" {% if selected_fill_method == 'drop' %}checked{% endif %}> dropped from the analysis<br>
+       <input name="forecast_fill_method" type="radio" value="forward" {% if selected_fill_method == 'forward' %}checked{% endif %}> filled forward with last valid forecast value<br>
+       <input name="forecast_fill_method" type="radio" value="provided" {% if selected_fill_method | is_number %}checked{% endif %}> filled with
+       <input name="provided_forecast_fill_method" type="number" step="any" required {% if selected_fill_method | is_number %}value="{{selected_fill_method}}"{% else %}disabled{% endif %}>
+     </div>
+     {% endblock %}
     {{ form.token() }}
   </div>
 </form>

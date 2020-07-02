@@ -1421,3 +1421,20 @@ report_utils.help_popup = function(help_name, help_text){
     var help_box = $(`<span class="${help_name}-help-text form-text text-muted help-text collapse" aria-hidden="">${help_text}</span>`);
     return [help_button, help_box]
 }
+report_utils.register_forecast_fill_method_validator = function(
+    forecast_type='deterministic'){
+    var forecast_fill = $('[name=forecast_fill_method]')
+    forecast_fill.change(function(){
+        if (this.value == 'provided'){
+            $('[name=provided_forecast_fill_method]').prop('disabled', false);
+        } else {
+            $('[name=provided_forecast_fill_method]').prop('disabled', true);
+        }
+    });
+    if (forecast_type == 'event'){
+        $('[name=provided_forecast_fill_method]')
+            .prop('step', 1)
+            .prop('min', 0)
+            .prop('max', 1);
+    }
+}

@@ -557,6 +557,13 @@ class ReportConverter(FormConverter):
             return params
 
     @classmethod
+    def parse_fill_method(cls, form_dict):
+        fill_method = form_dict.get('forecast_fill_method', 'drop')
+        if fill_method == 'provided':
+            fill_method = form_dict['provided_forecast_fill_method']
+        return fill_method
+
+    @classmethod
     def formdata_to_payload(cls, form_dict):
         report_params = {}
         report_params['name'] = form_dict['name']
@@ -569,6 +576,8 @@ class ReportConverter(FormConverter):
         report_params['filters'] = cls.parse_form_filters(form_dict)
         report_params['start'] = form_dict['period-start']
         report_params['end'] = form_dict['period-end']
+        report_params['forecast_fill_method'] = cls.parse_fill_method(
+            form_dict)
         report_params = cls.apply_crps(report_params)
         report_dict = {'report_parameters': report_params}
         if len(costs) > 0:
@@ -589,6 +598,10 @@ class ReportConverter(FormConverter):
         form_params['period-start'] = report_parameters['start']
         form_params['period-end'] = report_parameters['end']
         form_params['costs'] = report_parameters['costs']
+        form_params['forecast_fill_method'] = report_parameters.get(
+            'forecast_fill_method',
+            'drop'
+        )
 
         # Objects pairs are left in the api format for parsing in javascript
         # see sfa_dash/static/js/report-utilities.js fill_object_pairs function

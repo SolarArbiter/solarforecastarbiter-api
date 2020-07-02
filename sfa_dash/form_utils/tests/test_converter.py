@@ -2,6 +2,7 @@ from copy import deepcopy
 
 
 import pandas as pd
+import pytest
 from werkzeug.datastructures import ImmutableMultiDict
 
 
@@ -371,6 +372,7 @@ def test_report_converter_formdata_to_payload(report):
         ('categories', 'total'),
         ('categories', 'date'),
         ('quality_flags', 'USER FLAGGED'),
+        ('forecast_fill_method', 'forward'),
         ('_csrf_token', '8a0771df3643d252cbafe4838263dbf7097f4982')]
     )
     api_payload = converters.ReportConverter.formdata_to_payload(form_data)
@@ -384,6 +386,7 @@ def test_report_converter_formdata_to_payload(report):
     assert params['object_pairs'] == [{'cost': None, **pair}
                                       for pair in expected['object_pairs']]
     assert params['name'] == expected['name']
+    assert params['forecast_fill_method'] == 'forward'
 
 
 def test_report_converter_payload_to_formdata(report):
@@ -536,3 +539,15 @@ def test_report_converter_parse_form_errorband_costs():
             'timezone': 'GMT',
         }
     }
+
+
+@pytest.mark.parametrize('form_vals,expected', [
+    ([('forecast_fill_method', 'forward')], 'forward'),
+    ([('forecast_fill_method', 'drop')], 'drop'),
+    ([('forecast_fill_method', 'provided'),
+      ('provided_forecast_fill_method', '5.0')], '5.0'),
+])
+def test_report_converter_parse_form_fill_method(form_vals, expected):
+    form_data = ImmutableMultiDict(form_vals)
+    parsed = converters.ReportConverter.parse_fill_method(form_data)
+    assert parsed == expected
