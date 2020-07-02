@@ -3,6 +3,7 @@
 {% if form_data is not defined %}
 {% set form_data = {} %}
 {% endif %}
+{% set page_title = 'Create New Report' %}
 {% block content %}
 {# include common report form parsing utilities #}
 <script src="/static/js/report-form-utilities.js"></script>
@@ -13,7 +14,6 @@
 {# load the report script for handling the specific report type #}
 <script src="{{ report_script }}"></script>
 
-<h3>Create New Report</h3>
 {% include "sections/report_menu.html" %}
 <form action="{{ url_for('forms.create_'+report_type+'_report') }}" method="post" id="report-form" onSubmit="return report_utils.validateReport();">
   <div class="form-group">

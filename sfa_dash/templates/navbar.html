@@ -21,12 +21,12 @@
         </li>
 	  </ul>
 	  <ul class="navbar-nav navbar-right">
-		<li class="nav-item account-link navbar-right"> 
+		<li class="nav-item account-link navbar-right">
           <div class="dropdown">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Account
             </button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <div class="dropdown-menu account-menu" aria-labelledby="dropdownMenuButton">
               {% if current_user is not none %}
               <div class= "dropdown-item"><b>Logged in as:</b><br/> {{ current_user['name'] }}</div>
               <a class="dropdown-item" href="{{ url_for('admin.admin') }}">User Administration</a>

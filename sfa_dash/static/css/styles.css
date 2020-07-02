@@ -317,7 +317,8 @@ a.help-button{
     background-color: white;
     border: 1px solid #cdd1d5;
     padding: .5rem;
-    min-width: 200px
+    min-width: 200px;
+    padding-right: 2em;
 }
 .table-filters.collapsing{
     transition: height .1s ease;
@@ -337,6 +338,8 @@ a.help-button{
     color: #c77;
 }
 a.select-filter-options:not([href]),a.deselect-filter-options:not([href]){
+    margin: .2em 0;
+    display: inline-block;
     color: #FFF;
 }
 a.select-filter-options:not([href]):hover,a.deselect-filter-options:not([href]):hover{
@@ -673,4 +676,8 @@ div.report-header{
 }
 .primary-cost-container a[role=button].help-button{
   margin-left: .25em;
+}
+.account-menu{
+    width: 300px;
+    left: calc(-300px + 100%);
 }

@@ -1,7 +1,7 @@
 {% import "forms/form_macros.jinja" as form %}
 {% extends "forms/base/creation_form.html" %}
+{% set page_title = 'Create New Aggregate' %}
 {% block content %}
-<h3>Create New Aggregate</h3>
 <form action="{{ url_for('forms.create_aggregate') }}" method="post" id="aggregate-form">
   <div class="form-group">
       {% if form_data is not defined %} {% set form_data = {} %}{% endif %}

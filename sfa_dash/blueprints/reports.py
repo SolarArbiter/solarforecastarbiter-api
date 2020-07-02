@@ -279,7 +279,9 @@ class RecomputeReportView(BaseView):
         except DataRequestException as e:
             self.flash_api_errors(e.errors)
         else:
-            flash('Report recomputed successfully.', 'message')
+            flash('Scheduled report recompute successfully. Wait 30 seconds '
+                  'and refresh the page to view recomputed report.',
+                  'message')
         return redirect(url_for('data_dashboard.report_view',
                                 uuid=uuid))
 
