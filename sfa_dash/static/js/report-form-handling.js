@@ -52,7 +52,7 @@ function addPair(
         new_object_pair.remove();
         if ($('.object-pair-list .object-pair').length == 0){
             $('.empty-reports-list')[0].hidden = false;
-            report_utils.unset_units(filterForecasts);
+            report_utils.unset_units(x => $('#site-select').change());
         }
         report_utils.toggle_reference_dependent_metrics();
     });
