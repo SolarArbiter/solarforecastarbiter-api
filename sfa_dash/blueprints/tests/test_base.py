@@ -93,3 +93,15 @@ def test_parse_start_end_one_request_arg(
         start_out, end_out = view.parse_start_end_from_querystring()
     assert start_out == expected_start
     assert end_out == expected_end
+
+
+@pytest.mark.parametrize('bc_list,expected', [
+    ([('dashboard', 'https://dashboard')],
+     '/<a href="https://dashboard">dashboard</a>'),
+    ([('a', 'b'), ('c', 'd'), ('e', 'f')],
+     '/<a href="b">a</a>/<a href="d">c</a>/<a href="f">e</a>'),
+])
+def test_breadcrumb_html(app, bc_list, expected):
+    with app.test_request_context():
+        breadcrumb = BaseView().breadcrumb_html(bc_list)
+        assert breadcrumb == expected

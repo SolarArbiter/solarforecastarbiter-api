@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from copy import deepcopy
 
 
@@ -181,14 +180,14 @@ class BaseView(MethodView):
             formatted_subnav[url.format(**kwargs)] = linktext
         return formatted_subnav
 
-    def breadcrumb_html(self, breadcrumb_dict):
+    def breadcrumb_html(self, breadcrumb_list):
         """Build the breadcrumb navigation from an OrderedDict.
 
         Parameters
         ----------
-        breadcrumb_dict: OrderedDict
-            A dictionary of link_text: url. Urls can be relative
-            or absolute. See BaseView.get_breadcrumb_dict for an
+        breadcrumb_list: list of 2-tuples
+            List of (link_text, url) tuples. Urls can be relative
+            or absolute. See BaseView.get_breadcrumb for an
             example of the expected format.
 
         Returns
@@ -199,11 +198,11 @@ class BaseView(MethodView):
             escaping tags.
         """
         breadcrumb = ''
-        for link_text, href in breadcrumb_dict.items():
+        for (link_text, href) in breadcrumb_list:
             breadcrumb += f'/<a href="{href}">{link_text}</a>'
         return breadcrumb
 
-    def get_breadcrumb_dict(self):
+    def get_breadcrumb(self):
         """Creates an ordered dictionary used for building the page's
         breadcrumb. Output can be passed to the BaseView.breadcrumb_html
         function.
@@ -223,7 +222,7 @@ class BaseView(MethodView):
 
         Where the order of the keys is rendered from left to right.
         """
-        return OrderedDict()
+        return []
 
     def flash_api_errors(self, errors):
         """Formats a dictionary of api errors and flashes them to the user on

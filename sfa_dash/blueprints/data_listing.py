@@ -1,7 +1,6 @@
 """Flask endpoints for listing Observations, Forecasts and CDF Forecasts.
 Defers actual table creation and rendering to DataTables in the util module.
 """
-from collections import OrderedDict
 from flask import render_template, request, url_for
 
 
@@ -36,7 +35,7 @@ class DataListingView(BaseView):
             raise Exception
         self.data_type = data_type
 
-    def get_breadcrumb_dict(self, location_metadata={}):
+    def get_breadcrumb(self, location_metadata={}):
         """Build the breadcrumb dictionary for the listing page.
         Parameters
         ----------
@@ -44,25 +43,38 @@ class DataListingView(BaseView):
             Dict of aggregate or site metadata to use for building
             the breadcrumb.
         """
-        breadcrumb_dict = OrderedDict()
+        breadcrumb = []
         human_label = human_friendly_datatype(self.data_type)
         if 'site_id' in location_metadata:
-            breadcrumb_dict['Sites'] = url_for('data_dashboard.sites')
-            breadcrumb_dict[location_metadata['name']] = url_for(
-                'data_dashboard.site_view', uuid=location_metadata['site_id'])
-            breadcrumb_dict[f'{human_label}s'] = url_for(
-                f'data_dashboard.{self.data_type}s',
-                site_id=location_metadata['site_id'])
+            breadcrumb.append(('Sites', url_for('data_dashboard.sites')))
+            breadcrumb.append(
+                (location_metadata['name'],
+                 url_for(
+                     'data_dashboard.site_view',
+                     uuid=location_metadata['site_id']))
+            )
+            breadcrumb.append(
+                (f'{human_label}s',
+                 url_for(
+                     f'data_dashboard.{self.data_type}s',
+                     site_id=location_metadata['site_id']))
+            )
         elif 'aggregate_id' in location_metadata:
-            breadcrumb_dict['Aggregates'] = url_for(
-                'data_dashboard.aggregates')
-            breadcrumb_dict[location_metadata['name']] = url_for(
-                'data_dashboard.aggregate_view',
-                uuid=location_metadata['aggregate_id'])
-            breadcrumb_dict[f'{human_label}s'] = url_for(
-                f'data_dashboard.{self.data_type}s',
-                aggregate_id=location_metadata['aggregate_id'])
-        return breadcrumb_dict
+            breadcrumb.append(
+                ('Aggregates', url_for('data_dashboard.aggregates')))
+            breadcrumb.append(
+                (location_metadata['name'],
+                 url_for(
+                     'data_dashboard.aggregate_view',
+                     uuid=location_metadata['aggregate_id']))
+            )
+            breadcrumb.append(
+                (f'{human_label}s',
+                 url_for(
+                     f'data_dashboard.{self.data_type}s',
+                     aggregate_id=location_metadata['aggregate_id']))
+            )
+        return breadcrumb
 
     def get_subnav_kwargs(self, site_id=None, aggregate_id=None):
         """Creates a dict to be unpacked as arguments when calling the
@@ -99,7 +111,8 @@ class DataListingView(BaseView):
             else:
                 location_metadata = aggregates.get_metadata(aggregate_id)
             self.template_args['breadcrumb'] = self.breadcrumb_html(
-                self.get_breadcrumb_dict(location_metadata))
+                self.get_breadcrumb(location_metadata))
+
         else:
             self.template_args['page_title'] = 'Forecasts and Observations'
 

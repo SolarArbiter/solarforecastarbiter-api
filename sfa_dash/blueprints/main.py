@@ -1,6 +1,3 @@
-from collections import OrderedDict
-
-
 from flask import Blueprint, render_template, url_for, request, g
 
 
@@ -86,48 +83,74 @@ class SingleObjectView(DataDashView):
             raise ValueError('Invalid data_type.')
         self.human_label = human_friendly_datatype(self.data_type)
 
-    def get_breadcrumb_dict(self):
-        """See BaseView.get_breadcrumb_dict.
+    def get_breadcrumb(self):
+        """See BaseView.get_breadcrumb.
         """
-        breadcrumb_dict = OrderedDict()
+        breadcrumb = []
         if self.data_type == 'cdf_forecast':
             listing_view = 'cdf_forecast_groups'
         else:
             listing_view = f'{self.data_type}s'
         # Insert site/aggregate link if available
         if self.metadata.get('site') is not None:
-            breadcrumb_dict['Sites'] = url_for('data_dashboard.sites')
-            breadcrumb_dict[self.metadata['site']['name']] = url_for(
-                'data_dashboard.site_view',
-                uuid=self.metadata['site_id'])
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                f'data_dashboard.{listing_view}',
-                site_id=self.metadata['site_id'])
+            breadcrumb.append(('Sites', url_for('data_dashboard.sites')))
+            breadcrumb.append(
+                (self.metadata['site']['name'],
+                 url_for(
+                     'data_dashboard.site_view',
+                     uuid=self.metadata['site_id']))
+            )
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for(
+                     f'data_dashboard.{listing_view}',
+                     site_id=self.metadata['site_id']))
+            )
         elif self.metadata.get('aggregate') is not None:
-            breadcrumb_dict['Aggregates'] = url_for(
-                'data_dashboard.aggregates')
-            breadcrumb_dict[self.metadata['aggregate']['name']] = url_for(
-                'data_dashboard.aggregate_view',
-                uuid=self.metadata['aggregate_id'])
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                f'data_dashboard.{listing_view}',
-                aggregate_id=self.metadata['aggregate_id'])
+            breadcrumb.append(
+                ('Aggregates',
+                 url_for('data_dashboard.aggregates'))
+            )
+            breadcrumb.append(
+                (self.metadata['aggregate']['name'],
+                 url_for(
+                    'data_dashboard.aggregate_view',
+                    uuid=self.metadata['aggregate_id']))
+            )
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for(
+                     f'data_dashboard.{listing_view}',
+                     aggregate_id=self.metadata['aggregate_id']))
+            )
         else:
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                f'data_dashboard.{listing_view}')
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for(
+                     f'data_dashboard.{listing_view}'))
+            )
         # Insert a parent link for cdf_forecasts
         if self.data_type == 'cdf_forecast':
-            breadcrumb_dict[self.metadata['name']] = url_for(
-                f'data_dashboard.cdf_forecast_group_view',
-                uuid=self.metadata['parent'])
-            breadcrumb_dict[self.metadata['constant_value']] = url_for(
-                f'data_dashboard.{self.data_type}_view',
-                uuid=self.metadata[self.id_key])
+            breadcrumb.append(
+                (self.metadata['name'],
+                 url_for(
+                     f'data_dashboard.cdf_forecast_group_view',
+                     uuid=self.metadata['parent']))
+            )
+            breadcrumb.append(
+                (self.metadata['constant_value'],
+                 url_for(
+                     f'data_dashboard.{self.data_type}_view',
+                     uuid=self.metadata[self.id_key]))
+            )
         else:
-            breadcrumb_dict[self.metadata['name']] = url_for(
-                f'data_dashboard.{self.data_type}_view',
-                uuid=self.metadata[self.id_key])
-        return breadcrumb_dict
+            breadcrumb.append(
+                (self.metadata['name'],
+                 url_for(
+                     f'data_dashboard.{self.data_type}_view',
+                     uuid=self.metadata[self.id_key]))
+            )
+        return breadcrumb
 
     def set_template_args(self, uuid, **kwargs):
         """Insert necessary template arguments. See data/asset.html in the
@@ -147,7 +170,7 @@ class SingleObjectView(DataDashView):
         self.template_args['current_path'] = request.path
         self.template_args['subnav'] = self.format_subnav(**kwargs)
         self.template_args['breadcrumb'] = self.breadcrumb_html(
-            self.get_breadcrumb_dict())
+            self.get_breadcrumb())
         self.template_args['metadata_block'] = render_template(
             self.metadata_template,
             **self.metadata)
@@ -197,36 +220,54 @@ class SingleCDFForecastGroupView(SingleObjectView):
     def __init__(self):
         pass
 
-    def get_breadcrumb_dict(self, **kwargs):
-        """See BaseView.get_breadcrumb_dict.
+    def get_breadcrumb(self, **kwargs):
+        """See BaseView.get_breadcrumb.
         """
-        breadcrumb_dict = OrderedDict()
+        breadcrumb = []
         if self.metadata.get('site') is not None:
             # If the site is accessible, add /sites/<site name>
             # to the breadcrumb.
-            breadcrumb_dict['Sites'] = url_for('data_dashboard.sites')
-            breadcrumb_dict[self.metadata['site']['name']] = url_for(
-                'data_dashboard.site_view',
-                uuid=self.metadata['site_id'])
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                'data_dashboard.cdf_forecast_groups',
-                site_id=self.metadata['site_id'])
+            breadcrumb.append(('Sites', url_for('data_dashboard.sites')))
+            breadcrumb.append(
+                (self.metadata['site']['name'],
+                 url_for(
+                     'data_dashboard.site_view',
+                     uuid=self.metadata['site_id']))
+            )
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for(
+                     'data_dashboard.cdf_forecast_groups',
+                     site_id=self.metadata['site_id']))
+            )
         elif self.metadata.get('aggregate') is not None:
-            breadcrumb_dict['Aggregates'] = url_for(
-                'data_dashboard.aggregates')
-            breadcrumb_dict[self.metadata['aggregate']['name']] = url_for(
-                'data_dashboard.aggregate_view',
-                uuid=self.metadata['aggregate_id'])
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                f'data_dashboard.cdf_forecast_groups',
-                aggregate_id=self.metadata['aggregate_id'])
+            breadcrumb.append(
+                ('Aggregates', url_for('data_dashboard.aggregates'))
+            )
+            breadcrumb.append(
+                (self.metadata['aggregate']['name'],
+                 url_for(
+                     'data_dashboard.aggregate_view',
+                     uuid=self.metadata['aggregate_id']))
+            )
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for(
+                     f'data_dashboard.cdf_forecast_groups',
+                     aggregate_id=self.metadata['aggregate_id']))
+            )
         else:
-            breadcrumb_dict[f'{self.human_label}s'] = url_for(
-                'data_dashboard.cdf_forecast_groups')
-        breadcrumb_dict[self.metadata['name']] = url_for(
-            'data_dashboard.cdf_forecast_group_view',
-            uuid=self.metadata['forecast_id'])
-        return breadcrumb_dict
+            breadcrumb.append(
+                (f'{self.human_label}s',
+                 url_for('data_dashboard.cdf_forecast_groups'))
+            )
+        breadcrumb.append(
+            (self.metadata['name'],
+             url_for(
+                 'data_dashboard.cdf_forecast_group_view',
+                 uuid=self.metadata['forecast_id']))
+        )
+        return breadcrumb
 
     def set_template_args(self, **kwargs):
         """Insert necessary template arguments. See data/asset.html in the
@@ -242,7 +283,7 @@ class SingleCDFForecastGroupView(SingleObjectView):
         self.template_args['current_path'] = request.path
         self.template_args['subnav'] = self.format_subnav(**kwargs)
         self.template_args['breadcrumb'] = self.breadcrumb_html(
-            self.get_breadcrumb_dict())
+            self.get_breadcrumb())
         self.template_args['metadata_block'] = render_template(
             self.metadata_template,
             **self.metadata)
