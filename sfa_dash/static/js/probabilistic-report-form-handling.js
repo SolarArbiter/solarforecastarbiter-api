@@ -62,7 +62,7 @@ function pairWrapper(truth_type, truth_id, truth_name, fx_id, fx_name,
         if ($('.object-pair-list .object-pair').length == 0){
             // If the last pairs were removed, unset the unit constraint
             $('.empty-reports-list')[0].hidden = false;
-            report_utils.unset_units();
+            report_utils.unset_units(filterForecasts);
         }
         report_utils.toggle_reference_dependent_metrics();
     });
@@ -148,7 +148,7 @@ function addPair(
         if ($('.object-pair-list .object-pair').length == 0){
             // if the last pairs were removed, remove the units constraint
             $('.empty-reports-list')[0].hidden = false;
-            report_utils.unset_units();
+            report_utils.unset_units(filterForecasts);
         }
         report_utils.toggle_reference_dependent_metrics();
     });
@@ -785,7 +785,7 @@ function createPairSelector(){
             });
 
             var variable = selected_forecast.dataset.variable;
-            report_utils.set_units(variable);
+            report_utils.set_units(variable, filterForecasts);
             $(".empty-reports-list").attr('hidden', 'hidden');
             forecast_select.css('border', '');
             observation_select.css('border', '');
@@ -852,7 +852,7 @@ function createPairSelector(){
                 );
             });
             var variable = selected_forecast.dataset.variable;
-            report_utils.set_units(variable);
+            report_utils.set_units(variable, filterForecasts);
 
             $(".empty-reports-list")[0].hidden = true;
             forecast_select.css('border', '');

@@ -152,14 +152,17 @@ report_utils.toggle_reference_dependent_metrics = function(){
 current_units = null;
 
 
-report_utils.unset_units = function(){
+report_utils.unset_units = function(filter_callback=null){
     current_units = null;
     // Call to setVariables to repopulate the options in the Variable <select>
     // element.
     report_utils.setVariables()
+    if (filter_callback){
+        filter_callback();
+    }
 }
 
-report_utils.set_units = function(variable){
+report_utils.set_units = function(variable, filter_callback=null){
     /* Sets the global current_units based on the variable parameter. This is
      * to enforce similar units across all object pairs.
      */
@@ -168,6 +171,9 @@ report_utils.set_units = function(variable){
         current_units = units;
     }
     report_utils.setVariables();
+    if (filter_callback){
+        filter_callback();
+    }
 }
 
 report_utils.searchObjects = function(object_type, object_id){
