@@ -129,9 +129,11 @@ $(document).ready(function() {
 
             // Create a Set of options from the contents of each of the column's
             // <td> elements
-            var availableOptions = new Set($(`.${columnName}-column`).map(function(){
-                return $(this).text();
-            }));
+            var availableOptions = Array.from(
+                new Set($(`.${columnName}-column`).map(function(){
+                    return $(this).text();
+                }))
+            ).sort();
 
             // Collapsible div containing the list of checkboxes, this is the
             // target of the button that the table header was wrapped in.

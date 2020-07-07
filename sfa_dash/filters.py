@@ -77,6 +77,19 @@ def is_number(num):
     return str(num).isnumeric()
 
 
+def climate_zone_links(zones):
+    def reference_zone_link(zone_name):
+        if 'Reference Region' in zone_name:
+            zone_number = zone_name.split(' ')[-1]
+            return f'<a href="https://solarforecastarbiter.org/climatezones/#region{zone_number}">{zone_name}</a>'  # noqa: E501
+        else:
+            return zone_name
+    if zones:
+        return [reference_zone_link(zone) for zone in zones]
+    else:
+        return ["No Climate Zone"]
+
+
 def register_jinja_filters(app):
     app.jinja_env.filters['convert_varname'] = api_to_dash_varname
     app.jinja_env.filters['var_to_units'] = api_varname_to_units
@@ -84,3 +97,4 @@ def register_jinja_filters(app):
     app.jinja_env.filters['convert_data_type'] = human_friendly_datatype
     app.jinja_env.filters['format_datetime'] = format_datetime
     app.jinja_env.filters['is_number'] = is_number
+    app.jinja_env.filters['climate_zone_links'] = climate_zone_links

@@ -11,8 +11,9 @@
   {% if climate_zones %}
   <li><b>Climate Zones:</b>
     <ul>
-      {% for zone in climate_zones %}
-      <li>{{ zone }}</li>
+      {% set zones = climate_zones | climate_zone_links %}
+      {% for zone in zones %}
+      <li>{{ zone | safe }}</li>
       {% endfor %}
     </ul>
   </li>

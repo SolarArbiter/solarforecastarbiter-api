@@ -20,7 +20,7 @@
     <tr>
       <td class="name-column"><a href="{{ row['link'] }}">{{ row['name'] }}</a></td>
       <td class="provider-column">{{ row['provider'] }}</td>
-      <td class="climate-zones-column">{{ row['climate_zones'] | join(', ') }}</td>
+      <td class="climate-zones-column">{{ row['climate_zones'] | climate_zone_links | join(', ') | safe }}</td>
     </tr>
 	{% endfor %}
   </tbody>
