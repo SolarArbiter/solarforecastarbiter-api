@@ -170,7 +170,7 @@ report_utils.set_units = function(variable, filter_callback=null){
     if(units){
         current_units = units;
     }
-    report_utils.setVariables();
+    report_utils.setVariables(variable);
     if (filter_callback){
         filter_callback();
     }
@@ -202,23 +202,36 @@ report_utils.searchObjects = function(object_type, object_id){
     return metadata;
 }
 
-report_utils.setVariables = function(){
-	/* Displays or hides options in the variable <select> element based on the
-     * current units.
+report_utils.setVariables = function(variable=null){
+	/*  Displays or hides options in the variable <select> element based on the
+     *  current units.
+     *
+     *  @param {string} variable
+     *      The variable that will be selected after filtering. Ignored when
+     *      current units are null, as the variable filter will be reset to
+     *      "All Variables".
      */
-    variable_options = $('#variable-select option');
+    var variable_options = $('#variable-select option');
     variable_options.removeAttr('hidden');
-    variable_options.removeAttr('disabled');
     if (current_units){
+        // Iterate through variable options, comparing the variable units to
+        // current_units, hiding those that do not match.
         variable_options.each(function(){
-            units = sfa_dash_config.VARIABLE_UNIT_MAP[$(this).attr('value')]
-            if(units != current_units){
+            let units = sfa_dash_config.VARIABLE_UNIT_MAP[$(this).attr('value')]
+            if (units != current_units){
                 $(this).attr('hidden', true);
-                $(this).attr('disabled', true);
+                $(this).attr('selected', false);
+            } else {
+                if ($(this).val() == variable) {
+                    // retain the previous selection if it matched.
+                    $('#variable-select').val(variable);
+                }
             }
         });
+    } else {
+        // If current_units is not set, revert to "all variables"
+        $('#variable-select').val('');
     }
-    $('#variable-select').val(variable_options.filter(":not([hidden])").val());
 }
 
 report_utils.createVariableSelect = function(){
