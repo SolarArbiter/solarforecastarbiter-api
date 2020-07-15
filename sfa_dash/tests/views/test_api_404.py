@@ -167,3 +167,27 @@ def test_clone_routes(client, clone_route, missing_id):
     resp = client.get(clone_route(ids), base_url=BASE_URL,
                       follow_redirects=True)
     assert_contains_404(resp.data.decode('utf-8'))
+
+
+@pytest.fixture(params=['/sites/{missing_id}/', '/admin/users/{missing_id}'])
+def referer_test_route(request, missing_id):
+    return request.param.format(missing_id=missing_id)
+
+
+@pytest.mark.parametrize('referer,expected', [
+    ('https://dashboard.solarforecastarbiter.org/sites/',
+     '<a href="https://dashboard.solarforecastarbiter.org/sites/">'
+     'Return to the previous page.</a>'),
+    ('https://dashboard.solarforecastarbiter.org/sites/'
+     '?a="></a><script>console.log("test")</script><a>',
+     '<a href="https://dashboard.solarforecastarbiter.org/sites/'
+     '?a=&#34;&gt;&lt;/a&gt;&lt;script&gt;console.log(&#34;test&#34;)&lt;'
+     '/script&gt;&lt;a&gt;">Return to the previous page.</a>'),
+])
+def test_previous_page_link(client, referer, expected, referer_test_route):
+    resp = client.get(referer_test_route,
+                      base_url=BASE_URL,
+                      query_string={'site_id': dne_uuid},
+                      headers={'Referer': referer})
+    assert_contains_404(resp.data.decode('utf-8'))
+    assert expected in resp.data.decode('utf-8')
