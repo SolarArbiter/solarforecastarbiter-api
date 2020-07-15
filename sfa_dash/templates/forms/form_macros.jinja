@@ -17,7 +17,15 @@
   {% endif %}
   <label>{{ label }}</label><br/>
   <div class="input-wrapper">
-    <input type="{{ type }}" class="form-control {{ class }} {{ name }}-field" {{ extra_attr }}  name="{{ name }}"  {% if name == 'name' %}{{ name_validation() }}{% endif %} {% if form_data is not none %}value="{{ form_data.get(name, default) }}"{% endif %}>{% if units is not none %}{{ units }}{% endif %}
+    <input type="{{ type }}"
+     class="form-control {{ class }} {{ name }}-field"
+     {{ extra_attr }}
+     name="{{ name }}"
+     {% if name == 'name' %}{{ name_validation() }}{% endif %}
+     {% if form_data is not none %}
+     value="{{ form_data.get(name, default) | e}}"
+     {% endif %}>
+     {% if units is not none %}{{ units }}{% endif %}
   </div>
   {% if help_text is not none %}
   {{ help_button(name) }}
@@ -26,6 +34,7 @@
 {% endmacro %}
 
 {% macro select(label, name, options, default_value, help_text=None, required=False, form_data={}) %}
+{% autoescape true %}
   <label>{{ label }}</label>
   <div class="input-wrapper">
     <select class="form-control {{ name }}-field" name="{{ name }}"{% if required %} required {% endif %}>
@@ -38,6 +47,7 @@
   {{ help_button(name) }}
   <span class="help-text text-muted {{ name }}-help-text collapse">{{ help_text }}</span>
   {% endif %}
+{% endautoescape %}
 {% endmacro %}
 
 {% macro radio(label, name, options, help_text=None, required=False, form_data={}) %}

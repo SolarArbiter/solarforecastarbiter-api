@@ -31,7 +31,7 @@
                 <i class="fa fa-warning"></i>
                 No Result
               </td>
-            </tr> 
+            </tr>
             {% for i in range(table_data | length) %}
               {% set row = table_data[i] %}
               {{ table_macros.data_row(row, i) }}

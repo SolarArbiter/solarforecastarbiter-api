@@ -1,4 +1,5 @@
 {% macro data_row(data_type, row_values, index, checked=false) %}
+{% autoescape true %}
 {% if data_type == 'observation' %}
   {% set uuid = row_values['observation_id'] %}
 {% elif data_type == 'forecast' %}
@@ -11,22 +12,28 @@
   <td>{{ row_values['name'] }}</td>
   <td>{{ row_values['variable'] | convert_varname }}</td>
   <td>{{ uuid }}</td>
-</tr> 
+</tr>
+{% endautoescape %}
 {% endmacro %}
 
 {% macro site_row(data_type, row_values, index, checked=false) %}
+{% autoescape true %}
 {% set uuid = row_values['site_id'] %}
 <tr visible="true">
   <td><input type="checkbox" name="objects-list-{{ index }}" value="{{ uuid }} {% if checked %}checked{% endif %}"></td>
   <td>{{ row_values['name'] }}</td>
   <td>{{ uuid }}</td>
 </tr>
+{% endautoescape %}
 {% endmacro %}
+
 {% macro report_row(data_type, row_values, index, checked=false) %}
+{% autoescape true %}
 {% set uuid = row_values['report_id'] %}
 <tr visible="true">
   <td><input type="checkbox" name="objects-list-{{ index }}" value="{{ uuid }}" {% if checked %}checked{% endif %}></td>
   <td>{{ row_values['name'] }}</td>
   <td>{{ uuid }}</td>
 </tr>
+{% endautoescape %}
 {% endmacro %}

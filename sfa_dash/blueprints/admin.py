@@ -66,14 +66,14 @@ class AdminView(BaseView):
         self.template_args = {'subnav': self.format_subnav(**subnav_kwargs)}
 
     def flatten_reports(self, report_list):
-        """Takes a list of report objects from the api and updates the
-        top-level keys with the contents of 'report_parameters' for each
-        report.
+        """Takes a list of report metadata dictionaries and moved the `name`
+        field to the top-level dictionary and removes unneeded report
+        parameters and raw report.
         """
-        reports = [report.copy() for report in report_list]
-        for report in reports:
-            report.update(report.get('report_parameters'))
-        return reports
+        for report in report_list:
+            report.update({'name': report.pop('report_parameters')['name']})
+            report.pop('raw_report', None)
+        return report_list
 
     def get(self):
         self.set_template_args()
@@ -497,10 +497,9 @@ class PermissionView(AdminView):
             return render_template(
                 self.template, errors=e.errors, **self.template_args)
         if object_type == 'report':
-            object_map = self.flatten_reports(object_list)
-        else:
-            object_map = {obj[id_key]: obj
-                          for obj in object_list}
+            object_list = self.flatten_reports(object_list)
+        object_map = {obj[id_key]: obj
+                      for obj in object_list}
         # rebuild the 'objects' dict with the uuid: object structure
         # instead of uuid: created_at
         permission['objects'] = {
@@ -655,20 +654,20 @@ class PermissionObjectAddition(PermissionView):
             data_type = permission['object_type'][:-1]
             api = self.get_api_handler(permission['object_type'])
             perm_objects = list(permission['objects'].keys())
+
+            all_objects = api.list_metadata()
+            all_objects = self.filter_by_org(all_objects, 'provider')
+
             if data_type == 'report':
-                all_objects = api.list_metadata()
-                all_objects = [rep.update(rep['report_parameters'])
-                               for rep in all_objects]
-            else:
-                all_objects = api.list_metadata()
-                all_objects = self.filter_by_org(all_objects, 'provider')
-            # remove any objects alread on the permission
+                all_objects = self.flatten_reports(all_objects)
+            # remove any objects already on the permission
             object_id_key = f"{data_type}_id"
             all_objects = [obj for obj in all_objects
                            if obj[object_id_key] not in perm_objects]
             self.set_template_args(permission)
         return render_template(self.template,
                                table_data=all_objects,
+                               data_type=data_type,
                                **self.template_args,
                                **kwargs)
 

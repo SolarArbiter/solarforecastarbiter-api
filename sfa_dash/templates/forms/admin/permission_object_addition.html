@@ -34,7 +34,7 @@
             <thead>
               <th class="selection-column" scope="col"></th>
               <th scope="col">Name</th>
-              {% if data_type in ['site', 'report'] %}
+              {% if data_type not in ['site', 'report'] %}
               <th scope="col">Variable</th>
               {% endif %}
               <th scope="col">UUID</th>
@@ -45,7 +45,7 @@
                   <i class="fa fa-warning"></i>
                   No Result
                 </td>
-              </tr> 
+              </tr>
               {% for i in range(table_data | length) %}
               {{ row_macro(data_type, table_data[i], i) }}
               {% endfor %}
