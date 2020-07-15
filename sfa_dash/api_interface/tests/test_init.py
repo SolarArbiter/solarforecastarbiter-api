@@ -75,3 +75,18 @@ def test_background_server_works(background_server):
     r2 = requests.get(background_server + '/')
     assert r1.status_code == 503
     assert r2.text == 'OK'
+    with pytest.raises(requests.exceptions.ChunkedEncodingError):
+        requests.get(background_server + '/length')
+    requests.get(background_server + '/length').text == 'OK'
+
+
+def test_bad_length(context, background_server):
+    context.config['SFA_API_URL'] = background_server
+    req = api_interface.get_request('/length')
+    assert req == 'OK'
+
+
+def test_bad_length_retries_exhausted(context, background_server):
+    context.config['SFA_API_URL'] = background_server
+    with pytest.raises(requests.exceptions.ChunkedEncodingError):
+        api_interface.get_request('/alwaysfail')
