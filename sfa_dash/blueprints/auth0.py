@@ -9,7 +9,9 @@ from flask import url_for, redirect, current_app, session, Response
 from flask.globals import LocalProxy, _lookup_app_object
 from flask_dance.consumer import OAuth2ConsumerBlueprint, oauth_authorized
 from jose import jwt, jwk
+import requests
 from six.moves.urllib.parse import urlencode
+from urllib3 import Retry
 
 
 from sfa_dash.errors import UnverifiedUserException
@@ -40,6 +42,15 @@ def make_auth0_blueprint(
     auth0_bp.from_config['client_id'] = 'AUTH0_OAUTH_CLIENT_ID'
     auth0_bp.from_config['client_secret'] = 'AUTH0_OAUTH_CLIENT_SECRET'
     auth0_bp.from_config['jwt_key'] = 'AUTH0_OAUTH_JWT_KEY'
+    retries = Retry(total=5, connect=3, read=3, status=3,
+                    status_forcelist=[408, 423, 444, 500, 501, 502, 503,
+                                      504, 507, 508, 511, 599],
+                    backoff_factor=0.1,
+                    raise_on_status=False,
+                    remove_headers_on_redirect=[])
+    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
+    auth0_bp.session.mount('http://', adapter)
+    auth0_bp.session.mount('https://', adapter)
 
     @auth0_bp.before_app_request
     def set_applocal_session():
