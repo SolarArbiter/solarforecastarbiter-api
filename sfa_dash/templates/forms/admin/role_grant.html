@@ -10,12 +10,13 @@
   <div class="form-group">
   <div class="form-element">
     <label>User Email</label><br/>
-    <input type="email" class="form-control" name="user_email" placeholder="Email">
+    {% if form_data is not defined %}{% set form_data = {} %}{% endif %}
+    <input type="email" class="form-control" name="user_email" placeholder="Email" value="{{ form_data.get('user_email', '')}}">
   </div>
   {{ form.token() }}
   </div>
 </form>
 <button type="submit" form="role-grant-form" value="Submit" class="btn btn-danger btn-sml">Grant Role</button>
-<a href="{{ redirect_link }}" class="btn btn-primary">Cancel</a>
+<a href="{{ redirect_link | e }}" class="btn btn-primary">Cancel</a>
 {% endif %}
 {% endblock %}

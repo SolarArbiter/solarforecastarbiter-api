@@ -1,6 +1,5 @@
-{% extends "dash/data.html" %}
+{% extends "forms/admin/base/base_admin_form.html" %}
 {% set page_title = 'Create New Role' %}
-{% import "forms/form_macros.jinja" as form %}
 {% import "forms/admin/role_macros.jinja" as table_macros %}
 {% if form_data is not defined %}
 {% set form_data = {} %}
@@ -11,8 +10,7 @@ the role and grant the role to users after creation.</p>
 <form action="{{ url_for('admin.create_role') }}" method="post" enctype="application/json" id="role-form">
   <div class="form-group">
   <div class="form-element full-width">
-    <label>Name</label><br/>
-    <input type="text" class="form-control" name="name" value={{ form_data['name'] }}>
+    {{ form.input('Name', 'text', 'name', 'Name of the role.', form_data=form_data) }}
   </div>
   <div class="form-element full-width">
     <label>Description</label><br/>

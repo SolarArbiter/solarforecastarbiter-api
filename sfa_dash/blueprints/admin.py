@@ -174,10 +174,10 @@ class UserRoleRemoval(AdminView):
     def get(self, uuid, role_id, **kwargs):
         """Confirmation view for removing a role from a user
         """
-        redirect_link = request.headers.get(
-            'Referer', url_for('admin.roles'))
         # set a redirect link, because we can be directed here
         # from a role or user page.
+        redirect_link = request.headers.get(
+            'Referer', url_for('admin.roles'))
         try:
             user = users.get_metadata(uuid)
         except DataRequestException:
@@ -202,6 +202,8 @@ class UserRoleRemoval(AdminView):
             _external=True,
             uuid=uuid,
             role_id=role_id)
+        # If the user was not sent here from the confirmation page,
+        # redirect them.
         if request.headers.get('Referer') != confirmation_url:
             redirect(confirmation_url)
         try:
@@ -241,15 +243,22 @@ class RoleView(AdminView):
 
     def set_template_args(self, role, permission_list, role_table):
         super().set_template_args()
+
+        # Replace uuids with full permission metadata in the role's
+        # permissions field.
         permission_map = {perm['permission_id']: perm
                           for perm in permission_list}
         role['permissions'] = {k: {'added_to_role': v, **permission_map[k]}
                                for k, v in role['permissions'].items()
                                if k in permission_map}
+
+        # Create a dict of users indexed on user uuid
         user_list = users.list_metadata()
         user_map = {user['user_id']: user
                     for user in user_list}
-        # fill the user data for each role
+
+        # Create a dict of users that have the role containing information
+        # to display in the table.
         role_users = {}
         for uid, user in role['users'].items():
             user_dict = user_map.get(uid, {})
@@ -261,12 +270,16 @@ class RoleView(AdminView):
                 'added_to_user': user,
                 'email': email,
                 'organization': user_dict.get(
-                    'organization', 'Organization Unavailable')}
+                    'organization', 'Organization Unavailable')
+            }
+
         role['users'] = role_users
         self.template_args['role'] = role
         self.template_args['role_table'] = role_table
 
     def get(self, uuid, **kwargs):
+        # This view displays either a table of permissions granted to the role
+        # or users that were granted the role based on the `table` query param.
         role_table = request.args.get('table', 'permissions')
         try:
             role = roles.get_metadata(uuid)
@@ -292,10 +305,12 @@ class RoleGrant(AdminView):
         except DataRequestException as e:
             self.flash_api_errors(e.errors)
             role = None
+
+        # Set the redirect link, to send users back to the correct page. They
+        # may have ended up here from the permission or users listing of the
+        # role, which only differ by the table query argument.
         redirect_link = request.headers.get(
             'Referer', url_for('admin.roles'))
-        # set a redirect link, because we can be directed here
-        # from a role or user page.
         session['redirect_link'] = redirect_link
 
         self.set_template_args(role, redirect_link)
@@ -306,28 +321,29 @@ class RoleGrant(AdminView):
     def post(self, uuid):
         form_data = request.form
         user_email = form_data.get('user_email', '')
+        redirect_url = session.pop(
+            'redirect_link',
+            url_for('admin.role_view', uuid=uuid))
         try:
             users.add_role_by_email(user_email, uuid)
         except DataRequestException:
             # flash a message that grant failed
-            flash('Failed to grant role', 'error')
+            flash('Failed to grant role.', 'error')
             try:
                 role = roles.get_metadata(uuid)
             except DataRequestException as e:
                 # User could not read the role, flash a 404
                 self.flash_api_errors(e.errors)
                 role = None
-            self.set_template_args()
+
+            # Refresh the page if the role failed, so the user can try again.
+            self.set_template_args(role, redirect_url)
             return render_template(
                 self.template,
-                role=role,
                 form_data=form_data,
                 **self.template_args)
-        # flash success message and redirect to the referrer, or the role view
+        # flash success message and redirect
         flash('Role granted successfully', 'message')
-        redirect_url = session.pop(
-            'redirect_link',
-            url_for('admin.role_view', uuid=uuid))
         return redirect(redirect_url)
 
 
@@ -364,9 +380,15 @@ class RolePermissionAddition(AdminView):
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         else:
+            # get the permissions already granted to the role
             role_perms = list(role['permissions'].keys())
+
+            # remove any permissions not in the user's organization. Users
+            # cannot add permissions from outside their org to a role inside it
+            # but may be able to read metadata of those permissions.
             all_perms = self.filter_by_org(all_perms, 'organization')
-            # remove any roles the user already has
+
+            # Remove any permissions that already exist on the role.
             all_perms = [perm for perm in all_perms
                          if perm['permission_id'] not in role_perms]
             self.set_template_args()
@@ -385,8 +407,10 @@ class RolePermissionAddition(AdminView):
             try:
                 roles.add_permission(uuid, perm)
             except DataRequestException:
+                # Collect errors for each failed addition
                 errors[perm] = [f'Failed to add perm {perm} to role.']
             else:
+                # Collect success messages for each successful addition
                 messages[perm] = [f'Successfully added perm {perm} to role.']
         if errors:
             return self.get(
@@ -482,24 +506,35 @@ class PermissionView(AdminView):
     def set_template_args(self, permission):
         super().set_template_args()
         api_handler = self.get_api_handler(permission['object_type'])
-        # dashboard uses singular object names as labels to differentiate
-        # single views from listings
+        # Remove the trailing 's' from object_type since the dashboard uses
+        # singular object_type names as labels to differentiate single views
+        # from listings. e.g. a single forecast is found at the
+        # `data_dashboard.forecast_view` while the the listing is found at
+        # `data_dashboard.forecasts`
         object_type = permission['object_type'][:-1]
         if 'forecast' in object_type:
+            # key used to find the uuid is the same for forecast,
+            # cdf_forecast_group, and cdf_forecast
             id_key = 'forecast_id'
         else:
             id_key = f'{object_type}_id'
-        # create a dict of objects where keys are uuid and values are
-        # objects
+
         try:
             object_list = api_handler.list_metadata()
         except DataRequestException as e:
             return render_template(
                 self.template, errors=e.errors, **self.template_args)
         if object_type == 'report':
+            # move name field from nested 'report_parameters' field to the top
+            # level of the dict, so that it may be accessed as with all other
+            # metadata
             object_list = self.flatten_reports(object_list)
+
+        # create a dict of objects where keys are uuid and values are
+        # objects for easier lookup.
         object_map = {obj[id_key]: obj
                       for obj in object_list}
+
         # rebuild the 'objects' dict with the uuid: object structure
         # instead of uuid: created_at
         permission['objects'] = {
@@ -553,6 +588,9 @@ class PermissionsCreation(AdminView):
         except DataRequestException as e:
             return render_template(self.template, errors=e.errors)
         if self.data_type == 'report':
+            # move name field from nested 'report_parameters' field to the top
+            # level of the dict, so that it may be accessed as with all other
+            # metadata
             table_data = self.flatten_reports(table_data)
         table_data = self.filter_by_org(table_data, 'provider')
         self.set_template_args()
@@ -573,6 +611,8 @@ class PermissionsCreation(AdminView):
             'object_type': self.data_type + 's',
         }
         if self.data_type == 'cdf_forecast_group':
+            # Special case for probabilistic forecasts, cdf_forecasts
+            # permissions act as an umbrella for both distinct data types
             permission.update({'object_type': 'cdf_forecasts'})
         return permission
 
@@ -586,26 +626,31 @@ class PermissionsCreation(AdminView):
         try:
             permission_id = permissions.post_metadata(permission)
         except DataRequestException as e:
+            # If permission creation failed, retain form input and reload the
+            # page.
+            self.set_template_args()
             return render_template(
-                self.template, form_data=form_data, errors=e.errors)
+                self.template,
+                form_data=form_data,
+                errors=e.errors,
+                **self.template_args)
+
+        # Get the list of object uuids from the form
         objects = filter_form_fields('objects-list-', form_data)
+
         errors = {}
-        messages = {}
         for object_id in objects:
             try:
                 permissions.add_object(permission_id, object_id)
             except DataRequestException:
+                # collect errors about permissions that could not be added
                 errors[object_id] = [
                     f'Failed to add {self.data_type} to permission.']
-            else:
-                messages[object_id] = [
-                    f'Added {self.data_type} to permission.']
-        if errors:
-            return render_template(
-                self.template, errors=errors, messages=messages)
-        messages = {'Success': 'Permission created.'}
-        return redirect(url_for('admin.permissions',
-                                messages=messages))
+
+        # display any errors and redirect to the newly created permission.
+        self.flash_api_errors(errors)
+        flash('Success: Permission created.')
+        return redirect(url_for('admin.permission_view', uuid=permission_id))
 
 
 class PermissionDeletionView(AdminView):
@@ -649,17 +694,28 @@ class PermissionObjectAddition(PermissionView):
         try:
             permission = permissions.get_metadata(uuid)
         except DataRequestException as e:
+            # If the permission could not be read, display the api error and
+            # take no further action
             return render_template(self.template, errors=e.errors)
         else:
+            # remove trailing s from object type, since dashboard uses singular
+            # names for data types.
             data_type = permission['object_type'][:-1]
             api = self.get_api_handler(permission['object_type'])
+
+            # Get a list of object uuids on the permission
             perm_objects = list(permission['objects'].keys())
 
+            # Users can't add objects from other organizations to their
+            # permissions, so remove them.
             all_objects = api.list_metadata()
             all_objects = self.filter_by_org(all_objects, 'provider')
 
             if data_type == 'report':
+                # move 'name' field from nested report_parameters, and remove
+                # other unnecessary fields
                 all_objects = self.flatten_reports(all_objects)
+
             # remove any objects already on the permission
             object_id_key = f"{data_type}_id"
             all_objects = [obj for obj in all_objects
@@ -678,7 +734,10 @@ class PermissionObjectAddition(PermissionView):
             try:
                 permissions.add_object(uuid, obj)
             except DataRequestException as e:
-                return render_template(self.template, errors=e.errors)
+                # Flash errors and redirect to the object addition form.
+                self.flash_api_errors(e.errors)
+                return redirect(
+                    url_for('admin.permission_object_addition', uuid=uuid))
         return redirect(url_for('admin.permission_view', uuid=uuid))
 
 
