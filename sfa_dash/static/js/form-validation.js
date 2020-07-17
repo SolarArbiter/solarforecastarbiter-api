@@ -64,6 +64,23 @@ $(document).ready(function(){
         }
     });
     // hide interval_label = 'event' by default.
-    $('[name="interval_label"] option[value="event"]').prop(
-                'hidden', true);
+    $('[name="interval_label"] option[value="event"]').prop('hidden', true);
+
+    $('[name="permission-action"]').change(function(){
+        if (this.value == 'create'){
+            $('#non-create-permission-fields')
+                .prop('disabled', true)
+                .collapse('hide');
+            $('#create-permission-explanation')
+                .prop('hidden', false)
+                .collapse('show');
+        } else {
+            $('#non-create-permission-fields')
+                .prop('disabled', false)
+                .collapse('show');
+            $('#create-permission-explanation')
+                .prop('hidden', true)
+                .collapse('hide');
+        }
+    });
 });

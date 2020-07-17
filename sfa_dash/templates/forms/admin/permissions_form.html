@@ -27,18 +27,33 @@
 <div class="form-element full-width">
   <label>Action</label><br/>
   <p>Select the action this permission will allow.</p>
-  <input type="radio" name="action" value="create" required>Create
-  <input type="radio" name="action" value="read">Read
+  <input type="radio" name="permission-action" value="create" required>Create
+  <input type="radio" name="permission-action" value="read">Read
   {% if data_type not in ['forecast', 'observation', 'site'] %}
-  <input type="radio" name="action" value="update">Update 
+  <input type="radio" name="permission-action" value="update">Update
   {% endif %}
-  <input type="radio" name="action" value="delete">Delete
+  <input type="radio" name="permission-action" value="delete">Delete
   {% if data_type != "site" %}
-  <input type="radio" name="action" value="read_values">Read Values
-  <input type="radio" name="action" value="write_values">Write Values
-  <input type="radio" name="action" value="delete_values">Delete Values
+  <input type="radio" name="permission-action" value="read_values">Read Values
+  <input type="radio" name="permission-action" value="write_values">Write Values
+  <input type="radio" name="permission-action" value="delete_values">Delete Values
   {% endif %}
 </div>
+<div id="create-permission-explanation" class="collapse">
+{% set perm_requirements = {
+    'site': '',
+    'observation': '<i>Read</i> permissions on the associated Site',
+    'forecast': '<i>Read</i> permissions on the associated Site',
+    'aggregate': '<i>Read</i> and <i>Read Values</i> permissions on Observations that make up the Aggregate',
+    'cdf_forecast_group': '<i>Read</i> permissions on the associated Site',
+    'report': '<i>Read</i> and <i>Read Values</i> permissions on any Forecasts or Observations you would like to analyze in the Report',
+} %}
+<p>Create permissions don't require any further configuration
+{% if perm_requirements.get(data_type, '') | length %} but creating new
+{{ data_type | convert_data_type }}s requires {{ perm_requirements[data_type] | safe }}
+{% endif %}.</p>
+</div>
+<fieldset id="non-create-permission-fields" class="collapse show">
 <div class="form-element full-width">
   <label>Applies to all</label>
   <input type="checkbox" name="applies-to-all" data-toggle="collapse" data-target="#object-selector">
@@ -69,7 +84,7 @@
               <i class="fa fa-warning"></i>
               No Result
             </td>
-          </tr> 
+          </tr>
           {% for i in range(table_data | length) %}
           {{ row_macro(data_type, table_data[i], i, "objects-list" + i |string in form_data ) }}
           {% endfor %}
@@ -78,4 +93,5 @@
     </div>
   </div>
 </div>
+</fieldset>
 {% endblock %}

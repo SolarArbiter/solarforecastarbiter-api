@@ -606,7 +606,7 @@ class PermissionsCreation(AdminView):
         """
         permission = {
             'description': form_data['description'],
-            'action': form_data['action'],
+            'action': form_data['permission-action'],
             'applies_to_all': ('applies-to-all' in form_data),
             'object_type': self.data_type + 's',
         }
