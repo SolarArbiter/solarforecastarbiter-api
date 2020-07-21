@@ -12,7 +12,7 @@ cryptography
 python-jose
 pandas
 pyyaml
-pymysql
+pymysql==0.9.3
 sqlalchemy
 redis
 rq
