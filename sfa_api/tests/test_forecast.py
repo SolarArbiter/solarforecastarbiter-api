@@ -7,6 +7,7 @@ from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV,
                               VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON,
                               ADJ_FX_VALUE_JSON, demo_forecasts)
+from sfa_api.utils.storage_interface import POWER_VARIABLES
 
 
 INVALID_NAME = copy_update(VALID_FORECAST_JSON, 'name', 'Bad semicolon;')
@@ -519,3 +520,22 @@ def test_forecast_post_power_at_weather_site(api, variable):
                    base_url=BASE_URL,
                    json=payload)
     assert res.status_code == 400
+    assert res.json == {
+        "errors": {
+            "site": ["Site must have modeling parameters to create "
+                     f"{', '.join(POWER_VARIABLES)} records."]
+        }
+    }
+
+
+def test_forecast_post_mismatched_aggregate_variable(api):
+    payload = copy_update(VALID_FORECAST_AGG_JSON, 'variable', 'ac_power')
+    res = api.post('/forecasts/single/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 400
+    assert res.json == {
+        "errors": {
+            "variable": ["Forecast variable must match aggregate."]
+        }
+    }

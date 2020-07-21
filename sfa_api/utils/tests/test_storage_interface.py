@@ -1991,3 +1991,49 @@ def test_find_cdf_forecast_group_gaps_invalid_is_obs(sql_app, user,
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.find_cdf_forecast_group_gaps(
             observation_id, start, end)
+
+
+def test__site_has_modeling_params(sql_app, user, site_id_plant):
+    assert storage_interface._site_has_modeling_params(site_id_plant)
+
+
+def test_site_has_modeling_params_weather_site(sql_app, user, site_id):
+    assert not storage_interface._site_has_modeling_params(site_id)
+
+
+@pytest.mark.parametrize('variable', [
+    'ghi', 'dni', 'dhi', 'curtailment', 'air_temperature', 'wind_speed',
+    'relative_humidity', 'curtailment', 'event', 'net_load',
+])
+def test__check_for_power_variables_weather_var(
+        sql_app, user, site_id, variable):
+    storage_interface._check_for_power_variables(variable, site_id)
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power', 'dc_power', 'availability', 'poa_global',
+])
+def test__check_for_power_variables_failure(
+        sql_app, user, site_id, variable):
+    with pytest.raises(storage_interface.BadAPIRequest):
+        storage_interface._check_for_power_variables(variable, site_id)
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power', 'dc_power', 'availability', 'poa_global',
+])
+def test__check_for_power_variables_power_var_at_plant(
+        sql_app, user, site_id_plant, variable):
+    storage_interface._check_for_power_variables(variable, site_id_plant)
+
+
+def test__assert_variable_matches_aggregate(sql_app, user, aggregate_id):
+    storage_interface._assert_variable_matches_aggregate('ghi', aggregate_id)
+
+
+def test__assert_variable_matches_aggregate_failure(
+        sql_app, user, aggregate_id):
+    with pytest.raises(storage_interface.BadAPIRequest):
+        storage_interface._assert_variable_matches_aggregate(
+            'dni', aggregate_id)
+    storage_interface._assert_variable_matches_aggregate('ghi', aggregate_id)
