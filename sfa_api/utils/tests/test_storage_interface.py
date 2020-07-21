@@ -2002,8 +2002,8 @@ def test_site_has_modeling_params_weather_site(sql_app, user, site_id):
 
 
 @pytest.mark.parametrize('variable', [
-    'ghi', 'dni', 'dhi', 'curtailment', 'air_temperature', 'wind_speed',
-    'relative_humidity', 'curtailment', 'event', 'net_load',
+    'ghi', 'dni', 'dhi', 'air_temperature', 'wind_speed',
+    'relative_humidity', 'event', 'net_load',
 ])
 def test__check_for_power_variables_weather_var(
         sql_app, user, site_id, variable):
@@ -2011,7 +2011,7 @@ def test__check_for_power_variables_weather_var(
 
 
 @pytest.mark.parametrize('variable', [
-    'ac_power', 'dc_power', 'availability', 'poa_global',
+    'ac_power', 'dc_power', 'availability', 'poa_global', 'curtailment',
 ])
 def test__check_for_power_variables_failure(
         sql_app, user, site_id, variable):
@@ -2020,7 +2020,7 @@ def test__check_for_power_variables_failure(
 
 
 @pytest.mark.parametrize('variable', [
-    'ac_power', 'dc_power', 'availability', 'poa_global',
+    'ac_power', 'dc_power', 'availability', 'poa_global', 'curtailment',
 ])
 def test__check_for_power_variables_power_var_at_plant(
         sql_app, user, site_id_plant, variable):
