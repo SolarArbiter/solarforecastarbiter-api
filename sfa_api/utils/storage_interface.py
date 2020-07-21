@@ -49,6 +49,9 @@ REINF = re.compile(_RESTR[0] + 'Infinity' + _RESTR[1])
 RENINF = re.compile(_RESTR[0] + '-Infinity' + _RESTR[1])
 
 
+POWER_VARIABLES = ['ac_power', 'dc_power', 'poa_global', 'availability']
+
+
 def generate_uuid():
     """Generate a version 1 UUID and ensure clock_seq is random"""
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
@@ -396,6 +399,12 @@ def store_observation(observation):
         The UUID of the newly created Observation.
     """
     observation_id = generate_uuid()
+    if observation['variable'] in POWER_VARIABLES:
+        if not _site_has_modeling_params(str(observation['site_id'])):
+            raise BadAPIRequest(
+                site="Site must have modeling parameters to create "
+                     f"{', '.join(POWER_VARIABLES)} observation.")
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_observation', observation_id,
@@ -593,9 +602,16 @@ def store_forecast(forecast):
     if forecast.get('site_id') is not None:
         site_or_agg_id = str(forecast['site_id'])
         ref_site = True
+
+        if forecast['variable'] in POWER_VARIABLES:
+            if not _site_has_modeling_params(site_or_agg_id):
+                raise BadAPIRequest(
+                    site="Site must have modeling parameters to create "
+                         f"{', '.join(POWER_VARIABLES)} forecasts.")
     else:
         site_or_agg_id = str(forecast['aggregate_id'])
         ref_site = False
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_forecast', forecast_id, site_or_agg_id,
@@ -972,6 +988,12 @@ def store_cdf_forecast_group(cdf_forecast_group):
     if cdf_forecast_group.get('site_id') is not None:
         site_or_agg_id = str(cdf_forecast_group['site_id'])
         ref_site = True
+
+        if cdf_forecast_group['variable'] in POWER_VARIABLES:
+            if not _site_has_modeling_params(site_or_agg_id):
+                raise BadAPIRequest(
+                    site="Site must have modeling parameters to create "
+                         f"{', '.join(POWER_VARIABLES)} forecasts.")
     else:
         site_or_agg_id = str(cdf_forecast_group['aggregate_id'])
         ref_site = False
@@ -2229,3 +2251,28 @@ def find_cdf_forecast_group_gaps(cdf_group_id, start, end):
     """
     return _call_procedure('find_cdf_forecast_gaps', cdf_group_id,
                            start, end)
+
+
+def _site_has_modeling_params(site_id):
+    """Check if the site has modeling parameters.
+
+    Parameters
+    ----------
+    site_id: str
+        uuid of the site
+
+    Returns
+    -------
+    boolean
+        True if the site has modeling parameters, otherwise False.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the site
+    """
+    has_modeling_params = _call_procedure_for_single(
+        'site_has_modeling_parameters',
+        site_id,
+        cursor_type='standard')
+    return has_modeling_params[0] == 1

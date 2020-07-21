@@ -505,3 +505,17 @@ def test_post_forecast_too_large(
                           'Content-Length': 17*1024*1024},
             data=payload, base_url=BASE_URL)
     assert req.status_code == 413
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power',
+    'dc_power',
+    'poa_global',
+    'availability',
+])
+def test_forecast_post_power_at_weather_site(api, variable):
+    payload = copy_update(VALID_FORECAST_JSON, 'variable', variable)
+    res = api.post('/forecasts/single/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 400

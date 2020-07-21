@@ -565,3 +565,27 @@ def new_climzone(cursor):
             )
         return geojson
     return fnc
+
+
+@pytest.fixture
+def new_weather_site(cursor, new_organization):
+    def fcn(org=None, latitude=0, longitude=0):
+        if org is None:
+            org = new_organization()
+        out = OrderedDict(id=newuuid(), organization_id=org['id'],
+                          name=f'site{str(uuid1())[:10]}',
+                          latitude=latitude, longitude=longitude, elevation=0,
+                          timezone='America/Denver', extra_parameters='',
+                          ac_capacity=None, dc_capacity=None,
+                          temperature_coefficient=None,
+                          tracking_type=None,
+                          surface_tilt=None, surface_azimuth=None,
+                          axis_tilt=None, axis_azimuth=None,
+                          ground_coverage_ratio=None,
+                          backtrack=None,
+                          max_rotation_angle=None,
+                          dc_loss_factor=None,
+                          ac_loss_factor=None)
+        insert_dict(cursor, 'sites', out)
+        return out
+    return fcn
