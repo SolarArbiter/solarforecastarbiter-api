@@ -630,3 +630,18 @@ def test_post_observation_too_large(
                           'Content-Length': 17*1024*1024},
             data=payload, base_url=BASE_URL)
     assert req.status_code == 413
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power',
+    'dc_power',
+    'poa_global',
+    'availability',
+    'curtailment'
+])
+def test_observation_post_power_at_weather_site(api, variable):
+    obs_json = copy_update(VALID_OBS_JSON, 'variable', variable)
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=obs_json)
+    assert r.status_code == 400

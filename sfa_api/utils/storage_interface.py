@@ -49,6 +49,10 @@ REINF = re.compile(_RESTR[0] + 'Infinity' + _RESTR[1])
 RENINF = re.compile(_RESTR[0] + '-Infinity' + _RESTR[1])
 
 
+POWER_VARIABLES = ['ac_power', 'dc_power', 'poa_global', 'curtailment',
+                   'availability']
+
+
 def generate_uuid():
     """Generate a version 1 UUID and ensure clock_seq is random"""
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
@@ -396,6 +400,9 @@ def store_observation(observation):
         The UUID of the newly created Observation.
     """
     observation_id = generate_uuid()
+    _check_for_power_variables(observation['variable'],
+                               str(observation['site_id']))
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_observation', observation_id,
@@ -593,9 +600,13 @@ def store_forecast(forecast):
     if forecast.get('site_id') is not None:
         site_or_agg_id = str(forecast['site_id'])
         ref_site = True
+        _check_for_power_variables(forecast['variable'], site_or_agg_id)
     else:
         site_or_agg_id = str(forecast['aggregate_id'])
         ref_site = False
+        _assert_variable_matches_aggregate(forecast['variable'],
+                                           site_or_agg_id)
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_forecast', forecast_id, site_or_agg_id,
@@ -972,9 +983,13 @@ def store_cdf_forecast_group(cdf_forecast_group):
     if cdf_forecast_group.get('site_id') is not None:
         site_or_agg_id = str(cdf_forecast_group['site_id'])
         ref_site = True
+        _check_for_power_variables(cdf_forecast_group['variable'],
+                                   site_or_agg_id)
     else:
         site_or_agg_id = str(cdf_forecast_group['aggregate_id'])
         ref_site = False
+        _assert_variable_matches_aggregate(cdf_forecast_group['variable'],
+                                           site_or_agg_id)
 
     # the procedure expects arguments in a certain order
     _call_procedure('store_cdf_forecasts_group',
@@ -2229,3 +2244,80 @@ def find_cdf_forecast_group_gaps(cdf_group_id, start, end):
     """
     return _call_procedure('find_cdf_forecast_gaps', cdf_group_id,
                            start, end)
+
+
+def _site_has_modeling_params(site_id):
+    """Check if the site has modeling parameters.
+
+    Parameters
+    ----------
+    site_id: str
+        uuid of the site
+
+    Returns
+    -------
+    boolean
+        True if the site has modeling parameters, otherwise False.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the site
+    """
+    site = read_site(site_id)
+    modeling_parameters = site['modeling_parameters']
+    common_param_keys = ['ac_capacity', 'dc_capacity', 'ac_loss_factor',
+                         'dc_loss_factor', 'temperature_coefficient',
+                         'tracking_type']
+    has_modeling_params = all([modeling_parameters.get(key) is not None
+                               for key in common_param_keys])
+    return has_modeling_params
+
+
+def _check_for_power_variables(variable, site_id):
+    """Ensure that observations or forecasts made with power variables
+    have a site with modeling parameters.
+
+    Parameters
+    ----------
+    variable: str
+        The variable recorded by the object
+    site_id: str
+        The uuid of the site referenced by the object.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the site.
+    BadAPIRequest
+        If the variable is not allowed for the site.
+    """
+    if variable in POWER_VARIABLES:
+        if not _site_has_modeling_params(site_id):
+            raise BadAPIRequest(
+                site="Site must have modeling parameters to create "
+                     f"{', '.join(POWER_VARIABLES)} records.")
+
+
+def _assert_variable_matches_aggregate(variable, aggregate_id):
+    """Ensure that forecast variable matches the variable of the aggregate it's
+    made for.
+
+    Parameters
+    ----------
+    variable: str
+        The variable of the forecast.
+    site_id: str
+        The uuid of the site the forecast references.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the aggregate.
+    BadAPIRequest
+        If the variable does not match the aggregate.
+
+    """
+    aggregate = read_aggregate(aggregate_id)
+    if variable != aggregate['variable']:
+        raise BadAPIRequest(variable="Forecast variable must match aggregate.")

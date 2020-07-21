@@ -470,3 +470,31 @@ def test_post_forecast_too_large(
             content_type=content_type,
             data=payload, base_url=BASE_URL)
     assert req.status_code == 413
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power',
+    'dc_power',
+    'poa_global',
+    'availability',
+    'curtailment'
+])
+def test_forecast_post_power_at_weather_site(api, variable):
+    payload = copy_update(VALID_CDF_FORECAST_JSON, 'variable', variable)
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 400
+
+
+def test_forecast_post_mismatched_aggregate_variable(api):
+    payload = copy_update(VALID_CDF_FORECAST_AGG_JSON, 'variable', 'ac_power')
+    res = api.post('/forecasts/cdf/',
+                   base_url=BASE_URL,
+                   json=payload)
+    assert res.status_code == 400
+    assert res.json == {
+        "errors": {
+            "variable": ["Forecast variable must match aggregate."]
+        }
+    }
