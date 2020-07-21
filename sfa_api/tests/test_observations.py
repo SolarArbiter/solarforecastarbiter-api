@@ -637,6 +637,7 @@ def test_post_observation_too_large(
     'dc_power',
     'poa_global',
     'availability',
+    'curtailment'
 ])
 def test_observation_post_power_at_weather_site(api, variable):
     obs_json = copy_update(VALID_OBS_JSON, 'variable', variable)
