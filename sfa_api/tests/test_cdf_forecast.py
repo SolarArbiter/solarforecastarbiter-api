@@ -477,6 +477,7 @@ def test_post_forecast_too_large(
     'dc_power',
     'poa_global',
     'availability',
+    'curtailment'
 ])
 def test_forecast_post_power_at_weather_site(api, variable):
     payload = copy_update(VALID_CDF_FORECAST_JSON, 'variable', variable)
