@@ -1,1 +1,0 @@
-DROP PROCEDURE site_has_modeling_parameters;

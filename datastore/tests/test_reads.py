@@ -2291,29 +2291,3 @@ def test_find_cdf_forecast_gaps_is_obs(
         cursor.callproc('find_cdf_forecast_gaps',
                         (auth0id, obsid, start, end))
     assert e.value.args[0] == 1142
-
-
-def test_site_has_modeling_parameters(cursor, insertuser, allow_read_sites):
-    auth0id = insertuser[0]['auth0_id']
-    site = insertuser[1]
-    cursor.callproc('site_has_modeling_parameters', (auth0id, site['strid']))
-    assert cursor.fetchone()[0]
-
-
-def test_site_has_modeling_parameters_no_parameters(
-        cursor, insertuser, new_weather_site, allow_read_sites):
-    auth0id = insertuser[0]['auth0_id']
-    org = insertuser[4]
-    site = new_weather_site(org)
-    site_id = str(bin_to_uuid(site['id']))
-    cursor.callproc('site_has_modeling_parameters', (auth0id, site_id))
-    assert not cursor.fetchone()[0]
-
-
-def test_site_has_modeling_parameters_cant_read(cursor, insertuser):
-    auth0id = insertuser[0]['auth0_id']
-    site = insertuser[1]
-    with pytest.raises(pymysql.err.OperationalError) as e:
-        cursor.callproc(
-            'site_has_modeling_parameters', (auth0id, site['strid']))
-    assert e.value.args[0] == 1143
