@@ -2037,3 +2037,32 @@ def test__assert_variable_matches_aggregate_failure(
         storage_interface._assert_variable_matches_aggregate(
             'dni', aggregate_id)
     storage_interface._assert_variable_matches_aggregate('ghi', aggregate_id)
+
+
+def test_get_user_creatable_types(sql_app, user, nocommit_cursor):
+    objects = storage_interface.get_user_creatable_types()
+    assert objects == ['sites', 'aggregates', 'cdf_forecasts', 'forecasts',
+                       'observations', 'roles', 'permissions', 'reports']
+
+
+@pytest.mark.parametrize('object_type,expected_actions', [
+    ('observations', ['create', 'read', 'delete', 'read_values',
+                      'write_values', 'delete_values']),
+    ('forecasts', ['create', 'read', 'delete', 'read_values', 'write_values',
+                   'delete_values']),
+    ('cdf_forecasts', ['create', 'read', 'update', 'delete', 'read_values',
+                       'write_values', 'delete_values']),
+    ('roles', ['create', 'read', 'update', 'delete', 'grant', 'revoke']),
+    ('permissions', ['create', 'read', 'update', 'delete']),
+    ('users', ['read', 'update']),
+    ('reports', ['create', 'read', 'update', 'delete', 'read_values',
+                 'write_values']),
+])
+def test_list_actions_on_all_objects_of_type(
+        sql_app, user, object_type, expected_actions):
+    object_list = storage_interface.list_actions_on_all_objects_of_type(
+        object_type)
+    # Test user is granted "applies_to_all" permissions, so we can assert that
+    # each object has the same permissions
+    for k, v in object_list.items():
+        assert v == expected_actions
