@@ -2306,13 +2306,13 @@ def object_combinations():
 
 
 @pytest.mark.parametrize('object_types', object_combinations())
-def test_get_user_create_permissions(
+def test_get_user_creatable_types(
         cursor, insertuser, add_perm, object_types):
     cursor.execute('DELETE FROM permissions WHERE action = "create"')
     for object_type in object_types:
         add_perm('create', object_type)
     auth0id = insertuser[0]['auth0_id']
-    cursor.callproc('get_user_create_permissions', (auth0id,))
+    cursor.callproc('get_user_creatable_types', (auth0id,))
     create_perms = cursor.fetchall()
     assert tuple([tup[0] for tup in create_perms]) == object_types
 

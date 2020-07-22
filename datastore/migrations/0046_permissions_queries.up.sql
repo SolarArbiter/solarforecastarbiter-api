@@ -1,4 +1,4 @@
-CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE get_user_create_permissions(
+CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE get_user_creatable_types(
     IN auth0id VARCHAR(32))
 COMMENT 'Get a list of object types the user can create'
 READS SQL DATA SQL SECURITY DEFINER
@@ -15,8 +15,8 @@ BEGIN
         );
 END;
 
-GRANT EXECUTE ON PROCEDURE get_user_create_permissions TO 'select_rbac'@'localhost';
-GRANT EXECUTE ON PROCEDURE get_user_create_permissions TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE get_user_creatable_types TO 'select_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE get_user_creatable_types TO 'apiuser'@'%';
 
 
 CREATE DEFINER = 'select_rbac'@'localhost' PROCEDURE list_actions_on_all_objects_of_type(
