@@ -3,6 +3,7 @@ import datetime as dt
 import itertools
 import json
 import random
+import unittest
 
 
 import pytest
@@ -1574,14 +1575,14 @@ def action_combinations():
         combos = combos + list(itertools.combinations(all_actions, i))
     return combos
 
-@pytest.mark.parametrize('granted', action_combinations())  
+@pytest.mark.parametrize('granted', action_combinations())
 def test_get_user_actions_on_object(
         dictcursor, user_org_role, new_role, add_perm, granted):
     user, org, _ = user_org_role
     auth0id = user['auth0_id']
     role = new_role(org=org)
     role_id = bin_to_uuid(role['id'])
-    
+
     for action in granted:
         add_perm(action, 'roles')
 
@@ -2250,7 +2251,7 @@ def test_find_cdf_forecast_gaps(
     assert out[0] == (start, mid)
     assert out[1] == (mid, inter)
     assert out[2] == (inter, fin)
-    
+
     # single value
     start = start + dt.timedelta(days=30)
     for sid in insertuser.cdf['constant_values'].keys():
@@ -2291,3 +2292,106 @@ def test_find_cdf_forecast_gaps_is_obs(
         cursor.callproc('find_cdf_forecast_gaps',
                         (auth0id, obsid, start, end))
     assert e.value.args[0] == 1142
+
+
+all_object_types = ['forecasts', 'observations', 'cdf_forecasts',
+                    'aggregates', 'reports', 'users', 'permissions', 'roles']
+
+
+def object_combinations():
+    combos = []
+    for i in range(1, 9):
+        combos = combos + list(itertools.combinations(all_object_types, i))
+    return combos
+
+
+@pytest.mark.parametrize('object_types', object_combinations())
+def test_get_user_create_permissions(
+        cursor, insertuser, add_perm, object_types):
+    cursor.execute('DELETE FROM permissions WHERE action = "create"')
+    for object_type in object_types:
+        add_perm('create', object_type)
+    auth0id = insertuser[0]['auth0_id']
+    cursor.callproc('get_user_create_permissions', (auth0id,))
+    create_perms = cursor.fetchall()
+    assert tuple([tup[0] for tup in create_perms]) == object_types
+
+
+@pytest.fixture(params=['forecasts', 'observations', 'cdf_forecasts',
+                        'aggregates', 'reports', 'users', 'permissions',
+                        'roles', 'users'])
+def perm_object_type(request):
+    return request.param
+
+
+@pytest.fixture(params=action_combinations()[::10])
+def generate_object_and_perms(
+        request, cursor, getfcn, user_org_role, new_permission):
+    new_func, object_type = getfcn
+    _, _, role = user_org_role
+
+    cursor.execute('DELETE FROM permissions')
+
+    new_obj = new_func()
+    all_actions = list(request.param)
+    object_id = bin_to_uuid(new_obj['id'])
+    for action in request.param:
+        new_perm = new_permission(action, object_type, False)
+        cursor.execute(
+            'INSERT INTO permission_object_mapping (permission_id, object_id) '
+            'VALUES (%s, %s)', (new_perm['id'], new_obj['id']))
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], new_perm['id']))
+    return object_type, object_id, all_actions
+
+
+def test_list_actions_on_all_objects_of_type(
+        dictcursor, user_org_role, generate_object_and_perms):
+    auth0id = user_org_role[0]['auth0_id']
+
+    object_type, object_id, actions = generate_object_and_perms
+    dictcursor.callproc('list_actions_on_all_objects_of_type',
+                        (auth0id, object_type))
+    result = dictcursor.fetchall()
+
+    the_object = result[0]
+    assert the_object['id'] == object_id
+    assert json.loads(the_object['actions']).sort() == (actions).sort()
+
+
+@pytest.fixture
+def make_lots_of_one_thing(cursor, getfcn, user_org_role, new_permission):
+    _, org, role = user_org_role
+
+    action_sets = action_combinations()[::random.randint(5, 10)][5:]
+    new_func, object_type = getfcn
+    the_objects = {}
+
+    for i in range(0, random.randint(5, 10)):
+        new_obj = new_func()
+        actions_on_new_obj = list(action_sets[i])
+        for action in actions_on_new_obj:
+            new_perm = new_permission(action, object_type, False, org)
+            cursor.execute(
+                'INSERT INTO permission_object_mapping (permission_id, '
+                'object_id) VALUES (%s, %s)', (new_perm['id'], new_obj['id']))
+            cursor.execute(
+                'INSERT INTO role_permission_mapping (role_id, permission_id) '
+                'VALUES (%s, %s)', (role['id'], new_perm['id']))
+        the_objects[bin_to_uuid(new_obj['id'])] = actions_on_new_obj.sort()
+    return the_objects, object_type
+
+
+def test_list_actions_on_all_objects_of_type_multiple_objects(
+        dictcursor, user_org_role, make_lots_of_one_thing):
+    auth0id = user_org_role[0]['auth0_id']
+
+    objects, object_type = make_lots_of_one_thing
+    dictcursor.callproc('list_actions_on_all_objects_of_type',
+                        (auth0id, object_type))
+    result = dictcursor.fetchall()
+    id_action_dict = {res['id']: json.loads(res['actions']).sort()
+                      for res in result}
+    for k, v in objects.items():
+        assert id_action_dict[k] == v

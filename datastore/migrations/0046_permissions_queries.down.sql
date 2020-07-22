@@ -1,0 +1,2 @@
+DROP PROCEDURE get_user_create_permissions;
+DROP PROCEDURE list_actions_on_all_objects_of_type
