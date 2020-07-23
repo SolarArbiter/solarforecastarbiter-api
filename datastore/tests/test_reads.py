@@ -2364,11 +2364,11 @@ def test_list_actions_on_all_objects_of_type(
 def make_lots_of_one_thing(cursor, getfcn, user_org_role, new_permission):
     _, org, role = user_org_role
 
-    action_sets = action_combinations()[::random.randint(5, 10)][5:]
+    action_sets = action_combinations()[::7][5:]
     new_func, object_type = getfcn
     the_objects = {}
 
-    for i in range(0, random.randint(5, 10)):
+    for i in range(0, 7):
         new_obj = new_func()
         actions_on_new_obj = list(action_sets[i])
         for action in actions_on_new_obj:
