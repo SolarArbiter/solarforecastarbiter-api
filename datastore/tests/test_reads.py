@@ -2391,6 +2391,7 @@ def test_list_actions_on_all_objects_of_type_multiple_objects(
     dictcursor.callproc('list_actions_on_all_objects_of_type',
                         (auth0id, object_type))
     result = dictcursor.fetchall()
+    assert len(result) == 7
     id_action_dict = {res['id']: json.loads(res['actions']).sort()
                       for res in result}
     for k, v in objects.items():
