@@ -312,7 +312,7 @@ class UserCreatePermissions(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/CreateObjectList'
+                  $ref: '#/components/schemas/UserCreatePerms'
           404:
             $ref: '#/components/responses/404-NotFound'
           401:
@@ -343,7 +343,7 @@ class UserActionsOnType(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ActionList'
+                  $ref: '#/components/schemas/ActionsOnTypeList'
           404:
             $ref: '#/components/responses/404-NotFound'
           401:
@@ -356,7 +356,8 @@ class UserActionsOnType(MethodView):
             })
         storage = get_storage()
         object_dict = storage.list_actions_on_all_objects_of_type(object_type)
-        json_response = {object_type: object_dict}
+        json_response = {'object_type': object_type,
+                         'objects': object_dict}
         return jsonify(json_response)
 
 
@@ -381,6 +382,16 @@ spec.components.parameter(
         'description': "The user's email address",
         'required': 'true',
         'name': 'email'
+    })
+spec.components.parameter(
+    'object_type', 'path',
+    {
+        'schema': {
+            'type': 'string',
+        },
+        'description': "The type of object to query for.",
+        'requires': 'true',
+        'name': 'object_type',
     })
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',

@@ -27,7 +27,7 @@ BEGIN
     DECLARE userid BINARY(16);
     SET userid = (SELECT id FROM users WHERE auth0_id = auth0id);
 
-	SELECT dt.id, json_arrayagg(dt.action) AS actions FROM (
+	SELECT dt.id as object_id, json_arrayagg(dt.action) AS actions FROM (
 		SELECT DISTINCT bin_to_uuid(object_id, 1) as id, action
 		FROM permission_object_mapping
         INNER JOIN permissions ON (permission_object_mapping.permission_id=permissions.id)

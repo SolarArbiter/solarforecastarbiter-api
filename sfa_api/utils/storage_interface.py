@@ -2354,4 +2354,4 @@ def list_actions_on_all_objects_of_type(object_type):
     object_action_list = _call_procedure(
         'list_actions_on_all_objects_of_type',
         object_type)
-    return {obj['id']: obj['actions'] for obj in object_action_list}
+    return object_action_list

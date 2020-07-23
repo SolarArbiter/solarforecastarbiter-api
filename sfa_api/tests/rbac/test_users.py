@@ -304,9 +304,9 @@ def test_get_user_create_permissions(
 def test_get_user_actions_on_type(
         api, object_type, expected_actions):
     res = api.get(f'/users/actions-on-type/{object_type}', BASE_URL)
-    objects = res.json[f'{object_type}']
-    for object_id, actions in objects.items():
-        assert actions == expected_actions
+    objects = res.json['objects']
+    for object_dict in objects:
+        assert object_dict['actions'].sort() == expected_actions.sort()
 
 
 @pytest.mark.parametrize('object_type,expected_actions', [
@@ -342,7 +342,11 @@ def test_get_user_actions_on_type_minimum_test_perms(
     for action in expected_actions:
         remove_all_perms(action, object_type)
     res = api.get(f'/users/actions-on-type/{object_type}', BASE_URL)
-    objects = res.json[f'{object_type}']
+
+    assert res.json['object_type'] == object_type
+
+    objects_list = res.json['objects']
+    objects = {o['object_id']: o['actions'] for o in objects_list}
 
     for k, v in objects.items():
         the_object = all_objects[k]
@@ -360,3 +364,20 @@ def test_get_user_actions_on_type_minimum_test_perms(
             for action in v:
                 assert action in ['read', 'read_values']
                 assert org == 'Reference'
+
+
+def test_get_user_actions_on_type_invalid_type(api):
+    res = api.get(f'/users/actions-on-type/bad-type', BASE_URL)
+    assert res.status_code == 400
+    assert res.json == {
+        'errors': {
+            'object_type': ['Must be one of: sites, aggregates, forecasts, '
+                            'observations, users, roles, permissions, '
+                            'cdf_forecasts, reports'],
+            }
+        }
+
+
+def test_get_user_actions_on_type_no_type(api):
+    res = api.get(f'/users/actions-on-type/', BASE_URL)
+    assert res.status_code == 404

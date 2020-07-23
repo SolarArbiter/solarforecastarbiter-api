@@ -1449,3 +1449,17 @@ class AggregateValuesSchema(ObservationValuesPostSchema):
 class ActionList(ma.Schema):
     object_id = ma.UUID(title="Object UUID")
     actions = ma.List(ma.String(), title="Actions allowed on the object.")
+
+
+@spec.define_schema('ActionsOnTypeList')
+class ActionsOnTypeList(ma.Schema):
+    """Only used for documentation"""
+    object_type = ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES))
+    objects = ma.Nested(ActionList, many=True)
+
+
+@spec.define_schema('UserCreatePerms')
+class UserCreatePerms(ma.Schema):
+    """Only used for documentation"""
+    can_create = ma.List(
+        ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES)))
