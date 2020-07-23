@@ -23,6 +23,10 @@ ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
 ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
 ALLOWED_METRICS.update(ALLOWED_PROBABILISTIC_METRICS)
 
+ALLOWED_OBJECT_TYPES = ['sites', 'aggregates', 'forecasts', 'observations',
+                        'users', 'roles', 'permissions', 'cdf_forecasts',
+                        'reports']
+
 
 class ISODateTime(ma.AwareDateTime):
     """
@@ -788,9 +792,7 @@ class PermissionPostSchema(ma.Schema):
         title="Object Type",
         description="The type of object this permission will act on.",
         required=True,
-        validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
-                                 'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts', 'reports']),
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",

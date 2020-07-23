@@ -3,10 +3,10 @@ from flask.views import MethodView
 
 
 from sfa_api import spec
-from sfa_api.schema import UserSchema, ActionList
+from sfa_api.schema import UserSchema, ActionList, ALLOWED_OBJECT_TYPES
 from sfa_api.utils.auth0_info import (
     get_email_of_user, list_user_emails, get_auth0_id_of_user)
-from sfa_api.utils.errors import StorageAuthError
+from sfa_api.utils.errors import StorageAuthError, BadAPIRequest
 from sfa_api.utils.storage import get_storage
 
 
@@ -297,6 +297,69 @@ class UserActionsView(MethodView):
         return jsonify(ActionList().dump(json_response))
 
 
+class UserCreatePermissions(MethodView):
+    def get(self):
+        """
+        ---
+        summary: List object types user can create.
+        description: |-
+          Get a list of object types the user can create.
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of object types the user has permission to create
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/CreateObjectList'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+
+        storage = get_storage()
+        object_types = storage.get_user_creatable_types()
+        json_response = {'can_create': object_types}
+        return jsonify(json_response)
+
+
+class UserActionsOnType(MethodView):
+    def get(self, object_type):
+        """
+        ---
+        summary: List all permitted actions on all objects of a given type.
+        description: |-
+          Get a list of object ids and the actions the user is permitted to
+          perform on each object.
+        parameters:
+        - object_type
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of actions the user can make on the object.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ActionList'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+        """
+        if object_type not in ALLOWED_OBJECT_TYPES:
+            raise BadAPIRequest({
+                'object_type': 'Must be one of: '
+                               f'{", ".join(ALLOWED_OBJECT_TYPES)}'
+            })
+        storage = get_storage()
+        object_list = storage.list_actions_on_all_objects_of_type(object_type)
+        json_response = {f'{object_type}s': object_list}
+        return jsonify(json_response)
+
+
 spec.components.parameter(
     'user_id', 'path',
     {
@@ -340,6 +403,12 @@ user_blp.add_url_rule(
 user_blp.add_url_rule(
     '/actions-on/<uuid_str:object_id>',
     view_func=UserActionsView.as_view('user_actions_on_object'))
+user_blp.add_url_rule(
+    '/can-create/',
+    view_func=UserCreatePermissions.as_view('user_create_permissions'))
+user_blp.add_url_rule(
+    '/actions-on-type/<object_type>',
+    view_func=UserActionsOnType.as_view('user_actions_on_type'))
 
 user_email_blp = Blueprint(
     'users-by-email', 'users-by-email', url_prefix='/users-by-email',
