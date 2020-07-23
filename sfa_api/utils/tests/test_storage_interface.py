@@ -2046,16 +2046,16 @@ def test_get_user_creatable_types(sql_app, user, nocommit_cursor):
 
 
 @pytest.mark.parametrize('object_type,expected_actions', [
-    ('observations', ['create', 'read', 'delete', 'read_values',
+    ('observations', ['read', 'delete', 'read_values',
                       'write_values', 'delete_values']),
-    ('forecasts', ['create', 'read', 'delete', 'read_values', 'write_values',
+    ('forecasts', ['read', 'delete', 'read_values', 'write_values',
                    'delete_values']),
-    ('cdf_forecasts', ['create', 'read', 'update', 'delete', 'read_values',
+    ('cdf_forecasts', ['read', 'update', 'delete', 'read_values',
                        'write_values', 'delete_values']),
-    ('roles', ['create', 'read', 'update', 'delete', 'grant', 'revoke']),
-    ('permissions', ['create', 'read', 'update', 'delete']),
+    ('roles', ['read', 'update', 'delete', 'grant', 'revoke']),
+    ('permissions', ['read', 'update', 'delete']),
     ('users', ['read', 'update']),
-    ('reports', ['create', 'read', 'update', 'delete', 'read_values',
+    ('reports', ['read', 'update', 'delete', 'read_values',
                  'write_values']),
 ])
 def test_list_actions_on_all_objects_of_type(
@@ -2064,5 +2064,5 @@ def test_list_actions_on_all_objects_of_type(
         object_type)
     # Test user is granted "applies_to_all" permissions, so we can assert that
     # each object has the same permissions
-    for k, v in object_list.items():
-        assert v == expected_actions
+    for o in object_list:
+        assert o['actions'].sort() == expected_actions.sort()
