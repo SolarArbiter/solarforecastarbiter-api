@@ -355,8 +355,8 @@ class UserActionsOnType(MethodView):
                                f'{", ".join(ALLOWED_OBJECT_TYPES)}'
             })
         storage = get_storage()
-        object_list = storage.list_actions_on_all_objects_of_type(object_type)
-        json_response = {f'{object_type}s': object_list}
+        object_dict = storage.list_actions_on_all_objects_of_type(object_type)
+        json_response = {object_type: object_dict}
         return jsonify(json_response)
 
 

@@ -266,3 +266,97 @@ def test_get_user_actions_on_object_404_no_permissions(
     remove_perms_from_current_role(res.json['actions'][-1], 'forecasts')
     res = api.get(f'/users/actions-on/{forecast_id}', BASE_URL)
     assert res.status_code == 404
+
+
+all_object_types = ['sites', 'aggregates', 'cdf_forecasts', 'forecasts',
+                    'observations', 'roles', 'permissions', 'reports']
+
+
+@pytest.mark.parametrize('to_remove', [
+    ['sites'],
+    ['forecasts'],
+    ['roles', 'permissions'],
+    ['forecasts', 'observations', 'aggregates', 'reports'],
+])
+def test_get_user_create_permissions(
+        api, to_remove, remove_perms_from_current_role):
+    for otype in to_remove:
+        remove_perms_from_current_role('create', otype)
+    res = api.get(f'/users/can-create/', BASE_URL)
+    expected_types = [otype for otype in all_object_types
+                      if otype not in to_remove]
+    assert res.json == {'can_create': expected_types}
+
+
+@pytest.mark.parametrize('object_type,expected_actions', [
+    ('observations', ['create', 'read', 'delete', 'read_values',
+                      'write_values', 'delete_values']),
+    ('forecasts', ['create', 'read', 'delete', 'read_values', 'write_values',
+                   'delete_values']),
+    ('cdf_forecasts', ['create', 'read', 'update', 'delete', 'read_values',
+                       'write_values', 'delete_values']),
+    ('roles', ['create', 'read', 'update', 'delete', 'grant', 'revoke']),
+    ('permissions', ['create', 'read', 'update', 'delete']),
+    ('users', ['read', 'update']),
+    ('reports', ['create', 'read', 'update', 'delete', 'read_values',
+                 'write_values']),
+])
+def test_get_user_actions_on_type(
+        api, object_type, expected_actions):
+    res = api.get(f'/users/actions-on-type/{object_type}', BASE_URL)
+    objects = res.json[f'{object_type}']
+    for object_id, actions in objects.items():
+        assert actions == expected_actions
+
+
+@pytest.mark.parametrize('object_type,expected_actions', [
+    ('observations', ['create', 'read', 'delete', 'read_values',
+                      'write_values', 'delete_values']),
+    ('forecasts', ['create', 'read', 'delete', 'read_values', 'write_values',
+                   'delete_values']),
+    ('aggregates', ['create', 'read', 'update', 'delete', 'read_values',
+                    'write_values', 'delete_values']),
+    ('cdf_forecasts', ['create', 'read', 'update', 'delete', 'read_values',
+                       'write_values', 'delete_values']),
+    ('roles', ['create', 'grant', 'revoke', 'delete',  'read']),
+    ('permissions', ['create', 'delete', 'update', 'read']),
+    ('users', ['read', 'update']),
+    ('reports', ['create', 'read', 'update', 'delete', 'read_values',
+                 'write_values']),
+])
+def test_get_user_actions_on_type_minimum_test_perms(
+        api, object_type, expected_actions, remove_all_perms, orgid):
+    if object_type == 'cdf_forecasts':
+        id_key = 'forecast_id'
+        listing_path = '/forecasts/cdf/'
+    else:
+        if object_type == 'forecasts':
+            listing_path = '/forecasts/single/'
+        else:
+            listing_path = f'/{object_type}/'
+        id_key = f'{object_type[:-1]}_id'
+
+    listing = api.get(listing_path, BASE_URL).json
+    all_objects = {o[id_key]: o for o in listing}
+
+    for action in expected_actions:
+        remove_all_perms(action, object_type)
+    res = api.get(f'/users/actions-on-type/{object_type}', BASE_URL)
+    objects = res.json[f'{object_type}']
+
+    for k, v in objects.items():
+        the_object = all_objects[k]
+        org = the_object.get('provider', the_object.get('organization', None))
+        if object_type == 'roles':
+            # can't test roles for update, becasue removing it causes perm
+            # removal to fail, and resets the nocommit cursor so instead test
+            # that only these minimal permissions remain.
+            assert v == ['update']
+            assert the_object['name'] in [
+                'Test user role',
+                'Read Weather Station',
+                'DEFAULT User role 0c90950a-7cca-11e9-a81f-54bf64606445']
+        else:
+            for action in v:
+                assert action in ['read', 'read_values']
+                assert org == 'Reference'
