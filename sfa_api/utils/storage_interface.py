@@ -2347,9 +2347,10 @@ def list_actions_on_all_objects_of_type(object_type):
 
     Returns
     -------
-    dict
-        Dict where keys are object uuids and values are lists of actions the
-        user can take.
+    list
+        List of dictionaries that contain `object_id`, the uuid of the object
+        and `actions`, a list of actions the user has permission to perform
+        on the object.
     """
     object_action_list = _call_procedure(
         'list_actions_on_all_objects_of_type',
