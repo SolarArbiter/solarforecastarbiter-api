@@ -460,11 +460,13 @@ def test_get_cdf_forecast_group_gaps_400(api, cdf_forecast_id, addmayvalues):
 
 
 @pytest.mark.parametrize('content_type,payload', [
-    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
-    ('text/csv', 'timestamp,value\n'+"1"*17*1024*1024),
+    ('application/json', '{"values": [1, 2]}'),
+    ('text/csv', 'timestamp,value\n1,2'),
 ])
 def test_post_forecast_too_large(
-        api, cdf_forecast_id, content_type, payload):
+        api, cdf_forecast_id, content_type, payload, mocker):
+    req_headers = mocker.patch('sfa_api.utils.request_handling.request')
+    req_headers.headers = {'Content-Length': 17*1024*1024}
     req = api.post(
             f'/forecasts/cdf/single/{cdf_forecast_id}/values',
             content_type=content_type,

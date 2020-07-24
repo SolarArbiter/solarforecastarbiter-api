@@ -619,11 +619,13 @@ def test_get_observation_unflagged_404_fxid(api, forecast_id, addmayvalues):
 
 
 @pytest.mark.parametrize('content_type,payload', [
-    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
-    ('text/csv', 'timestamp,value,quality_flag\n'+"1"*17*1024*1024),
+    ('application/json', '{"values": [1, 2]}'),
+    ('text/csv', 'timestamp,value,quality_flag\n1,2'),
 ])
 def test_post_observation_too_large(
-        api, observation_id, content_type, payload):
+        api, observation_id, content_type, payload, mocker):
+    req_headers = mocker.patch('sfa_api.utils.request_handling.request')
+    req_headers.headers = {'Content-Length': 17*1024*1024}
     req = api.post(
             f'/observations/{observation_id}/values',
             environ_base={'Content-Type': content_type,
