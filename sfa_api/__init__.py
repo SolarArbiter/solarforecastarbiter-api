@@ -51,6 +51,7 @@ def create_app(config_name='ProductionConfig'):
                                          'blob:',
                                          redoc_script,
                                          "'strict-dynamic'"],
+                          'child-src': "blob:",
                           'base-uri': "'none'"
                       },
                       content_security_policy_nonce_in=['script-src'])
