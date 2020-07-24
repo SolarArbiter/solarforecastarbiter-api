@@ -3,7 +3,6 @@ import datetime as dt
 import itertools
 import json
 import random
-import unittest
 
 
 import pytest
