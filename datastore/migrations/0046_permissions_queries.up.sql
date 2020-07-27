@@ -27,8 +27,7 @@ BEGIN
     DECLARE userid BINARY(16);
     SET userid = (SELECT id FROM users WHERE auth0_id = auth0id);
 
-	SELECT dt.id as object_id, json_arrayagg(dt.action) AS actions FROM (
-		SELECT DISTINCT bin_to_uuid(object_id, 1) as id, action
+      SELECT bin_to_uuid(object_id, 1) as object_id, JSON_KEYS(JSON_OBJECTAGG(action, '')) as actions
 		FROM permission_object_mapping
         INNER JOIN permissions ON (permission_object_mapping.permission_id=permissions.id)
 		WHERE object_type=objecttype AND permission_id IN(
@@ -39,10 +38,8 @@ BEGIN
 				FROM user_role_mapping
 				WHERE user_id = userid
 			)
-		)
-	) as dt group by id;
+		) group by permission_objecct_mapping.object_id;
 END;
 
 GRANT EXECUTE ON PROCEDURE list_actions_on_all_objects_of_type TO 'select_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE list_actions_on_all_objects_of_type TO 'apiuser'@'%';
-
