@@ -1453,13 +1453,20 @@ class ActionList(ma.Schema):
 
 @spec.define_schema('ActionsOnTypeList')
 class ActionsOnTypeList(ma.Schema):
-    """Only used for documentation"""
-    object_type = ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES))
-    objects = ma.Nested(ActionList, many=True)
+    object_type = ma.String(
+        title="Object type",
+        description="Type of objects included in `objects` field.",
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES))
+    objects = ma.Nested(
+        ActionList,
+        tite="Objects",
+        description="List of object uuids and allowed actions.",
+        many=True)
 
 
 @spec.define_schema('UserCreatePerms')
 class UserCreatePerms(ma.Schema):
-    """Only used for documentation"""
     can_create = ma.List(
-        ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES)))
+        ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES)),
+        title="Can create",
+        description="List of types of objects the user can create.")
