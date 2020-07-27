@@ -2316,13 +2316,6 @@ def test_get_user_creatable_types(
     assert tuple([tup[0] for tup in create_perms]) == object_types
 
 
-@pytest.fixture(params=['forecasts', 'observations', 'cdf_forecasts',
-                        'aggregates', 'reports', 'users', 'permissions',
-                        'roles', 'users'])
-def perm_object_type(request):
-    return request.param
-
-
 @pytest.fixture(params=action_combinations()[::10])
 def generate_object_and_perms(
         request, cursor, getfcn, user_org_role, new_permission):
