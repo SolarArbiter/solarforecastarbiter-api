@@ -2293,7 +2293,7 @@ def test_find_cdf_forecast_gaps_is_obs(
     assert e.value.args[0] == 1142
 
 
-all_object_types = ['forecasts', 'observations', 'cdf_forecasts',
+all_object_types = ['sites', 'forecasts', 'observations', 'cdf_forecasts',
                     'aggregates', 'reports', 'users', 'permissions', 'roles']
 
 
