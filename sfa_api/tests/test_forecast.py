@@ -6,7 +6,8 @@ from sfa_api.conftest import (variables, interval_value_types, interval_labels,
                               BASE_URL, VALID_FORECAST_JSON, copy_update,
                               VALID_FX_VALUE_JSON, VALID_FX_VALUE_CSV,
                               VALID_FORECAST_AGG_JSON, UNSORTED_FX_VALUE_JSON,
-                              ADJ_FX_VALUE_JSON, demo_forecasts)
+                              ADJ_FX_VALUE_JSON, demo_forecasts,
+                              _get_large_test_payload)
 from sfa_api.utils.storage_interface import POWER_VARIABLES
 
 
@@ -498,7 +499,7 @@ def test_get_forecast_gaps_400(api, inaccessible_forecast_id):
     ('application/json', '{"values": [1, 2]}'),
     ('text/csv', 'timestamp,value\n'+"1,2"),
 ])
-def test_post_forecast_too_large(
+def test_post_forecast_too_large_from_header(
         api, forecast_id, content_type, payload, mocker):
     req_headers = mocker.patch('sfa_api.utils.request_handling.request')
     req_headers.headers = {'Content-Length': 17*1024*1024}
@@ -506,6 +507,20 @@ def test_post_forecast_too_large(
             f'/forecasts/single/{forecast_id}/values',
             environ_base={'Content-Type': content_type,
                           'Content-Length': 17*1024*1024},
+            data=payload, base_url=BASE_URL)
+    assert req.status_code == 413
+
+
+@pytest.mark.parametrize('content_type', [
+    'application/json',
+    'text/csv',
+])
+def test_post_forecast_too_large_from_body(
+        api, forecast_id, content_type, mocker):
+    payload = _get_large_test_payload(content_type)
+    req = api.post(
+            f'/forecasts/single/{forecast_id}/values',
+            environ_base={'Content-Type': content_type},
             data=payload, base_url=BASE_URL)
     assert req.status_code == 413
 

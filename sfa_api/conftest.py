@@ -2119,3 +2119,13 @@ def addmayvalues(root_cursor):
         "INSERT INTO cdf_forecasts_values (id, timestamp, value) "
         "SELECT id, '2019-05-01 00:00', 1.0 FROM cdf_forecasts_singles"
     )
+
+
+def _get_large_test_payload(content_type):
+    """Produces a large test payload, to avoid having pytest output print the
+    contents of a fixture.
+    """
+    if content_type == 'text/csv':
+        return 'timestamp,value\n'+"1"*17*1024*1024
+    else:
+        return '{"values": ['+"1"*17*1024*1024+']}'
