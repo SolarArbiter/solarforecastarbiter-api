@@ -1,9 +1,10 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
 from flask.views import MethodView
 
 
 from sfa_api import spec
-from sfa_api.schema import UserSchema, ActionList, ALLOWED_OBJECT_TYPES
+from sfa_api.schema import (UserSchema, ActionList, ALLOWED_OBJECT_TYPES,
+                            UserCreatePerms, ActionsOnTypeList)
 from sfa_api.utils.auth0_info import (
     get_email_of_user, list_user_emails, get_auth0_id_of_user)
 from sfa_api.utils.errors import StorageAuthError, BadAPIRequest
@@ -321,8 +322,8 @@ class UserCreatePermissions(MethodView):
 
         storage = get_storage()
         object_types = storage.get_user_creatable_types()
-        json_response = {'can_create': object_types}
-        return jsonify(json_response)
+        return Response(UserCreatePerms().dumps({'can_create': object_types}),
+                        mimetype="application/json")
 
 
 class UserActionsOnType(MethodView):
@@ -358,7 +359,8 @@ class UserActionsOnType(MethodView):
         object_dict = storage.list_actions_on_all_objects_of_type(object_type)
         json_response = {'object_type': object_type,
                          'objects': object_dict}
-        return jsonify(json_response)
+        return Response(ActionsOnTypeList().dumps(json_response),
+                        mimetype="application/json")
 
 
 spec.components.parameter(
