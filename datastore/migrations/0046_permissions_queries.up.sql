@@ -4,10 +4,12 @@ COMMENT 'Get a list of object types the user can create'
 READS SQL DATA SQL SECURITY DEFINER
 BEGIN
     DECLARE userid BINARY(16);
-    SET userid = (SELECT id FROM users WHERE auth0_id = auth0id);
+    DECLARE orgid BINARY(16);
 
-    SELECT DISTINCT(perm.object_type) from permissions as perm
-    WHERE action = 'create' AND perm.id IN(
+    SELECT id, organization_id INTO userid, orgid FROM users WHERE auth0_id = auth0id;
+
+    SELECT DISTINCT(object_type) from permissions
+    WHERE action = 'create' AND organization_id = orgid AND id IN(
         SELECT permission_id FROM role_permission_mapping
         WHERE role_id IN(
             SELECT role_id FROM user_role_mapping
@@ -38,7 +40,7 @@ BEGIN
 				FROM user_role_mapping
 				WHERE user_id = userid
 			)
-		) group by permission_objecct_mapping.object_id;
+		) group by permission_object_mapping.object_id;
 END;
 
 GRANT EXECUTE ON PROCEDURE list_actions_on_all_objects_of_type TO 'select_rbac'@'localhost';

@@ -2306,14 +2306,46 @@ def object_combinations():
 
 @pytest.mark.parametrize('object_types', object_combinations())
 def test_get_user_creatable_types(
-        cursor, insertuser, add_perm, object_types):
+        cursor, insertuser, add_perm, object_types, new_user, new_role,
+        new_permission):
     cursor.execute('DELETE FROM permissions WHERE action = "create"')
     for object_type in object_types:
         add_perm('create', object_type)
+
     auth0id = insertuser[0]['auth0_id']
+    org = insertuser[4]
+
     cursor.callproc('get_user_creatable_types', (auth0id,))
     create_perms = cursor.fetchall()
     assert tuple([tup[0] for tup in create_perms]) == object_types
+
+    same_org_user = new_user(org)
+    same_org_role = new_role(org)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
+        (same_org_user['id'], same_org_role['id']))
+    for otype in all_object_types:
+        new_perm = new_permission('create', otype, False, org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (same_org_role['id'], new_perm['id']))
+
+    other_org_user = new_user()
+    other_org = {'id': other_org_user['organization_id']}
+    other_org_role = new_role(other_org)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
+        (other_org_user['id'], other_org_role['id']))
+    for otype in all_object_types:
+        new_perm = new_permission('create', otype, False, other_org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (other_org_role['id'], new_perm['id']))
+
+
+    cursor.callproc('get_user_creatable_types', (auth0id,))
+    perms_after_other_grants = cursor.fetchall()
+    assert perms_after_other_grants == create_perms
 
 
 @pytest.fixture(params=action_combinations()[::10])
