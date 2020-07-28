@@ -9,3 +9,4 @@ master_verify_checksum=ON
 binlog_checksum=crc32
 # encrypt by default
 default_table_encryption=ON
+sort_buffer_size=512K

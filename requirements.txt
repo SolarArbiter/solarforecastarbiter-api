@@ -15,7 +15,7 @@ pyyaml
 pymysql==0.9.3
 sqlalchemy
 redis
-rq
+rq==1.4.3
 rq_scheduler
 fakeredis>=1.1.1
 sentry_sdk

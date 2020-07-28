@@ -23,6 +23,10 @@ ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
 ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
 ALLOWED_METRICS.update(ALLOWED_PROBABILISTIC_METRICS)
 
+ALLOWED_OBJECT_TYPES = ['sites', 'aggregates', 'forecasts', 'observations',
+                        'users', 'roles', 'permissions', 'cdf_forecasts',
+                        'reports']
+
 
 class ISODateTime(ma.AwareDateTime):
     """
@@ -788,9 +792,7 @@ class PermissionPostSchema(ma.Schema):
         title="Object Type",
         description="The type of object this permission will act on.",
         required=True,
-        validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
-                                 'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts', 'reports']),
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",
@@ -1447,3 +1449,24 @@ class AggregateValuesSchema(ObservationValuesPostSchema):
 class ActionList(ma.Schema):
     object_id = ma.UUID(title="Object UUID")
     actions = ma.List(ma.String(), title="Actions allowed on the object.")
+
+
+@spec.define_schema('ActionsOnTypeList')
+class ActionsOnTypeList(ma.Schema):
+    object_type = ma.String(
+        title="Object type",
+        description="Type of objects included in `objects` field.",
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES))
+    objects = ma.Nested(
+        ActionList,
+        tite="Objects",
+        description="List of object uuids and allowed actions.",
+        many=True)
+
+
+@spec.define_schema('UserCreatePerms')
+class UserCreatePerms(ma.Schema):
+    can_create = ma.List(
+        ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES)),
+        title="Can create",
+        description="List of types of objects the user can create.")

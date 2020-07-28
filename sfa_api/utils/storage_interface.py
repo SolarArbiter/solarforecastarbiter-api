@@ -2321,3 +2321,38 @@ def _assert_variable_matches_aggregate(variable, aggregate_id):
     aggregate = read_aggregate(aggregate_id)
     if variable != aggregate['variable']:
         raise BadAPIRequest(variable="Forecast variable must match aggregate.")
+
+
+def get_user_creatable_types():
+    """Get the types of objects the user has permission to create.
+
+    Returns
+    -------
+    list
+        The list of object types the user can create.
+    """
+    object_types = _call_procedure('get_user_creatable_types',
+                                   cursor_type='standard')
+    object_types = [obj[0] for obj in object_types]
+    return object_types
+
+
+def list_actions_on_all_objects_of_type(object_type):
+    """Get a list of objects and the actions a user can take on them.
+
+    Parameters
+    ----------
+    object_type: str
+        The type of object to query for, e.g. `observations`.
+
+    Returns
+    -------
+    list
+        List of dictionaries that contain `object_id`, the uuid of the object
+        and `actions`, a list of actions the user has permission to perform
+        on the object.
+    """
+    object_action_list = _call_procedure(
+        'list_actions_on_all_objects_of_type',
+        object_type)
+    return object_action_list
