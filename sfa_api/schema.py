@@ -38,6 +38,13 @@ class ISODateTime(ma.AwareDateTime):
 
     def _deserialize(self, value, attr, data, **kwargs):
         try:
+            # to enforce ISO format, do not allow unix timestamps
+            int(value)
+        except ValueError:
+            pass
+        else:
+            raise ValidationError('Not a valid datetime.')
+        try:
             value = pd.Timestamp(value)
         except ValueError:
             raise ValidationError('Not a valid datetime.')

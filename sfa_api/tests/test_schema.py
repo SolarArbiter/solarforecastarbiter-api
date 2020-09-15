@@ -41,7 +41,7 @@ def test_isodatetime_deserialize(inp, out, iso_schema):
     assert iso_schema().loads('{"isodt": "' + inp + '"}')['isodt'] == out
 
 
-@pytest.mark.parametrize('inp', ["2019-0101T00:0000", "", "bad"])
+@pytest.mark.parametrize('inp', ["2019-0101T00:0000", "", "bad", "1"])
 def test_isodatetime_deserialize_error(inp, iso_schema):
     with pytest.raises(marshmallow.exceptions.ValidationError):
         iso_schema().loads('{"isodt": "' + inp + '"}')['isodt']
