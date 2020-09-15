@@ -29,6 +29,13 @@ def test_isodatetime_serialize(inp, out, iso_schema):
 
 @pytest.mark.parametrize('inp,out', [
     ("2019-01-01T00:00:00", dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)),
+    ("20190101T000000", dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)),
+    ("20190101T00:00:00", dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)),
+    ("2019-01-01T000000", dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)),
+    ("2019-01-01T00:00:00Z", dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)),
+    ("2019-01-01T06Z", dt.datetime(2019, 1, 1, 6, tzinfo=dt.timezone.utc)),
+    ("20190101T000000+0800",
+     dt.datetime(2019, 1, 1, tzinfo=dt.timezone(dt.timedelta(hours=8)))),
     ("2019-04-08T09:00:00+00:00",
      dt.datetime(2019, 4, 8, 9, tzinfo=dt.timezone.utc)),
     ("2019-01-01T00:00:00-07:00",
@@ -36,6 +43,12 @@ def test_isodatetime_serialize(inp, out, iso_schema):
 ])
 def test_isodatetime_deserialize(inp, out, iso_schema):
     assert iso_schema().loads('{"isodt": "' + inp + '"}')['isodt'] == out
+
+
+@pytest.mark.parametrize('inp', ["2019-0101T00:0000", "", "bad", "1"])
+def test_isodatetime_deserialize_error(inp, iso_schema):
+    with pytest.raises(marshmallow.exceptions.ValidationError):
+        iso_schema().loads('{"isodt": "' + inp + '"}')['isodt']
 
 
 @pytest.mark.parametrize('inp', [
