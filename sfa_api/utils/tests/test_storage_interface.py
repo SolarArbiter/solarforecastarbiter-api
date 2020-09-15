@@ -344,7 +344,7 @@ def test_store_observation_values(sql_app, user, nocommit_cursor,
     new_id = storage_interface.store_observation(observation)
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
-    pdt.assert_frame_equal(stored, obs_vals)
+    pdt.assert_frame_equal(stored, obs_vals, check_freq=False)
 
 
 def test_store_observation_values_tz(sql_app, user, nocommit_cursor, obs_vals):
@@ -354,7 +354,7 @@ def test_store_observation_values_tz(sql_app, user, nocommit_cursor, obs_vals):
     storage_interface.store_observation_values(
         new_id, obs_vals.tz_convert('MST'))
     stored = storage_interface.read_observation_values(new_id)
-    pdt.assert_frame_equal(stored, obs_vals)
+    pdt.assert_frame_equal(stored, obs_vals, check_freq=False)
 
 
 def test_store_observation_values_nan(sql_app, user, nocommit_cursor,
@@ -366,7 +366,7 @@ def test_store_observation_values_nan(sql_app, user, nocommit_cursor,
     assert np.isnan(obs_vals['value']).sum() > 0
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
-    pdt.assert_frame_equal(stored, obs_vals)
+    pdt.assert_frame_equal(stored, obs_vals, check_freq=False)
 
 
 def test_store_observation_values_no_observation(
@@ -578,7 +578,7 @@ def test_store_forecast_values(sql_app, user, nocommit_cursor,
     new_id = storage_interface.store_forecast(forecast)
     storage_interface.store_forecast_values(new_id, fx_vals)
     stored = storage_interface.read_forecast_values(new_id)
-    pdt.assert_frame_equal(stored, fx_vals)
+    pdt.assert_frame_equal(stored, fx_vals, check_freq=False)
 
 
 def test_store_forecast_values_nan(sql_app, user, nocommit_cursor,
@@ -589,7 +589,7 @@ def test_store_forecast_values_nan(sql_app, user, nocommit_cursor,
     assert np.isnan(fx_vals['value']).sum() > 0
     storage_interface.store_forecast_values(new_id, fx_vals)
     stored = storage_interface.read_forecast_values(new_id)
-    pdt.assert_frame_equal(stored, fx_vals)
+    pdt.assert_frame_equal(stored, fx_vals, check_freq=False)
 
 
 def test_store_forecast_values_tz(sql_app, user, nocommit_cursor, fx_vals):
@@ -598,7 +598,7 @@ def test_store_forecast_values_tz(sql_app, user, nocommit_cursor, fx_vals):
     new_id = storage_interface.store_forecast(forecast)
     storage_interface.store_forecast_values(new_id, fx_vals.tz_convert('MST'))
     stored = storage_interface.read_forecast_values(new_id)
-    pdt.assert_frame_equal(stored, fx_vals)
+    pdt.assert_frame_equal(stored, fx_vals, check_freq=False)
 
 
 def test_store_forecast_values_no_forecast(sql_app, user, nocommit_cursor,
@@ -835,7 +835,7 @@ def test_store_cdf_forecast_values(sql_app, user, nocommit_cursor,
     storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
     stored = storage_interface.read_cdf_forecast_values(
         cdf_forecast_id, start=fx_vals.index[0])
-    pdt.assert_frame_equal(stored, fx_vals)
+    pdt.assert_frame_equal(stored, fx_vals, check_freq=False)
 
 
 def test_store_cdf_forecast_values_nan(sql_app, user, nocommit_cursor,
@@ -846,7 +846,7 @@ def test_store_cdf_forecast_values_nan(sql_app, user, nocommit_cursor,
     storage_interface.store_cdf_forecast_values(cdf_forecast_id, fx_vals)
     stored = storage_interface.read_cdf_forecast_values(
         cdf_forecast_id, start=fx_vals.index[0])
-    pdt.assert_frame_equal(stored, fx_vals)
+    pdt.assert_frame_equal(stored, fx_vals, check_freq=False)
 
 
 def test_store_cdf_forecast_values_no_forecast(sql_app, user, nocommit_cursor,
@@ -1090,7 +1090,7 @@ def test_store_missing_values(
     obs_vals.loc[missing_indices, 'value'] = np.nan
     storage_interface.store_observation_values(new_id, obs_vals)
     stored = storage_interface.read_observation_values(new_id)
-    pdt.assert_frame_equal(stored, obs_vals)
+    pdt.assert_frame_equal(stored, obs_vals, check_freq=False)
 
 
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
