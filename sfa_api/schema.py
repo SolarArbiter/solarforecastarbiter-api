@@ -36,6 +36,17 @@ class ISODateTime(ma.AwareDateTime):
     def __init__(self, **kwargs):
         super().__init__(format='iso', default_timezone=pytz.utc, **kwargs)
 
+    def _deserialize(self, value, attr, data, **kwargs):
+        try:
+            value = pd.Timestamp(value)
+        except ValueError:
+            raise ValidationError('Not a valid datetime.')
+        if pd.isnull(value):
+            raise ValidationError('Not a valid datetime.')
+        if value.tzinfo is None:
+            value = pytz.utc.localize(value)
+        return value
+
     def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
             return None
