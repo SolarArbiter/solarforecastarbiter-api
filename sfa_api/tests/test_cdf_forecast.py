@@ -1,3 +1,7 @@
+from io import BytesIO
+import json
+
+
 import pandas as pd
 import pytest
 
@@ -515,3 +519,110 @@ def test_forecast_post_mismatched_aggregate_variable(api):
             "variable": ["Forecast variable must match aggregate."]
         }
     }
+
+
+@pytest.mark.parametrize('filename, str_content,content_type,start,end', [
+    ('data.csv', VALID_CDF_VALUE_CSV, 'text/csv',
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
+    ('data.csv', VALID_CDF_VALUE_CSV, 'application/vnd.ms-excel',
+     '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
+    ('data.json', json.dumps(VALID_FX_VALUE_JSON), 'application/json',
+     '2019-01-22T17:54:00+00:00', '2019-01-22T18:04:00+00:00'),
+])
+def test_posting_files(
+        api, dummy_file, filename, str_content, content_type, cdf_forecast_id,
+        start, end, mock_previous):
+    content = BytesIO(bytes(str_content, 'utf-8'))
+    the_file = dummy_file(filename, content, content_type)
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=the_file)
+    assert file_post.status_code == 201
+
+    if content_type == 'application/json':
+        accept = 'application/json'
+    else:
+        accept = 'text/csv'
+    req = api.get(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                  base_url=BASE_URL,
+                  headers={'Accept': accept},
+                  query_string={'start': start, 'end': end})
+    posted_data = req.data
+    decoded_response = posted_data.decode('utf-8')
+    if content_type == 'application/json':
+        expected = VALID_FX_VALUE_JSON['values']
+        assert expected == json.loads(decoded_response)['values']
+    else:
+        expected = VALID_CDF_VALUE_CSV
+        assert expected == decoded_response
+
+
+def test_post_file_invalid_utf(api, dummy_file, cdf_forecast_id):
+    content = BytesIO(b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00\x00\x00\x00')
+    the_file = dummy_file('broken.xls', content, 'application/vnd.ms-excel')
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=the_file)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["File could not be decoded as UTF-8."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_multiple_files(api, dummy_file, cdf_forecast_id):
+    content1 = BytesIO(bytes('valid_string'.encode('utf-8')))
+    content2 = BytesIO(bytes('{"a":"B"}'.encode('utf-8')))
+
+    file1 = dummy_file('file1.csv', content1, 'text/csv')
+    file2 = dummy_file('file2.json', content2, 'application/json')
+    file1.update(file2)
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=file1)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Multiple files found. Please upload one file at a time."]}}\n' # NOQA
+    assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_file_no_file(api, cdf_forecast_id):
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data={})
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Missing file in request body."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_file_invalid_json(api, cdf_forecast_id):
+    incorrect_file_payload = {
+        'data.json': (BytesIO(b'invalid'), 'data.json', 'application/json')
+    }
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=incorrect_file_payload)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Malformed JSON."]}}\n'
+    assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_file_invalid_mimetype(api, cdf_forecast_id):
+    incorrect_file_payload = {
+        'data.csv': (BytesIO(b'invalid'), 'data.xls', 'application/videogame')
+    }
+    file_post = api.post(
+        f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+        base_url=BASE_URL,
+        content_type='multipart/form-data',
+        data=incorrect_file_payload)
+    assert file_post.status_code == 400
+    expected = '{"errors":{"error":["Unsupported Content-Type or MIME type."]}}\n' # noqa
+    assert file_post.get_data(as_text=True) == expected
