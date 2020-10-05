@@ -214,7 +214,7 @@ def _get_auth0_id_of_user(email, redis_conn, token,
         req = requests.get(
             config['AUTH0_BASE_URL'] + '/api/v2/users-by-email',
             params={'fields': 'user_id',
-                    'email': email,
+                    'email': email.lower(),
                     'include_fields': 'true'},
             headers=headers)
         if req.status_code == 200:
