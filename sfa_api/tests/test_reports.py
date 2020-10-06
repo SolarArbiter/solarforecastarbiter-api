@@ -585,3 +585,19 @@ def test_post_report_forecast_fill(
     res = api.post('/reports/', base_url=BASE_URL, json=payload)
     assert res.status_code == 201
     assert 'Location' in res.headers
+
+
+@pytest.mark.parametrize('missing_key', [
+    'forecast',
+    'reference_forecast',
+    'observation',
+])
+def test_post_report_missing_object_pairs(
+        api, report_post_json, missing_id, missing_key):
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['object_pairs'][0][missing_key] = missing_id
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    expected = ('{"errors":{"report_parameters":[{"object_pairs":%s}]}}\n' %
+                '{"0":{"'+missing_key+'":"Does not exist."}}')
+    assert res.get_data(as_text=True) == expected
