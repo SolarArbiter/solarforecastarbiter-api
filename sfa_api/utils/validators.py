@@ -218,10 +218,12 @@ def ensure_pair_compatibility(data):
 
     errors = {}
 
-    forecast_id = data['forecast']
-    observation_id = data.get('observation')
-    aggregate_id = data.get('aggregate')
-    reference_forecast_id = data.get('reference_forecast')
+    forecast_id = str(data['forecast'])
+    observation_id = (str(data['observation'])
+                      if data.get('observation') else None)
+    aggregate_id = str(data['aggregate']) if data.get('aggregate') else None  # noqa
+    reference_forecast_id = (str(data['reference_forecast'])
+                             if data.get('reference_forecast') else None)  # noqa
 
     # determine the type of forecast in the pair
     forecast_type = data['forecast_type']

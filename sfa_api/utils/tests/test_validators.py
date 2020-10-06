@@ -238,6 +238,8 @@ def test_ensure_pair_compatibility(
 
     mock_reads(fx, obs, agg, ref_fx)
 
+    # pair will typically contain uuids but with mocked sql, truthy dicts and
+    # falsy None will suffice.
     pair = {
         'forecast': fx,
         'observation': obs,
@@ -299,6 +301,8 @@ def test_ensure_pair_compatibility_reference_errors(
 
     mock_reads(fx, obs, agg, ref_fx)
 
+    # pair will typically contain uuids but with mocked sql, truthy dicts and
+    # falsy None will suffice.
     pair = {
         'forecast': fx,
         'observation': obs,
@@ -355,6 +359,8 @@ def test_ensure_pair_compatibility_agg_obs_errors(
         agg, error_key = update_object_params(agg)
     mock_reads(fx, obs, agg, ref_fx)
 
+    # pair will typically contain uuids but with mocked sql, truthy dicts and
+    # falsy None will suffice.
     pair = {
         'forecast': fx,
         'observation': obs,
@@ -424,6 +430,8 @@ def test_ensure_pair_compatibility_object_dne(
 
     mock_reads_with_failure(failure_mode, fx, obs, agg, ref_fx)
 
+    # pair will typically contain uuids but with mocked sql, truthy dicts and
+    # falsy None will suffice.
     pair = {
         'forecast': fx,
         'observation': obs,
