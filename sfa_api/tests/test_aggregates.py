@@ -6,19 +6,8 @@ import pytest
 
 from sfa_api.conftest import (
     BASE_URL, copy_update, variables, agg_types,
-    VALID_OBS_JSON, demo_forecasts, demo_group_cdf)
-
-
-AGG_JSON = {
-    "name": "Test Aggregate ghi",
-    "variable": "ghi",
-    "interval_label": "ending",
-    "interval_length": 60,
-    "aggregate_type": "sum",
-    "extra_parameters": "extra",
-    "description": "ghi agg",
-    "timezone": "America/Denver"
-}
+    VALID_OBS_JSON, demo_forecasts, demo_group_cdf,
+    VALID_AGG_JSON)
 
 
 def test_get_all_aggregates(api):
@@ -33,17 +22,17 @@ def test_get_all_aggregates(api):
 def test_post_aggregate_success(api):
     res = api.post('/aggregates/',
                    base_url=BASE_URL,
-                   json=AGG_JSON)
+                   json=VALID_AGG_JSON)
     assert res.status_code == 201
     assert 'Location' in res.headers
 
 
 @pytest.mark.parametrize('payload,message', [
-    (copy_update(AGG_JSON, 'variable', 'other'),
+    (copy_update(VALID_AGG_JSON, 'variable', 'other'),
      f'{{"variable":["Must be one of: {variables}."]}}'),
-    (copy_update(AGG_JSON, 'aggregate_type', 'cov'),
+    (copy_update(VALID_AGG_JSON, 'aggregate_type', 'cov'),
      f'{{"aggregate_type":["Must be one of: {agg_types}."]}}'),
-    (copy_update(AGG_JSON, 'interval_label', 'instant'),
+    (copy_update(VALID_AGG_JSON, 'interval_label', 'instant'),
      '{"interval_label":["Must be one of: beginning, ending."]}'),
     ({}, '{"aggregate_type":["Missing data for required field."],"description":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"timezone":["Missing data for required field."],"variable":["Missing data for required field."]}')  # NOQA
 ])
@@ -72,7 +61,7 @@ def test_get_aggregate_links_404(api, missing_id):
 def test_delete_aggregate(api):
     res = api.post('/aggregates/',
                    base_url=BASE_URL,
-                   json=AGG_JSON)
+                   json=VALID_AGG_JSON)
     assert res.status_code == 201
     new_id = res.get_data(as_text=True)
     res = api.get(f'/aggregates/{new_id}',

@@ -10,7 +10,7 @@ import pytz
 from sfa_api import spec, ma, json
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
-    UncertaintyValidator, validate_if_event)
+    UncertaintyValidator, validate_if_event, ensure_pair_compatibility)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
@@ -873,6 +873,7 @@ class ReportObjectPair(ma.Schema):
         elif 'observation' not in data and 'aggregate' not in data:
             raise ValidationError(
                 "Specify one of observation or aggregate")
+        ensure_pair_compatibility(data)
 
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
@@ -1174,8 +1175,8 @@ class ReportParameters(ma.Schema):
             'have a "cost" key matching the name of one of these '
             'cost definitions.')
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True,
-                             required=True)
+    object_pairs = ma.Nested(ReportObjectPair, many=True, required=True)
+
     # TODO: Validate with options from core
     filters = ma.List(
         ma.Dict(),

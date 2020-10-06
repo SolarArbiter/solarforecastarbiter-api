@@ -105,6 +105,16 @@ VALID_CDF_FORECAST_AGG_JSON.update({
     "constant_values": [10.0, 20.0, 50.0, 80.0, 100.0]
 })
 
+VALID_AGG_JSON = {
+    "name": "Test Aggregate ghi",
+    "variable": "ghi",
+    "interval_label": "ending",
+    "interval_length": 60,
+    "aggregate_type": "sum",
+    "extra_parameters": "extra",
+    "description": "ghi agg",
+    "timezone": "America/Denver"
+}
 
 VALID_OBS_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
