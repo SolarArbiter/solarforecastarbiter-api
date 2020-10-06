@@ -277,3 +277,20 @@ def test_timeseriesfield_matches_old():
     # new replaces +00:00 with Z
     # and NaN with null
     assert tout == nout.replace('+00:00', 'Z').replace('NaN', 'null')
+
+
+@pytest.mark.parametrize('json,error', [
+    ('{"description": "<script>console.log();</script>", "action": "read",'
+     '"object_type": "observations", "applies_to_all": false}',
+     'Invalid characters in string.'),
+    ('{"description": "' + ('a'*65) + '", "action": "read",'
+     '"object_type": "observations", "applies_to_all": false}',
+     'Longer than maximum length 64.'),
+    ('{"description": "!!!", "action": "read",'
+     '"object_type": "observations", "applies_to_all": false}',
+     'Invalid characters in string.'),
+])
+def test_permission_description_validation(json, error):
+    with pytest.raises(marshmallow.exceptions.ValidationError) as E:
+        schema.PermissionPostSchema().loads(json)
+    assert E.value.messages['description'] == [error]

@@ -206,3 +206,16 @@ def test_remove_object_from_permission_no_perms(
     delete_object = api.delete(f'/permissions/{perm_id}/objects/{obs_id}',
                                BASE_URL)
     assert delete_object.status_code == 404
+
+
+@pytest.mark.parametrize('desc,error', [
+    ("<script>console.log();</script>", 'Invalid characters in string.'),
+    ("a"*65, 'Longer than maximum length 64.'),
+    ("!", 'Invalid characters in string.'),
+])
+def test_create_permission_invalid_description(api, desc, error):
+    new_perm = perm('read', 'observation', desc, True)
+    create_perm = api.post('/permissions/', BASE_URL, json=new_perm)
+    assert create_perm.status_code == 400
+    errors = create_perm.json['errors']
+    assert errors['description'] == [error]

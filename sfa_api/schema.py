@@ -796,7 +796,7 @@ class PermissionPostSchema(ma.Schema):
         title='Desctription',
         required=True,
         description="Description of the purpose of a permission.",
-        validate=validate.Length(max=64)
+        validate=[UserstringValidator(), validate.Length(max=64)],
     )
     action = ma.String(
         title='Action',
