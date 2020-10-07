@@ -178,7 +178,7 @@ def _ensure_forecast_reference_compatibility(
         reference_errors['interval_label'] = (
             'Must match forecast interval_label.')
 
-    if 'aggregate_id' in forecast:
+    if forecast.get('aggregate_id') is not None:
         if forecast['aggregate_id'] != reference_forecast['aggregate_id']:
             reference_errors['aggregate_id'] = (
                 'Must match forecast aggregate_id.')
@@ -219,11 +219,14 @@ def ensure_pair_compatibility(data):
     errors = {}
 
     forecast_id = str(data['forecast'])
+
     observation_id = (str(data['observation'])
                       if data.get('observation') else None)
-    aggregate_id = str(data['aggregate']) if data.get('aggregate') else None  # noqa
+
+    aggregate_id = str(data['aggregate']) if data.get('aggregate') else None
+
     reference_forecast_id = (str(data['reference_forecast'])
-                             if data.get('reference_forecast') else None)  # noqa
+                             if data.get('reference_forecast') else None)
 
     # determine the type of forecast in the pair
     forecast_type = data['forecast_type']

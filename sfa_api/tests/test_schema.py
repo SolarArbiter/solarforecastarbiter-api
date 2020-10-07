@@ -54,10 +54,10 @@ def test_isodatetime_deserialize_error(inp, iso_schema):
 @pytest.mark.parametrize('inp', [
     ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
      '"observation": "123e4567-e89b-12d3-a456-426655440000"}'),
-    ('{"forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",'
+    ('{"forecast": "49220780-76ae-4b11-bef1-7a75bdc784e3",'
      '"aggregate": "458ffc27-df0b-11e9-b622-62adb5fd6af0"}')
 ])
-def test_object_pair_deserialization(inp):
+def test_object_pair_deserialization(user, inp):
     deserialized = schema.ReportObjectPair().loads(inp)
     assert 'forecast' in deserialized
     assert (bool('observation' in deserialized) !=
@@ -72,7 +72,7 @@ def test_object_pair_deserialization(inp):
      '"observation": "123e4567-e89b-12d3-a456-426655440000",'
      '"reference_forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3"}'),
 ])
-def test_object_pair_with_ref(inp):
+def test_object_pair_with_ref(inp, user):
     deserialized = schema.ReportObjectPair().loads(inp)
     assert deserialized['forecast'] == uuid.UUID("11c20780-76ae-4b11-bef1-7a75bdc784e3")  # noqa
     assert deserialized['observation'] == uuid.UUID("123e4567-e89b-12d3-a456-426655440000")  # noqa
@@ -120,7 +120,7 @@ base_pair_dict = {
     ('0.0', str),
     ('100.0', str),
 ])
-def test_object_pair_with_uncertainty(uncertainty, exp_type):
+def test_object_pair_with_uncertainty(uncertainty, exp_type, user):
     pair_dict = base_pair_dict.copy()
     pair_dict.update({'uncertainty': uncertainty})
     pair_json = json.dumps(pair_dict)
