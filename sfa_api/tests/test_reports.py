@@ -669,7 +669,7 @@ def test_post_report_aggregate_mismatch(
 def test_post_report_reference_mismatch(
         api, mocker, report_post_json, field, value):
     pair = report_post_json['report_parameters']['object_pairs'][0]
-    forecast_id = ['forecast']
+    forecast_id = pair['forecast']
     forecast = demo_forecasts[forecast_id]
     reference_forecast = deepcopy(forecast)
     reference_forecast['forecast_id'] = "11c20780-76ae-4b11-bef1-7a75dde784c5"
