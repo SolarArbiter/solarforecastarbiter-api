@@ -134,10 +134,14 @@ def validate_if_event(schema, data, **kwargs):
 
 def _ensure_forecast_measurement_compatibility(forecast, measurement):
     """Checks that a forecast is compatible with the measurement (observation
-    or aggregate) it is compared to. Checks for matching variable, that the
-    interval length of measurement is less than or equal to that of the
-    forecast, and that observations are made at the same site as the forecast
-    or the forecast is made for the aggregate.
+    or aggregate) it is compared to.
+
+    Criteria:
+    * matching variable
+    * interval length of measurement is less than or equal to that of the
+      forecast.
+    * observations are made at the same site as the forecast
+    * the forecast is made for the aggregate.
 
     Parameters
     ----------
@@ -147,7 +151,8 @@ def _ensure_forecast_measurement_compatibility(forecast, measurement):
     Returns
     -------
     dict
-        Dictionary mapping field names to error messages.
+        Dictionary mapping field names to error messages. Dict will be empty
+        if no issues are found.
     """
     errors = {}
     if forecast['variable'] != measurement['variable']:
@@ -166,6 +171,30 @@ def _ensure_forecast_measurement_compatibility(forecast, measurement):
 
 def _ensure_forecast_reference_compatibility(
         forecast, reference_forecast, forecast_type):
+    """Checks for compatibility between a forecast and reference forecast.
+
+    Criteria:
+    * Same variable
+    * Same interval length
+    * Same interval label
+    * Made for the same site/aggregate
+    * For probabilistic forecast constant values:
+      * Same axis
+      * Same constant value
+
+    Parameters
+    ----------
+    forecast: dict
+    reference_forecast: dict
+    forecast_type: str
+        Type of forecast, any of the options defined in the object pair schema.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping field names to error messages. Dict will be empty
+        if no issues are found.
+    """
     reference_errors = {}
     if forecast['variable'] != reference_forecast['variable']:
         reference_errors['variable'] = 'Must match forecast variable.'
