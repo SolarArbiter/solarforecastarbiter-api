@@ -1169,7 +1169,8 @@ class ReportParameters(ma.Schema):
         title='Forecast Fill Method',
         description=(
             'How to fill missing forecast values before calculating metrics.'),
-        default='drop'
+        default='drop',
+        missing='drop',
     )
     costs = ma.Nested(
         CostSchema,
@@ -1178,7 +1179,9 @@ class ReportParameters(ma.Schema):
             'Cost definitions to use for object_pairs. '
             'If cost is to be calculated, each object pair must '
             'have a "cost" key matching the name of one of these '
-            'cost definitions.')
+            'cost definitions.'),
+        default=[],
+        missing=[],
     )
     object_pairs = ma.Nested(
         ReportObjectPair,
@@ -1195,6 +1198,8 @@ class ReportParameters(ma.Schema):
         ma.Dict(),
         title="Filters",
         description="List of Filters applied to the data in the report",
+        default=[],
+        missing=[],
     )
     metrics = ma.List(
         ma.String(

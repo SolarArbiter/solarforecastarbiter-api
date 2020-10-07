@@ -1,3 +1,4 @@
+from copy import deepcopy
 import datetime as dt
 
 
@@ -294,3 +295,24 @@ def test_permission_description_validation(json, error):
     with pytest.raises(marshmallow.exceptions.ValidationError) as E:
         schema.PermissionPostSchema().loads(json)
     assert E.value.messages['description'] == [error]
+
+
+def test_report_deserialize_defaults(report_post_json, user):
+    report_dict = deepcopy(report_post_json)
+    report_dict['report_parameters'].pop('filters')
+    report_json = json.dumps(report_dict)
+    report = schema.ReportPostSchema().loads(report_json)
+    params = report['report_parameters']
+    assert params['forecast_fill_method'] == 'drop'
+    assert params['filters'] == []
+    assert params['costs'] == []
+
+
+def test_report_serialize_missing(report_post_json, user):
+    report_dict = deepcopy(report_post_json)
+    report_dict['report_parameters'].pop('filters')
+    report_json = schema.ReportSchema().dumps(report_dict)
+    params = json.loads(report_json)['report_parameters']
+    assert params['forecast_fill_method'] == 'drop'
+    assert params['filters'] == []
+    assert params['costs'] == []
