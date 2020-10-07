@@ -878,10 +878,13 @@ class ReportObjectPair(ma.Schema):
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
-    reference_forecast = ma.UUID(title="Reference Forecast UUID",
-                                 allow_none=True,
-                                 missing=None,
-                                 default=None)
+    reference_forecast = ma.UUID(
+        title="Reference Forecast UUID",
+        allow_none=True,
+        missing=None,
+        default=None,
+        description='Reference forecast to use when calculating skill metrics.'
+    )
     cost = ma.String(
         title='Cost Parameters',
         description=(
@@ -1151,14 +1154,16 @@ class ReportParameters(ma.Schema):
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601 "
                      "datetime. Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     end = ISODateTime(
         title="End",
         description=(
             "The end of the analysis period as an ISO 8601 datetime."
             " Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     forecast_fill_method = ForecastFillField(
         title='Forecast Fill Method',
@@ -1175,13 +1180,21 @@ class ReportParameters(ma.Schema):
             'have a "cost" key matching the name of one of these '
             'cost definitions.')
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True, required=True)
+    object_pairs = ma.Nested(
+        ReportObjectPair,
+        many=True,
+        required=True,
+        description=(
+            'List of forecasts and observations or aggregates to compare. '
+            'Each pair must contain a forecast and either an observation or '
+            'aggregate.'),
+    )
 
     # TODO: Validate with options from core
     filters = ma.List(
         ma.Dict(),
         title="Filters",
-        description="List of Filters applied to the data in the report"
+        description="List of Filters applied to the data in the report",
     )
     metrics = ma.List(
         ma.String(
