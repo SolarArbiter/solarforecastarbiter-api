@@ -2139,3 +2139,10 @@ def _get_large_test_payload(content_type):
         return 'timestamp,value\n'+"1"*17*1024*1024
     else:
         return '{"values": ['+"1"*17*1024*1024+']}'
+
+
+@pytest.fixture
+def dummy_file():
+    def req_file(filename, contents, content_type):
+        return {filename: (contents, filename, content_type)}
+    return req_file

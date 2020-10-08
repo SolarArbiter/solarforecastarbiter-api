@@ -266,13 +266,6 @@ def test_post_and_get_values_csv(api, observation_id, mocked_queuing,
     assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')
 
 
-@pytest.fixture()
-def dummy_file():
-    def req_file(filename, contents, content_type):
-        return {filename: (contents, filename, content_type)}
-    return req_file
-
-
 @pytest.mark.parametrize('filename,str_content,content_type,start,end', [
     ('data.csv', VALID_OBS_VALUE_CSV, 'text/csv',
      '2019-01-22T12:05:00+00:00', '2019-01-22T12:20:00+00:00'),
