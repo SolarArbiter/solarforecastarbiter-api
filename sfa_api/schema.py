@@ -10,7 +10,7 @@ import pytz
 from sfa_api import spec, ma, json
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
-    UncertaintyValidator, validate_if_event)
+    UncertaintyValidator, validate_if_event, ensure_pair_compatibility)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
@@ -873,14 +873,18 @@ class ReportObjectPair(ma.Schema):
         elif 'observation' not in data and 'aggregate' not in data:
             raise ValidationError(
                 "Specify one of observation or aggregate")
+        ensure_pair_compatibility(data)
 
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
-    reference_forecast = ma.UUID(title="Reference Forecast UUID",
-                                 allow_none=True,
-                                 missing=None,
-                                 default=None)
+    reference_forecast = ma.UUID(
+        title="Reference Forecast UUID",
+        allow_none=True,
+        missing=None,
+        default=None,
+        description='Reference forecast to use when calculating skill metrics.'
+    )
     cost = ma.String(
         title='Cost Parameters',
         description=(
@@ -1150,20 +1154,23 @@ class ReportParameters(ma.Schema):
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601 "
                      "datetime. Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     end = ISODateTime(
         title="End",
         description=(
             "The end of the analysis period as an ISO 8601 datetime."
             " Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     forecast_fill_method = ForecastFillField(
         title='Forecast Fill Method',
         description=(
             'How to fill missing forecast values before calculating metrics.'),
-        default='drop'
+        default='drop',
+        missing='drop',
     )
     costs = ma.Nested(
         CostSchema,
@@ -1172,15 +1179,27 @@ class ReportParameters(ma.Schema):
             'Cost definitions to use for object_pairs. '
             'If cost is to be calculated, each object pair must '
             'have a "cost" key matching the name of one of these '
-            'cost definitions.')
+            'cost definitions.'),
+        default=[],
+        missing=[],
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True,
-                             required=True)
+    object_pairs = ma.Nested(
+        ReportObjectPair,
+        many=True,
+        required=True,
+        description=(
+            'List of forecasts and observations or aggregates to compare. '
+            'Each pair must contain a forecast and either an observation or '
+            'aggregate.'),
+    )
+
     # TODO: Validate with options from core
     filters = ma.List(
         ma.Dict(),
         title="Filters",
-        description="List of Filters applied to the data in the report"
+        description="List of Filters applied to the data in the report",
+        default=[],
+        missing=[],
     )
     metrics = ma.List(
         ma.String(
