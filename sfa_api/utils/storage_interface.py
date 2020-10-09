@@ -1523,7 +1523,10 @@ def read_report(report_id):
     """
     report = _decode_report_parameters(
         _call_procedure_for_single('read_report', report_id))
-    report_values = read_report_values(report_id)
+    try:
+        report_values = read_report_values(report_id)
+    except StorageAuthError:
+        report_values = []
     report['values'] = report_values
     return report
 
