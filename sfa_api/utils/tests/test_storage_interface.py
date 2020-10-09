@@ -1550,6 +1550,15 @@ def test_read_report(sql_app, report, user, reportid):
     assert out == report
 
 
+def test_read_report_values_missing(sql_app, report, user, reportid,
+                                    remove_perms_from_current_role):
+    remove_perms_from_current_role('read_values', 'reports')
+    out = storage_interface.read_report(reportid)
+    assert out['report_parameters'] == report['report_parameters']
+    assert out['values'] != report['values']
+    assert out['values'] == []
+
+
 def test_read_report_denied(sql_app, invalid_user, reportid):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.read_report(reportid)
