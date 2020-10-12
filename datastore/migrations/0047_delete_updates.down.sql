@@ -25,3 +25,20 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'apiuser'@'%';
 REVOKE SELECT (applies_to_all) ON arbiter_data.permissions FROM 'delete_rbac'@'localhost';
+
+DROP PROCEDURE delete_user;
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE delete_user(
+    IN struserid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE userid BINARY(16);
+    SET userid = UUID_TO_BIN(struserid, 1);
+    IF EXISTS(SELECT 1 FROM arbiter_data.users WHERE id = userid) THEN
+        DELETE FROM arbiter_data.users WHERE id = userid;
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not exist',
+        MYSQL_ERRNO = 1305;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';

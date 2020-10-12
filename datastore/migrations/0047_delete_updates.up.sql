@@ -29,3 +29,25 @@ END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.remove_object_from_permission TO 'apiuser'@'%';
 GRANT SELECT (id, applies_to_all) ON arbiter_data.permissions TO 'delete_rbac'@'localhost';
+
+
+DROP PROCEDURE delete_user;
+CREATE DEFINER = 'delete_rbac'@'localhost' PROCEDURE delete_user(
+    IN struserid CHAR(36))
+MODIFIES SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE userid BINARY(16);
+    SET userid = UUID_TO_BIN(struserid, 1);
+    IF EXISTS(SELECT 1 FROM arbiter_data.users WHERE id = userid) THEN
+        DELETE FROM arbiter_data.users WHERE id = userid;
+        -- user as object in permission_object_mapping removed by trigger
+        DELETE FROM arbiter_data.roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
+        DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(userid, 1));
+        DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(userid, 1));
+    ELSE
+        SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not exist',
+        MYSQL_ERRNO = 1305;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';
