@@ -74,6 +74,27 @@ def test_create_org_name_too_long(mocker, app_cli_runner):
             "fewer.\n") == result.output
 
 
+def test_create_user(app_cli_runner, dict_cursor):
+    result = app_cli_runner.invoke(
+        admincli.create_user,
+        ['auth0|newuser'] + auth_args)
+    assert result.output.startswith('Created user ')
+    user_id = result.output[13:49]
+    with dict_cursor as cursor:
+        cursor.callproc('list_all_users')
+        users = user_dict(cursor.fetchall())
+        assert user_id in users
+        assert users[user_id]['organization_id'] == \
+            'e9c0b044-0ccf-11eb-bac9-d28f22475aca'
+
+
+def test_create_user_already_exists(app_cli_runner, unaffiliated_userid):
+    result = app_cli_runner.invoke(
+        admincli.create_user,
+        ['auth0|test_public'] + auth_args)
+    assert 'User already exists for auth0|test_public\n' == result.output
+
+
 def test_add_user_to_org(
         app_cli_runner, unaffiliated_userid, orgid,
         dict_cursor):
