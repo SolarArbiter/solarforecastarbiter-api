@@ -1110,9 +1110,10 @@ def fake_user(sql_app):
 
 @pytest.mark.parametrize('run', range(5))
 def test_create_new_user(sql_app, fake_user, run, nocommit_cursor):
-    storage_interface.create_new_user()
+    new_id = storage_interface.create_new_user()
     new_user_roles = storage_interface.list_roles()
     new_user = storage_interface.get_current_user_info()
+    assert new_id['user_id'] == new_user['user_id']
     assert len(new_user_roles) == 1
     user_role = new_user_roles[0]
     assert user_role['name'] == f'DEFAULT User role {new_user["user_id"]}'

@@ -1651,7 +1651,8 @@ def get_current_user_info():
 
 
 def create_new_user():
-    _call_procedure('create_user_if_not_exists')
+    user_id = _call_procedure_for_single('create_user_if_not_exists')
+    return user_id
 
 
 def user_exists():

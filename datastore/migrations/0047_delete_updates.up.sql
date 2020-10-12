@@ -40,10 +40,7 @@ BEGIN
     SET userid = UUID_TO_BIN(struserid, 1);
     IF EXISTS(SELECT 1 FROM arbiter_data.users WHERE id = userid) THEN
         DELETE FROM arbiter_data.users WHERE id = userid;
-        -- user as object in permission_object_mapping removed by trigger
-        DELETE FROM arbiter_data.roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(userid, 1));
-        DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(userid, 1));
-        DELETE FROM arbiter_data.permissions WHERE description = CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(userid, 1));
+        CALL remove_user_facing_permissions_and_default_roles(userid);
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'User does not exist',
         MYSQL_ERRNO = 1305;
@@ -51,3 +48,23 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';
+
+
+DROP PROCEDURE create_user_if_not_exists;
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_user_if_not_exists(IN auth0id VARCHAR(32))
+COMMENT 'Inserts a new user and adds them to the Unaffiliated org, and read reference role'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE userid BINARY(16);
+    IF NOT does_user_exist(auth0id) THEN
+        SET userid = UUID_TO_BIN(UUID(), 1);
+        INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
+            userid, auth0id, get_organization_id('Unaffiliated'));
+        CALL arbiter_data.add_reference_role_to_user(userid);
+        CALL arbiter_data.create_default_user_role(userid, get_organization_id('Unaffiliated'));
+        SELECT BIN_TO_UUID(userid, 1) as user_id;
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'apiuser'@'%';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'frameworkadmin'@'%';

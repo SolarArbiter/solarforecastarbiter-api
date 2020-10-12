@@ -42,3 +42,21 @@ BEGIN
 END;
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'delete_rbac'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.delete_user TO 'frameworkadmin'@'%';
+
+
+DROP PROCEDURE create_user_if_not_exists;
+CREATE DEFINER = 'insert_rbac'@'localhost' PROCEDURE create_user_if_not_exists(IN auth0id VARCHAR(32))
+COMMENT 'Inserts a new user and adds them to the Unaffiliated org, and read reference role'
+READS SQL DATA SQL SECURITY DEFINER
+BEGIN
+    DECLARE userid BINARY(16);
+    IF NOT does_user_exist(auth0id) THEN
+        SET userid = UUID_TO_BIN(UUID(), 1);
+        INSERT INTO arbiter_data.users (id, auth0_id, organization_id) VALUES (
+            userid, auth0id, get_organization_id('Unaffiliated'));
+        CALL arbiter_data.add_reference_role_to_user(userid);
+        CALL arbiter_data.create_default_user_role(userid, get_organization_id('Unaffiliated'));
+    END IF;
+END;
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'insert_rbac'@'localhost';
+GRANT EXECUTE ON PROCEDURE arbiter_data.create_user_if_not_exists TO 'apiuser'@'%';
