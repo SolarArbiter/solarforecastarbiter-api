@@ -784,6 +784,23 @@ def test_remove_object_from_permission_denied(cursor, permission_object_obj):
     assert e.value.args[0] == 1142
 
 
+def test_remove_object_from_permission_applies_to_all(
+        cursor, valueset, new_permission, fx_obj, allow_update_permission):
+    org = valueset[0][0]
+    permission = new_permission('read', 'forecasts', True, org=org)
+    permuuid = permission['id']
+    auth0id, fx = fx_obj
+    cursor.execute('SELECT 1 FROM permission_object_mapping WHERE permission_id = %s'
+                   ' AND object_id = UUID_TO_BIN(%s, 1)', (permuuid, fx))
+    num = cursor.fetchone()[0]
+    assert num
+
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_object_from_permission',
+                        (auth0id, fx, str(bin_to_uuid(permuuid))))
+        assert e.value.args[0] == 1142
+
+
 def test_delete_report(cursor, report_obj, allow_delete_report):
     auth0id, report_id, _ = report_obj
     cursor.execute(
