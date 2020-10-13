@@ -85,8 +85,8 @@ def test_create_user(app_cli_runner, dict_cursor):
         users = user_dict(cursor.fetchall())
         assert user_id in users
         cursor.callproc('list_all_organizations')
-        orgid =  list(filter(lambda x: x['name'] == 'Unaffiliated',
-                             cursor.fetchall()))[0]['id']
+        orgid = list(filter(lambda x: x['name'] == 'Unaffiliated',
+                            cursor.fetchall()))[0]['id']
         assert users[user_id]['organization_id'] == orgid
 
 
@@ -225,7 +225,7 @@ def test_promote_to_admin_already_granted(
     result = app_cli_runner.invoke(
         admincli.promote_to_admin,
         [userid, orgid] + auth_args)
-    assert (f'User already granted admin permissions.\n') == result.output
+    assert ('User already granted admin permissions.\n') == result.output
 
 
 def test_promote_to_admin_not_in_org(
@@ -345,7 +345,7 @@ def test_delete_user_user_dne(
     result = app_cli_runner.invoke(
         admincli.delete_user,
         [missing_id] + auth_args)
-    assert result.output == (f'User does not exist\n')
+    assert result.output == ('User does not exist\n')
 
 
 def test_create_job_user(app_cli_runner, mocker):
@@ -450,7 +450,7 @@ def test_delete_job_job_dne(app_cli_runner, missing_id):
         admincli.delete_job,
         [missing_id] + auth_args)
     assert result.exit_code != 0
-    assert result.output == (f'Job does not exist\n')
+    assert result.output == ('Job does not exist\n')
 
 
 def test_TimeDeltaParam():
