@@ -6,7 +6,7 @@ from sfa_api import spec
 from sfa_api.schema import (UserSchema, ActionList, ALLOWED_OBJECT_TYPES,
                             UserCreatePerms, ActionsOnTypeList)
 from sfa_api.utils.auth0_info import (
-    get_email_of_user, list_user_emails, get_auth0_id_of_user)
+    get_email_of_user, get_auth0_id_of_user)
 from sfa_api.utils.errors import StorageAuthError, BadAPIRequest
 from sfa_api.utils.storage import get_storage
 
@@ -35,10 +35,8 @@ class AllUsersView(MethodView):
         """
         storage = get_storage()
         users = storage.list_users()
-        emails = list_user_emails([u['auth0_id'] for u in users])
         for u in users:
-            u['email'] = emails.get(
-                u['auth0_id'], 'Unable to retrieve')
+            u['email'] = get_email_of_user(u['auth0_id'])
         return jsonify(UserSchema(many=True).dump(users))
 
 
