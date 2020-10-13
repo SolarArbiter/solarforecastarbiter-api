@@ -44,6 +44,16 @@ del INVALID_NO_IDS['site_id']
 empty_json_response = '{"axis":["Missing data for required field."],"constant_values":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"issue_time_of_day":["Missing data for required field."],"lead_time_to_start":["Missing data for required field."],"name":["Missing data for required field."],"run_length":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
+@pytest.fixture(params=['missing', 'obs', 'fx'])
+def bad_id(missing_id, observation_id, forecast_id, request):
+    if request.param == 'missing':
+        return missing_id
+    elif request.param == 'fx':
+        return forecast_id
+    else:
+        return observation_id
+
+
 @pytest.mark.parametrize('payload,status_code', [
     (VALID_CDF_FORECAST_JSON, 201),
     (VALID_CDF_FORECAST_AGG_JSON, 201),
@@ -97,8 +107,8 @@ def test_cdf_forecast_group_post_invalid_agg(api, missing_id):
     assert res.status_code == 404
 
 
-def test_get_cdf_forecast_group_404(api, missing_id):
-    r = api.get(f'/forecasts/cdf/{missing_id}',
+def test_get_cdf_forecast_group_404(api, bad_id):
+    r = api.get(f'/forecasts/cdf/{bad_id}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -116,8 +126,8 @@ def test_get_cdf_forecast_group_metadata(api, cdf_forecast_group_id):
     assert response['modified_at'].endswith('+00:00')
 
 
-def test_get_forecast_metadata_404(api, missing_id):
-    r = api.get(f'/forecasts/cdf/{missing_id}/metadata',
+def test_get_forecast_metadata_404(api, bad_id):
+    r = api.get(f'/forecasts/cdf/{bad_id}/metadata',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -249,8 +259,8 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id,
     assert r.status_code == 201
 
 
-def test_get_forecast_values_404(api, missing_id, mock_previous, startend):
-    r = api.get(f'/forecasts/cdf/single/{missing_id}/values{startend}',
+def test_get_forecast_values_404(api, bad_id, mock_previous, startend):
+    r = api.get(f'/forecasts/cdf/single/{bad_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
