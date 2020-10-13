@@ -20,6 +20,14 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
 empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"uncertainty":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
+@pytest.fixture(params=['missing', 'fx'])
+def bad_id(missing_id, forecast_id, request):
+    if request.param == 'missing':
+        return missing_id
+    else:
+        return forecast_id
+
+
 def test_observation_post_success(api):
     r = api.post('/observations/',
                  base_url=BASE_URL,
@@ -58,8 +66,8 @@ def test_get_observation_links(api, observation_id):
     assert '_links' in response
 
 
-def test_get_observation_links_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}',
+def test_get_observation_links_404(api, bad_id):
+    r = api.get(f'/observations/{bad_id}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -76,8 +84,8 @@ def test_get_observation_metadata(api, observation_id):
     assert response['modified_at'].endswith('+00:00')
 
 
-def test_get_observation_metadata_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}/metadata',
+def test_get_observation_metadata_404(api, bad_id):
+    r = api.get(f'/observations/{bad_id}/metadata',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -198,8 +206,8 @@ def test_post_observation_values_valid_csv(api, observation_id,
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_id, startend):
-    r = api.get(f'/observations/{missing_id}/values{startend}',
+def test_get_observation_values_404(api, bad_id, startend):
+    r = api.get(f'/observations/{bad_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
