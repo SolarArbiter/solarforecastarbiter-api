@@ -84,8 +84,10 @@ def test_create_user(app_cli_runner, dict_cursor):
         cursor.callproc('list_all_users')
         users = user_dict(cursor.fetchall())
         assert user_id in users
-        assert users[user_id]['organization_id'] == \
-            'e9c0b044-0ccf-11eb-bac9-d28f22475aca'
+        cursor.callproc('list_all_organizations')
+        orgid =  list(filter(lambda x: x['name'] == 'Unaffiliated',
+                             cursor.fetchall()))[0]['id']
+        assert users[user_id]['organization_id'] == orgid
 
 
 def test_create_user_already_exists(app_cli_runner, unaffiliated_userid):
