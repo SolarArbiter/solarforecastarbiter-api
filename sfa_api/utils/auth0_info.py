@@ -1,5 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 import logging
 import secrets
 import string
