@@ -1433,7 +1433,7 @@ def test_create_user_if_not_exist(dictcursor, valueset_org):
         (auth0id,))
     assert len(dictcursor.fetchall()) == 0
     dictcursor.callproc('create_user_if_not_exists', (auth0id,))
-    newid = dictcursor.fetchone()['userid']
+    newid = dictcursor.fetchone()['user_id']
     dictcursor.execute(
         'SELECT * FROM arbiter_data.users WHERE auth0_id = %s',
         (auth0id,))
