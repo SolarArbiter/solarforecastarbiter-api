@@ -170,9 +170,15 @@ def test_list_user_emails(running_app, auth0id, email,
     requests_mock.register_uri(
         'GET',
         re.compile(running_app.config['AUTH0_BASE_URL'] + '/.*'),
-        [{'content': b'{"email": "second"}'},
-         {'content': b'{"email": "third"}'},
-         {'content': b'', 'status_code': 401}]
+        [{'content': (
+            b'{"users":[{"email": "' + email.encode() +
+            b'", "user_id": "' + auth0id.encode() +
+            b'"}], "total": 200}')},
+         {'content': (
+             b'{"users":[{"email": "second", "user_id": "auth0|one"},'
+             b'{"email": "third", "user_id": "auth0|ooasdd"}],'
+             b'"total": 200}')},
+         ]
     )
     ids = [auth0id, 'auth0|one', 'auth0|ooasdd', 'auth0|what']
     out = auth0_info.list_user_emails(ids)

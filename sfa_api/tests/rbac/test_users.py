@@ -21,8 +21,6 @@ def mock_email_funcs(mocker, auth0id, user_email, external_auth0id,
                  new=check)
     mocker.patch('sfa_api.users.get_email_of_user',
                  return_value=user_email)
-    mocker.patch('sfa_api.users.list_user_emails',
-                 return_value={user_id: user_email})
 
 
 @pytest.fixture()

@@ -172,6 +172,30 @@ def get_email_of_user(auth0_id):
         current_app.config)
 
 
+def _get_all_emails(token, config, page=0, per_page=100):
+    headers = {'content-type': 'application/json',
+               'authorization': f'Bearer {token}'}
+    req = requests.get(
+        config['AUTH0_BASE_URL'] + '/api/v2/users',
+        params={'fields': 'user_id,email',
+                'include_fields': 'true',
+                'include_totals': 'true',
+                'page': page,
+                'per_page': per_page,
+                },
+        headers=headers)
+    if req.status_code == 200:
+        rj = req.json()
+        emails = {u['user_id']: u['email'] for u in rj['users']}
+        if rj['total'] > (page + 1) * per_page:
+            emails.update(_get_all_emails(token, config, page+1, per_page))
+    else:
+        logger.error('Failed to retrieve emails from Auth0: %s %s',
+                     req.status_code, req.text)
+        emails = {}
+    return emails
+
+
 def list_user_emails(auth0_ids):
     """
     Get the emails of all users with the given ids
@@ -193,15 +217,10 @@ def list_user_emails(auth0_ids):
     """
 
     list(map(_verify_auth0_id, auth0_ids))
-    redis_conn = token_redis_connection()
     token = auth0_token()
     config = current_app.config
-    func = partial(_get_email_of_user, redis_conn=redis_conn,
-                   token=token, config=config)
-    with ThreadPoolExecutor(max_workers=4) as exc:
-        out = dict(zip(
-            auth0_ids, exc.map(func, auth0_ids)))
-    return out
+    emails = _get_all_emails(token=token, config=config)
+    return {aid: emails.get(aid, 'Unable to retrieve') for aid in auth0_ids}
 
 
 def _get_auth0_id_of_user(email, redis_conn, token,
