@@ -173,11 +173,12 @@ def test_list_user_emails(running_app, auth0id, email,
         [{'content': (
             b'{"users":[{"email": "' + email.encode() +
             b'", "user_id": "' + auth0id.encode() +
-            b'"}], "total": 200}')},
+            b'"}], "total": 300}')},
          {'content': (
              b'{"users":[{"email": "second", "user_id": "auth0|one"},'
              b'{"email": "third", "user_id": "auth0|ooasdd"}],'
-             b'"total": 200}')},
+             b'"total": 300}')},
+         {'status_code': 401}
          ]
     )
     ids = [auth0id, 'auth0|one', 'auth0|ooasdd', 'auth0|what']
