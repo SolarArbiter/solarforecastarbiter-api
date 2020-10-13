@@ -578,12 +578,19 @@ def test_move_user_to_unaffiliated(
 
 def test_delete_user(dictcursor, new_user):
     user = new_user()
+    dictcursor.callproc(
+        'create_default_user_role',
+        (user['id'], user['organization_id']))
     dictcursor.callproc('delete_user', (str(bin_to_uuid(user['id'])),))
-    dictcursor.execute('SELECT * FROM users WHERE id = %s', user['id'])
-    assert len(dictcursor.fetchall()) == 0
-    dictcursor.execute(
-        'SELECT * FROM user_role_mapping WHERE user_id = %s', user['id'])
-    assert len(dictcursor.fetchall()) == 0
+    for q in (
+        'SELECT * FROM users WHERE id = %s',
+        'SELECT * FROM user_role_mapping WHERE user_id = %s',
+        "SELECT 1 FROM permissions WHERE description = CONCAT('DEFAULT Read Self User ', BIN_TO_UUID(%s, 1))",  # NOQA
+        "SELECT 1 FROM permissions WHERE description = CONCAT('DEFAULT Read User Role ', BIN_TO_UUID(%s, 1))",  # NOQA
+        "SELECT 1 FROM roles WHERE name = CONCAT('DEFAULT User role ', BIN_TO_UUID(%s, 1))"  # NOQA
+    ):
+        dictcursor.execute(q, user['id'])
+        assert len(dictcursor.fetchall()) == 0
 
 
 def test_delete_user_user_dne(dictcursor):
