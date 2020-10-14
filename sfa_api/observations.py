@@ -137,7 +137,7 @@ class ObservationView(MethodView):
         parameters:
         - observation_id
         responses:
-          200:
+          204:
             description: Observation deleted successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'

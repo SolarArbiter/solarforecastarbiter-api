@@ -141,7 +141,7 @@ class ForecastView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -512,7 +512,7 @@ class CDFForecastGroupMetadataView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
