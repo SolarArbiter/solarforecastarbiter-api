@@ -376,6 +376,12 @@ def test_get_aggregate_forecasts(api, aggregate_id):
     assert agg_fx['aggregate_id'] == aggregate_id
 
 
+def test_get_aggregate_forecasts_404(api, missing_id):
+    res = api.get(f'/aggregates/{missing_id}/forecasts/single',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
 def test_get_aggregate_cdf_forecast_groups(api, aggregate_id):
     res = api.get(f'/aggregates/{aggregate_id}/forecasts/cdf',
                   base_url=BASE_URL)
@@ -387,3 +393,9 @@ def test_get_aggregate_cdf_forecast_groups(api, aggregate_id):
     expected = list(demo_group_cdf.values())[-1]
     assert agg_cdf['forecast_id'] == expected['forecast_id']
     assert agg_cdf['aggregate_id'] == aggregate_id
+
+
+def test_get_aggregate_cdf_forecasts_404(api, missing_id):
+    res = api.get(f'/aggregates/{missing_id}/forecasts/cdf',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
