@@ -227,19 +227,13 @@ class ForecastValuesView(MethodView):
                 $ref: '#/components/schemas/ForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields:
-                  timestamp, value, quality_flag. Timestamp must be
-                  an ISO 8601 datetime, value may be an integer or float,
-                  quality_flag may be 0 or 1 (indicating the value is not
-                  to be trusted).
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -620,17 +614,13 @@ class CDFForecastValues(MethodView):
                 $ref: '#/components/schemas/CDFForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields: timestamp,
-                  value. Timestamp must be an ISO 8601 datetime and
-                  value may be an integer or floatquality_flag.
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'

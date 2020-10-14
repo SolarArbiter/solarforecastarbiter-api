@@ -200,6 +200,42 @@ def test_parse_json_failure(json_input):
         request_handling.parse_json(json_input)
 
 
+null_df = pd.DataFrame({
+    'timestamp': [
+        '2018-10-29T12:00:00Z',
+        '2018-10-29T13:00:00Z',
+        '2018-10-29T14:00:00Z',
+        '2018-10-29T15:00:00Z',
+    ],
+    'value': [32.93, 25.17, None, None],
+    'quality_flag': [0, 0, 1, 0]
+})
+
+
+def test_parse_csv_nan():
+    test_df = request_handling.parse_csv("""
+# comment line
+timestamp,value,quality_flag
+2018-10-29T12:00:00Z,32.93,0
+2018-10-29T13:00:00Z,25.17,0
+2018-10-29T14:00:00Z,,1  # this value is NaN
+2018-10-29T15:00:00Z,NaN,0
+""")
+    pdt.assert_frame_equal(test_df, null_df)
+
+
+def test_parse_json_nan():
+    test_df = request_handling.parse_json("""
+{"values":[
+  {"timestamp": "2018-10-29T12:00:00Z", "value": 32.93, "quality_flag": 0},
+  {"timestamp": "2018-10-29T13:00:00Z", "value": 25.17, "quality_flag": 0},
+  {"timestamp": "2018-10-29T14:00:00Z", "value": null, "quality_flag": 1},
+  {"timestamp": "2018-10-29T15:00:00Z", "value": null, "quality_flag": 0}
+]}
+""")
+    pdt.assert_frame_equal(test_df, null_df)
+
+
 @pytest.mark.parametrize('data,mimetype', [
     (csv_string, 'text/csv'),
     (csv_string, 'application/vnd.ms-excel'),

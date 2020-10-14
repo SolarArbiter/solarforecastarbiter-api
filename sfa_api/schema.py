@@ -354,7 +354,7 @@ class ObservationValueSchema(ma.Schema):
     )
     value = ma.Float(
         title='Value',
-        description="Value of the measurement",
+        description="Value of the measurement. JSON null indicates NaN.",
         allow_nan=True)
     quality_flag = ma.Integer(
         title='Quality flag',
@@ -521,13 +521,30 @@ class ForecastValueSchema(ma.Schema):
     )
     value = ma.Float(
         title="Value",
-        description="Value of the forecast variable.",
+        description=(
+            "Value of the forecast variable. "
+            "NaN may be indicated with JSON null."),
         allow_nan=True)
 
 
 @spec.define_schema('ForecastValuesPost')
 class ForecastValuesPostSchema(ma.Schema):
     values = TimeseriesField(ForecastValueSchema, many=True)
+
+
+@spec.define_schema('ForecastValuesCSV', component={
+    "type": "string",
+    "description": """
+Text file with fields separated by ',' and lines separated by '\\n'.
+'#' is parsed as a comment character.
+The a header with fields "timestamp" and "value" must be included after
+any comment lines.
+Timestamp must be an ISO 8601 datetime and value may be an integer or float.
+Values that will be interpreted as NaN include the empty string,
+-999.0, -9999.0, 'nan', 'NaN', 'NA', 'N/A', 'n/a', 'null'.
+"""})
+class ForecastValuesCSVSchema(ma.Schema):
+    pass
 
 
 @spec.define_schema('ForecastValues')
@@ -709,7 +726,8 @@ class CDFForecastValueSchema(ForecastValueSchema):
             'Value of the forecast variable. If axis="x", this value '
             'has units of percent corresponding to a percentile. '
             'If axis="y", this value has the physical units of the variable, '
-            'e.g. W/m^2 if variable="ghi".'),
+            'e.g. W/m^2 if variable="ghi". '
+            'NaN may be indicated with JSON null.'),
         allow_nan=True)
 
 
