@@ -234,6 +234,13 @@ class RawReportView(MethodView):
                 $ref: '#/components/schemas/RawReportSchema'
         parameters:
           - report_id
+        responses:
+          204:
+            description: Updated status successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#components/responses/404-NotFound'
         """
         raw_report_dict = request.get_json()
         raw_report = RawReportSchema().load(raw_report_dict)
@@ -258,6 +265,8 @@ class ReportValuesView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ReportValuesSchema'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
@@ -287,6 +296,8 @@ class ReportValuesView(MethodView):
             description: UUID of the stored values.
           400:
             $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
