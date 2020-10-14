@@ -701,8 +701,25 @@ class CDFForecastTimeRangeSchema(TimeRangeSchema):
             "UUID of the probabilistic forecast associated with this data."))
 
 
+@spec.define_schema('CDFForecastValue')
+class CDFForecastValueSchema(ForecastValueSchema):
+    value = ma.Float(
+        title="Value",
+        description=(
+            'Value of the forecast variable. If axis="x", this value '
+            'has units of percent corresponding to a percentile. '
+            'If axis="y", this value has the physical units of the variable, '
+            'e.g. W/m^2 if variable="ghi".'),
+        allow_nan=True)
+
+
+@spec.define_schema('CDFForecastValuesPost')
+class CDFForecastValuesPostSchema(ma.Schema):
+    values = TimeseriesField(CDFForecastValueSchema, many=True)
+
+
 @spec.define_schema('CDFForecastValues')
-class CDFForecastValuesSchema(ForecastValuesPostSchema):
+class CDFForecastValuesSchema(CDFForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
@@ -715,10 +732,24 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
     constant_values = ma.List(
         ma.Float,
         title='Constant Values',
-        description=('The variable values or percentiles for the set of '
-                     'forecasts in the probabilistic forecast.'),
+        description=(
+            'The variable values or percentiles for the set of '
+            'forecasts in the probabilistic forecast. '
+            'If axis="x", these values are assumed to have the physical units '
+            'of the variable, e.g. W/m^2 if variable="ghi". If axis="y", '
+            'these values are assumed to be percentiles with units of percent,'
+            ' e.g. 90%'
+        ),
         required=True
     )
+
+
+_cv_desc = (
+    'The variable value or percentile for the probabilistic forecast. '
+    'If axis="x", this value is assumed to have the physical units of '
+    'the variable, e.g. W/m^2 if variable="ghi". If axis="y", this '
+    'value is assumed to be a percentile with units of percent, e.g. 90%.'
+)
 
 
 @spec.define_schema('CDFForecastMetadata')
@@ -729,15 +760,15 @@ class CDFForecastSchema(ForecastSchema):
     parent = ma.UUID()
     constant_value = ma.Float(
         title='Constant Value',
-        description=('The variable value or percentile for the probabilistic '
-                     'forecast'),
+        description=_cv_desc
     )
 
 
 @spec.define_schema('CDFForecastSingle')
 class CDFForecastSingleSchema(ma.Schema):
     forecast_id = ma.UUID()
-    constant_value = ma.Float()
+    constant_value = ma.Float(
+        description=_cv_desc)
     _links = CDF_LINKS
 
 

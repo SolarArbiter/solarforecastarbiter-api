@@ -617,7 +617,7 @@ class CDFForecastValues(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ForecastValuesPost'
+                $ref: '#/components/schemas/CDFForecastValuesPost'
             text/csv:
               schema:
                 type: string
