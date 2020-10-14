@@ -1326,8 +1326,10 @@ class ReportSchema(ReportPostSchema):
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
     raw_report = ma.Nested(RawReportSchema, allow_none=True)
-    status = ma.String(validate=validate.OneOf(
-        ['pending', 'complete', 'failed']))
+    status = ma.String(
+        description='Status of the report',
+        validate=validate.OneOf(
+            ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 

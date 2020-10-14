@@ -333,10 +333,11 @@ spec.components.parameter(
     {
         'schema': {
             'type': 'string',
+            'enum': REPORT_STATUS_OPTIONS
         },
         'description': "The new status of the report",
         'required': 'true',
-        'name': 'status'
+        'name': 'status',
     })
 
 reports_blp = Blueprint(
