@@ -27,8 +27,6 @@ class AllRolesView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/RoleSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -43,7 +41,7 @@ class AllRolesView(MethodView):
         tags:
           - Roles
         responses:
-          200:
+          201:
             description: Role created successfully.
             content:
               application/json:
@@ -59,10 +57,10 @@ class AllRolesView(MethodView):
                   description: Url of the created role.
           400:
             $ref: '#/components/responses/400-BadRequest'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -93,10 +91,10 @@ class RoleView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/RoleSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         role = storage.read_role(role_id)
@@ -113,10 +111,10 @@ class RoleView(MethodView):
         responses:
           204:
             description: Role deleted successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.delete_role(role_id)
@@ -139,10 +137,10 @@ class RolePermissionManagementView(MethodView):
             description: Permission added to role successfully.
           400:
             $ref: '#/components/responses/400-BadRequest'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.add_permission_to_role(role_id, permission_id)
@@ -161,10 +159,10 @@ class RolePermissionManagementView(MethodView):
         responses:
           204:
             description: Removed permission successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.remove_permission_from_role(role_id, permission_id)
