@@ -255,3 +255,73 @@ def test_site_delete_204(api, site_id):
     r = api.delete(f'/sites/{new_site_id}',
                    base_url=BASE_URL)
     assert r.status_code == 204
+
+
+@pytest.mark.parametrize('up', [
+    {'name': 'new name'},
+    {},
+    {'extra_parameters': 'here they are'},
+    {'latitude': 0, 'modeling_parameters': {
+        'tracking_type': 'fixed',
+        'surface_azimuth': 180,
+        'surface_tilt': 10,
+        'ac_capacity': 0,
+        'dc_capacity': 100,
+        'ac_loss_factor': 0,
+        'dc_loss_factor': 0,
+        'temperature_coefficient': -0.001,
+    }},
+    {'elevation': 983, 'modeling_parameters': {
+        'tracking_type': 'single_axis',
+        'ground_coverage_ratio': 99,
+        'backtrack': True,
+        'axis_tilt': 10,
+        'axis_azimuth': 173,
+        'max_rotation_angle': 10,
+        'ac_capacity': 0,
+        'dc_capacity': 10,
+        'ac_loss_factor': 9,
+        'dc_loss_factor': 1,
+        'temperature_coefficient': -0.001,
+    }}
+])
+def test_site_update_success(api, site_id, up):
+    res = api.post(f'/sites/{site_id}',
+                   base_url=BASE_URL,
+                   json=up)
+    assert res.status_code == 200
+    assert 'Location' in res.headers
+
+
+@pytest.fixture(params=['missing', 'fx'])
+def bad_id(missing_id, forecast_id, request):
+    if request.param == 'missing':
+        return missing_id
+    else:
+        return forecast_id
+
+
+def test_site_update_404(api, bad_id):
+    r = api.post(f'/sites/{bad_id}',
+                 base_url=BASE_URL,
+                 json={'name': 'new name'})
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('payload,message', [
+    ({'extra_parameters': 0}, '{"extra_parameters":["Not a valid string."]}'),
+    ({'name': '#NOPE'}, '{"name":["Invalid characters in string."]}'),
+    ({'backtrack': True}, '{"backtrack":["Unknown field."]}'),
+    ({'modeling_parameters': {'tracking_type': 'single_axis', 'axis_tilt': 0}},
+     '{"modeling_parameters":[{"ac_capacity":["Value required when tracking_type=\'single_axis\'"],"ac_loss_factor":["Value required when tracking_type=\'single_axis\'"],"axis_azimuth":["Value required when tracking_type=\'single_axis\'"],"backtrack":["Value required when tracking_type=\'single_axis\'"],"dc_capacity":["Value required when tracking_type=\'single_axis\'"],"dc_loss_factor":["Value required when tracking_type=\'single_axis\'"],"ground_coverage_ratio":["Value required when tracking_type=\'single_axis\'"],"max_rotation_angle":["Value required when tracking_type=\'single_axis\'"],"temperature_coefficient":["Value required when tracking_type=\'single_axis\'"]}]}'),  # NOQA
+    ({'modeling_parameters': {'tracking_type': 'fixed', 'backtrack': True}},
+     '{"modeling_parameters":[{"ac_capacity":["Value required when tracking_type=\'fixed\'"],"ac_loss_factor":["Value required when tracking_type=\'fixed\'"],"backtrack":["Field should be none with tracking_type=\'fixed\'"],"dc_capacity":["Value required when tracking_type=\'fixed\'"],"dc_loss_factor":["Value required when tracking_type=\'fixed\'"],"surface_azimuth":["Value required when tracking_type=\'fixed\'"],"surface_tilt":["Value required when tracking_type=\'fixed\'"],"temperature_coefficient":["Value required when tracking_type=\'fixed\'"]}]}'),  # NOQA
+    ({'modeling_parameters': {'ac_capacity': 0}},
+     '{"modeling_parameters":[{"ac_capacity":["Field must be null/none when tracking_type is none"]}]}')  # NOQA
+])
+def test_site_update_bad_request(api, site_id, payload, message):
+    r = api.post(f'/sites/{site_id}',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'

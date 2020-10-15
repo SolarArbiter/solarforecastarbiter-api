@@ -301,6 +301,31 @@ class SiteSchema(ma.Schema):
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
+@spec.define_schema('SiteUpdate')
+class SiteUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description="Name of the Site",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    latitude = ma.Float(
+        title='Latitude',
+        description="Latitude in degrees North",
+        validate=validate.Range(-90, 90))
+    longitude = ma.Float(
+        title='Longitude',
+        description="Longitude in degrees East of the Prime Meridian",
+        validate=validate.Range(-180, 180))
+    elevation = ma.Float(
+        title='Elevation',
+        description="Elevation in meters")
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    modeling_parameters = ma.Nested(ModelingParameters)
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+
 @spec.define_schema('SiteMetadata')
 class SiteResponseSchema(SiteSchema):
     site_id = ma.UUID(required=True)
