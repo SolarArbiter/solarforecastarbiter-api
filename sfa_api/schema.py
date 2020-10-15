@@ -110,6 +110,9 @@ EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
     description='Additional user specified parameters.',
     missing='')
+EXTRA_PARAMETERS_UPDATE = ma.String(
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
 
 VARIABLE_FIELD = ma.String(
     title='Variable',
@@ -445,6 +448,18 @@ class ObservationPostSchema(ma.Schema):
     @validates_schema
     def validate_observation(self, data, **kwargs):
         validate_if_event(self, data, **kwargs)
+
+
+@spec.define_schema('ObservationUpdate')
+class ObservationUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the observation',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    uncertainty = ma.Float(
+        title='Uncertainty',
+        description='A measure of the uncertainty of the observation values.')
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
 
 
 @spec.define_schema('ObservationMetadata')

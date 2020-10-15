@@ -662,3 +662,35 @@ def test_observation_post_power_at_weather_site(api, variable):
                  base_url=BASE_URL,
                  json=obs_json)
     assert r.status_code == 400
+
+
+@pytest.mark.parametrize('up', [
+    {'name': 'new name'},
+    {},
+    {'uncertainty': 1.11, 'extra_parameters': 'here they are'}
+])
+def test_observation_update_success(api, observation_id, up):
+    r = api.post(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL,
+                 json=up)
+    assert r.status_code == 200
+    assert 'Location' in r.headers
+
+
+def test_observation_update_404(api, bad_id):
+    r = api.post(f'/observations/{bad_id}/metadata',
+                 base_url=BASE_URL,
+                 json={'name': 'new name'})
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('payload,message', [
+    ({'uncertainty': 'abc'}, '{"uncertainty":["Not a valid number."]}'),
+    ({'name': '#NOPE'}, '{"name":["Invalid characters in string."]}')
+])
+def test_observation_update_bad_request(api, observation_id, payload, message):
+    r = api.post(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'

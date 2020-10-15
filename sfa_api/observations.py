@@ -509,8 +509,8 @@ class ObservationMetadataView(MethodView):
         except ValidationError as err:
             raise BadAPIRequest(err.messages)
         storage = get_storage()
-        storage.update_observation(observation_id, changes)
-        response = make_response(observation_id, 201)
+        storage.update_observation(observation_id, **changes)
+        response = make_response(observation_id, 200)
         response.headers['Location'] = url_for('observations.single',
                                                observation_id=observation_id)
         return response
