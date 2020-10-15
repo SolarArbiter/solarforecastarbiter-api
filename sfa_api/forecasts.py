@@ -553,6 +553,11 @@ class CDFForecastValues(MethodView):
         summary: Get Probabilistic Forecast data for one constant value.
         tags:
           - Probabilistic Forecasts
+        parameters:
+        - forecast_id
+        - start_time
+        - end_time
+        - accepts
         responses:
           200:
             content:
@@ -563,9 +568,11 @@ class CDFForecastValues(MethodView):
                 schema:
                   type: string
                 example: |-
+                  # comment line
                   timestamp,value
                   2018-10-29T12:00:00Z,32.93
                   2018-10-29T13:00:00Z,25.17
+                  2018-10-29T14:00:00Z,  # this value is NaN
           400:
             $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
