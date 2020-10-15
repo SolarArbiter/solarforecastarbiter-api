@@ -1444,13 +1444,26 @@ class AggregateObservationSchema(AggregateObservationPostSchema):
 
 @spec.define_schema('AggregateMetadataUpdate')
 class AggregateUpdateSchema(ma.Schema):
-    # later will add things that can be updated like description
+    name = ma.String(
+        title='Name',
+        description="Human friendly name for aggregate",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    description = ma.String(
+        title='Desctription',
+        description=(
+            "Description of the aggregate (e.g. Total PV power of all plants")
+    )
     observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
-                           many=True, required=True)
+                           many=True)
 
     @validates_schema
     def validate_from_until(self, data, **kwargs):
-        for obs in data['observations']:
+        for obs in data.get('observations', []):
             if 'effective_from' in obs and 'effective_until' in obs:
                 raise ValidationError("Only specify one of effective_from "
                                       "or effective_until")

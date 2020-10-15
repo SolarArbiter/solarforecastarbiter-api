@@ -102,20 +102,26 @@ def test_get_aggregate_metadata_404(api, missing_id):
     assert res.status_code == 404
 
 
-def test_update_aggregate_add_obs(api, aggregate_id):
+@pytest.mark.parametrize('payload', [
+    {},
+    {'name': 'new aggregate name'},
+    {'description': 'is here', 'timezone': 'UTC', 'extra_parameters': 'new'}
+])
+def test_update_aggregate_add_obs(api, aggregate_id, payload):
     r1 = api.post('/observations/',
                   base_url=BASE_URL,
                   json=VALID_OBS_JSON)
     obs_id = r1.get_data(as_text=True)
-    payload = {'observations': [{
+    payload.update({'observations': [{
         'observation_id': obs_id,
-        'effective_from': '2029-01-01 01:23:00Z'}]}
+        'effective_from': '2029-01-01 01:23:00Z'}]})
     res = api.post(f'/aggregates/{aggregate_id}/metadata',
                    json=payload,
                    base_url=BASE_URL)
     assert res.status_code == 200
     r2 = api.get(f'/aggregates/{aggregate_id}/metadata',
                  base_url=BASE_URL)
+    assert r2.status_code == 200
     did = False
     for obs in r2.json['observations']:
         if obs['observation_id'] == obs_id:
@@ -123,6 +129,25 @@ def test_update_aggregate_add_obs(api, aggregate_id):
             assert obs['effective_from'] == (
                 '2029-01-01T01:23:00+00:00')
     assert did
+
+
+@pytest.mark.parametrize('payload', [
+    {},
+    {'name': 'new aggregate name'},
+    {'description': 'is here', 'timezone': 'UTC', 'extra_parameters': 'new'},
+    pytest.param({'name': 0}, marks=pytest.mark.xfail(strict=True))
+])
+def test_update_aggregate_no_obs(api, aggregate_id, payload):
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 200
+    r2 = api.get(f'/aggregates/{aggregate_id}/metadata',
+                 base_url=BASE_URL)
+    assert r2.status_code == 200
+    res = r2.json
+    for k, v in payload.items():
+        assert res[k] == v
 
 
 def test_update_aggregate_add_obs_404_agg(api, missing_id):
@@ -261,7 +286,6 @@ def test_update_aggregate_remove_obs_no_obs(api, missing_id, aggregate_id):
          'effective_until': 'notatime'}
     ]},
         '1'),
-    ({}, '"observations":["Missing data for required field."]')
 ])
 def test_update_aggregate_bad_req(api, aggregate_id, payload, intext):
     res = api.post(f'/aggregates/{aggregate_id}/metadata',
