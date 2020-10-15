@@ -414,6 +414,23 @@ def store_observation(observation):
     return observation_id
 
 
+def update_observation(observation_id, *, name=None, uncertainty=None,
+                       extra_parameters=None):
+    """Update observation metadata.
+
+    Parameters
+    ----------
+    observation_id: String
+        UUID of the observation to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_observation', observation_id, name,
+        uncertainty, extra_parameters)
+
+
 def read_observation(observation_id):
     """Read Observation metadata.
 
@@ -618,6 +635,21 @@ def store_forecast(forecast):
     return forecast_id
 
 
+def update_forecast(forecast_id, *, name=None, extra_parameters=None):
+    """Update forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_forecast', forecast_id, name, extra_parameters)
+
+
 def read_forecast(forecast_id):
     """Read Forecast metadata.
 
@@ -738,6 +770,34 @@ def store_site(site):
             'backtrack', 'max_rotation_angle', 'dc_loss_factor',
             'ac_loss_factor']])
     return site_id
+
+
+def update_site(
+        site_id, *, name=None, extra_parameters=None,
+        ac_capacity=None, dc_capacity=None, temperature_coefficient=None,
+        tracking_type=None, surface_tilt=None, surface_azimuth=None,
+        axis_tilt=None, axis_azimuth=None, ground_coverage_ratio=None,
+        backtrack=None, max_rotation_angle=None, dc_loss_factor=None,
+        ac_loss_factor=None
+):
+    """Update site metadata.
+
+    Parameters
+    ----------
+    site_id: String
+        UUID of the site to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_site', site_id, name, extra_parameters,
+        ac_capacity, dc_capacity, temperature_coefficient,
+        tracking_type, surface_tilt, surface_azimuth,
+        axis_tilt, axis_azimuth, ground_coverage_ratio,
+        backtrack, max_rotation_angle, dc_loss_factor,
+        ac_loss_factor
+    )
 
 
 def delete_site(site_id):
@@ -1027,6 +1087,22 @@ def _set_cdf_group_forecast_parameters(forecast_dict):
         else:
             out[key] = forecast_dict[key]
     return out
+
+
+def update_cdf_forecast_group(
+        forecast_id, *, name=None, extra_parameters=None):
+    """Update CDF forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the CDF forecast to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_cdf_forecast', forecast_id, name, extra_parameters)
 
 
 def read_cdf_forecast_group(forecast_id):
@@ -1657,7 +1733,7 @@ def create_new_user():
 
 def user_exists():
     with get_cursor('dict') as cursor:
-        query = f'SELECT does_user_exist(%s)'
+        query = 'SELECT does_user_exist(%s)'
         query_cmd = partial(cursor.execute, query, (current_user))
         try_query(query_cmd)
         exists = cursor.fetchone()
@@ -1795,6 +1871,23 @@ def store_aggregate(aggregate):
         aggregate['interval_label'], aggregate['interval_length'],
         aggregate['aggregate_type'], aggregate['extra_parameters'])
     return aggregate_id
+
+
+def update_aggregate(aggregate_id, *, name=None, description=None,
+                     extra_parameters=None):
+    """Update aggregate metadata.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of the aggregate to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_aggregate', aggregate_id, name, description,
+        extra_parameters)
 
 
 def _set_aggregate_parameters(aggregate_dict):
