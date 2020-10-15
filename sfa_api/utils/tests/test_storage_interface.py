@@ -1200,7 +1200,8 @@ def test_update_cdf_forecast(sql_app, user, nocommit_cursor,
 def test_update_cdf_forecast_invalid_user(
         sql_app, invalid_user, nocommit_cursor, cdf_forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.update_cdf_forecast_group(cdf_forecast_id, name='new')
+        storage_interface.update_cdf_forecast_group(
+            cdf_forecast_id, name='new')
 
 
 def test_update_cdf_forecast_does_not_exist(
@@ -1212,7 +1213,8 @@ def test_update_cdf_forecast_does_not_exist(
 def test_update_cdf_forecast_is_single(sql_app, invalid_user, nocommit_cursor,
                                        cdf_forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.update_cdf_forecast_group(cdf_forecast_id, name='new')
+        storage_interface.update_cdf_forecast_group(
+            cdf_forecast_id, name='new')
 
 
 @pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
@@ -1416,10 +1418,11 @@ def test_list_aggregates_invalid_user(sql_app, invalid_user):
 @pytest.mark.parametrize('newparams', [
     {'name': 'updated name'},
     {},
-    {'extra_parameters': 'new extra'},
+    {'extra_parameters': 'new extra', 'timezone': None},
     {'name': 'updated', 'extra_parameters': None,
      'description': 'new desc'},
-    {'description': 'is nwe', 'name': None}
+    {'description': 'is nwe', 'name': None,
+     'timezone': 'American/Los Angeles'}
 ])
 def test_update_aggregate(sql_app, user, nocommit_cursor,
                           newparams, aggregate_id):
@@ -1438,8 +1441,8 @@ def test_update_aggregate_invalid_user(sql_app, invalid_user, nocommit_cursor,
         storage_interface.update_aggregate(aggregate_id, name='new')
 
 
-def test_update_aggregate_does_not_exist(sql_app, invalid_user, nocommit_cursor,
-                                         missing_id):
+def test_update_aggregate_does_not_exist(
+        sql_app, invalid_user, nocommit_cursor, missing_id):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.update_aggregate(missing_id, name='new')
 

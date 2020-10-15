@@ -773,7 +773,8 @@ def store_site(site):
 
 
 def update_site(
-        site_id, *, name=None, extra_parameters=None,
+        site_id, *, name=None, latitude=None, longitude=None,
+        elevation=None, timezone=None, extra_parameters=None,
         ac_capacity=None, dc_capacity=None, temperature_coefficient=None,
         tracking_type=None, surface_tilt=None, surface_azimuth=None,
         axis_tilt=None, axis_azimuth=None, ground_coverage_ratio=None,
@@ -791,7 +792,8 @@ def update_site(
         changed.
     """
     _call_procedure(
-        'update_site', site_id, name, extra_parameters,
+        'update_site', site_id, name, latitude, longitude,
+        elevation, timezone, extra_parameters,
         ac_capacity, dc_capacity, temperature_coefficient,
         tracking_type, surface_tilt, surface_azimuth,
         axis_tilt, axis_azimuth, ground_coverage_ratio,
@@ -1874,7 +1876,7 @@ def store_aggregate(aggregate):
 
 
 def update_aggregate(aggregate_id, *, name=None, description=None,
-                     extra_parameters=None):
+                     timezone=None, extra_parameters=None):
     """Update aggregate metadata.
 
     Parameters
@@ -1887,7 +1889,7 @@ def update_aggregate(aggregate_id, *, name=None, description=None,
     """
     _call_procedure(
         'update_aggregate', aggregate_id, name, description,
-        extra_parameters)
+        timezone, extra_parameters)
 
 
 def _set_aggregate_parameters(aggregate_dict):

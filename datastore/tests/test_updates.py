@@ -219,14 +219,18 @@ def test_update_cdf_forecast_denied(dictcursor, get_id, idtype, insertuser,
 
 @pytest.mark.parametrize('kwargs', [
     OrderedDict(
-        name='new nm', extra_parameters=None, ac_capacity=None, dc_capacity=0,
+        name='new nm',
+        latitude=None, longitude=-93, elevation=999, timezone='America/Denver',
+        extra_parameters=None, ac_capacity=None, dc_capacity=0,
         temperature_coefficient=0, tracking_type='single_axis',
         surface_tilt=None, surface_azimuth=10, axis_tilt=None,
         axis_azimuth=None, ground_coverage_ratio=None,
         backtrack=True, max_rotation_angle=0, dc_loss_factor=None,
         ac_loss_factor=None),
     OrderedDict(
-        name=None, extra_parameters='extra', ac_capacity=1.9, dc_capacity=None,
+        name=None,
+        latitude=33, longitude=-110, elevation=None, timezone=None,
+        extra_parameters='extra', ac_capacity=1.9, dc_capacity=None,
         temperature_coefficient=None, tracking_type=None,
         surface_tilt=30, surface_azimuth=None, axis_tilt=0,
         axis_azimuth=180, ground_coverage_ratio=0.2,
@@ -234,7 +238,9 @@ def test_update_cdf_forecast_denied(dictcursor, get_id, idtype, insertuser,
         ac_loss_factor=0),
     pytest.param(
         OrderedDict(
-            name=0, extra_parameters='extra', ac_capacity=1.9, dc_capacity=0,
+            name=0,
+            latitude=33, longitude=-110, elevation=None, timezone=None,
+            extra_parameters='extra', ac_capacity=1.9, dc_capacity=0,
             temperature_coefficient=None, tracking_type=None,
             surface_tilt=30, surface_azimuth=None, axis_tilt=0,
             axis_azimuth=180, ground_coverage_ratio=0.2,
@@ -242,7 +248,9 @@ def test_update_cdf_forecast_denied(dictcursor, get_id, idtype, insertuser,
             ac_loss_factor=0), marks=pytest.mark.xfail(strict=True)),
     pytest.param(
         OrderedDict(
-            name='isok', extra_parameters='ex', ac_capacity=1.9, dc_capacity=0,
+            name='isok',
+            latitude=33, longitude=-110, elevation=None, timezone=None,
+            extra_parameters='ex', ac_capacity=1.9, dc_capacity=0,
             temperature_coefficient=None, tracking_type=None,
             surface_tilt=30, surface_azimuth=None, axis_tilt=0,
             axis_azimuth=180, ground_coverage_ratio=0.2,
@@ -282,7 +290,8 @@ def test_update_site_denied(dictcursor, insertuser, get_id, idtype,
         dictcursor.callproc(
             'update_site', (
                 insertuser.auth0id, id_,
-                'new name', 'extra', 0, 0, None, None, None, None,
+                'new name', None, None, None, None, 'extra', 0, 0,
+                None, None, None, None,
                 None, None, None, None, None, 0, 1
             ))
     assert e.value.args[0] == 1142
@@ -293,10 +302,11 @@ def test_update_site_denied(dictcursor, insertuser, get_id, idtype,
 @pytest.mark.parametrize('description', [
     '', 'ne desc', None,
     pytest.param(0, marks=pytest.mark.xfail(strict=True))])
+@pytest.mark.parametrize('timezone', ['America/Phoenix', None])
 @pytest.mark.parametrize('extra_parameters', [
     'New extra', None])
 def test_update_aggregate(dictcursor, insertuser, allow_update_aggregates,
-                          name, description, extra_parameters):
+                          name, description, extra_parameters, timezone):
     dictcursor.execute('SELECT * from arbiter_data.aggregates WHERE id = %s',
                        insertuser.agg['id'])
     expected = dictcursor.fetchall()[0]
@@ -304,7 +314,7 @@ def test_update_aggregate(dictcursor, insertuser, allow_update_aggregates,
     dictcursor.callproc(
         'update_aggregate', (
             insertuser.auth0id, insertuser.agg['strid'],
-            name, description, extra_parameters
+            name, description, timezone, extra_parameters
         ))
     dictcursor.execute('SELECT * from arbiter_data.aggregates WHERE id = %s',
                        insertuser.agg['id'])
@@ -313,6 +323,8 @@ def test_update_aggregate(dictcursor, insertuser, allow_update_aggregates,
         expected['name'] = name
     if description is not None:
         expected['description'] = description
+    if timezone is not None:
+        expected['timezone'] = timezone
     if extra_parameters is not None:
         expected['extra_parameters'] = extra_parameters
     assert new.pop('modified_at') >= expected.pop('modified_at')
@@ -327,6 +339,6 @@ def test_update_aggregate_denied(dictcursor, insertuser, get_id, idtype,
         dictcursor.callproc(
             'update_aggregate', (
                 insertuser.auth0id, id_,
-                'new name', 'new desc', 'new exxtra'
+                'new name', 'new desc', 'new tz', 'new exxtra'
             ))
     assert e.value.args[0] == 1142

@@ -88,6 +88,10 @@ CREATE DEFINER = 'update_objects'@'localhost' PROCEDURE update_site (
   IN auth0id VARCHAR(32),
   IN strid CHAR(36),
   IN new_name VARCHAR(64),
+  IN new_latitude DECIMAL(8, 6),
+  IN new_longitude DECIMAL(9, 6),
+  IN new_elevation DECIMAL(7, 2),
+  IN new_timezone VARCHAR(32),
   IN new_extra_parameters TEXT,
   IN new_ac_capacity DECIMAL(10, 6),
   IN new_dc_capacity DECIMAL(10, 6),
@@ -114,6 +118,10 @@ BEGIN
     IF allowed THEN
         UPDATE arbiter_data.sites SET
            name = COALESCE(new_name, name),
+           latitude = COALESCE(new_latitude, latitude),
+           longitude = COALESCE(new_longitude, longitude),
+           elevation = COALESCE(new_elevation, elevation),
+           timezone = COALESCE(new_timezone, timezone),
            extra_parameters = COALESCE(new_extra_parameters, extra_parameters),
            ac_capacity = COALESCE(new_ac_capacity, ac_capacity),
            dc_capacity = COALESCE(new_dc_capacity, dc_capacity),
@@ -135,14 +143,15 @@ BEGIN
     END IF;
 END;
 
-GRANT UPDATE (name, extra_parameters, ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt, axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle, dc_loss_factor, ac_loss_factor), SELECT (id, name, extra_parameters, ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt, axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle, dc_loss_factor, ac_loss_factor) ON arbiter_data.sites TO 'update_objects'@'localhost';
+GRANT UPDATE (name, latitude, longitude, elevation, timezone, extra_parameters, ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt, axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle, dc_loss_factor, ac_loss_factor), SELECT (id, name, latitude, longitude, elevation, timezone, extra_parameters, ac_capacity, dc_capacity, temperature_coefficient, tracking_type, surface_tilt, surface_azimuth, axis_tilt, axis_azimuth, ground_coverage_ratio, backtrack, max_rotation_angle, dc_loss_factor, ac_loss_factor) ON arbiter_data.sites TO 'update_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_site TO 'update_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_site TO 'apiuser'@'%';
 
 
 CREATE DEFINER = 'update_objects'@'localhost' PROCEDURE update_aggregate (
   IN auth0id VARCHAR(32), IN strid CHAR(36), IN new_name VARCHAR(64),
-  IN new_description VARCHAR(255), IN new_extra_parameters TEXT)
+  IN new_description VARCHAR(255), IN new_timezone VARCHAR(32),
+  IN new_extra_parameters TEXT)
 COMMENT 'Update an aggregate object'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -155,6 +164,7 @@ BEGIN
         UPDATE arbiter_data.aggregates SET
            name = COALESCE(new_name, name),
            description = COALESCE(new_description, description),
+           timezone = COALESCE(new_timezone, timezone),
            extra_parameters = COALESCE(new_extra_parameters, extra_parameters)
         WHERE id = binid;
     ELSE
@@ -163,6 +173,6 @@ BEGIN
     END IF;
 END;
 
-GRANT UPDATE (name, description, extra_parameters), SELECT (id, name, description, extra_parameters) ON arbiter_data.aggregates TO 'update_objects'@'localhost';
+GRANT UPDATE (name, description, timezone, extra_parameters), SELECT (id, name, description, timezone, extra_parameters) ON arbiter_data.aggregates TO 'update_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_aggregate TO 'update_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.update_aggregate TO 'apiuser'@'%';
