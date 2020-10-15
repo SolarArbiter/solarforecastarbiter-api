@@ -190,15 +190,15 @@ class AggregateValuesView(MethodView):
             end.tz_convert(aggregate['timezone']),
             freq=f"{aggregate['interval_length']}min"
         )
-        request_index = request_index[request_index > start]
+        request_index = request_index[request_index >= start]
 
         # compute agg
         try:
             values = compute_aggregate(
-                request_index,
                 indv_obs, f"{aggregate['interval_length']}min",
                 aggregate['interval_label'], aggregate['timezone'],
-                aggregate['aggregate_type'], aggregate['observations'])
+                aggregate['aggregate_type'], aggregate['observations'],
+                request_index)
         except (KeyError, ValueError) as err:
             raise BaseAPIException(422, values=str(err))
         accepts = request.accept_mimetypes.best_match(['application/json',
