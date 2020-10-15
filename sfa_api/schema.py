@@ -10,7 +10,8 @@ import pytz
 from sfa_api import spec, ma, json
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
-    UncertaintyValidator, validate_if_event, ensure_pair_compatibility)
+    UncertaintyValidator, validate_if_event, ensure_pair_compatibility,
+    AggregateIntervalValidator)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
@@ -1567,7 +1568,8 @@ class AggregatePostSchema(ma.Schema):
                      'This aggregate interval length must be greater than or '
                      'equal to the interval length of the observations that go'
                      ' into it.'),
-        required=True)
+        required=True,
+        validate=AggregateIntervalValidator())
 
     aggregate_type = ma.String(
         title='Aggregation Type',
