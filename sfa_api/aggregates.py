@@ -5,6 +5,7 @@ from functools import partial
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
+import pandas as pd
 from solarforecastarbiter.utils import compute_aggregate
 
 
@@ -182,9 +183,19 @@ class AggregateValuesView(MethodView):
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
+
+        start_midnight = start.tz_convert(aggregate['timezone']).floor('D')
+        request_index = pd.date_range(
+            start_midnight,
+            end.tz_convert(aggregate['timezone']),
+            freq=f"{aggregate['interval_length']}min"
+        )
+        request_index = request_index[request_index > start]
+
         # compute agg
         try:
             values = compute_aggregate(
+                request_index,
                 indv_obs, f"{aggregate['interval_length']}min",
                 aggregate['interval_label'], aggregate['timezone'],
                 aggregate['aggregate_type'], aggregate['observations'])
