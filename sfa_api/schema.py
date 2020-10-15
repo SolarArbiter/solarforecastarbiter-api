@@ -354,7 +354,7 @@ class ObservationValueSchema(ma.Schema):
     )
     value = ma.Float(
         title='Value',
-        description="Value of the measurement",
+        description="Value of the measurement. JSON null indicates NaN.",
         allow_nan=True)
     quality_flag = ma.Integer(
         title='Quality flag',
@@ -521,13 +521,30 @@ class ForecastValueSchema(ma.Schema):
     )
     value = ma.Float(
         title="Value",
-        description="Value of the forecast variable.",
+        description=(
+            "Value of the forecast variable. "
+            "NaN may be indicated with JSON null."),
         allow_nan=True)
 
 
 @spec.define_schema('ForecastValuesPost')
 class ForecastValuesPostSchema(ma.Schema):
     values = TimeseriesField(ForecastValueSchema, many=True)
+
+
+@spec.define_schema('ForecastValuesCSV', component={
+    "type": "string",
+    "description": """
+Text file with fields separated by ',' and lines separated by '\\n'.
+'#' is parsed as a comment character.
+The a header with fields "timestamp" and "value" must be included after
+any comment lines.
+Timestamp must be an ISO 8601 datetime and value may be an integer or float.
+Values that will be interpreted as NaN include the empty string,
+-999.0, -9999.0, 'nan', 'NaN', 'NA', 'N/A', 'n/a', 'null'.
+"""})
+class ForecastValuesCSVSchema(ma.Schema):
+    pass
 
 
 @spec.define_schema('ForecastValues')
@@ -701,8 +718,26 @@ class CDFForecastTimeRangeSchema(TimeRangeSchema):
             "UUID of the probabilistic forecast associated with this data."))
 
 
+@spec.define_schema('CDFForecastValue')
+class CDFForecastValueSchema(ForecastValueSchema):
+    value = ma.Float(
+        title="Value",
+        description=(
+            'Value of the forecast variable. If axis="x", this value '
+            'has units of percent corresponding to a percentile. '
+            'If axis="y", this value has the physical units of the variable, '
+            'e.g. W/m^2 if variable="ghi". '
+            'NaN may be indicated with JSON null.'),
+        allow_nan=True)
+
+
+@spec.define_schema('CDFForecastValuesPost')
+class CDFForecastValuesPostSchema(ma.Schema):
+    values = TimeseriesField(CDFForecastValueSchema, many=True)
+
+
 @spec.define_schema('CDFForecastValues')
-class CDFForecastValuesSchema(ForecastValuesPostSchema):
+class CDFForecastValuesSchema(CDFForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
@@ -715,10 +750,24 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
     constant_values = ma.List(
         ma.Float,
         title='Constant Values',
-        description=('The variable values or percentiles for the set of '
-                     'forecasts in the probabilistic forecast.'),
+        description=(
+            'The variable values or percentiles for the set of '
+            'forecasts in the probabilistic forecast. '
+            'If axis="x", these values are assumed to have the physical units '
+            'of the variable, e.g. W/m^2 if variable="ghi". If axis="y", '
+            'these values are assumed to be percentiles with units of percent,'
+            ' e.g. 90%'
+        ),
         required=True
     )
+
+
+_cv_desc = (
+    'The variable value or percentile for the probabilistic forecast. '
+    'If axis="x", this value is assumed to have the physical units of '
+    'the variable, e.g. W/m^2 if variable="ghi". If axis="y", this '
+    'value is assumed to be a percentile with units of percent, e.g. 90%.'
+)
 
 
 @spec.define_schema('CDFForecastMetadata')
@@ -729,15 +778,15 @@ class CDFForecastSchema(ForecastSchema):
     parent = ma.UUID()
     constant_value = ma.Float(
         title='Constant Value',
-        description=('The variable value or percentile for the probabilistic '
-                     'forecast'),
+        description=_cv_desc
     )
 
 
 @spec.define_schema('CDFForecastSingle')
 class CDFForecastSingleSchema(ma.Schema):
     forecast_id = ma.UUID()
-    constant_value = ma.Float()
+    constant_value = ma.Float(
+        description=_cv_desc)
     _links = CDF_LINKS
 
 
@@ -1326,8 +1375,10 @@ class ReportSchema(ReportPostSchema):
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
     raw_report = ma.Nested(RawReportSchema, allow_none=True)
-    status = ma.String(validate=validate.OneOf(
-        ['pending', 'complete', 'failed']))
+    status = ma.String(
+        description='Status of the report',
+        validate=validate.OneOf(
+            ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 

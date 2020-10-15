@@ -347,6 +347,8 @@ class AggregateForecasts(MethodView):
                     $ref: '#/components/schemas/ForecastMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         forecasts = storage.list_forecasts(aggregate_id=aggregate_id)
@@ -376,6 +378,8 @@ class AggregateCDFForecastGroups(MethodView):
                     $ref: '#/components/schemas/CDFForecastGroupMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         forecasts = storage.list_cdf_forecast_groups(aggregate_id=aggregate_id)
