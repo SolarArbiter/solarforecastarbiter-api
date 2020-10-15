@@ -650,6 +650,15 @@ class ForecastSchema(ForecastPostSchema):
     modified_at = MODIFIED_AT
 
 
+@spec.define_schema('ForecastUpdate')
+class ForecastUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the forecast',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+
 @spec.define_schema('ForecastLinks')
 class ForecastLinksSchema(ma.Schema):
     class Meta:
