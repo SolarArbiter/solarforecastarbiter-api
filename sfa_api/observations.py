@@ -61,7 +61,7 @@ class AllObservationsView(MethodView):
           requests to this endpoint without a trailing slash will result
           in a redirect response.
         requestBody:
-          description: JSON respresentation of an observation.
+          description: JSON representation of an observation.
           required: True
           content:
             application/json:
@@ -475,7 +475,7 @@ class ObservationMetadataView(MethodView):
         parameters:
         - observation_id
         requestBody:
-          description: JSON respresentation of an observation.
+          description: JSON object of observation metadata to update.
           required: True
           content:
             application/json:
