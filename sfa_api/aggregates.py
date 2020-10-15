@@ -184,18 +184,22 @@ class AggregateValuesView(MethodView):
         aggregate = storage.read_aggregate(aggregate_id)
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
 
-        start_midnight = start.tz_convert(aggregate['timezone']).floor('D')
+        aggregate_interval = f"{aggregate['interval_length']}min"
+
+        index_start = start.tz_convert(
+            aggregate['timezone']
+        ).ceil(aggregate_interval)
+
         request_index = pd.date_range(
-            start_midnight,
+            index_start,
             end.tz_convert(aggregate['timezone']),
-            freq=f"{aggregate['interval_length']}min"
+            freq=aggregate_interval,
         )
-        request_index = request_index[request_index >= start]
 
         # compute agg
         try:
             values = compute_aggregate(
-                indv_obs, f"{aggregate['interval_length']}min",
+                indv_obs, aggregate_interval,
                 aggregate['interval_label'], aggregate['timezone'],
                 aggregate['aggregate_type'], aggregate['observations'],
                 request_index)
