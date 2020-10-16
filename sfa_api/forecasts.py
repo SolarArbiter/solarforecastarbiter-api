@@ -38,7 +38,7 @@ class AllForecastsView(MethodView):
         - Forecasts
         responses:
           200:
-            description:
+            description: Forecasts sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -63,7 +63,7 @@ class AllForecastsView(MethodView):
           requests to this endpoint without a trailing slash will
           result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a forecast.
+          description: JSON representation of a forecast.
           required: True
           content:
             application/json:
@@ -168,6 +168,7 @@ class ForecastValuesView(MethodView):
         - accepts
         responses:
           200:
+            description: Forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -278,6 +279,7 @@ class ForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -308,6 +310,7 @@ class ForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Time range of forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -340,6 +343,7 @@ class ForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -424,7 +428,7 @@ class AllCDFForecastGroupsView(MethodView):
           Note that POST requests to this endpoint without a trailing
           slash will result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a probabilistic forecast.
+          description: JSON representation of a probabilistic forecast.
           required: True
           content:
             application/json:
@@ -560,6 +564,7 @@ class CDFForecastValues(MethodView):
         - accepts
         responses:
           200:
+            description: CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -672,6 +677,7 @@ class CDFForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -702,6 +708,7 @@ class CDFForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Time range of CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -735,6 +742,7 @@ class CDFForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -769,6 +777,7 @@ class CDFGroupForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:

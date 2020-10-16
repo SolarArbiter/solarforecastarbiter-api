@@ -93,6 +93,7 @@ class PermissionView(MethodView):
           - Permissions
         responses:
           200:
+            description: Retrieved permissions successfully.
             content:
               application/json:
                 schema:

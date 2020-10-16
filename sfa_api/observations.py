@@ -164,6 +164,7 @@ class ObservationValuesView(MethodView):
           - accepts
         responses:
           200:
+            description: Observation values retrieved successfully.
             content:
               application/json:
                 schema:
@@ -175,7 +176,6 @@ class ObservationValuesView(MethodView):
                   timestamp,value,quality_flag
                   2018-10-29T12:00:00Z,32.93,0
                   2018-10-29T13:00:00Z,25.17,0
-
           400:
             $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
@@ -305,6 +305,7 @@ class ObservationLatestView(MethodView):
           - observation_id
         responses:
           200:
+            description: Observation latest value retrieved successfully.
             content:
               application/json:
                 schema:
@@ -335,6 +336,7 @@ class ObservationTimeRangeView(MethodView):
           - observation_id
         responses:
           200:
+            description: Observation time range retrieved successfully.
             content:
               application/json:
                 schema:
@@ -367,6 +369,7 @@ class ObservationGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Observation value gap retrieved successfully.
             content:
               application/json:
                 schema:
@@ -404,6 +407,7 @@ class ObservationUnflaggedView(MethodView):
           - timezone
         responses:
           200:
+            description: Unflagged observation values retrieved successfully.
             content:
               application/json:
                 schema:

@@ -59,15 +59,11 @@ spec_components = {
                 'password': {
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 },
                 'authorizationCode': {
                     'authorizationUrl': 'https://solarforecastarbiter.auth0.com/authorize',  # NOQA
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 }
             }
         }
@@ -102,7 +98,6 @@ spec_components = {
                            '"application/json" or "text/csv".',
             'schema': {
                 'type': 'string',
-                'required': 'true',
             },
         }
     }

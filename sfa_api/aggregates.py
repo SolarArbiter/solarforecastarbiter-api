@@ -156,6 +156,7 @@ class AggregateValuesView(MethodView):
           - accepts
         responses:
           200:
+            description: Sucessfully retrieved aggregate values.
             content:
               application/json:
                 schema:

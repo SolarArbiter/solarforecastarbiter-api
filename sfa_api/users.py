@@ -388,7 +388,7 @@ spec.components.parameter(
             'type': 'string',
         },
         'description': "The type of object to query for.",
-        'requires': 'true',
+        'required': 'true',
         'name': 'object_type',
     })
 user_blp = Blueprint(
