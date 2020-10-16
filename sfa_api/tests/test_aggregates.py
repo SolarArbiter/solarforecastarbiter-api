@@ -380,6 +380,16 @@ def test_get_aggregate_values_limited_effective(api, aggregate_id, startend):
     assert res.json['values'][-1]['value'] is None
 
 
+def test_get_aggregate_values_outside_effective(api, aggregate_id):
+    startend = '?start=2018-12-25T00:00Z&end=2018-12-30T00:00Z'
+    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 422
+    assert res.json['errors']['values'] == [
+        'No effective observations in data']
+
+
 def test_get_aggregate_values_404(api, missing_id, startend):
     res = api.get(f'/aggregates/{missing_id}/values{startend}',
                   headers={'Accept': 'application/json'},
