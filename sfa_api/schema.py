@@ -398,8 +398,32 @@ class SiteUpdateSchema(ma.Schema):
         title="Timezone",
         description="IANA Timezone",
         validate=TimezoneValidator())
-    modeling_parameters = ma.Nested(ModelingParameters)
+    modeling_parameters = ModelingParametersField(
+        description='Solar Power Plant modeling parameters',
+    )
     extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if 'modeling_parameters' not in out:
+            # uses tracking_type 'noupdate' as a sentinel
+            # mysql would fail on it due to the enum types
+            out['modeling_parameters'] = {
+                'tracking_type': 'noupdate',
+                "ac_capacity": None,
+                "ac_loss_factor": None,
+                "axis_azimuth": None,
+                "axis_tilt": None,
+                "backtrack": None,
+                "dc_capacity": None,
+                "dc_loss_factor": None,
+                "ground_coverage_ratio": None,
+                "max_rotation_angle": None,
+                "surface_azimuth": None,
+                "surface_tilt": None,
+                "temperature_coefficient": None,
+            }
+        return out
 
 
 @spec.define_schema('SiteMetadata')
