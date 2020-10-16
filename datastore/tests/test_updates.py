@@ -271,13 +271,63 @@ def test_update_site(dictcursor, insertuser, allow_update_sites,
     dictcursor.execute('SELECT * from arbiter_data.sites WHERE id = %s',
                        insertuser.site['id'])
     new = dictcursor.fetchall()[0]
+    for k, v in new.items():
+        if k not in kwargs or (
+                k in ('latitude', 'longitude', 'name', 'elevation',
+                      'timezone', 'extra_parameters') and kwargs[k] is None
+                ):
+            assert v == expected[k]
+        else:
+            if isinstance(v, Decimal):
+                assert v == Decimal(str(kwargs[k]))
+            else:
+                assert v == kwargs[k]
+
+
+@pytest.mark.parametrize('kwargs', [
+    OrderedDict(
+        name='new nm',
+        latitude=None, longitude=-93, elevation=999, timezone='America/Denver',
+        extra_parameters=None, ac_capacity=None, dc_capacity=0,
+        temperature_coefficient=0, tracking_type='noupdate',
+        surface_tilt=None, surface_azimuth=10, axis_tilt=None,
+        axis_azimuth=None, ground_coverage_ratio=None,
+        backtrack=True, max_rotation_angle=0, dc_loss_factor=None,
+        ac_loss_factor=None),
+    OrderedDict(
+        name=None,
+        latitude=33, longitude=-110, elevation=None, timezone=None,
+        extra_parameters='extra', ac_capacity=1.9, dc_capacity=None,
+        temperature_coefficient=None, tracking_type='noupdate',
+        surface_tilt=30, surface_azimuth=None, axis_tilt=0,
+        axis_azimuth=180, ground_coverage_ratio=0.2,
+        backtrack=None, max_rotation_angle=None, dc_loss_factor=99,
+        ac_loss_factor=0),
+])
+def test_update_site_no_modeling_params(
+        dictcursor, insertuser, allow_update_sites, kwargs):
+    dictcursor.execute(
+        'SELECT * from arbiter_data.sites WHERE id = %s',
+        insertuser.site['id'])
+    expected = dictcursor.fetchall()[0]
+    dictcursor.callproc(
+        'update_site', tuple([
+            insertuser.auth0id, insertuser.site['strid'],
+            ] + list(kwargs.values())))
+    dictcursor.execute('SELECT * from arbiter_data.sites WHERE id = %s',
+                       insertuser.site['id'])
+    new = dictcursor.fetchall()[0]
     for k, v in kwargs.items():
         nv = new[k]
-        if v is not None:
-            if isinstance(nv, Decimal):
-                assert float(nv) == v
+        if k in ('latitude', 'longitude', 'name', 'elevation',
+                 'timezone', 'extra_parameters'):
+            if v is not None:
+                if isinstance(nv, Decimal):
+                    assert float(nv) == v
+                else:
+                    assert nv == v
             else:
-                assert nv == v
+                assert nv == expected[k]
         else:
             assert nv == expected[k]
 

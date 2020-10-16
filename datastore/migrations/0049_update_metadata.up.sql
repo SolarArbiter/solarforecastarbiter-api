@@ -96,7 +96,7 @@ CREATE DEFINER = 'update_objects'@'localhost' PROCEDURE update_site (
   IN new_ac_capacity DECIMAL(10, 6),
   IN new_dc_capacity DECIMAL(10, 6),
   IN new_temperature_coefficient DECIMAL(7, 5),
-  IN new_tracking_type ENUM('fixed', 'single_axis'),
+  IN new_tracking_type ENUM('fixed', 'single_axis', 'noupdate'),
   IN new_surface_tilt DECIMAL(4, 2),
   IN new_surface_azimuth DECIMAL(5, 2),
   IN new_axis_tilt DECIMAL(4, 2),
@@ -116,27 +116,38 @@ BEGIN
     SET allowed = (EXISTS(SELECT 1 FROM arbiter_data.sites where id = binid)
         & can_user_perform_action(auth0id, binid, 'update'));
     IF allowed THEN
-        UPDATE arbiter_data.sites SET
-           name = COALESCE(new_name, name),
-           latitude = COALESCE(new_latitude, latitude),
-           longitude = COALESCE(new_longitude, longitude),
-           elevation = COALESCE(new_elevation, elevation),
-           timezone = COALESCE(new_timezone, timezone),
-           extra_parameters = COALESCE(new_extra_parameters, extra_parameters),
-           ac_capacity = COALESCE(new_ac_capacity, ac_capacity),
-           dc_capacity = COALESCE(new_dc_capacity, dc_capacity),
-           temperature_coefficient = COALESCE(new_temperature_coefficient, temperature_coefficient),
-           tracking_type = COALESCE(new_tracking_type, tracking_type),
-           surface_tilt = COALESCE(new_surface_tilt, surface_tilt),
-           surface_azimuth = COALESCE(new_surface_azimuth, surface_azimuth),
-           axis_tilt = COALESCE(new_axis_tilt, axis_tilt),
-           axis_azimuth = COALESCE(new_axis_azimuth, axis_azimuth),
-           ground_coverage_ratio = COALESCE(new_ground_coverage_ratio, ground_coverage_ratio),
-           backtrack = COALESCE(new_backtrack, backtrack),
-           max_rotation_angle = COALESCE(new_max_rotation_angle, max_rotation_angle),
-           dc_loss_factor = COALESCE(new_dc_loss_factor, dc_loss_factor),
-           ac_loss_factor = COALESCE(new_ac_loss_factor, ac_loss_factor)
-        WHERE id = binid;
+        IF new_tracking_type = 'noupdate' THEN
+            UPDATE arbiter_data.sites SET
+                name = COALESCE(new_name, name),
+                latitude = COALESCE(new_latitude, latitude),
+                longitude = COALESCE(new_longitude, longitude),
+                elevation = COALESCE(new_elevation, elevation),
+                timezone = COALESCE(new_timezone, timezone),
+                extra_parameters = COALESCE(new_extra_parameters, extra_parameters)
+            WHERE id = binid;
+        ELSE
+            UPDATE arbiter_data.sites SET
+               name = COALESCE(new_name, name),
+               latitude = COALESCE(new_latitude, latitude),
+               longitude = COALESCE(new_longitude, longitude),
+               elevation = COALESCE(new_elevation, elevation),
+               timezone = COALESCE(new_timezone, timezone),
+               extra_parameters = COALESCE(new_extra_parameters, extra_parameters),
+               ac_capacity = new_ac_capacity,
+               dc_capacity = new_dc_capacity,
+               temperature_coefficient = new_temperature_coefficient,
+               tracking_type = new_tracking_type,
+               surface_tilt = new_surface_tilt,
+               surface_azimuth = new_surface_azimuth,
+               axis_tilt = new_axis_tilt,
+               axis_azimuth = new_axis_azimuth,
+               ground_coverage_ratio = new_ground_coverage_ratio,
+               backtrack = new_backtrack,
+               max_rotation_angle = new_max_rotation_angle,
+               dc_loss_factor = new_dc_loss_factor,
+               ac_loss_factor = new_ac_loss_factor
+            WHERE id = binid;
+        END IF;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "update site"',
         MYSQL_ERRNO = 1142;
