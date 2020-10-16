@@ -1,10 +1,13 @@
+from copy import deepcopy
+import datetime as dt
 from itertools import combinations
 
 
 import pytest
 
 
-from sfa_api.conftest import VALID_SITE_JSON, BASE_URL, copy_update
+from sfa_api.conftest import (
+    VALID_SITE_JSON, BASE_URL, copy_update, demo_sites)
 
 
 def invalidate(json, key):
@@ -261,27 +264,27 @@ def test_site_delete_204(api, site_id):
     {'name': 'new name'},
     {},
     {'extra_parameters': 'here they are'},
-    {'latitude': 0, 'modeling_parameters': {
+    {'timezone': 'America/Denver', 'modeling_parameters': {
         'tracking_type': 'fixed',
-        'surface_azimuth': 180,
-        'surface_tilt': 10,
-        'ac_capacity': 0,
-        'dc_capacity': 100,
-        'ac_loss_factor': 0,
-        'dc_loss_factor': 0,
+        'surface_azimuth': 180.0,
+        'surface_tilt': 10.0,
+        'ac_capacity': 0.0,
+        'dc_capacity': 100.0,
+        'ac_loss_factor': 0.0,
+        'dc_loss_factor': 0.0,
         'temperature_coefficient': -0.001,
     }},
     {'elevation': 983, 'modeling_parameters': {
         'tracking_type': 'single_axis',
-        'ground_coverage_ratio': 99,
+        'ground_coverage_ratio': 99.0,
         'backtrack': True,
-        'axis_tilt': 10,
-        'axis_azimuth': 173,
-        'max_rotation_angle': 10,
-        'ac_capacity': 0,
-        'dc_capacity': 10,
-        'ac_loss_factor': 9,
-        'dc_loss_factor': 1,
+        'axis_tilt': 10.,
+        'axis_azimuth': 173.,
+        'max_rotation_angle': 10.,
+        'ac_capacity': 0.,
+        'dc_capacity': 10.,
+        'ac_loss_factor': 9.,
+        'dc_loss_factor': 1.,
         'temperature_coefficient': -0.001,
     }}
 ])
@@ -290,7 +293,100 @@ def test_site_update_success(api, site_id, up):
                    base_url=BASE_URL,
                    json=up)
     assert res.status_code == 200
-    assert 'Location' in res.headers
+    nr = api.get(res.headers['Location'])
+    new = nr.json
+    mod_at = new.pop('modified_at')
+    expected = deepcopy(demo_sites[site_id])
+    expected['created_at'] = expected['created_at'].isoformat()
+    assert dt.datetime.fromisoformat(mod_at) >= expected.pop('modified_at')
+    expected['modeling_parameters'].update(up.pop('modeling_parameters', {}))
+    expected.update(up)
+    assert new == expected
+
+
+@pytest.mark.parametrize('old', ['fixed', 'none', 'single_axis'])
+@pytest.mark.parametrize('new', ['fixed', 'none', 'single_axis'])
+def test_site_swap_tracking_types(api, old, new, site_id):
+    mps = {
+        'fixed': {
+            "ac_capacity": 0.015,
+            "ac_loss_factor": 0.0,
+            "axis_azimuth": None,
+            "axis_tilt": None,
+            "backtrack": None,
+            "dc_capacity": 0.015,
+            "dc_loss_factor": 0.0,
+            "ground_coverage_ratio": None,
+            "max_rotation_angle": None,
+            "surface_azimuth": 180.0,
+            "surface_tilt": 45.0,
+            "temperature_coefficient": -.2,
+            "tracking_type": "fixed"
+        },
+        'none': {
+            "ac_capacity": None,
+            "ac_loss_factor": None,
+            "axis_azimuth": None,
+            "axis_tilt": None,
+            "backtrack": None,
+            "dc_capacity": None,
+            "dc_loss_factor": None,
+            "ground_coverage_ratio": None,
+            "max_rotation_angle": None,
+            "surface_azimuth": None,
+            "surface_tilt": None,
+            "temperature_coefficient": None,
+            "tracking_type": None
+        },
+        'single_axis': {
+            "ac_capacity": 11.,
+            "ac_loss_factor": 12.,
+            "axis_azimuth": 188.,
+            "axis_tilt": 0.,
+            "backtrack": False,
+            "dc_capacity": 9.,
+            "dc_loss_factor": 33.,
+            "ground_coverage_ratio": 1.,
+            "max_rotation_angle": 9.,
+            "surface_azimuth": None,
+            "surface_tilt": None,
+            "temperature_coefficient": -0.3,
+            "tracking_type": 'single_axis'
+        }
+    }
+    if old == 'none':
+        first = {'modeling_parameters': {}}
+    else:
+        first = {'modeling_parameters': mps[old]}
+    fr = api.post(f'/sites/{site_id}',
+                  base_url=BASE_URL,
+                  json=first)
+    assert fr.status_code == 200
+    nr = api.get(fr.headers['Location'])
+    njson = nr.json
+    mod_at = njson.pop('modified_at')
+    expected = deepcopy(demo_sites[site_id])
+    expected['created_at'] = expected['created_at'].isoformat()
+    assert dt.datetime.fromisoformat(mod_at) >= expected.pop('modified_at')
+    expected['modeling_parameters'].update(mps[old])
+    assert njson == expected
+
+    if new == 'none':
+        upd = {'modeling_parameters': {}}
+    else:
+        upd = {'modeling_parameters': mps[new]}
+    res = api.post(f'/sites/{site_id}',
+                   base_url=BASE_URL,
+                   json=upd)
+    assert res.status_code == 200
+    nr = api.get(res.headers['Location'])
+    njson = nr.json
+    mod_at = njson.pop('modified_at')
+    expected = deepcopy(demo_sites[site_id])
+    expected['created_at'] = expected['created_at'].isoformat()
+    assert dt.datetime.fromisoformat(mod_at) >= expected.pop('modified_at')
+    expected['modeling_parameters'].update(mps[new])
+    assert njson == expected
 
 
 @pytest.fixture(params=['missing', 'fx'])
