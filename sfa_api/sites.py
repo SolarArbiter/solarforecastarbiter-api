@@ -156,7 +156,9 @@ class SiteView(MethodView):
             If modeling parameters are to be updated,
             all parameters for a given tracking_type are
             required even if most values are the same to
-            ensure proper validation.
+            ensure proper validation. An empty object
+            for modeling_parameters will have the effect of
+            clearing all modeling parameters.
           required: True
           content:
             application/json:
