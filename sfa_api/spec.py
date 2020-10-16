@@ -123,6 +123,13 @@ the [dashboard](https://solarforecastarbiter.org/dashboarddoc). Those
 users who require direct access to the API may include observational
 data providers, forecast data providers, and reference data users.
 
+An OpenAPI generator such as https://github.com/OpenAPITools/openapi-generator
+may be used to generate client libraries for most languages to access
+the API. The OpenAPI spec for the Solar Forecast Arbiter API is available
+in [JSON](/openapi.json) and [YAML](/openapi.yaml) formats. Care must be
+taken to match the OpenAPI generator version with the version found in the
+spec file.
+
 ## Interaction for Observational Data Providers
 
 Observational data providers will likely use the API to
