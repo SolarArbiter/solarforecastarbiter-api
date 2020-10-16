@@ -317,9 +317,6 @@ spec = APISpec(
          'description': 'Access observation data that has been aggregated for analysis.'},  # NOQA
         {'name': 'Climate Zones',
          'description': 'Access information about climate zones.'},
-        {'name': 'Trials',
-         'description': 'Access information about forecast trials. '
-                        'API to be determined by January 2020.'},
         {'name': 'Users',
          'description': 'Access and update information about users '
                         'in your Organization.'},
