@@ -1,6 +1,3 @@
-import math
-
-
 import pytest
 
 
@@ -378,7 +375,7 @@ def test_get_aggregate_values_limited_effective(api, aggregate_id, startend):
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
     assert res.status_code == 200
-    assert not math.isnan(res.json['values'][-1]['value'])
+    assert res.json['values'][-1]['value'] is None
 
 
 def test_get_aggregate_values_404(api, missing_id, startend):

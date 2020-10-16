@@ -316,5 +316,5 @@ def ensure_pair_compatibility(data):
 class AggregateIntervalValidator(Validator):
     """Ensures aggregate interval length is a divisor of one day."""
     def __call__(self, value):
-        if 86400 % pd.Timedemta(value).total_seconds() != 0:
+        if 86400 % pd.Timedelta(f'{value}min').total_seconds() != 0:
             raise ValidationError('Must be a divisor of one day.')
