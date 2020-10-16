@@ -370,7 +370,6 @@ class SiteSchema(ma.Schema):
         validate=TimezoneValidator())
     modeling_parameters = ModelingParametersField(
         description='Solar Power Plant modeling parameters',
-        missing={}
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
@@ -1308,6 +1307,7 @@ class ReportParameters(ma.Schema):
             'cost definitions.'),
         default=[],
         missing=[],
+        doc_default=None
     )
     object_pairs = ma.Nested(
         ReportObjectPair,
@@ -1326,6 +1326,7 @@ class ReportParameters(ma.Schema):
         description="List of Filters applied to the data in the report",
         default=[],
         missing=[],
+        doc_default=None
     )
     metrics = ma.List(
         ma.String(

@@ -708,7 +708,8 @@ class CDFForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
-            description: Time range of CDF forecast values sucessfully retrieved.
+            description: >-
+              Time range of CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
