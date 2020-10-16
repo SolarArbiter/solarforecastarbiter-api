@@ -316,3 +316,81 @@ def test_report_serialize_missing(report_post_json, user):
     assert params['forecast_fill_method'] == 'drop'
     assert params['filters'] == []
     assert params['costs'] == []
+
+
+@pytest.fixture(params=[None, 'fixed', 'single_axis'])
+def modeling_params(request):
+    if request.param is None:
+        return {
+            "ac_capacity": None,
+            "ac_loss_factor": None,
+            "axis_azimuth": None,
+            "axis_tilt": None,
+            "backtrack": None,
+            "dc_capacity": None,
+            "dc_loss_factor": None,
+            "ground_coverage_ratio": None,
+            "max_rotation_angle": None,
+            "surface_azimuth": None,
+            "surface_tilt": None,
+            "temperature_coefficient": None,
+            "tracking_type": None
+        }
+    elif request.param == 'fixed':
+        return {
+            "ac_capacity": 0.015,
+            "ac_loss_factor": 0.0,
+            "axis_azimuth": None,
+            "axis_tilt": None,
+            "backtrack": None,
+            "dc_capacity": 0.015,
+            "dc_loss_factor": 0.0,
+            "ground_coverage_ratio": None,
+            "max_rotation_angle": None,
+            "surface_azimuth": 180.0,
+            "surface_tilt": 45.0,
+            "temperature_coefficient": -.2,
+            "tracking_type": "fixed"
+        }
+    elif request.param == 'single_axis':
+        return {
+            "ac_capacity": 0.015,
+            "ac_loss_factor": 0.0,
+            "axis_azimuth": 180,
+            "axis_tilt": 0,
+            "backtrack": False,
+            "dc_capacity": 0.015,
+            "dc_loss_factor": 0.0,
+            "ground_coverage_ratio": 1,
+            "max_rotation_angle": 2,
+            "surface_azimuth": None,
+            "surface_tilt": None,
+            "temperature_coefficient": -.2,
+            "tracking_type": "single_axis"
+        }
+
+
+@pytest.fixture()
+def mp_schema():
+    return marshmallow.Schema.from_dict(
+        {'modeling_params': schema.ModelingParametersField()})
+
+
+def test_modeling_parameters_serialization(modeling_params, mp_schema):
+    mp = {k: v for k, v in modeling_params.items() if v is not None}
+    out = mp_schema().dump({'modeling_params': mp})
+    assert out['modeling_params'] == modeling_params
+
+
+def test_modeling_parameters_deserialization(modeling_params, mp_schema):
+    mp = {k: v for k, v in modeling_params.items() if v is not None}
+    out = mp_schema().load({'modeling_params': mp})
+    assert out['modeling_params'] == modeling_params
+
+
+def test_modeling_parameters_deserialization_fail(modeling_params, mp_schema):
+    mp = {k: v for k, v in modeling_params.items() if v is not None}
+    mp['surface_tilt'] = 0
+    mp['axis_azimuth'] = 0
+    with pytest.raises(marshmallow.exceptions.ValidationError):
+        mp_schema().load({'modeling_params': mp})

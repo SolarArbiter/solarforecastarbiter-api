@@ -39,7 +39,7 @@ class AllForecastsView(MethodView):
         - Forecasts
         responses:
           200:
-            description:
+            description: Forecasts sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -64,7 +64,7 @@ class AllForecastsView(MethodView):
           requests to this endpoint without a trailing slash will
           result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a forecast.
+          description: JSON representation of a forecast.
           required: True
           content:
             application/json:
@@ -142,7 +142,7 @@ class ForecastView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -169,6 +169,7 @@ class ForecastValuesView(MethodView):
         - accepts
         responses:
           200:
+            description: Forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -228,19 +229,13 @@ class ForecastValuesView(MethodView):
                 $ref: '#/components/schemas/ForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields:
-                  timestamp, value, quality_flag. Timestamp must be
-                  an ISO 8601 datetime, value may be an integer or float,
-                  quality_flag may be 0 or 1 (indicating the value is not
-                  to be trusted).
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -285,6 +280,7 @@ class ForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -315,6 +311,7 @@ class ForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Time range of forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -347,6 +344,7 @@ class ForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -480,7 +478,7 @@ class AllCDFForecastGroupsView(MethodView):
           Note that POST requests to this endpoint without a trailing
           slash will result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a probabilistic forecast.
+          description: JSON representation of a probabilistic forecast.
           required: True
           content:
             application/json:
@@ -611,7 +609,7 @@ class CDFForecastGroupMetadataView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -658,8 +656,14 @@ class CDFForecastValues(MethodView):
         summary: Get Probabilistic Forecast data for one constant value.
         tags:
           - Probabilistic Forecasts
+        parameters:
+        - forecast_id
+        - start_time
+        - end_time
+        - accepts
         responses:
           200:
+            description: CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -668,9 +672,11 @@ class CDFForecastValues(MethodView):
                 schema:
                   type: string
                 example: |-
+                  # comment line
                   timestamp,value
                   2018-10-29T12:00:00Z,32.93
                   2018-10-29T13:00:00Z,25.17
+                  2018-10-29T14:00:00Z,  # this value is NaN
           400:
             $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
@@ -716,20 +722,16 @@ class CDFForecastValues(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ForecastValuesPost'
+                $ref: '#/components/schemas/CDFForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields: timestamp,
-                  value. Timestamp must be an ISO 8601 datetime and
-                  value may be an integer or floatquality_flag.
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -774,6 +776,7 @@ class CDFForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -804,6 +807,8 @@ class CDFForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: >-
+              Time range of CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -837,6 +842,7 @@ class CDFForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -871,6 +877,7 @@ class CDFGroupForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:

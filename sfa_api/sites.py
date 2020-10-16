@@ -207,7 +207,7 @@ class SiteView(MethodView):
         parameters:
         - site_id
         responses:
-          200:
+          204:
             description: Site deleted Successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'

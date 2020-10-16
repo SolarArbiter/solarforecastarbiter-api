@@ -138,7 +138,7 @@ class ObservationView(MethodView):
         parameters:
         - observation_id
         responses:
-          200:
+          204:
             description: Observation deleted successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -165,6 +165,7 @@ class ObservationValuesView(MethodView):
           - accepts
         responses:
           200:
+            description: Observation values retrieved successfully.
             content:
               application/json:
                 schema:
@@ -176,7 +177,6 @@ class ObservationValuesView(MethodView):
                   timestamp,value,quality_flag
                   2018-10-29T12:00:00Z,32.93,0
                   2018-10-29T13:00:00Z,25.17,0
-
           400:
             $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
@@ -234,11 +234,16 @@ class ObservationValuesView(MethodView):
                   timestamp, value, quality_flag. Timestamp must be
                   an ISO 8601 datetime, value may be an integer or float,
                   quality_flag may be 0 or 1 (indicating the value is not
-                  to be trusted).
+                  to be trusted). '#' is parsed as a comment character.
+                  Values that will be interpreted as NaN include the
+                  empty string, -999.0, -9999.0, 'nan', 'NaN', 'NA',
+                  'N/A', 'n/a', 'null'.
               example: |-
+                # comment line
                 timestamp,value,quality_flag
                 2018-10-29T12:00:00Z,32.93,0
                 2018-10-29T13:00:00Z,25.17,0
+                2018-10-29T14:00:00Z,,1  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -301,6 +306,7 @@ class ObservationLatestView(MethodView):
           - observation_id
         responses:
           200:
+            description: Observation latest value retrieved successfully.
             content:
               application/json:
                 schema:
@@ -331,6 +337,7 @@ class ObservationTimeRangeView(MethodView):
           - observation_id
         responses:
           200:
+            description: Observation time range retrieved successfully.
             content:
               application/json:
                 schema:
@@ -363,6 +370,7 @@ class ObservationGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Observation value gap retrieved successfully.
             content:
               application/json:
                 schema:
@@ -400,6 +408,7 @@ class ObservationUnflaggedView(MethodView):
           - timezone
         responses:
           200:
+            description: Unflagged observation values retrieved successfully.
             content:
               application/json:
                 schema:

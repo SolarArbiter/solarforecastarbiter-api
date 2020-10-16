@@ -15,7 +15,7 @@ class AllPermissionsView(MethodView):
         """
         ---
         summary: List Permissions.
-        description: List all Permissionss that the user has access to.
+        description: List all Permissions that the user has access to.
         tags:
           - Permissions
         responses:
@@ -27,8 +27,6 @@ class AllPermissionsView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/PermissionSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -66,10 +64,10 @@ class AllPermissionsView(MethodView):
                   description: Url of the created permission.
           400:
             $ref: '#/components/responses/400-BadRequest'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         data = request.get_json()
         try:
@@ -95,14 +93,15 @@ class PermissionView(MethodView):
           - Permissions
         responses:
           200:
+            description: Retrieved permissions successfully.
             content:
               application/json:
                 schema:
                   $ref: '#/components/schemas/PermissionSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         permission = storage.read_permission(permission_id)
@@ -119,10 +118,10 @@ class PermissionView(MethodView):
         responses:
           204:
             description: Permission deleted successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.delete_permission(permission_id)
@@ -142,10 +141,10 @@ class PermissionObjectManagementView(MethodView):
         responses:
           204:
             description: Object added to permission successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.add_object_to_permission(object_id, permission_id)
@@ -163,11 +162,10 @@ class PermissionObjectManagementView(MethodView):
         responses:
           204:
             description: Object removed from permission successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
-
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.remove_object_from_permission(permission_id, object_id)

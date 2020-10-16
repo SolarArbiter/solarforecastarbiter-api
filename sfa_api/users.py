@@ -28,8 +28,6 @@ class AllUsersView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
@@ -56,10 +54,10 @@ class UserView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         user = storage.read_user(user_id)
@@ -101,10 +99,10 @@ class UserRolesManagementView(MethodView):
         responses:
           204:
             description: Role Added Successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.add_role_to_user(user_id, role_id)
@@ -123,10 +121,10 @@ class UserRolesManagementView(MethodView):
         responses:
           204:
             description: Role removed successfully..
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.remove_role_from_user(user_id, role_id)
@@ -147,10 +145,10 @@ class CurrentUserView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         user_info = storage.get_current_user_info()
@@ -199,10 +197,10 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
         responses:
           204:
             description: Role Added Successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -222,10 +220,10 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
         responses:
           204:
             description: Role removed successfully..
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -252,10 +250,10 @@ class UserByEmailView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -284,10 +282,10 @@ class UserActionsView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ActionList'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         actions = storage.get_user_actions_on_object(object_id)
@@ -312,10 +310,10 @@ class UserCreatePermissions(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserCreatePerms'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
 
         storage = get_storage()
@@ -343,10 +341,10 @@ class UserActionsOnType(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ActionsOnTypeList'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         if object_type not in ALLOWED_OBJECT_TYPES:
             raise BadAPIRequest({
@@ -390,7 +388,7 @@ spec.components.parameter(
             'type': 'string',
         },
         'description': "The type of object to query for.",
-        'requires': 'true',
+        'required': 'true',
         'name': 'object_type',
     })
 user_blp = Blueprint(
