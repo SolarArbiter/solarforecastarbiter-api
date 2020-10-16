@@ -31,7 +31,9 @@ def test_post_aggregate_success(api):
      f'{{"aggregate_type":["Must be one of: {agg_types}."]}}'),
     (copy_update(VALID_AGG_JSON, 'interval_label', 'instant'),
      '{"interval_label":["Must be one of: beginning, ending."]}'),
-    ({}, '{"aggregate_type":["Missing data for required field."],"description":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"timezone":["Missing data for required field."],"variable":["Missing data for required field."]}')  # NOQA
+    ({}, '{"aggregate_type":["Missing data for required field."],"description":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"timezone":["Missing data for required field."],"variable":["Missing data for required field."]}'),  # NOQA
+    (copy_update(VALID_AGG_JSON, 'interval_length', '61'),
+     f'{{"interval_length":["Must be a divisor of one day."]}}'),
 ])
 def test_post_aggregate_bad_request(api, payload, message):
     res = api.post('/aggregates/',
