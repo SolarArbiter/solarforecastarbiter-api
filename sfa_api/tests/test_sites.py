@@ -1,6 +1,6 @@
 from copy import deepcopy
 import datetime as dt
-from itertools import combinations
+from itertools import combinations, permutations
 
 
 import pytest
@@ -304,9 +304,10 @@ def test_site_update_success(api, site_id, up):
     assert new == expected
 
 
-@pytest.mark.parametrize('old', ['fixed', 'none', 'single_axis'])
-@pytest.mark.parametrize('new', ['fixed', 'none', 'single_axis'])
-def test_site_swap_tracking_types(api, old, new, site_id):
+@pytest.mark.parametrize('oldnew',
+                         permutations(['fixed', 'none', 'single_axis'], 2))
+def test_site_swap_tracking_types(api, oldnew, site_id):
+    old, new = oldnew
     mps = {
         'fixed': {
             "ac_capacity": 0.015,
@@ -363,13 +364,13 @@ def test_site_swap_tracking_types(api, old, new, site_id):
                   json=first)
     assert fr.status_code == 200
     nr = api.get(fr.headers['Location'])
-    njson = nr.json
-    mod_at = njson.pop('modified_at')
+    pjson = nr.json
+    mod_at = pjson.pop('modified_at')
     expected = deepcopy(demo_sites[site_id])
     expected['created_at'] = expected['created_at'].isoformat()
     assert dt.datetime.fromisoformat(mod_at) >= expected.pop('modified_at')
     expected['modeling_parameters'].update(mps[old])
-    assert njson == expected
+    assert pjson == expected
 
     if new == 'none':
         upd = {'modeling_parameters': {}}
@@ -387,6 +388,7 @@ def test_site_swap_tracking_types(api, old, new, site_id):
     assert dt.datetime.fromisoformat(mod_at) >= expected.pop('modified_at')
     expected['modeling_parameters'].update(mps[new])
     assert njson == expected
+    assert pjson != njson
 
 
 @pytest.fixture(params=['missing', 'fx'])
