@@ -75,6 +75,7 @@ class SearchZones(MethodView):
         - longitude
         responses:
           200:
+            description: Sucessfully retrieved zones.
             content:
               application/json:
                 schema:

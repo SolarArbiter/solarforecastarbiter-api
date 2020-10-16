@@ -59,15 +59,11 @@ spec_components = {
                 'password': {
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 },
                 'authorizationCode': {
                     'authorizationUrl': 'https://solarforecastarbiter.auth0.com/authorize',  # NOQA
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 }
             }
         }
@@ -102,7 +98,6 @@ spec_components = {
                            '"application/json" or "text/csv".',
             'schema': {
                 'type': 'string',
-                'required': 'true',
             },
         }
     }
@@ -122,6 +117,13 @@ Most users will interact with the API indirectly through actions on
 the [dashboard](https://solarforecastarbiter.org/dashboarddoc). Those
 users who require direct access to the API may include observational
 data providers, forecast data providers, and reference data users.
+
+An OpenAPI generator such as https://github.com/OpenAPITools/openapi-generator
+may be used to generate client libraries for most languages to access
+the API. The OpenAPI spec for the Solar Forecast Arbiter API is available
+in [JSON](/openapi.json) and [YAML](/openapi.yaml) formats. Care must be
+taken to match the OpenAPI generator version with the version found in the
+spec file.
 
 ## Interaction for Observational Data Providers
 
@@ -310,9 +312,6 @@ spec = APISpec(
          'description': 'Access observation data that has been aggregated for analysis.'},  # NOQA
         {'name': 'Climate Zones',
          'description': 'Access information about climate zones.'},
-        {'name': 'Trials',
-         'description': 'Access information about forecast trials. '
-                        'API to be determined by January 2020.'},
         {'name': 'Users',
          'description': 'Access and update information about users '
                         'in your Organization.'},

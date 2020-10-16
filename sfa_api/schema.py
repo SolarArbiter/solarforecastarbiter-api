@@ -154,47 +154,124 @@ INTERVAL_VALUE_TYPE = ma.String(
 
 
 # Sites
-@spec.define_schema('ModelingParameters')
-class ModelingParameters(ma.Schema):
+_base_kwargs = dict(
+    required=False,
+    missing=None,
+    default=None,
+    validate=validate.Equal(None),
+)
+
+
+class BaseModelingParameters(ma.Schema):
     class Meta:
         ordered = True
-    ac_capacity = ma.Float(
-        title="AC Capacity",
-        description="Nameplate AC power rating.",
-        missing=None)
-    dc_capacity = ma.Float(
-        title="DC Capacity",
-        description="Nameplate DC power rating.",
-        missing=None)
-    temperature_coefficient = ma.Float(
-        title="Temperature Coefficient",
-        description=("The temperature coefficient of DC power in units of "
-                     "1/C. Typically -0.002 to -0.005 per degree C."),
-        missing=None)
     tracking_type = ma.String(
         title="Tracking Type",
         description=("Type of tracking system, i.e. fixed, single axis, two "
                      "axis."),
         validate=validate.OneOf(['fixed', 'single_axis']),
-        missing=None)
+        required=True,
+        default=None
+    )
+    ac_capacity = ma.Float(
+        title="AC Capacity",
+        description="Nameplate AC power rating.",
+        required=True,
+        default=None
+    )
+    dc_capacity = ma.Float(
+        title="DC Capacity",
+        description="Nameplate DC power rating.",
+        required=True,
+        default=None
+    )
+    temperature_coefficient = ma.Float(
+        title="Temperature Coefficient",
+        description=("The temperature coefficient of DC power in units of "
+                     "1/C. Typically -0.002 to -0.005 per degree C."),
+        required=True,
+        default=None
+    )
+    dc_loss_factor = ma.Float(
+        title="DC loss factor",
+        description=("Loss factor in %, applied to DC current."),
+        validate=validate.Range(0, 100),
+        required=True,
+        default=None
+    )
+    ac_loss_factor = ma.Float(
+        title="AC loss factor",
+        description=("Loss factor in %, applied to inverter power "
+                     "output."),
+        validate=validate.Range(0, 100),
+        required=True,
+        default=None
+    )
     # fixed tilt systems
     surface_tilt = ma.Float(
         title="Surface Tilt",
-        description="Tilt from horizontal of a fixed tilt system, degrees.",
-        missing=None)
+        description="Only valid for 'fixed' systems",
+        **_base_kwargs
+    )
     surface_azimuth = ma.Float(
-        title="Surface Azimuth",
-        description="Azimuth angle of a fixed tilt system, degrees.",
-        missing=None)
+        title='Surface Azimuth',
+        description="Only valid for 'fixed' systems",
+        **_base_kwargs
+    )
     # single axis tracker
     axis_tilt = ma.Float(
         title="Axis tilt",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    axis_azimuth = ma.Float(
+        title="Axis azimuth",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    ground_coverage_ratio = ma.Float(
+        title="Ground coverage ratio",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    backtrack = ma.Boolean(
+        title="Backtrack",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    max_rotation_angle = ma.Float(
+        title="Maximum Rotation Angle",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+
+
+@spec.define_schema('FixedModelingParameters')
+class FixedModelingParameters(BaseModelingParameters):
+    surface_tilt = ma.Float(
+        title="Surface Tilt",
+        description="Tilt from horizontal of a fixed tilt system, degrees.",
+        required=True
+    )
+    surface_azimuth = ma.Float(
+        title="Surface Azimuth",
+        description="Azimuth angle of a fixed tilt system, degrees.",
+        required=True
+    )
+
+
+@spec.define_schema('SingleAxisModelingParameters')
+class SingleAxisModelingParameters(BaseModelingParameters):
+    axis_tilt = ma.Float(
+        title="Axis tilt",
         description="Tilt from horizontal of the tracker axis, degrees.",
-        missing=None)
+        required=True
+    )
     axis_azimuth = ma.Float(
         title="Axis azimuth",
         description="Azimuth angle of the tracker axis, degrees.",
-        missing=None)
+        required=True
+    )
     ground_coverage_ratio = ma.Float(
         title="Ground coverage ratio",
         description=("Ratio of total width of modules on a tracker to the "
@@ -202,66 +279,64 @@ class ModelingParameters(ma.Schema):
                      "trackers each with two modules of 1m width each, and "
                      "a spacing between tracker axes of 7m, the ground "
                      "coverage ratio is 0.286(=2/7)."),
-        missing=None)
+        required=True
+    )
     backtrack = ma.Boolean(
         title="Backtrack",
         description=("True/False indicator of if a tracking system uses "
                      "backtracking."),
-        missing=None)
+        required=True
+    )
     max_rotation_angle = ma.Float(
         title="Maximum Rotation Angle",
         description=("Maximum rotation from horizontal of a single axis "
                      "tracker, degrees."),
-        missing=None)
-    dc_loss_factor = ma.Float(
-        title="DC loss factor",
-        description=("Loss factor in %, applied to DC current."),
-        validate=validate.Range(0, 100),
-        missing=None)
-    ac_loss_factor = ma.Float(
-        title="AC loss factor",
-        description=("Loss factor in %, applied to inverter power "
-                     "output."),
-        validate=validate.Range(0, 100),
-        missing=None)
+        required=True
+    )
 
-    @validates_schema
-    def validate_modeling_parameters(self, data, **kwargs):
-        common_fields = {
-            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
-            'dc_loss_factor', 'ac_loss_factor'}
-        fixed_fields = {'surface_tilt', 'surface_azimuth'}
-        singleaxis_fields = {
-            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
-            'backtrack', 'max_rotation_angle'}
-        # if tracking type is None (weather station),
-        # ensure all fields are None
-        if data['tracking_type'] is None:
-            errors = {
-                key: ['Field must be null/none when tracking_type is none']
-                for key in common_fields | fixed_fields | singleaxis_fields
-                if data[key] is not None}
-            if errors:
-                raise ValidationError(errors)
-        elif data['tracking_type'] == 'fixed':
-            errors = {
-                key: ["Field should be none with tracking_type='fixed'"]
-                for key in singleaxis_fields if data[key] is not None}
-            errors.update({key: ["Value required when tracking_type='fixed'"]
-                           for key in common_fields | fixed_fields
-                           if data[key] is None})
-            if errors:
-                raise ValidationError(errors)
-        elif data['tracking_type'] == 'single_axis':
-            errors = {
-                key: ["Field should be none with tracking_type='single_axis'"]
-                for key in fixed_fields if data[key] is not None}
-            errors.update({
-                key: ["Value required when tracking_type='single_axis'"]
-                for key in common_fields | singleaxis_fields
-                if data[key] is None})
-            if errors:
-                raise ValidationError(errors)
+
+@spec.define_schema('ModelingParameters', component={
+    "discriminator": {
+        "propertyName": "tracking_type",
+        "mapping": {
+            "fixed": "#/components/schemas/FixedModelingParameters",
+            "single_axis": "#/components/schemas/SingleAxisModelingParameters",
+        }},
+    "oneOf": [
+        {"$ref": "#/components/schemas/FixedModelingParameters"},
+        {"$ref": "#/components/schemas/SingleAxisModelingParameters"},
+    ]})
+class ModelingParameters(BaseModelingParameters):
+    # just for API docs
+    pass
+
+
+class ModelingParametersField(ma.Nested):
+    def __init__(self, *args, **kwargs):
+        super().__init__(ModelingParameters, *args, **kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        type_ = value.get('tracking_type')
+        if type_ is None:
+            if value:
+                raise ValidationError({
+                    key: ['Must be equal to None.']
+                    for key, val in value.items() if val is not None})
+            else:
+                return BaseModelingParameters().dump(value)
+        elif type_ == 'fixed':
+            return FixedModelingParameters().load(value)
+        elif type_ == 'single_axis':
+            return SingleAxisModelingParameters().load(value)
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        type_ = value.get('tracking_type')
+        if type_ == 'fixed':
+            return FixedModelingParameters().dump(value)
+        elif type_ == 'single_axis':
+            return SingleAxisModelingParameters().dump(value)
+        else:
+            return BaseModelingParameters().dump(value)
 
 
 @spec.define_schema('SiteDefinition')
@@ -293,8 +368,9 @@ class SiteSchema(ma.Schema):
         description="IANA Timezone",
         required=True,
         validate=TimezoneValidator())
-    modeling_parameters = ma.Nested(ModelingParameters,
-                                    missing=ModelingParameters().load({}))
+    modeling_parameters = ModelingParametersField(
+        description='Solar Power Plant modeling parameters',
+    )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
@@ -1231,6 +1307,7 @@ class ReportParameters(ma.Schema):
             'cost definitions.'),
         default=[],
         missing=[],
+        doc_default=None
     )
     object_pairs = ma.Nested(
         ReportObjectPair,
@@ -1249,6 +1326,7 @@ class ReportParameters(ma.Schema):
         description="List of Filters applied to the data in the report",
         default=[],
         missing=[],
+        doc_default=None
     )
     metrics = ma.List(
         ma.String(

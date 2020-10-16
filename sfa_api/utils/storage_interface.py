@@ -731,7 +731,7 @@ def store_site(site):
         'store_site', site_id, site['name'], site['latitude'],
         site['longitude'], site['elevation'], site['timezone'],
         site['extra_parameters'],
-        *[site['modeling_parameters'][key] for key in [
+        *[site.get('modeling_parameters', {}).get(key) for key in [
             'ac_capacity', 'dc_capacity', 'temperature_coefficient',
             'tracking_type', 'surface_tilt', 'surface_azimuth',
             'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
