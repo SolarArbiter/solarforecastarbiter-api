@@ -773,13 +773,13 @@ def store_site(site):
 
 
 def update_site(
-        site_id, *, name=None, latitude=None, longitude=None,
-        elevation=None, timezone=None, extra_parameters=None,
-        ac_capacity=None, dc_capacity=None, temperature_coefficient=None,
-        tracking_type=None, surface_tilt=None, surface_azimuth=None,
-        axis_tilt=None, axis_azimuth=None, ground_coverage_ratio=None,
-        backtrack=None, max_rotation_angle=None, dc_loss_factor=None,
-        ac_loss_factor=None
+        site_id, *,
+        ac_capacity, dc_capacity, temperature_coefficient,
+        tracking_type, surface_tilt, surface_azimuth,
+        axis_tilt, axis_azimuth, ground_coverage_ratio,
+        backtrack, max_rotation_angle, dc_loss_factor,
+        ac_loss_factor, name=None, latitude=None, longitude=None,
+        elevation=None, timezone=None, extra_parameters=None
 ):
     """Update site metadata.
 

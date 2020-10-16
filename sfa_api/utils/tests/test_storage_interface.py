@@ -767,13 +767,22 @@ def test_store_site_invalid_user(sql_app, invalid_user, nocommit_cursor):
         storage_interface.store_site(list(demo_sites.values())[0])
 
 
+_modeling_params = {
+    'ac_capacity': None, 'dc_capacity': None, 'temperature_coefficient': None,
+    'tracking_type': None, 'surface_tilt': None, 'surface_azimuth': None,
+    'axis_tilt': None, 'axis_azimuth': None, 'ground_coverage_ratio': None,
+    'backtrack': None, 'max_rotation_angle': None, 'dc_loss_factor': None,
+    'ac_loss_factor': None
+}
+
+
 @pytest.mark.parametrize('newparams', [
-    {'name': 'updated name'},
-    {},
-    {'extra_parameters': 'new extra'},
-    {'name': 'updated', 'extra_parameters': None,
+    {**_modeling_params, 'name': 'updated name'},
+    _modeling_params,
+    {**_modeling_params, 'extra_parameters': 'new extra'},
+    {**_modeling_params, 'name': 'updated', 'extra_parameters': None,
      'ac_capacity': 100},
-    {'name': None, 'backtrack': False}
+    {**_modeling_params, 'name': None, 'backtrack': False}
 ])
 def test_update_site(sql_app, user, nocommit_cursor,
                      newparams, site_id):
@@ -799,19 +808,22 @@ def test_update_site(sql_app, user, nocommit_cursor,
 def test_update_site_invalid_user(sql_app, invalid_user, nocommit_cursor,
                                   site_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.update_site(site_id, name='new')
+        storage_interface.update_site(site_id, name='new',
+                                      **_modeling_params)
 
 
 def test_update_site_does_not_exist(sql_app, invalid_user, nocommit_cursor,
                                     missing_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.update_site(missing_id, name='new')
+        storage_interface.update_site(missing_id, name='new',
+                                      **_modeling_params)
 
 
 def test_update_site_access_is_fx(sql_app, invalid_user, nocommit_cursor,
                                   forecast_id):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.update_site(forecast_id, name='new')
+        storage_interface.update_site(forecast_id, name='new',
+                                      **_modeling_params)
 
 
 @pytest.mark.parametrize('site', demo_sites.values())
