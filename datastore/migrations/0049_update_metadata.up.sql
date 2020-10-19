@@ -1,9 +1,11 @@
 CREATE USER 'update_objects'@'localhost' IDENTIFIED WITH caching_sha2_password as '$A$005$THISISACOMBINATIONOFINVALIDSALTANDPASSWORDTHATMUSTNEVERBRBEUSED' ACCOUNT LOCK;
 
 
+ALTER TABLE arbiter_data.observations CHANGE COLUMN uncertainty uncertainty FLOAT;
+
 CREATE DEFINER = 'update_objects'@'localhost' PROCEDURE update_observation (
   IN auth0id VARCHAR(32), IN strid CHAR(36), IN new_name VARCHAR(64), IN new_uncertainty FLOAT,
-  IN new_extra_parameters TEXT)
+  IN new_extra_parameters TEXT, IN null_uncertainty BOOLEAN)
 COMMENT 'Update an observation object'
 MODIFIES SQL DATA SQL SECURITY DEFINER
 BEGIN
@@ -13,11 +15,19 @@ BEGIN
     SET allowed = (EXISTS(SELECT 1 FROM arbiter_data.observations where id = binid)
         & can_user_perform_action(auth0id, binid, 'update'));
     IF allowed THEN
-        UPDATE arbiter_data.observations SET
-           name = COALESCE(new_name, name),
-           uncertainty = COALESCE(new_uncertainty, uncertainty),
-           extra_parameters = COALESCE(new_extra_parameters, extra_parameters)
-        WHERE id = binid;
+        IF null_uncertainty THEN
+            UPDATE arbiter_data.observations SET
+            name = COALESCE(new_name, name),
+            uncertainty = NULL,
+            extra_parameters = COALESCE(new_extra_parameters, extra_parameters)
+            WHERE id = binid;
+        ELSE
+            UPDATE arbiter_data.observations SET
+               name = COALESCE(new_name, name),
+               uncertainty = COALESCE(new_uncertainty, uncertainty),
+               extra_parameters = COALESCE(new_extra_parameters, extra_parameters)
+            WHERE id = binid;
+        END IF;
     ELSE
         SIGNAL SQLSTATE '42000' SET MESSAGE_TEXT = 'Access denied to user on "update observation"',
         MYSQL_ERRNO = 1142;

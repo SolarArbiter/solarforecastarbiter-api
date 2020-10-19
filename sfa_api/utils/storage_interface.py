@@ -428,7 +428,7 @@ def update_observation(observation_id, *, name=None, uncertainty=None,
     """
     _call_procedure(
         'update_observation', observation_id, name,
-        uncertainty, extra_parameters)
+        uncertainty, extra_parameters, False)
 
 
 def read_observation(observation_id):

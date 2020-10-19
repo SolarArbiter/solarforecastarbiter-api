@@ -87,13 +87,15 @@ def get_id(insertuser):
 
 @pytest.mark.parametrize('name', [
     'New NAME', None, pytest.param(0, marks=pytest.mark.xfail(strict=True))])
-@pytest.mark.parametrize('uncertainty', [
-    1.9, None, pytest.param('a', marks=pytest.mark.xfail(strict=True))])
+@pytest.mark.parametrize('uncertainty,null_unc', [
+    (1.9, False),  (None, False), (None, True),
+    pytest.param('a', False, marks=pytest.mark.xfail(strict=True))
+])
 @pytest.mark.parametrize('extra_parameters', [
     '', 'New extra', None,
     pytest.param(0, marks=pytest.mark.xfail(strict=True))])
 def test_update_observation(dictcursor, insertuser, allow_update_observations,
-                            name, uncertainty, extra_parameters):
+                            name, uncertainty, extra_parameters, null_unc):
     dictcursor.execute('SELECT * from arbiter_data.observations WHERE id = %s',
                        insertuser.obs['id'])
     expected = dictcursor.fetchall()[0]
@@ -102,14 +104,14 @@ def test_update_observation(dictcursor, insertuser, allow_update_observations,
     dictcursor.callproc(
         'update_observation', (
             insertuser.auth0id, insertuser.obs['strid'],
-            name, uncertainty, extra_parameters
+            name, uncertainty, extra_parameters, null_unc
         ))
     dictcursor.execute('SELECT * from arbiter_data.observations WHERE id = %s',
                        insertuser.obs['id'])
     new = dictcursor.fetchall()[0]
     if name is not None:
         expected['name'] = name
-    if uncertainty is not None:
+    if uncertainty is not None or null_unc:
         expected['uncertainty'] = uncertainty
     if extra_parameters is not None:
         expected['extra_parameters'] = extra_parameters
@@ -125,7 +127,7 @@ def test_update_observation_denied(dictcursor, insertuser, get_id, idtype,
         dictcursor.callproc(
             'update_observation', (
                 insertuser.auth0id, id_,
-                'new name', 0, 'new exxtra'
+                'new name', 0, 'new exxtra', False
             ))
     assert e.value.args[0] == 1142
 
