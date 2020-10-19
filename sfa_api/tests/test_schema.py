@@ -394,3 +394,31 @@ def test_modeling_parameters_deserialization_fail(modeling_params, mp_schema):
     mp['axis_azimuth'] = 0
     with pytest.raises(marshmallow.exceptions.ValidationError):
         mp_schema().load({'modeling_params': mp})
+
+
+@pytest.mark.parametrize('mp', [
+    {},
+    pytest.param(
+        {'tracking_type': None}, marks=pytest.mark.xfail(strict=True)),
+])
+def test_site_update_modeling_params(mp):
+    _mp = {
+        "ac_capacity": None,
+        "ac_loss_factor": None,
+        "axis_azimuth": None,
+        "axis_tilt": None,
+        "backtrack": None,
+        "dc_capacity": None,
+        "dc_loss_factor": None,
+        "ground_coverage_ratio": None,
+        "max_rotation_angle": None,
+        "surface_azimuth": None,
+        "surface_tilt": None,
+        "temperature_coefficient": None,
+        "tracking_type": 'noupdate'
+    }
+
+    out = schema.SiteUpdateSchema().load({'name': 'new'})
+    assert out == {'name': 'new', 'modeling_parameters': _mp}
+    out = schema.SiteUpdateSchema().load({'modeling_parameters': mp})
+    assert out['modeling_parameters'] == {**_mp, 'tracking_type': None}

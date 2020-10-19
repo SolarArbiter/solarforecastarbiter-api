@@ -22,7 +22,8 @@ from sfa_api.schema import (ObservationValuesSchema,
                             ObservationLinksSchema,
                             ObservationTimeRangeSchema,
                             ObservationGapSchema,
-                            ObservationUnflaggedSchema)
+                            ObservationUnflaggedSchema,
+                            ObservationUpdateSchema)
 
 
 class AllObservationsView(MethodView):
@@ -60,7 +61,7 @@ class AllObservationsView(MethodView):
           requests to this endpoint without a trailing slash will result
           in a redirect response.
         requestBody:
-          description: JSON respresentation of an observation.
+          description: JSON representation of an observation.
           required: True
           content:
             application/json:
@@ -473,6 +474,55 @@ class ObservationMetadataView(MethodView):
         storage = get_storage()
         observation = storage.read_observation(observation_id)
         return jsonify(ObservationSchema().dump(observation))
+
+    def post(self, observation_id, *args):
+        """
+        ---
+        summary: Update Observation metadata.
+        tags:
+        - Observations
+        parameters:
+        - observation_id
+        requestBody:
+          description: JSON object of observation metadata to update.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ObservationUpdate'
+        responses:
+          200:
+            description: Observation updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated observation.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated observation.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = ObservationUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        storage.update_observation(observation_id, **changes)
+        response = make_response(observation_id, 200)
+        response.headers['Location'] = url_for('observations.single',
+                                               observation_id=observation_id)
+        return response
 
 
 # Add path parameters used by these endpoints to the spec.

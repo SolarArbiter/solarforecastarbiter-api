@@ -11,6 +11,7 @@ from sfa_api.schema import (ForecastValuesSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema,
                             ForecastTimeRangeSchema,
+                            ForecastUpdateSchema,
                             CDFForecastGroupPostSchema,
                             CDFForecastGroupSchema,
                             CDFForecastSchema,
@@ -388,6 +389,55 @@ class ForecastMetadataView(MethodView):
         forecast = storage.read_forecast(forecast_id)
         return jsonify(ForecastSchema().dump(forecast))
 
+    def post(self, forecast_id, *args):
+        """
+        ---
+        summary: Update Forecast metadata.
+        tags:
+        - Forecasts
+        parameters:
+        - forecast_id
+        requestBody:
+          description: JSON object of forecast metadata updates.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastUpdate'
+        responses:
+          200:
+            description: Forecast updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated forecast.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = ForecastUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        storage.update_forecast(forecast_id, **changes)
+        response = make_response(forecast_id, 200)
+        response.headers['Location'] = url_for('forecasts.single',
+                                               forecast_id=forecast_id)
+        return response
+
 
 class AllCDFForecastGroupsView(MethodView):
     def get(self, *args):
@@ -482,7 +532,7 @@ class CDFForecastGroupMetadataView(MethodView):
         - forecast_id
         responses:
           200:
-            description: Successfully retrieved Forecasts.
+            description: Successfully retrieved Probabilistic Forecasts.
             content:
               application/json:
                 schema:
@@ -497,6 +547,55 @@ class CDFForecastGroupMetadataView(MethodView):
         storage = get_storage()
         cdf_forecast_group = storage.read_cdf_forecast_group(forecast_id)
         return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
+
+    def post(self, forecast_id, *args):
+        """
+        ---
+        summary: Update Probabilistic Forecast group Metadata.
+        tags:
+          - Probabilistic Forecasts
+        parameters:
+        - forecast_id
+        requestBody:
+          description: JSON object of probabilistic forecast updates.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastUpdate'
+        responses:
+          200:
+            description: Probabilistic Forecast updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated probabilistic forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated probabilistic forecast.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = ForecastUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        storage.update_cdf_forecast_group(forecast_id, **changes)
+        response = make_response(forecast_id, 200)
+        response.headers['Location'] = url_for('forecasts.single_cdf_group',
+                                               forecast_id=forecast_id)
+        return response
 
     def delete(self, forecast_id, *args):
         """

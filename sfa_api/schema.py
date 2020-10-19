@@ -110,6 +110,9 @@ EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
     description='Additional user specified parameters.',
     missing='')
+EXTRA_PARAMETERS_UPDATE = ma.String(
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
 
 VARIABLE_FIELD = ma.String(
     title='Variable',
@@ -374,6 +377,55 @@ class SiteSchema(ma.Schema):
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
 
+@spec.define_schema('SiteUpdate')
+class SiteUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description="Name of the Site",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    latitude = ma.Float(
+        title='Latitude',
+        description="Latitude in degrees North",
+        validate=validate.Range(-90, 90))
+    longitude = ma.Float(
+        title='Longitude',
+        description="Longitude in degrees East of the Prime Meridian",
+        validate=validate.Range(-180, 180))
+    elevation = ma.Float(
+        title='Elevation',
+        description="Elevation in meters")
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    modeling_parameters = ModelingParametersField(
+        description='Solar Power Plant modeling parameters',
+    )
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if 'modeling_parameters' not in out:
+            # uses tracking_type 'noupdate' as a sentinel
+            # mysql would fail on it due to the enum types
+            out['modeling_parameters'] = {
+                'tracking_type': 'noupdate',
+                "ac_capacity": None,
+                "ac_loss_factor": None,
+                "axis_azimuth": None,
+                "axis_tilt": None,
+                "backtrack": None,
+                "dc_capacity": None,
+                "dc_loss_factor": None,
+                "ground_coverage_ratio": None,
+                "max_rotation_angle": None,
+                "surface_azimuth": None,
+                "surface_tilt": None,
+                "temperature_coefficient": None,
+            }
+        return out
+
+
 @spec.define_schema('SiteMetadata')
 class SiteResponseSchema(SiteSchema):
     site_id = ma.UUID(required=True)
@@ -521,6 +573,18 @@ class ObservationPostSchema(ma.Schema):
     @validates_schema
     def validate_observation(self, data, **kwargs):
         validate_if_event(self, data, **kwargs)
+
+
+@spec.define_schema('ObservationUpdate')
+class ObservationUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the observation',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    uncertainty = ma.Float(
+        title='Uncertainty',
+        description='A measure of the uncertainty of the observation values.')
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
 
 
 @spec.define_schema('ObservationMetadata')
@@ -726,6 +790,15 @@ class ForecastSchema(ForecastPostSchema):
     provider = ma.String()
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
+
+
+@spec.define_schema('ForecastUpdate')
+class ForecastUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the forecast',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
 
 
 @spec.define_schema('ForecastLinks')
@@ -1549,13 +1622,26 @@ class AggregateObservationSchema(AggregateObservationPostSchema):
 
 @spec.define_schema('AggregateMetadataUpdate')
 class AggregateUpdateSchema(ma.Schema):
-    # later will add things that can be updated like description
+    name = ma.String(
+        title='Name',
+        description="Human friendly name for aggregate",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    description = ma.String(
+        title='Desctription',
+        description=(
+            "Description of the aggregate (e.g. Total PV power of all plants")
+    )
     observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
-                           many=True, required=True)
+                           many=True)
 
     @validates_schema
     def validate_from_until(self, data, **kwargs):
-        for obs in data['observations']:
+        for obs in data.get('observations', []):
             if 'effective_from' in obs and 'effective_until' in obs:
                 raise ValidationError("Only specify one of effective_from "
                                       "or effective_until")

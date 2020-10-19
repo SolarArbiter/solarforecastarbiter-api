@@ -274,13 +274,13 @@ class AggregateMetadataView(MethodView):
         ---
         summary: Update an aggregate.
         description: >-
-          For now, only adding or removing observations to the
-          aggregate is supported (i.e. only one of 'effective_until'
-          or 'effective_from' may be specified per observation). If
-          an observation is already part of an aggregate, effective_until
-          must be set until it can be added again. Any attempt to set
-          'effective_until' will apply to all observations with the given
-          ID in the aggregate.
+          Update an aggregate name, extra_parameters, timezone,
+          description, and add or remove observations (i.e. only one of
+          'effective_until' or 'effective_from' may be specified per
+          observation). If an observation is already part of an aggregate,
+          effective_until must be set before it can be added again. Any attempt
+          to set 'effective_until' will apply to all observations with the
+          given ID in the aggregate.
         tags:
         - Aggregates
         parameters:
@@ -291,9 +291,22 @@ class AggregateMetadataView(MethodView):
             application/json:
              schema:
                $ref: '#/components/schemas/AggregateMetadataUpdate'
+
         responses:
           200:
             description: Successfully updated aggregate metadata.
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the created aggregate.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated aggregate.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -309,10 +322,9 @@ class AggregateMetadataView(MethodView):
             raise BadAPIRequest(err.messages)
 
         storage = get_storage()
-        self._check_post_for_errs(aggregate_id, aggregate['observations'],
-                                  storage)
-
-        for i, update_obs in enumerate(aggregate['observations']):
+        self._check_post_for_errs(
+            aggregate_id, aggregate.get('observations', []), storage)
+        for i, update_obs in enumerate(aggregate.pop('observations', [])):
             obs_id = str(update_obs['observation_id'])
             if 'effective_from' in update_obs:
                 storage.add_observation_to_aggregate(
@@ -322,7 +334,12 @@ class AggregateMetadataView(MethodView):
                 storage.remove_observation_from_aggregate(
                     aggregate_id, obs_id,
                     update_obs['effective_until'])
-        return aggregate_id, 200
+        if aggregate:
+            storage.update_aggregate(aggregate_id, **aggregate)
+        response = make_response(aggregate_id, 200)
+        response.headers['Location'] = url_for('aggregates.single',
+                                               aggregate_id=aggregate_id)
+        return response
 
 
 class AggregateForecasts(MethodView):

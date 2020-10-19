@@ -678,3 +678,68 @@ def test_post_file_invalid_mimetype(api, forecast_id):
     assert file_post.status_code == 400
     expected = '{"errors":{"error":["Unsupported Content-Type or MIME type."]}}\n' # noqa
     assert file_post.get_data(as_text=True) == expected
+
+
+@pytest.mark.parametrize('up', [
+    {'name': 'new name'},
+    {},
+    {'name': 'again', 'extra_parameters': 'here they are'}
+])
+def test_forecast_update_success(api, forecast_id, up):
+    r = api.post(f'/forecasts/single/{forecast_id}/metadata',
+                 base_url=BASE_URL,
+                 json=up)
+    assert r.status_code == 200
+    assert 'Location' in r.headers
+
+
+def test_forecast_update_404(api, bad_id):
+    r = api.post(f'/forecasts/single/{bad_id}/metadata',
+                 base_url=BASE_URL,
+                 json={'name': 'new name'})
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('payload,message', [
+    ({'extra_parameters': 0}, '{"extra_parameters":["Not a valid string."]}'),
+    ({'name': '#NOPE'}, '{"name":["Invalid characters in string."]}')
+])
+def test_forecast_update_bad_request(api, forecast_id, payload, message):
+    r = api.post(f'/forecasts/single/{forecast_id}/metadata',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+@pytest.mark.parametrize('up', [
+    {'name': 'new name'},
+    {},
+    {'name': 'again', 'extra_parameters': 'here they are'}
+])
+def test_cdf_forecast_update_success(api, cdf_forecast_group_id, up):
+    r = api.post(f'/forecasts/cdf/{cdf_forecast_group_id}',
+                 base_url=BASE_URL,
+                 json=up)
+    assert r.status_code == 200
+    assert 'Location' in r.headers
+
+
+def test_cdf_forecast_update_404(api, bad_id):
+    r = api.post(f'/forecasts/cdf/{bad_id}',
+                 base_url=BASE_URL,
+                 json={'name': 'new name'})
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('payload,message', [
+    ({'extra_parameters': 0}, '{"extra_parameters":["Not a valid string."]}'),
+    ({'name': '#NOPE'}, '{"name":["Invalid characters in string."]}')
+])
+def test_cdf_forecast_update_bad_request(api, cdf_forecast_group_id,
+                                         payload, message):
+    r = api.post(f'/forecasts/cdf/{cdf_forecast_group_id}',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'

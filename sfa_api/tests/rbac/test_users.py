@@ -245,7 +245,7 @@ def test_get_user_actions_on_object(api, forecast_id):
     assert json_res['object_id'] == forecast_id
     assert sorted(json_res['actions']) == sorted(['delete', 'write_values',
                                                   'delete_values', 'read',
-                                                  'read_values'])
+                                                  'read_values', 'update'])
 
 
 def test_get_user_actions_on_object_404_missing(api, missing_id):
@@ -280,7 +280,7 @@ def test_get_user_create_permissions(
         api, to_remove, remove_perms_from_current_role):
     for otype in to_remove:
         remove_perms_from_current_role('create', otype)
-    res = api.get(f'/users/can-create/', BASE_URL)
+    res = api.get('/users/can-create/', BASE_URL)
     expected_types = [otype for otype in all_object_types
                       if otype not in to_remove]
     assert res.json == {'can_create': expected_types}
@@ -309,9 +309,9 @@ def test_get_user_actions_on_type(
 
 @pytest.mark.parametrize('object_type,expected_actions', [
     ('observations', ['create', 'read', 'delete', 'read_values',
-                      'write_values', 'delete_values']),
+                      'write_values', 'delete_values', 'update']),
     ('forecasts', ['create', 'read', 'delete', 'read_values', 'write_values',
-                   'delete_values']),
+                   'delete_values', 'update']),
     ('aggregates', ['create', 'read', 'update', 'delete', 'read_values',
                     'write_values', 'delete_values']),
     ('cdf_forecasts', ['create', 'read', 'update', 'delete', 'read_values',
@@ -365,7 +365,7 @@ def test_get_user_actions_on_type_minimum_test_perms(
 
 
 def test_get_user_actions_on_type_invalid_type(api):
-    res = api.get(f'/users/actions-on-type/bad-type', BASE_URL)
+    res = api.get('/users/actions-on-type/bad-type', BASE_URL)
     assert res.status_code == 400
     assert res.json == {
         'errors': {
@@ -377,5 +377,5 @@ def test_get_user_actions_on_type_invalid_type(api):
 
 
 def test_get_user_actions_on_type_no_type(api):
-    res = api.get(f'/users/actions-on-type/', BASE_URL)
+    res = api.get('/users/actions-on-type/', BASE_URL)
     assert res.status_code == 404

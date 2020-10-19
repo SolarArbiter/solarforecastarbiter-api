@@ -383,6 +383,42 @@ def test_store_observation_values_invalid_user(sql_app, invalid_user,
         storage_interface.store_observation_values(obs_id, obs_vals)
 
 
+@pytest.mark.parametrize('newparams', [
+    {'name': 'updated name'},
+    {},
+    {'extra_parameters': 'new extra', 'uncertainty': -0.9},
+    {'name': 'updated', 'extra_parameters': None},
+    {'uncertainty': None, 'name': None}
+])
+def test_update_observation(sql_app, user, nocommit_cursor,
+                            newparams, observation_id):
+    observation = storage_interface.read_observation(observation_id)
+    storage_interface.update_observation(observation_id, **newparams)
+    updated = storage_interface.read_observation(observation_id)
+    observation['observation_id'] = observation_id
+    observation.update({k: v for k, v in newparams.items() if v is not None})
+    assert updated.pop('modified_at') >= observation.pop('modified_at')
+    assert updated == observation
+
+
+def test_update_observation_invalid_user(
+        sql_app, invalid_user, nocommit_cursor, observation_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_observation(observation_id, name='new')
+
+
+def test_update_observation_does_not_exist(
+        sql_app, invalid_user, nocommit_cursor, missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_observation(missing_id, name='new')
+
+
+def test_update_observation_is_fx(sql_app, invalid_user, nocommit_cursor,
+                                  forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_observation(forecast_id, name='new')
+
+
 @pytest.mark.parametrize('observation_id', demo_observations.keys())
 def test_delete_observation(sql_app, user, nocommit_cursor, observation_id):
     storage_interface.delete_observation(observation_id)
@@ -615,6 +651,41 @@ def test_store_forecast_values_invalid_user(sql_app, invalid_user,
         storage_interface.store_forecast_values(fx_id, fx_vals)
 
 
+@pytest.mark.parametrize('newparams', [
+    {'name': 'updated name'},
+    {},
+    {'extra_parameters': 'new extra'},
+    {'name': 'updated', 'extra_parameters': None}
+])
+def test_update_forecast(sql_app, user, nocommit_cursor,
+                         newparams, forecast_id):
+    forecast = storage_interface.read_forecast(forecast_id)
+    storage_interface.update_forecast(forecast_id, **newparams)
+    updated = storage_interface.read_forecast(forecast_id)
+    forecast['forecast_id'] = forecast_id
+    forecast.update({k: v for k, v in newparams.items() if v is not None})
+    assert updated.pop('modified_at') >= forecast.pop('modified_at')
+    assert updated == forecast
+
+
+def test_update_forecast_invalid_user(sql_app, invalid_user, nocommit_cursor,
+                                      forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_forecast(forecast_id, name='new')
+
+
+def test_update_forecast_does_not_exist(sql_app, invalid_user, nocommit_cursor,
+                                        missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_forecast(missing_id, name='new')
+
+
+def test_update_forecast_access_denied(sql_app, invalid_user, nocommit_cursor,
+                                       inaccessible_forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_forecast(inaccessible_forecast_id, name='new')
+
+
 @pytest.mark.parametrize('forecast_id', demo_forecasts.keys())
 def test_delete_forecast(sql_app, user, nocommit_cursor, forecast_id):
     storage_interface.delete_forecast(forecast_id)
@@ -694,6 +765,65 @@ def test_store_site(sql_app, user, site, nocommit_cursor):
 def test_store_site_invalid_user(sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
         storage_interface.store_site(list(demo_sites.values())[0])
+
+
+_modeling_params = {
+    'ac_capacity': None, 'dc_capacity': None, 'temperature_coefficient': None,
+    'tracking_type': None, 'surface_tilt': None, 'surface_azimuth': None,
+    'axis_tilt': None, 'axis_azimuth': None, 'ground_coverage_ratio': None,
+    'backtrack': None, 'max_rotation_angle': None, 'dc_loss_factor': None,
+    'ac_loss_factor': None
+}
+
+
+@pytest.mark.parametrize('newparams', [
+    {**_modeling_params, 'name': 'updated name'},
+    _modeling_params,
+    {**_modeling_params, 'extra_parameters': 'new extra'},
+    {**_modeling_params, 'name': 'updated', 'extra_parameters': None,
+     'ac_capacity': 100},
+    {**_modeling_params, 'name': None, 'backtrack': False}
+])
+def test_update_site(sql_app, user, nocommit_cursor,
+                     newparams, site_id):
+    site = storage_interface.read_site(site_id)
+    storage_interface.update_site(site_id, **newparams)
+    updated = storage_interface.read_site(site_id)
+    site['site_id'] = site_id
+    if newparams.get('name') is not None:
+        assert updated['name'] == newparams['name']
+    else:
+        assert updated['name'] == site['name']
+    if newparams.get('extra_parameters') is not None:
+        assert updated['extra_parameters'] == newparams['extra_parameters']
+    else:
+        assert updated['extra_parameters'] == site['extra_parameters']
+    for k, v in updated['modeling_parameters'].items():
+        if newparams.get(k) is not None:
+            assert v == newparams[k]
+        else:
+            assert v == site['modeling_parameters'][k]
+
+
+def test_update_site_invalid_user(sql_app, invalid_user, nocommit_cursor,
+                                  site_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_site(site_id, name='new',
+                                      **_modeling_params)
+
+
+def test_update_site_does_not_exist(sql_app, invalid_user, nocommit_cursor,
+                                    missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_site(missing_id, name='new',
+                                      **_modeling_params)
+
+
+def test_update_site_access_is_fx(sql_app, invalid_user, nocommit_cursor,
+                                  forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_site(forecast_id, name='new',
+                                      **_modeling_params)
 
 
 @pytest.mark.parametrize('site', demo_sites.values())
@@ -1059,6 +1189,46 @@ def test_list_cdf_forecast_groups_filter_by_aggregate(
         assert fx['aggregate_id'] == aggregate_id
 
 
+@pytest.mark.parametrize('newparams', [
+    {'name': 'updated name'},
+    {},
+    {'extra_parameters': 'new extra'},
+    {'name': 'updated', 'extra_parameters': None},
+])
+def test_update_cdf_forecast(sql_app, user, nocommit_cursor,
+                             newparams, cdf_forecast_group_id):
+    cdf_forecast = storage_interface.read_cdf_forecast_group(
+        cdf_forecast_group_id)
+    storage_interface.update_cdf_forecast_group(
+        cdf_forecast_group_id, **newparams)
+    updated = storage_interface.read_cdf_forecast_group(
+        cdf_forecast_group_id)
+    cdf_forecast['forecast_id'] = cdf_forecast_group_id
+    cdf_forecast.update({k: v for k, v in newparams.items() if v is not None})
+    assert updated.pop('modified_at') >= cdf_forecast.pop('modified_at')
+    assert updated == cdf_forecast
+
+
+def test_update_cdf_forecast_invalid_user(
+        sql_app, invalid_user, nocommit_cursor, cdf_forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_cdf_forecast_group(
+            cdf_forecast_id, name='new')
+
+
+def test_update_cdf_forecast_does_not_exist(
+        sql_app, invalid_user, nocommit_cursor, missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_cdf_forecast_group(missing_id, name='new')
+
+
+def test_update_cdf_forecast_is_single(sql_app, invalid_user, nocommit_cursor,
+                                       cdf_forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_cdf_forecast_group(
+            cdf_forecast_id, name='new')
+
+
 @pytest.mark.parametrize('forecast_id', demo_group_cdf.keys())
 def test_delete_cdf_forecast_group(
         sql_app, user, nocommit_cursor, forecast_id):
@@ -1255,6 +1425,44 @@ def test_list_aggregates(sql_app, user):
 def test_list_aggregates_invalid_user(sql_app, invalid_user):
     aggregates = storage_interface.list_aggregates()
     assert len(aggregates) == 0
+
+
+@pytest.mark.parametrize('newparams', [
+    {'name': 'updated name'},
+    {},
+    {'extra_parameters': 'new extra', 'timezone': None},
+    {'name': 'updated', 'extra_parameters': None,
+     'description': 'new desc'},
+    {'description': 'is nwe', 'name': None,
+     'timezone': 'American/Los Angeles'}
+])
+def test_update_aggregate(sql_app, user, nocommit_cursor,
+                          newparams, aggregate_id):
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    storage_interface.update_aggregate(aggregate_id, **newparams)
+    updated = storage_interface.read_aggregate(aggregate_id)
+    aggregate['aggregate_id'] = aggregate_id
+    aggregate.update({k: v for k, v in newparams.items() if v is not None})
+    assert updated.pop('modified_at') >= aggregate.pop('modified_at')
+    assert updated == aggregate
+
+
+def test_update_aggregate_invalid_user(sql_app, invalid_user, nocommit_cursor,
+                                       aggregate_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_aggregate(aggregate_id, name='new')
+
+
+def test_update_aggregate_does_not_exist(
+        sql_app, invalid_user, nocommit_cursor, missing_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_aggregate(missing_id, name='new')
+
+
+def test_update_aggregate_access_is_fx(sql_app, invalid_user, nocommit_cursor,
+                                       forecast_id):
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.update_aggregate(forecast_id, name='new')
 
 
 @pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
@@ -1768,7 +1976,8 @@ def test_get_user_actions_on_object(
         sql_app, user, nocommit_cursor, forecast_id):
     actions = storage_interface.get_user_actions_on_object(forecast_id)
     assert sorted(actions) == sorted(['read', 'read_values', 'delete',
-                                      'delete_values', 'write_values'])
+                                      'delete_values', 'write_values',
+                                      'update'])
 
 
 def test_get_user_actions_on_object_object_dne(
