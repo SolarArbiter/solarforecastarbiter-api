@@ -273,6 +273,7 @@ def test_update_site(dictcursor, insertuser, allow_update_sites,
     dictcursor.execute('SELECT * from arbiter_data.sites WHERE id = %s',
                        insertuser.site['id'])
     new = dictcursor.fetchall()[0]
+    assert new.pop('modified_at') >= expected['modified_at']
     for k, v in new.items():
         if k not in kwargs or (
                 k in ('latitude', 'longitude', 'name', 'elevation',
