@@ -17,7 +17,7 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
                                      'interval_label', 'invalid')
 
 
-empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"uncertainty":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
 
 
 @pytest.fixture(params=['missing', 'fx'])
@@ -34,6 +34,24 @@ def test_observation_post_success(api):
                  json=VALID_OBS_JSON)
     assert r.status_code == 201
     assert 'Location' in r.headers
+
+
+@pytest.mark.parametrize('how', ['keep', 'pop'])
+def test_observation_post_success_no_uncertainty(api, how):
+    payload = VALID_OBS_JSON.copy()
+    if how == 'pop':
+        payload.pop('uncertainty')
+    else:
+        payload['uncertainty'] = None
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=payload)
+    obsid = r.data.decode()
+    assert r.status_code == 201
+    assert 'Location' in r.headers
+    new = api.get(f'/observations/{obsid}/metadata',
+                  base_url=BASE_URL)
+    assert new.json['uncertainty'] is None
 
 
 @pytest.mark.parametrize('payload,message', [
