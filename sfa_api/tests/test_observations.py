@@ -685,7 +685,8 @@ def test_observation_post_power_at_weather_site(api, variable):
 @pytest.mark.parametrize('up', [
     {'name': 'new name'},
     {},
-    {'uncertainty': 1.11, 'extra_parameters': 'here they are'}
+    {'uncertainty': 1.11, 'extra_parameters': 'here they are'},
+    {'name': 'newname', 'uncertainty': None}
 ])
 def test_observation_update_success(api, observation_id, up):
     r = api.post(f'/observations/{observation_id}/metadata',
@@ -693,6 +694,11 @@ def test_observation_update_success(api, observation_id, up):
                  json=up)
     assert r.status_code == 200
     assert 'Location' in r.headers
+    r2 = api.get(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL)
+    updated = r2.json
+    for k, v in up.items():
+        assert updated[k] == v
 
 
 def test_observation_update_404(api, bad_id):

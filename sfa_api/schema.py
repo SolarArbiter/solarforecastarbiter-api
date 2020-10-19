@@ -585,9 +585,17 @@ class ObservationUpdateSchema(ma.Schema):
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.',
-        allow_none=True
+        allow_none=True,
     )
     extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if out.get('uncertainty', '') is None:
+            out['null_uncertainty'] = True
+        else:
+            out['null_uncertainty'] = False
+        return out
 
 
 @spec.define_schema('ObservationMetadata')
