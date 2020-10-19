@@ -462,8 +462,8 @@ def test_aggregate_values_deleted_observation(api, observation_id, startend):
 
 
 @pytest.mark.parametrize('label,exp1,exp2', [
-    ('beginning', 124.02226667, 251.81885714),
-    ('ending', 132.84051429, 262.83033333),
+    ('beginning', 78.30793, 303.016),
+    ('ending', -0.77138242, 93.286025),
 ])
 def test_aggregate_values_interval_label(
         api, observation_id, label, exp1, exp2):
@@ -484,7 +484,7 @@ def test_aggregate_values_interval_label(
              base_url=BASE_URL)
     r3 = api.get(
         f'/aggregates/{aggregate_id}/values'
-        '?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z',
+        '?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z',
         headers={'Accept': 'application/json'},
         base_url=BASE_URL)
     values = r3.json['values']

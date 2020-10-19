@@ -182,18 +182,28 @@ class AggregateValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
-        indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
 
         interval_length = f"{aggregate['interval_length']}min"
         interval_label = aggregate['interval_label']
         timezone = aggregate['timezone']
 
+        # Create a timedelta to add/substract from end/start to get data
+        # outside of start/end when aggregating
+        interval_offset = pd.Timedelta(interval_length) - pd.Timedelta('1ns')
+
         if interval_label == 'ending':
             index_start = start.ceil(interval_length)
             index_end = end.ceil(interval_length)
+
+            # adjust start to include all values in the previous interval
+            start = index_start - interval_offset
         else:
             index_start = start.floor(interval_length)
             index_end = end.floor(interval_length)
+            # adjust end to include all values in the final interval
+            end = index_end + interval_offset
+
+        indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
 
         request_index = pd.date_range(
             index_start.tz_convert(timezone),
