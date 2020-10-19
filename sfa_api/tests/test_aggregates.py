@@ -1,3 +1,6 @@
+import math
+
+
 from copy import deepcopy
 import pytest
 
@@ -337,6 +340,9 @@ def test_get_aggregate_values_outside_range(api, aggregate_id):
                   query_string={'start': '2018-01-01T00:00:00Z',
                                 'end': '2018-01-02T00:00:00Z'})
     assert res.status_code == 422
+    assert res.json['errors']['values'] == [
+        'No effective observations in data']
+
 
 
 def test_get_aggregate_values_422(api, aggregate_id, startend):
@@ -378,17 +384,22 @@ def test_get_aggregate_values_limited_effective(api, aggregate_id, startend):
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
     assert res.status_code == 200
+
+    assert res.json['values'][0]['value'] is None
+
+    # datapoint just before effective_from is None
+    assert res.json['values'][6 + 24*103]['value'] is None
+
+    # datapoint just inside/equal to effective_from is not None
+    assert not math.isnan(res.json['values'][7 + 24*103]['value'])
+
+    # datapoint just before effective_until is not null
+    assert not math.isnan(res.json['values'][7 + 24*106]['value'])
+
+    # datpoint after effective_until is null
+    assert res.json['values'][8 + 24*106]['value'] is None
+
     assert res.json['values'][-1]['value'] is None
-
-
-def test_get_aggregate_values_outside_effective(api, aggregate_id):
-    startend = '?start=2018-12-25T00:00Z&end=2018-12-30T00:00Z'
-    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
-                  headers={'Accept': 'application/json'},
-                  base_url=BASE_URL)
-    assert res.status_code == 422
-    assert res.json['errors']['values'] == [
-        'No effective observations in data']
 
 
 def test_get_aggregate_values_404(api, missing_id, startend):
@@ -489,7 +500,9 @@ def test_aggregate_values_interval_label(
         base_url=BASE_URL)
     values = r3.json['values']
     assert len(values) == 2
+    assert values[0]['timestamp'] == '2019-04-14T13:00:00Z'
     assert values[0]['value'] == exp1
+    assert values[1]['timestamp'] == '2019-04-14T14:00:00Z'
     assert values[1]['value'] == exp2
 
 
@@ -521,4 +534,5 @@ def test_aggregate_values_interval_label_offset_request(
         base_url=BASE_URL)
     values = r3.json['values']
     assert len(values) == 1
+    assert values[0]['timestamp'] == '2019-04-14T14:00:00Z'
     assert values[0]['value'] == expected
