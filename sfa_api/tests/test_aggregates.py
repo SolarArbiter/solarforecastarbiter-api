@@ -491,3 +491,34 @@ def test_aggregate_values_interval_label(
     assert len(values) == 2
     assert values[0]['value'] == exp1
     assert values[1]['value'] == exp2
+
+
+@pytest.mark.parametrize('label,expected', [
+    ('beginning', 303.016),
+    ('ending', 93.286025),
+])
+def test_aggregate_values_interval_label_offset_request(
+        api, observation_id, label, expected):
+    agg = deepcopy(VALID_AGG_JSON)
+    agg['interval_label'] = label
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=agg)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2019-04-14 06:00:00Z'}]}
+    api.post(f'/aggregates/{aggregate_id}/metadata',
+             json=payload,
+             base_url=BASE_URL)
+    r3 = api.get(
+        f'/aggregates/{aggregate_id}/values'
+        '?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z',
+        headers={'Accept': 'application/json'},
+        base_url=BASE_URL)
+    values = r3.json['values']
+    assert len(values) == 1
+    assert values[0]['value'] == expected

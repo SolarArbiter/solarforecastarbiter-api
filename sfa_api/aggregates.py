@@ -191,15 +191,13 @@ class AggregateValuesView(MethodView):
         # outside of start/end when aggregating
         interval_offset = pd.Timedelta(interval_length) - pd.Timedelta('1ns')
 
-        if interval_label == 'ending':
-            index_start = start.ceil(interval_length)
-            index_end = end.ceil(interval_length)
+        index_start = start.ceil(interval_length)
+        index_end = end.floor(interval_length)
 
+        if interval_label == 'ending':
             # adjust start to include all values in the previous interval
             start = index_start - interval_offset
         else:
-            index_start = start.floor(interval_length)
-            index_end = end.floor(interval_length)
             # adjust end to include all values in the final interval
             end = index_end + interval_offset
 
