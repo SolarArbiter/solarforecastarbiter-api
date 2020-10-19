@@ -278,7 +278,7 @@ class AggregateMetadataView(MethodView):
           description, and add or remove observations (i.e. only one of
           'effective_until' or 'effective_from' may be specified per
           observation). If an observation is already part of an aggregate,
-          effective_until must be set until it can be added again. Any attempt
+          effective_until must be set before it can be added again. Any attempt
           to set 'effective_until' will apply to all observations with the
           given ID in the aggregate.
         tags:
