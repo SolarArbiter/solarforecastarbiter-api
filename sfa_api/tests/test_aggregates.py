@@ -1,3 +1,4 @@
+from copy import deepcopy
 import pytest
 
 
@@ -432,3 +433,61 @@ def test_get_aggregate_cdf_forecasts_404(api, missing_id):
     res = api.get(f'/aggregates/{missing_id}/forecasts/cdf',
                   base_url=BASE_URL)
     assert res.status_code == 404
+
+
+def test_aggregate_values_deleted_observation(api, observation_id, startend):
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=VALID_AGG_JSON)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2029-01-01 01:23:00Z'}]}
+    r2 = api.post(f'/aggregates/{aggregate_id}/metadata',
+                  json=payload,
+                  base_url=BASE_URL)
+    assert r2.status_code == 200
+    r3 = api.delete(f'/observations/{observation_id}',
+                    base_url=BASE_URL)
+    assert r3.status_code == 204
+    r4 = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                 base_url=BASE_URL)
+    assert r4.status_code == 422
+    errors = r4.json['errors']
+    assert errors['values'] == ['Deleted Observation data cannot be retrieved '
+                                'to include in Aggregate']
+
+
+@pytest.mark.parametrize('label,exp1,exp2', [
+    ('beginning', 78.30793, 185.75),
+    ('ending', 6.01286, 93.286025),
+])
+def test_aggregate_values_interval_label(
+        api, observation_id, label, exp1, exp2):
+    agg = deepcopy(VALID_AGG_JSON)
+    agg['interval_label'] = label
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=agg)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2019-04-14 06:00:00Z'}]}
+    api.post(f'/aggregates/{aggregate_id}/metadata',
+             json=payload,
+             base_url=BASE_URL)
+    r3 = api.get(
+        f'/aggregates/{aggregate_id}/values'
+        '?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z',
+        headers={'Accept': 'application/json'},
+        base_url=BASE_URL)
+    values = r3.json['values']
+    assert len(values) == 2
+    assert values[0]['value'] == exp1
+    assert values[1]['value'] == exp2
