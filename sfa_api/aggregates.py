@@ -189,19 +189,15 @@ class AggregateValuesView(MethodView):
         timezone = aggregate['timezone']
 
         if interval_label == 'ending':
-            index_start = start.tz_convert(
-                timezone
-            ).ceil(interval_length)
-            index_end = end.tz_convert(timezone)
+            index_start = start.ceil(interval_length)
+            index_end = end.ceil(interval_length)
         else:
-            index_start = start.tz_convert(timezone)
-            index_end = end.tz_convert(
-                timezone
-            ).floor(interval_length)
+            index_start = start.floor(interval_length)
+            index_end = end.floor(interval_length)
 
         request_index = pd.date_range(
-            index_start,
-            index_end,
+            index_start.tz_convert(timezone),
+            index_end.tz_convert(timezone),
             freq=interval_length,
         )
 
