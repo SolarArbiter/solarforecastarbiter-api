@@ -484,7 +484,10 @@ class ObservationMetadataView(MethodView):
         parameters:
         - observation_id
         requestBody:
-          description: JSON object of observation metadata to update.
+          description: >-
+            JSON object of observation metadata to update.
+            If 'uncertainty' is explicitly set to null, the value
+            will be cleared from the stored metadata.
           required: True
           content:
             application/json:

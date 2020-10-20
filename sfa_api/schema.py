@@ -567,7 +567,8 @@ class ObservationPostSchema(ma.Schema):
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.',
-        required=True)
+        missing=None
+    )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates_schema
@@ -583,8 +584,18 @@ class ObservationUpdateSchema(ma.Schema):
         validate=[UserstringValidator(), validate.Length(max=64)])
     uncertainty = ma.Float(
         title='Uncertainty',
-        description='A measure of the uncertainty of the observation values.')
+        description='A measure of the uncertainty of the observation values.',
+        allow_none=True,
+    )
     extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if out.get('uncertainty', '') is None:
+            out['null_uncertainty'] = True
+        else:
+            out['null_uncertainty'] = False
+        return out
 
 
 @spec.define_schema('ObservationMetadata')

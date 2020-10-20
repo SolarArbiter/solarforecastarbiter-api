@@ -296,6 +296,20 @@ def test_store_observation(sql_app, user, observation, nocommit_cursor):
     assert observation == new_observation
 
 
+def test_store_observation_none_uncertainty(
+        sql_app, user, observation_id, nocommit_cursor):
+    observation = demo_observations[observation_id].copy()
+    observation['uncertainty'] = None
+    observation['name'] = 'new_observation'
+    new_id = storage_interface.store_observation(observation)
+    new_observation = storage_interface.read_observation(new_id)
+    observation['observation_id'] = new_id
+    for key in ('provider', 'modified_at', 'created_at'):
+        del observation[key]
+        del new_observation[key]
+    assert observation == new_observation
+
+
 def test_store_observation_invalid_user(
         sql_app, invalid_user, nocommit_cursor):
     with pytest.raises(storage_interface.StorageAuthError):
@@ -388,7 +402,8 @@ def test_store_observation_values_invalid_user(sql_app, invalid_user,
     {},
     {'extra_parameters': 'new extra', 'uncertainty': -0.9},
     {'name': 'updated', 'extra_parameters': None},
-    {'uncertainty': None, 'name': None}
+    {'uncertainty': None, 'name': None},
+    {'uncertainty': None, 'null_uncertainty': True}
 ])
 def test_update_observation(sql_app, user, nocommit_cursor,
                             newparams, observation_id):
@@ -396,7 +411,13 @@ def test_update_observation(sql_app, user, nocommit_cursor,
     storage_interface.update_observation(observation_id, **newparams)
     updated = storage_interface.read_observation(observation_id)
     observation['observation_id'] = observation_id
-    observation.update({k: v for k, v in newparams.items() if v is not None})
+    observation.update(
+        {k: v for k, v in newparams.items()
+         if k != 'null_uncertainty' and (v is not None or (
+                 k == 'uncertainty' and
+                 newparams.get('null_uncertainty', False)))
+         })
+
     assert updated.pop('modified_at') >= observation.pop('modified_at')
     assert updated == observation
 

@@ -422,3 +422,17 @@ def test_site_update_modeling_params(mp):
     assert out == {'name': 'new', 'modeling_parameters': _mp}
     out = schema.SiteUpdateSchema().load({'modeling_parameters': mp})
     assert out['modeling_parameters'] == {**_mp, 'tracking_type': None}
+
+
+@pytest.mark.parametrize('params', [
+    {'extra_parameters': 'newextra'},
+    {'uncertainty': None, 'name': 'newname'}
+])
+def test_observation_update(params):
+    out = schema.ObservationUpdateSchema().load(params)
+    for k, v in params.items():
+        assert out[k] == v
+    if 'uncertainty' in params and params['uncertainty'] is None:
+        assert out['null_uncertainty']
+    else:
+        assert not out['null_uncertainty']

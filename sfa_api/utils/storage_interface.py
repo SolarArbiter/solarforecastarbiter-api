@@ -415,7 +415,7 @@ def store_observation(observation):
 
 
 def update_observation(observation_id, *, name=None, uncertainty=None,
-                       extra_parameters=None):
+                       extra_parameters=None, null_uncertainty=False):
     """Update observation metadata.
 
     Parameters
@@ -428,7 +428,7 @@ def update_observation(observation_id, *, name=None, uncertainty=None,
     """
     _call_procedure(
         'update_observation', observation_id, name,
-        uncertainty, extra_parameters, False)
+        uncertainty, extra_parameters, null_uncertainty)
 
 
 def read_observation(observation_id):
