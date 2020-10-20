@@ -344,7 +344,6 @@ def test_get_aggregate_values_outside_range(api, aggregate_id):
         'No effective observations in data']
 
 
-
 def test_get_aggregate_values_422(api, aggregate_id, startend):
     payload = {'observations': [{
         'observation_id': '123e4567-e89b-12d3-a456-426655440000',
@@ -400,6 +399,29 @@ def test_get_aggregate_values_limited_effective(api, aggregate_id, startend):
     assert res.json['values'][8 + 24*106]['value'] is None
 
     assert res.json['values'][-1]['value'] is None
+
+
+def test_get_aggregate_values_no_data_after_effective(api, aggregate_id):
+    # https://github.com/SolarArbiter/solarforecastarbiter-api/issues/219
+    # Regression test for #219, previously, requests for values after any of
+    # the included observations `effective_from` was set resulted in an error.
+    payload = {'observations': [{
+        'observation_id': '123e4567-e89b-12d3-a456-426655440000',
+        'effective_until': '2019-04-14 07:00:00Z'}, {
+        'observation_id': 'b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2',
+        'effective_until': '2019-04-14 07:00:00Z'}]}
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 200
+    startend = '?start=2019-04-14T08:00Z&end=2019-04-17T07:00Z'
+    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    values = res.json['values']
+    assert not math.isnan(values[0]['value'])
+    assert not math.isnan(values[-1]['value'])
 
 
 def test_get_aggregate_values_404(api, missing_id, startend):
