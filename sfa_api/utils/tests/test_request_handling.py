@@ -566,3 +566,30 @@ def test_validate_latitude_longitude_success(app, lat, lon):
     url = f'/climatezones/search?latitude={lat}&longitude={lon}'
     with app.test_request_context(url):
         request_handling.validate_latitude_longitude()
+
+
+@pytest.mark.parametrize('data', [
+    pd.DataFrame({'value': []}),
+    pd.DataFrame({'value': [0, 0, 0]}),
+    pd.DataFrame({'value': [0.0, 1.0, 0.0]}, index=pd.date_range(
+        start='now', freq='5min', periods=3)),
+    pd.DataFrame({'value': [1, 0, 1], 'other': ['a', 'b', 'c']})
+])
+def test_validate_event_data_ok(data):
+    request_handling.validate_event_data(data)
+
+
+@pytest.mark.parametrize('data,exp', [
+    (pd.DataFrame({'value': [1, 2, 0]}), [1]),
+    (pd.DataFrame({'value': [2, 2, 2, 2]}), [0, 1, 2, 3]),
+    (pd.DataFrame({'value': ['a', 1.0, 0.0, 99]}, index=pd.date_range(
+        start='now', freq='5min', periods=4)), [0, 3])
+])
+def test_validate_event_data_bad(data, exp):
+    with pytest.raises(request_handling.BadAPIRequest) as err:
+        request_handling.validate_event_data(data)
+    locs = [
+        int(x) for x in
+        err.value.errors['value'][0].split('locations ')[1].split(',')
+    ]
+    assert exp == locs

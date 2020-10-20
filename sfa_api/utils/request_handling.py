@@ -511,3 +511,23 @@ def validate_latitude_longitude():
     if errors:
         raise BadAPIRequest(errors)
     return lat, lon
+
+
+def validate_event_data(data):
+    """
+    Validate that the data is either 0 or 1
+
+    Parameters
+    ----------
+    data : pd.Dataframe with 'value' column
+
+    Raises
+    ------
+    BadApiRequest
+       If there are any errors
+    """
+    isbool = (data['value'] == 0) | (data['value'] == 1)
+    if not isbool.all():
+        indx = isbool.reset_index()[~isbool.values].index.astype('str')
+        raise BadAPIRequest({'value': [
+            'Invalid event values at locations %s' % ', '.join(indx)]})
