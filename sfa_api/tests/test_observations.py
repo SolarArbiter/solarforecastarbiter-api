@@ -7,7 +7,8 @@ import pytest
 from sfa_api.conftest import (variables, interval_labels, BASE_URL,
                               VALID_OBS_VALUE_JSON, VALID_OBS_VALUE_CSV,
                               VALID_OBS_JSON, copy_update,
-                              _get_large_test_payload)
+                              _get_large_test_payload,
+                              demo_observations)
 
 
 INVALID_NAME = copy_update(VALID_OBS_JSON, 'name', '#Nope')
@@ -222,6 +223,35 @@ def test_post_observation_values_valid_csv(api, observation_id,
                  headers={'Content-Type': 'text/csv'},
                  data=VALID_OBS_VALUE_CSV)
     assert r.status_code == 201
+
+
+def test_post_observation_values_event_data(
+        api, mocked_queuing, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:49Z')
+    observation_id = list(demo_observations.keys())[-1]
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json={'values': [
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T17:54:00Z",
+                        'value': 1.0},
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T17:59:00Z",
+                        'value': 0.0},
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T18:04:00Z",
+                        'value': 0.0}]})
+    assert res.status_code == 201
+
+
+def test_post_observation_values_bad_event_data(api, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:49Z')
+    observation_id = list(demo_observations.keys())[-1]
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 400
+    assert 'Invalid event values' in res.get_data(as_text=True)
 
 
 def test_get_observation_values_404(api, bad_id, startend):

@@ -1361,6 +1361,7 @@ def test_read_metadata_for_value_write_fx(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_before(
@@ -1377,6 +1378,7 @@ def test_read_metadata_for_value_write_fx_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_no_vals(
@@ -1389,6 +1391,7 @@ def test_read_metadata_for_value_write_fx_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_no_write(
@@ -1399,6 +1402,26 @@ def test_read_metadata_for_value_write_fx_no_write(
                          insertuser.fx['strid'], 'forecasts',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_fx_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE forecasts SET variable = 'event' WHERE id = %s",
+        (insertuser.fx['id'],)
+    )
+    dictcursor.execute(
+        'INSERT INTO forecasts_values (id, timestamp, value) VALUES'
+        ' (%s, %s, %s)', (insertuser.fx['id'], time_, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id, insertuser.fx['strid'],
+                         'forecasts', '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_obs(
@@ -1415,6 +1438,7 @@ def test_read_metadata_for_value_write_obs(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_obs_before(
@@ -1431,6 +1455,7 @@ def test_read_metadata_for_value_write_obs_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_obs_no_vals(
@@ -1443,8 +1468,9 @@ def test_read_metadata_for_value_write_obs_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
-
+    
 def test_read_metadata_for_value_write_obs_no_write(
         cursor, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -1453,6 +1479,27 @@ def test_read_metadata_for_value_write_obs_no_write(
                          insertuser.obs['strid'], 'observations',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_obs_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE observations SET variable = 'event' WHERE id = %s",
+        (insertuser.obs['id'],)
+    )
+    dictcursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
+                         '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_cdf(
@@ -1470,7 +1517,8 @@ def test_read_metadata_for_value_write_cdf(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_before(
         dictcursor, insertuser, allow_write_values):
@@ -1487,7 +1535,8 @@ def test_read_metadata_for_value_write_cdf_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_no_vals(
         dictcursor, insertuser, allow_write_values):
@@ -1500,7 +1549,8 @@ def test_read_metadata_for_value_write_cdf_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_fx_no_write(
         cursor, insertuser):
@@ -1511,6 +1561,28 @@ def test_read_metadata_for_value_write_cdf_fx_no_write(
                          'cdf_forecasts',
                          '2019-09-30 12:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_cdf_fx_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE cdf_forecasts_groups SET variable = 'event' WHERE id = %s",
+        (insertuser.cdf['id'],)
+    )
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
+    dictcursor.execute(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value) VALUES'
+        ' (UUID_TO_BIN(%s, 1), %s, %s)', (cdf_id, time_, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id, cdf_id,
+                         'cdf_forecasts',
+                         '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_invalid(cursor, insertuser):
@@ -2362,7 +2434,6 @@ def test_get_user_creatable_types(
         cursor.execute(
             'INSERT INTO role_permission_mapping (role_id, permission_id) '
             'VALUES (%s, %s)', (other_org_role['id'], new_perm['id']))
-
 
     cursor.callproc('get_user_creatable_types', (auth0id,))
     perms_after_other_grants = cursor.fetchall()
