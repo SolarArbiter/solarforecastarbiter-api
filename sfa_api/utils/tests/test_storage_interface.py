@@ -1317,34 +1317,37 @@ def test_create_new_user(sql_app, fake_user, run, nocommit_cursor):
 def test_read_metadata_for_observation_values(sql_app, user, nocommit_cursor,
                                               observation):
     start = pd.Timestamp('1970-01-02')
-    iv, pt, ep = storage_interface.read_metadata_for_observation_values(
+    iv, pt, ep, ie = storage_interface.read_metadata_for_observation_values(
         observation['observation_id'], start)
     assert iv == observation['interval_length']
     assert pt is None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and ie == (observation['variable'] == 'event')
 
 
 def test_read_metadata_for_observation_values_start(
         sql_app, user, nocommit_cursor):
     observation = list(demo_observations.values())[0]
     start = pd.Timestamp('2019-09-02')
-    iv, pt, ep = storage_interface.read_metadata_for_observation_values(
+    iv, pt, ep, ie = storage_interface.read_metadata_for_observation_values(
         observation['observation_id'], start)
     assert iv == observation['interval_length']
     assert isinstance(pt, pd.Timestamp)
     assert pt.tzinfo is not None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and not ie
 
 
 @pytest.mark.parametrize('forecast', demo_forecasts.values())
 def test_read_metadata_for_forecast_values(sql_app, user, nocommit_cursor,
                                            forecast):
     start = pd.Timestamp('1970-01-02')
-    iv, pt, ep = storage_interface.read_metadata_for_forecast_values(
+    iv, pt, ep, ie = storage_interface.read_metadata_for_forecast_values(
         forecast['forecast_id'], start)
     assert iv == forecast['interval_length']
     assert pt is None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and ie == (forecast['variable'] == 'event')
 
 
 def test_read_metadata_for_forecast_values_w_obs(
@@ -1362,37 +1365,40 @@ def test_read_metadata_for_forecast_values_start(
         sql_app, user, nocommit_cursor):
     forecast = list(demo_forecasts.values())[0]
     start = pd.Timestamp('2019-09-02')
-    iv, pt, ep = storage_interface.read_metadata_for_forecast_values(
+    iv, pt, ep, ie = storage_interface.read_metadata_for_forecast_values(
         forecast['forecast_id'], start)
     assert iv == forecast['interval_length']
     assert isinstance(pt, pd.Timestamp)
     assert pt.tzinfo is not None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and not ie
 
 
-@pytest.mark.parametrize('cdf_forecast_id', demo_single_cdf.keys())
+@pytest.mark.parametrize('cdf_forecast', demo_single_cdf.values())
 def test_read_metadata_for_cdf_forecast_values(
-        sql_app, user, nocommit_cursor, cdf_forecast_id):
+        sql_app, user, nocommit_cursor, cdf_forecast):
     start = pd.Timestamp('1970-01-02')
-    iv, pt, ep = storage_interface.read_metadata_for_cdf_forecast_values(
-        cdf_forecast_id, start)
-    assert iv == demo_group_cdf[demo_single_cdf[
-        cdf_forecast_id]['parent']]['interval_length']
+    iv, pt, ep, ie = storage_interface.read_metadata_for_cdf_forecast_values(
+        cdf_forecast['forecast_id'], start)
+    assert iv == demo_group_cdf[cdf_forecast['parent']]['interval_length']
     assert pt is None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and ie == (
+        demo_group_cdf[cdf_forecast['parent']]['variable'] == 'event')
 
 
 def test_read_metadata_for_cdf_forecast_values_start(
         sql_app, user, nocommit_cursor):
     cdf_forecast_id = list(demo_single_cdf.keys())[0]
     start = pd.Timestamp('2019-09-02')
-    iv, pt, ep = storage_interface.read_metadata_for_cdf_forecast_values(
+    iv, pt, ep, ie = storage_interface.read_metadata_for_cdf_forecast_values(
         cdf_forecast_id, start)
     assert iv == demo_group_cdf[demo_single_cdf[
         cdf_forecast_id]['parent']]['interval_length']
     assert isinstance(pt, pd.Timestamp)
     assert pt.tzinfo is not None
     assert isinstance(ep, str)
+    assert isinstance(ie, bool) and not ie
 
 
 @pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())

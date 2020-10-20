@@ -1755,13 +1755,18 @@ def _set_extra_params(out):
     return out['extra_parameters']
 
 
+def _set_is_event(out):
+    return bool(out['is_event'])
+
+
 def _read_metadata_for_write(obj_id, type_, start):
     out = _call_procedure_for_single(
         'read_metadata_for_value_write', obj_id, type_, start)
     interval_length = out['interval_length']
     previous_time = _set_previous_time(out)
     extra_parameters = _set_extra_params(out)
-    return interval_length, previous_time, extra_parameters
+    is_event = _set_is_event(out)
+    return interval_length, previous_time, extra_parameters, is_event
 
 
 def read_metadata_for_forecast_values(forecast_id, start):
@@ -1780,9 +1785,11 @@ def read_metadata_for_forecast_values(forecast_id, start):
     interval_length : int
         The interval length of the forecast
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the forecast
+        The extra parameters of the forecast
+    is_event : boolean
+        True if the forecast is an event forecast.
 
     Raises
     ------
@@ -1808,9 +1815,11 @@ def read_metadata_for_cdf_forecast_values(forecast_id, start):
     interval_length : int
         The interval length of the forecast
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the forecast
+        The extra parameters of the forecast
+    is_event : boolean
+        True if the forecast is an event forecast.
 
     Raises
     ------
@@ -1837,9 +1846,11 @@ def read_metadata_for_observation_values(observation_id, start):
     interval_length : int
         The interval length of the observation
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the observation
+        The extra parameters of the observation
+    is_event : boolean
+        True if the observation is an event observation.
 
     Raises
     ------
