@@ -1,6 +1,7 @@
 import math
 
 
+from copy import deepcopy
 import pytest
 
 
@@ -34,7 +35,9 @@ def test_post_aggregate_success(api):
      f'{{"aggregate_type":["Must be one of: {agg_types}."]}}'),
     (copy_update(VALID_AGG_JSON, 'interval_label', 'instant'),
      '{"interval_label":["Must be one of: beginning, ending."]}'),
-    ({}, '{"aggregate_type":["Missing data for required field."],"description":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"timezone":["Missing data for required field."],"variable":["Missing data for required field."]}')  # NOQA
+    ({}, '{"aggregate_type":["Missing data for required field."],"description":["Missing data for required field."],"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"name":["Missing data for required field."],"timezone":["Missing data for required field."],"variable":["Missing data for required field."]}'),  # NOQA
+    (copy_update(VALID_AGG_JSON, 'interval_length', '61'),
+     f'{{"interval_length":["Must be a divisor of one day."]}}'),
 ])
 def test_post_aggregate_bad_request(api, payload, message):
     res = api.post('/aggregates/',
@@ -337,6 +340,8 @@ def test_get_aggregate_values_outside_range(api, aggregate_id):
                   query_string={'start': '2018-01-01T00:00:00Z',
                                 'end': '2018-01-02T00:00:00Z'})
     assert res.status_code == 422
+    assert res.json['errors']['values'] == [
+        'No effective observations in data']
 
 
 def test_get_aggregate_values_422(api, aggregate_id, startend):
@@ -378,7 +383,45 @@ def test_get_aggregate_values_limited_effective(api, aggregate_id, startend):
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
     assert res.status_code == 200
-    assert not math.isnan(res.json['values'][-1]['value'])
+
+    assert res.json['values'][0]['value'] is None
+
+    # datapoint just before effective_from is None
+    assert res.json['values'][6 + 24*103]['value'] is None
+
+    # datapoint just inside/equal to effective_from is not None
+    assert not math.isnan(res.json['values'][7 + 24*103]['value'])
+
+    # datapoint just before effective_until is not null
+    assert not math.isnan(res.json['values'][7 + 24*106]['value'])
+
+    # datpoint after effective_until is null
+    assert res.json['values'][8 + 24*106]['value'] is None
+
+    assert res.json['values'][-1]['value'] is None
+
+
+def test_get_aggregate_values_no_data_after_effective(api, aggregate_id):
+    # https://github.com/SolarArbiter/solarforecastarbiter-api/issues/219
+    # Regression test for #219, previously, requests for values after any of
+    # the included observations `effective_from` was set resulted in an error.
+    payload = {'observations': [{
+        'observation_id': '123e4567-e89b-12d3-a456-426655440000',
+        'effective_until': '2019-04-14 07:00:00Z'}, {
+        'observation_id': 'b1dfe2cb-9c8e-43cd-afcf-c5a6feaf81e2',
+        'effective_until': '2019-04-14 07:00:00Z'}]}
+    res = api.post(f'/aggregates/{aggregate_id}/metadata',
+                   json=payload,
+                   base_url=BASE_URL)
+    assert res.status_code == 200
+    startend = '?start=2019-04-14T08:00Z&end=2019-04-17T07:00Z'
+    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+    assert res.status_code == 200
+    values = res.json['values']
+    assert not math.isnan(values[0]['value'])
+    assert not math.isnan(values[-1]['value'])
 
 
 def test_get_aggregate_values_404(api, missing_id, startend):
@@ -423,3 +466,106 @@ def test_get_aggregate_cdf_forecasts_404(api, missing_id):
     res = api.get(f'/aggregates/{missing_id}/forecasts/cdf',
                   base_url=BASE_URL)
     assert res.status_code == 404
+
+
+def test_aggregate_values_deleted_observation(api, observation_id, startend):
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=VALID_AGG_JSON)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2029-01-01 01:23:00Z'}]}
+    r2 = api.post(f'/aggregates/{aggregate_id}/metadata',
+                  json=payload,
+                  base_url=BASE_URL)
+    assert r2.status_code == 200
+    r3 = api.delete(f'/observations/{observation_id}',
+                    base_url=BASE_URL)
+    assert r3.status_code == 204
+    r4 = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                 base_url=BASE_URL)
+    assert r4.status_code == 422
+    errors = r4.json['errors']
+    assert errors['values'] == ['Deleted Observation data cannot be retrieved '
+                                'to include in Aggregate']
+
+
+@pytest.mark.parametrize('queryparams,label,exp1,exp2', [
+    ('?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z', 'beginning',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 303.016}),
+    ('?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z', 'beginning',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 303.016}),
+    ('?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z', 'ending',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': -0.77138242},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025}),
+    ('?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z', 'ending',
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025},
+     {'timestamp': '2019-04-14T15:00:00Z', 'value': 323.98858333}),
+])
+def test_aggregate_values_interval_label(
+        api, observation_id, label, exp1, exp2, queryparams):
+    agg = deepcopy(VALID_AGG_JSON)
+    agg['interval_label'] = label
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=agg)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2019-04-14 06:00:00Z'}]}
+    api.post(f'/aggregates/{aggregate_id}/metadata',
+             json=payload,
+             base_url=BASE_URL)
+    r3 = api.get(
+        f'/aggregates/{aggregate_id}/values{queryparams}',
+        headers={'Accept': 'application/json'},
+        base_url=BASE_URL)
+    values = r3.json['values']
+    assert len(values) == 2
+    exp1.update({'quality_flag': 0})
+    exp2.update({'quality_flag': 0})
+    assert values[0] == exp1
+    assert values[1] == exp2
+
+
+@pytest.mark.parametrize('label,expected', [
+    ('beginning', {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793}),
+    ('ending', {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025}),
+])
+def test_aggregate_values_inside_interval(
+        api, observation_id, label, expected):
+    # Ensure that a request for data inside an interval returns the whole
+    # interval that contains that data.
+    agg = deepcopy(VALID_AGG_JSON)
+    agg['interval_label'] = label
+    r1 = api.post('/aggregates/',
+                  base_url=BASE_URL,
+                  json=agg)
+    assert r1.status_code == 201
+    assert 'Location' in r1.headers
+    aggregate_id = r1.get_data(as_text=True)
+
+    payload = {'observations': [{
+        'observation_id': observation_id,
+        'effective_from': '2019-04-14 06:00:00Z'}]}
+    api.post(f'/aggregates/{aggregate_id}/metadata',
+             json=payload,
+             base_url=BASE_URL)
+    r3 = api.get(
+        f'/aggregates/{aggregate_id}/values'
+        '?start=2019-04-14T13:30Z&end=2019-04-14T13:59Z',
+        headers={'Accept': 'application/json'},
+        base_url=BASE_URL)
+    values = r3.json['values']
+    expected.update({'quality_flag': 0})
+    assert len(values) == 1
+    assert values[0] == expected

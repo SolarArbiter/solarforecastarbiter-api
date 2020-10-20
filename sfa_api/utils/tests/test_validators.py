@@ -444,3 +444,14 @@ def test_ensure_pair_compatibility_object_dne(
         validators.ensure_pair_compatibility(pair)
     errors = e.value.messages
     assert errors[failure_mode] == 'Does not exist.'
+
+
+@pytest.mark.parametrize("data", [13, 17, 52])
+def test_AggregateIntervalValidator_errors(data):
+    with pytest.raises(ValidationError):
+        validators.AggregateIntervalValidator()(data)
+
+
+@pytest.mark.parametrize("data", [1, 3, 5, 15, 30, 60, 90])
+def test_AggregateIntervalValidator(data):
+    validators.AggregateIntervalValidator()(data)

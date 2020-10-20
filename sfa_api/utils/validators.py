@@ -5,6 +5,7 @@ import time
 
 from marshmallow.validate import Validator
 from marshmallow.exceptions import ValidationError
+import pandas as pd
 import pytz
 
 
@@ -310,3 +311,10 @@ def ensure_pair_compatibility(data):
 
     if errors:
         raise ValidationError(errors)
+
+
+class AggregateIntervalValidator(Validator):
+    """Ensures aggregate interval length is a divisor of one day."""
+    def __call__(self, value):
+        if 86400 % pd.Timedelta(f'{value}min').total_seconds() != 0:
+            raise ValidationError('Must be a divisor of one day.')

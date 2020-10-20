@@ -5,6 +5,7 @@ from functools import partial
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
+import pandas as pd
 from solarforecastarbiter.utils import compute_aggregate
 
 
@@ -181,13 +182,44 @@ class AggregateValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
+
+        interval_length = f"{aggregate['interval_length']}min"
+        interval_label = aggregate['interval_label']
+        timezone = aggregate['timezone']
+
+        # Create a timedelta to add/substract from end/start to get data
+        # outside of start/end when aggregating
+        interval_offset = pd.Timedelta(interval_length) - pd.Timedelta('1ns')
+
+        if interval_label == 'ending':
+            index_start = start.ceil(interval_length)
+            index_end = end.ceil(interval_length)
+
+            # adjust start to include all values in the previous interval
+            start = index_start - interval_offset
+            end = index_end
+        else:
+            index_start = start.floor(interval_length)
+            index_end = end.floor(interval_length)
+
+            # adjust end to include all values in the final interval
+            end = index_end + interval_offset
+            start = index_start
+
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
+
+        request_index = pd.date_range(
+            index_start.tz_convert(timezone),
+            index_end.tz_convert(timezone),
+            freq=interval_length,
+        )
+
         # compute agg
         try:
             values = compute_aggregate(
-                indv_obs, f"{aggregate['interval_length']}min",
-                aggregate['interval_label'], aggregate['timezone'],
-                aggregate['aggregate_type'], aggregate['observations'])
+                indv_obs, interval_length, interval_label, timezone,
+                aggregate['aggregate_type'], aggregate['observations'],
+                request_index)
         except (KeyError, ValueError) as err:
             raise BaseAPIException(422, values=str(err))
         accepts = request.accept_mimetypes.best_match(['application/json',
