@@ -318,7 +318,7 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
     ('object_pairs', [{"forecast": "123e4567-e89b-12d3-a456-426655440000"}],
      '{"0":{"_schema":["Specify one of observation or aggregate"]}}'),
     ('filters', 'not a list',
-     '["Not a valid list."]'),
+     '["Invalid type."]'),
     ('metrics', ["bad"],
         f'{{"0":["Must be one of: {metrics_list}."]}}'),
     ('categories', ["bad"],
