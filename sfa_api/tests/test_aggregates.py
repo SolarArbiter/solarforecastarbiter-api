@@ -494,12 +494,22 @@ def test_aggregate_values_deleted_observation(api, observation_id, startend):
                                 'to include in Aggregate']
 
 
-@pytest.mark.parametrize('label,exp1,exp2', [
-    ('beginning', 78.30793, 303.016),
-    ('ending', -0.77138242, 93.286025),
+@pytest.mark.parametrize('queryparams,label,exp1,exp2', [
+    ('?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z', 'beginning',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 303.016}),
+    ('?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z', 'beginning',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 303.016}),
+    ('?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z', 'ending',
+     {'timestamp': '2019-04-14T13:00:00Z', 'value': -0.77138242},
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025}),
+    ('?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z', 'ending',
+     {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025},
+     {'timestamp': '2019-04-14T15:00:00Z', 'value': 323.98858333}),
 ])
 def test_aggregate_values_interval_label(
-        api, observation_id, label, exp1, exp2):
+        api, observation_id, label, exp1, exp2, queryparams):
     agg = deepcopy(VALID_AGG_JSON)
     agg['interval_label'] = label
     r1 = api.post('/aggregates/',
@@ -516,24 +526,25 @@ def test_aggregate_values_interval_label(
              json=payload,
              base_url=BASE_URL)
     r3 = api.get(
-        f'/aggregates/{aggregate_id}/values'
-        '?start=2019-04-14T13:00Z&end=2019-04-14T14:00Z',
+        f'/aggregates/{aggregate_id}/values{queryparams}',
         headers={'Accept': 'application/json'},
         base_url=BASE_URL)
     values = r3.json['values']
     assert len(values) == 2
-    assert values[0]['timestamp'] == '2019-04-14T13:00:00Z'
-    assert values[0]['value'] == exp1
-    assert values[1]['timestamp'] == '2019-04-14T14:00:00Z'
-    assert values[1]['value'] == exp2
+    exp1.update({'quality_flag': 0})
+    exp2.update({'quality_flag': 0})
+    assert values[0] == exp1
+    assert values[1] == exp2
 
 
 @pytest.mark.parametrize('label,expected', [
-    ('beginning', 303.016),
-    ('ending', 93.286025),
+    ('beginning', {'timestamp': '2019-04-14T13:00:00Z', 'value': 78.30793}),
+    ('ending', {'timestamp': '2019-04-14T14:00:00Z', 'value': 93.286025}),
 ])
-def test_aggregate_values_interval_label_offset_request(
+def test_aggregate_values_inside_interval(
         api, observation_id, label, expected):
+    # Ensure that a request for data inside an interval returns the whole
+    # interval that contains that data.
     agg = deepcopy(VALID_AGG_JSON)
     agg['interval_label'] = label
     r1 = api.post('/aggregates/',
@@ -551,10 +562,10 @@ def test_aggregate_values_interval_label_offset_request(
              base_url=BASE_URL)
     r3 = api.get(
         f'/aggregates/{aggregate_id}/values'
-        '?start=2019-04-14T13:30Z&end=2019-04-14T14:30Z',
+        '?start=2019-04-14T13:30Z&end=2019-04-14T13:59Z',
         headers={'Accept': 'application/json'},
         base_url=BASE_URL)
     values = r3.json['values']
+    expected.update({'quality_flag': 0})
     assert len(values) == 1
-    assert values[0]['timestamp'] == '2019-04-14T14:00:00Z'
-    assert values[0]['value'] == expected
+    assert values[0] == expected
