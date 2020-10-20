@@ -259,6 +259,28 @@ def test_post_forecast_values_valid_csv(api, cdf_forecast_id,
     assert r.status_code == 201
 
 
+@pytest.mark.parametrize('vals,status', [
+    (VALID_FX_VALUE_JSON, 400),
+    ({'values': [
+        {'timestamp': "2019-01-22T17:54:00Z",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T17:59:00Z",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T18:04:00Z",
+         'value': 0.0}
+    ]}, 201)
+])
+def test_post_forecast_values_event_data(api, mock_previous, vals, status,
+                                         cdf_forecast_id, mocker):
+    mocker.patch('sfa_api.utils.storage_interface._set_is_event',
+                 return_value=True)
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:44Z')
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == status
+
+
 def test_get_forecast_values_404(api, bad_id, mock_previous, startend):
     r = api.get(f'/forecasts/cdf/single/{bad_id}/values{startend}',
                 base_url=BASE_URL)

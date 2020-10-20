@@ -26,6 +26,7 @@ from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_index_period,
+                                            validate_event_data,
                                             validate_forecast_values,
                                             restrict_forecast_upload_window)
 
@@ -252,7 +253,7 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time, extra_params = (
+        interval_length, previous_time, extra_params, is_event = (
             storage.read_metadata_for_forecast_values(
                 forecast_id, forecast_df.index[0])
         )
@@ -262,6 +263,8 @@ class ForecastValuesView(MethodView):
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
+        if is_event:
+            validate_event_data(forecast_df)
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         return stored, 201
 
@@ -748,7 +751,7 @@ class CDFForecastValues(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time, extra_params = (
+        interval_length, previous_time, extra_params, is_event = (
             storage.read_metadata_for_cdf_forecast_values(
                 forecast_id, forecast_df.index[0])
         )
@@ -758,6 +761,8 @@ class CDFForecastValues(MethodView):
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
+        if is_event:
+            validate_event_data(forecast_df)
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
         return stored, 201
 

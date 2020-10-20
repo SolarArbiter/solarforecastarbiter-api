@@ -301,6 +301,26 @@ def test_post_forecast_values_valid_csv(api, forecast_id, mock_previous):
     assert r.status_code == 201
 
 
+@pytest.mark.parametrize('vals,status', [
+    (VALID_FX_VALUE_JSON, 400),
+    ({'values': [
+        {'timestamp': "2019-01-22T17:54:00Z",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T17:59:00Z",
+         'value': 1.0},
+        {'timestamp': "2019-01-22T18:04:00Z",
+         'value': 0.0}
+    ]}, 201)
+])
+def test_post_forecast_values_event_data(api, mock_previous, vals, status):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:44Z')
+    forecast_id = list(demo_forecasts.keys())[-1]
+    res = api.post(f'/forecasts/single/{forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == status
+
+
 def test_get_forecast_values_404(api, bad_id, startend):
     r = api.get(f'/forecasts/single/{bad_id}/values{startend}',
                 base_url=BASE_URL)
