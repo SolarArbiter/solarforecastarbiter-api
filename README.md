@@ -4,7 +4,7 @@
 # Solar Forecast Arbiter API
 
 This repository contains the code and development of the Solar Forecast Arbiter
-API available at api.solarforecastarbiter.org. The API is built with Python and
+API available at [api.solarforecastarbiter.org](https://api.solarforecastarbiter.org). The API is built with Python and
 Flask. See ``requirements.txt`` for a full list of dependencies. Error reporting
 is graciously hosted by [Sentry](https://sentry.io).
 
