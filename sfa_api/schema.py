@@ -16,7 +16,7 @@ from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
     ALLOWED_COST_AGG_OPTIONS, ALLOWED_COST_FILL_OPTIONS,
-    ALLOWED_COST_FUNCTIONS)
+    ALLOWED_COST_FUNCTIONS, ALLOWED_QUALITY_FLAGS)
 
 
 ALLOWED_METRICS = {}
@@ -1353,6 +1353,36 @@ class ForecastFillField(ma.Field):
                 ["Must be a float or one of 'drop', 'forward'"])
 
 
+class QualityFlagFilter(ma.Schema):
+    quality_flags = ma.List(
+        ma.String(validate=validate.OneOf(ALLOWED_QUALITY_FLAGS)),
+        title='Quality Flags',
+        description=(
+            'The quality flags to exclude when computing report. '
+            'All flags listed are considered together when determining '
+            'if a point should be excluded from analysis.'
+        ),
+        required=True,
+        validate=validate.Length(min=1)
+    )
+    discard_before_resample = ma.Boolean(
+        description=(
+            'Determines if points should be discarded before resampling or '
+            'only during resampling (when ``resample_threshold_percentage``'
+            ' is exceeded).'),
+        missing=True,
+        default=True
+    )
+    resample_threshold_percentage = ma.Float(
+        validate=validate.Range(0, 100),
+        description=(
+            'Percentage of points in a resampled interval that must be '
+            'flagged in order to flag the entire interval.'),
+        missing=10.,
+        default=10.,
+    )
+
+
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
     name = ma.String(
@@ -1403,10 +1433,9 @@ class ReportParameters(ma.Schema):
             'Each pair must contain a forecast and either an observation or '
             'aggregate.'),
     )
-
-    # TODO: Validate with options from core
-    filters = ma.List(
-        ma.Dict(),
+    filters = ma.Nested(
+        QualityFlagFilter,
+        many=True,
         title="Filters",
         description="List of Filters applied to the data in the report",
         default=[],

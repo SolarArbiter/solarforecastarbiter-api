@@ -436,3 +436,26 @@ def test_observation_update(params):
         assert out['null_uncertainty']
     else:
         assert not out['null_uncertainty']
+
+
+_val_fail = pytest.mark.xfail(
+    strict=True, raises=marshmallow.exceptions.ValidationError)
+
+
+@pytest.mark.parametrize('inp', [
+    pytest.param({}, marks=_val_fail),
+    {'quality_flags': ['USER FLAGGED'], 'discard_before_resample': False},
+    {'quality_flags': ['SHADED', 'INCONSISTENT IRRADIANCE COMPONENTS'],
+     'discard_before_resample': False, 'resample_threshold_percentage': 23},
+    pytest.param({'quality_flags': []}, marks=_val_fail),
+    pytest.param({'quality_flags': ['NO']}, marks=_val_fail),
+    pytest.param({'quality_flags': ['USER FLAGGED'],
+                  'discard_before_resample': 99}, marks=_val_fail),
+    pytest.param({'quality_flags': ['USER FLAGGED'],
+                  'resample_threshold_percentage': -1}, marks=_val_fail)
+])
+def test_quality_flag_filter(inp):
+    out = schema.QualityFlagFilter().load(inp)
+    assert 'quality_flags' in out
+    assert 'discard_before_resample' in out
+    assert 'resample_threshold_percentage' in out
