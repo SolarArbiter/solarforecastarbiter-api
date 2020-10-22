@@ -100,18 +100,10 @@ CREATE PROCEDURE add_update_permissions()
 MODIFIES SQL DATA
 BEGIN
     DECLARE done INT DEFAULT FALSE;
-    DECLARE userid BINARY(16);
-    DECLARE urgid BINARY(16);
     DECLARE orgid BINARY(16);
 
     DECLARE cur0 CURSOR FOR SELECT id FROM organizations WHERE id != get_organization_id('Organization 1');
-    DECLARE cur1 CURSOR FOR SELECT id, organization_id FROM users WHERE
-        id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Create metadata', organization_id))
-    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Read all', organization_id))
-    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Write all values', organization_id))
-    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Delete metadata', organization_id))
-    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Administer data access controls', organization_id))
-    AND organization_id != get_organization_id('Organization 1');
+
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
     OPEN cur0;
@@ -124,17 +116,13 @@ BEGIN
     END LOOP;
     CLOSE cur0;
 
-    SET done = FALSE;
-
-    OPEN cur1;
-    second_loop: LOOP
-        FETCH cur1 INTO userid, urgid;
-        IF done THEN
-            LEAVE second_loop;
-        END IF;
-        INSERT INTO arbiter_data.user_role_mapping(user_id, role_id) VALUES(userid, get_org_role_by_name('Update all', urgid));
-    END LOOP;
-    CLOSE cur1;
+    INSERT INTO arbiter_data.user_role_mapping (user_id, role_id)
+    SELECT id, get_org_role_by_name('Update all', organization_id) FROM users WHERE
+    id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Create metadata', organization_id))
+    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Read all', organization_id))
+    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Write all values', organization_id))
+    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Delete metadata', organization_id))
+    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Administer data access controls', organization_id));
 END;
 
 -- Call and remove the procedure for updating existing users
