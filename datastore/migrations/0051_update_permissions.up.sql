@@ -102,7 +102,8 @@ BEGIN
     DECLARE done INT DEFAULT FALSE;
     DECLARE orgid BINARY(16);
 
-    DECLARE cur0 CURSOR FOR SELECT id FROM organizations WHERE id != get_organization_id('Organization 1');
+    DECLARE cur0 CURSOR FOR SELECT id FROM organizations WHERE id != get_organization_id('Organization 1')
+    AND id != get_organization_id('Unaffiliated');
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
@@ -122,7 +123,8 @@ BEGIN
     AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Read all', organization_id))
     AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Write all values', organization_id))
     AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Delete metadata', organization_id))
-    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Administer data access controls', organization_id));
+    AND id IN (SELECT user_id FROM user_role_mapping WHERE role_id = get_org_role_by_name('Administer data access controls', organization_id))
+    AND organization_id != get_organization_id('Unaffiliated');
 END;
 
 -- Call and remove the procedure for updating existing users
