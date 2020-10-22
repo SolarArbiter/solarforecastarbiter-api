@@ -614,15 +614,16 @@ def test_promote_user_to_org_admin(dictcursor, new_user):
         'SELECT role_id FROM user_role_mapping WHERE user_id = %s',
         user['id'])
     role_ids = [r['role_id'] for r in dictcursor.fetchall()]
-    assert len(role_ids) == 5
+    assert len(role_ids) == 6
     dictcursor.execute(
-        'SELECT name FROM roles WHERE id IN (%s,%s,%s,%s,%s)', role_ids)
+        'SELECT name FROM roles WHERE id IN (%s,%s,%s,%s,%s,%s)', role_ids)
     names = [r['name'] for r in dictcursor.fetchall()]
     assert 'Create metadata' in names
     assert 'Read all' in names
     assert 'Delete metadata' in names
     assert 'Write all values' in names
     assert 'Administer data access controls' in names
+    assert 'Update all' in names
 
 
 def test_promote_user_to_org_admin_external_user(

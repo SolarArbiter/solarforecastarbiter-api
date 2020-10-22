@@ -17,7 +17,8 @@ import requests
 from sfa_api import create_app
 from sfa_api.utils import storage_interface
 from sfa_api.schema import (
-    VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS, AGGREGATE_TYPES)
+    VARIABLES, ALLOWED_INTERVAL_VALUE_TYPES, ALLOWED_INTERVAL_LABELS,
+    ALLOWED_AGGREGATE_TYPES)
 
 
 BASE_URL = 'https://localhost'
@@ -27,9 +28,9 @@ BASE_URL = 'https://localhost'
 # f'Must be one of: {interval_value_types}.' can be checked
 # against the errors returned from marshmallow
 variables = ', '.join(VARIABLES)
-agg_types = ', '.join(AGGREGATE_TYPES)
-interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
-interval_labels = ', '.join(INTERVAL_LABELS)
+agg_types = ', '.join(ALLOWED_AGGREGATE_TYPES)
+interval_value_types = ', '.join(ALLOWED_INTERVAL_VALUE_TYPES)
+interval_labels = ', '.join(ALLOWED_INTERVAL_LABELS)
 
 
 VALID_SITE_JSON = {
