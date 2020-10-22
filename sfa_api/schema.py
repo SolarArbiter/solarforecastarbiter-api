@@ -16,7 +16,9 @@ from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
     ALLOWED_COST_AGG_OPTIONS, ALLOWED_COST_FILL_OPTIONS,
-    ALLOWED_COST_FUNCTIONS, ALLOWED_QUALITY_FLAGS)
+    ALLOWED_COST_FUNCTIONS, ALLOWED_QUALITY_FLAGS,
+    ALLOWED_INTERVAL_LABELS, ALLOWED_INTERVAL_VALUE_TYPES,
+    ALLOWED_AGGREGATE_TYPES)
 
 
 ALLOWED_METRICS = {}
@@ -100,10 +102,6 @@ VARIABLES = ALLOWED_VARIABLES.keys()
 
 ALLOWED_REPORT_METRICS = list(ALLOWED_METRICS.keys())
 ALLOWED_REPORT_CATEGORIES = list(ALLOWED_CATEGORIES.keys())
-INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
-AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
-INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
-                        'interval_median', 'instantaneous']
 FORECAST_TYPES = ['forecast', 'event_forecast', 'probabilistic_forecast',
                   'probabilistic_forecast_constant_value']
 
@@ -139,7 +137,7 @@ INTERVAL_LABEL = ma.String(
     description=('For data that represents intervals, indicates if a time '
                  'labels the beginning or ending of the interval. '
                  'instant for instantaneous data'),
-    validate=validate.OneOf(INTERVAL_LABELS),
+    validate=validate.OneOf(ALLOWED_INTERVAL_LABELS),
     required=True)
 
 INTERVAL_LENGTH = ma.Integer(
@@ -153,7 +151,7 @@ INTERVAL_VALUE_TYPE = ma.String(
     description=('For data that represents intervals, what that data '
                  'represents e.g. interval mean, min, max, etc. '
                  'instantaneous for instantaneous data'),
-    validate=validate.OneOf(INTERVAL_VALUE_TYPES),
+    validate=validate.OneOf(ALLOWED_INTERVAL_VALUE_TYPES),
     required=True)
 
 
@@ -1613,7 +1611,7 @@ class AggregatePostSchema(ma.Schema):
 
     aggregate_type = ma.String(
         title='Aggregation Type',
-        validate=validate.OneOf(AGGREGATE_TYPES),
+        validate=validate.OneOf(ALLOWED_AGGREGATE_TYPES),
         required=True
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
