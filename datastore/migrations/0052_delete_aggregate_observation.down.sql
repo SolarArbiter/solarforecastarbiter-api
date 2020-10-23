@@ -1,0 +1,1 @@
+DROP PROCEDURE arbiter_data.delete_observation_from_aggregate;

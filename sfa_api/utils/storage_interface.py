@@ -2018,7 +2018,6 @@ def remove_observation_from_aggregate(
         Time after which this observation is no longer considered in the
         aggregate. Default is now.
 
-
     Raises
     ------
     StorageAuthError
@@ -2026,6 +2025,25 @@ def remove_observation_from_aggregate(
     """
     _call_procedure('remove_observation_from_aggregate', aggregate_id,
                     observation_id, effective_until)
+
+
+def delete_observation_from_aggregate(aggregate_id, observation_id):
+    """Delete all instances of Observation from an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id : string
+        UUID of aggregate
+    observation_id : string
+        UUID of the observation
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have update permission on the aggregate
+    """
+    _call_procedure('delete_observation_from_aggregate', aggregate_id,
+                    observation_id)
 
 
 def read_aggregate_values(aggregate_id, start=None, end=None):

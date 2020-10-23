@@ -569,3 +569,33 @@ def test_aggregate_values_inside_interval(
     expected.update({'quality_flag': 0})
     assert len(values) == 1
     assert values[0] == expected
+
+
+def test_aggregate_delete_obs(api, aggregate_id):
+    obsid = '123e4567-e89b-12d3-a456-426655440000'
+    r1 = api.get(f'/aggregates/{aggregate_id}/metadata',
+                 base_url=BASE_URL)
+    allobs = [o['observation_id'] for o in r1.json['observations']]
+    assert obsid in allobs
+
+    res = api.delete(f'/aggregates/{aggregate_id}/observations/{obsid}',
+                     base_url=BASE_URL)
+    assert res.status_code == 204
+
+    r2 = api.get(f'/aggregates/{aggregate_id}/metadata',
+                 base_url=BASE_URL)
+    allobs = [o['observation_id'] for o in r2.json['observations']]
+    assert obsid not in allobs
+
+
+def test_aggregate_delete_obs_404_agg(api, missing_id):
+    obsid = '123e4567-e89b-12d3-a456-426655440000'
+    res = api.delete(f'/aggregates/{missing_id}/observations/{obsid}',
+                     base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+def test_aggregate_delete_obs_no_obs(api, missing_id, aggregate_id):
+    res = api.delete(f'/aggregates/{aggregate_id}/observations/{missing_id}',
+                     base_url=BASE_URL)
+    assert res.status_code == 204  # no effect

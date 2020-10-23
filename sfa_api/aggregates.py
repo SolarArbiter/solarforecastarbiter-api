@@ -436,6 +436,30 @@ class AggregateCDFForecastGroups(MethodView):
         return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
 
 
+class AggregateObservationView(MethodView):
+    def delete(self, aggregate_id, observation_id, *args):
+        """
+        ---
+        summary: Delete an observation from an aggregate.
+        description: Delete all instances of an observation from an aggregate.
+        tags:
+          - Aggregates
+        parameters:
+        - aggregate_id
+        - observation_id
+        responses:
+          204:
+            description: Observation deleted from aggregate successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        storage.delete_observation_from_aggregate(aggregate_id, observation_id)
+        return '', 204
+
+
 # Add path parameters used by these endpoints to the spec.
 spec.components.parameter(
     'aggregate_id', 'path',
@@ -467,3 +491,6 @@ agg_blp.add_url_rule(
 agg_blp.add_url_rule(
     '/<uuid_str:aggregate_id>/forecasts/cdf',
     view_func=AggregateCDFForecastGroups.as_view('cdf_forecasts'))
+agg_blp.add_url_rule(
+    '/<uuid_str:aggregate_id>/observations/<uuid_str:observation_id>',
+    view_func=AggregateObservationView.as_view('observations'))

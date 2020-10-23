@@ -1609,6 +1609,42 @@ def test_remove_observation_from_aggregate_denied(
             aggregate_id, obs_id)
 
 
+@pytest.mark.parametrize('aggregate_id', demo_aggregates.keys())
+def test_delete_observation_from_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id):
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert obs_id in [obs['observation_id']
+                      for obs in aggregate['observations']]
+    storage_interface.delete_observation_from_aggregate(aggregate_id, obs_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert obs_id not in [
+        obs['observation_id'] for obs in aggregate['observations']]
+
+
+def test_delete_missing_observation_from_aggregate(
+        sql_app, user, nocommit_cursor, aggregate_id, missing_id):
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert missing_id not in [
+        obs['observation_id'] for obs in aggregate['observations']]
+    storage_interface.delete_observation_from_aggregate(
+        aggregate_id, missing_id)
+    aggregate = storage_interface.read_aggregate(aggregate_id)
+    assert missing_id not in [
+        obs['observation_id'] for obs in aggregate['observations']]
+
+
+def test_delete_observation_from_aggregate_denied(
+        sql_app, invalid_user, nocommit_cursor):
+    aggregate_id = list(demo_aggregates.keys())[0]
+    obs_id = demo_aggregates[aggregate_id][
+        'observations'][0]['observation_id']
+    with pytest.raises(storage_interface.StorageAuthError):
+        storage_interface.delete_observation_from_aggregate(
+            aggregate_id, obs_id)
+
+
 def test_read_aggregate_values(sql_app, user, nocommit_cursor,
                                ghi_obs_vals):
     aggregate_id = list(demo_aggregates.keys())[0]
