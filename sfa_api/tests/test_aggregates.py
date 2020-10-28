@@ -602,25 +602,26 @@ def test_aggregate_delete_obs_no_obs(api, missing_id, aggregate_id):
     assert res.status_code == 204  # no effect
 
 
-def test_get_aggregate_values_all_none(mocker, api, aggregate_id, startend):
+def test_get_aggregate_values_all_none(api, aggregate_id):
     """Ensure that Null values are computed correctly. Regression test for
     GH 296
     """
+    start = '20190101T0000Z'
+    end = '20190201T0000Z'
     agg = demo_aggregates[aggregate_id]
-    dummy_null_data = pd.DataFrame(
-        index=pd.date_range('20190101T0000Z', '20200101T0000Z'),
-        data={'value': None, 'quality_flag': 0}
+    obs_data = pd.DataFrame(
+        index=pd.date_range(start, end, freq='5T'),
+        data={'value': None, 'quality_flag': 0},
     )
-    dummy_null_data.index.name = 'timestamp'
-    mock_return = {
-        o['observation_id']: dummy_null_data
-        for o in agg['observations']
-    }
-    mocker.patch(
-        'sfa_api.utils.storage_interface.read_aggregate_values',
-        return_value=mock_return
-    )
-    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+    obs_data['timestamp'] = obs_data.index.strftime('%Y%m%dT%H%MZ')
+    value_payload = {'values': obs_data.to_dict(orient='records', )}
+    for obs in agg['observations']:
+        api.post(
+            f'/observations/{obs["observation_id"]}/values?donotvalidate=true',
+            base_url=BASE_URL,
+            json=value_payload
+        )
+    res = api.get(f'/aggregates/{aggregate_id}/values?start={start}&end={end}',
                   headers={'Accept': 'application/json'},
                   base_url=BASE_URL)
 

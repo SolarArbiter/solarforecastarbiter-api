@@ -5,7 +5,6 @@ from functools import partial
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
-import numpy as np
 import pandas as pd
 from solarforecastarbiter.utils import compute_aggregate
 
@@ -208,10 +207,6 @@ class AggregateValuesView(MethodView):
             start = index_start
 
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
-
-        # ensure Null values are set to NaN before computing aggregate
-        for obs_id, data in indv_obs.items():
-            indv_obs[obs_id] = data.fillna(value=np.nan)
 
         request_index = pd.date_range(
             index_start.tz_convert(timezone),

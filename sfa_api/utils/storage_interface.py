@@ -339,9 +339,10 @@ def read_observation_values(observation_id, start=None, end=None):
     obs_vals = _call_procedure('read_observation_values', observation_id,
                                start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
-        list(obs_vals), columns=['observation_id', 'timestamp',
-                                 'value', 'quality_flag']
-    ).drop(columns='observation_id').set_index('timestamp')
+        list(obs_vals),
+        columns=['observation_id', 'timestamp', 'value', 'quality_flag'],
+    ).drop(columns='observation_id').set_index('timestamp').astype(
+        {'value': 'float', 'quality_flag': 'int64'})
     return df
 
 
@@ -530,7 +531,8 @@ def _read_fx_values(procedure_name, forecast_id, start, end):
                               start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
@@ -911,7 +913,8 @@ def read_latest_cdf_forecast_value(forecast_id):
                               cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
@@ -2075,7 +2078,8 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
     out = {}
     for obs_id, df in groups:
         out[obs_id] = df.drop(columns='observation_id').drop_duplicates(
-        ).set_index('timestamp').sort_index()
+        ).set_index('timestamp').sort_index().astype(
+            {'value': 'float', 'quality_flag': 'int64'})
     return out
 
 
