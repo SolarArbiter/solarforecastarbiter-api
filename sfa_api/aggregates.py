@@ -26,7 +26,7 @@ from sfa_api.schema import (AggregateSchema,
 class AllAggregatesView(MethodView):
     def get(self, *args):
         """
- nan)       ---
+        ---
         summary: List aggregates.
         description: List all aggregates that the user has access to.
         tags:
