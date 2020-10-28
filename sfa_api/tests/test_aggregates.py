@@ -2,13 +2,14 @@ import math
 
 
 from copy import deepcopy
+import pandas as pd
 import pytest
 
 
 from sfa_api.conftest import (
     BASE_URL, copy_update, variables, agg_types,
     VALID_OBS_JSON, demo_forecasts, demo_group_cdf,
-    VALID_AGG_JSON)
+    VALID_AGG_JSON, demo_aggregates)
 
 
 def test_get_all_aggregates(api):
@@ -599,3 +600,33 @@ def test_aggregate_delete_obs_no_obs(api, missing_id, aggregate_id):
     res = api.delete(f'/aggregates/{aggregate_id}/observations/{missing_id}',
                      base_url=BASE_URL)
     assert res.status_code == 204  # no effect
+
+
+def test_get_aggregate_values_all_none(api, aggregate_id):
+    """Ensure that Null values are computed correctly. Regression test for
+    GH 296
+    """
+    start = '20190101T0000Z'
+    end = '20190201T0000Z'
+    agg = demo_aggregates[aggregate_id]
+    obs_data = pd.DataFrame(
+        index=pd.date_range(start, end, freq='5T'),
+        data={'value': None, 'quality_flag': 0},
+    )
+    obs_data['timestamp'] = obs_data.index.strftime('%Y%m%dT%H%MZ')
+    value_payload = {'values': obs_data.to_dict(orient='records', )}
+    for obs in agg['observations']:
+        api.post(
+            f'/observations/{obs["observation_id"]}/values?donotvalidate=true',
+            base_url=BASE_URL,
+            json=value_payload
+        )
+    res = api.get(f'/aggregates/{aggregate_id}/values?start={start}&end={end}',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+
+    assert res.status_code == 200
+    assert res.json['aggregate_id'] == aggregate_id
+    values = res.json['values']
+    for val in values:
+        assert val['value'] is None
