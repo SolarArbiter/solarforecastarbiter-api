@@ -5,6 +5,7 @@ from functools import partial
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
+import numpy as np
 import pandas as pd
 from solarforecastarbiter.utils import compute_aggregate
 
@@ -25,7 +26,7 @@ from sfa_api.schema import (AggregateSchema,
 class AllAggregatesView(MethodView):
     def get(self, *args):
         """
-        ---
+ nan)       ---
         summary: List aggregates.
         description: List all aggregates that the user has access to.
         tags:
@@ -207,6 +208,10 @@ class AggregateValuesView(MethodView):
             start = index_start
 
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
+
+        # ensure Null values are set to NaN before computing aggregate
+        for obs_id, data in indv_obs.items():
+            indv_obs[obs_id] = data.fillna(value=np.nan)
 
         request_index = pd.date_range(
             index_start.tz_convert(timezone),

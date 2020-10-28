@@ -2,13 +2,14 @@ import math
 
 
 from copy import deepcopy
+import pandas as pd
 import pytest
 
 
 from sfa_api.conftest import (
     BASE_URL, copy_update, variables, agg_types,
     VALID_OBS_JSON, demo_forecasts, demo_group_cdf,
-    VALID_AGG_JSON)
+    VALID_AGG_JSON, demo_aggregates)
 
 
 def test_get_all_aggregates(api):
@@ -599,3 +600,32 @@ def test_aggregate_delete_obs_no_obs(api, missing_id, aggregate_id):
     res = api.delete(f'/aggregates/{aggregate_id}/observations/{missing_id}',
                      base_url=BASE_URL)
     assert res.status_code == 204  # no effect
+
+
+def test_get_aggregate_values_all_none(mocker, api, aggregate_id, startend):
+    """Ensure that Null values are computed correctly. Regression test for
+    GH 296
+    """
+    agg = demo_aggregates[aggregate_id]
+    dummy_null_data = pd.DataFrame(
+        index=pd.date_range('20190101T0000Z', '20200101T0000Z'),
+        data={'value': None, 'quality_flag': 0}
+    )
+    dummy_null_data.index.name = 'timestamp'
+    mock_return = {
+        o['observation_id']: dummy_null_data
+        for o in agg['observations']
+    }
+    mocker.patch(
+        'sfa_api.utils.storage_interface.read_aggregate_values',
+        return_value=mock_return
+    )
+    res = api.get(f'/aggregates/{aggregate_id}/values{startend}',
+                  headers={'Accept': 'application/json'},
+                  base_url=BASE_URL)
+
+    assert res.status_code == 200
+    assert res.json['aggregate_id'] == aggregate_id
+    values = res.json['values']
+    for val in values:
+        assert val['value'] is None
