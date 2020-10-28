@@ -364,7 +364,8 @@ def read_latest_observation_value(observation_id):
     df = pd.DataFrame.from_records(
         list(obs_vals), columns=[
             'observation_id', 'timestamp', 'value', 'quality_flag']
-    ).drop(columns='observation_id').set_index('timestamp')
+    ).drop(columns='observation_id').set_index('timestamp').astype(
+        {'value': 'float', 'quality_flag': 'int64'})
     return df
 
 
@@ -574,7 +575,8 @@ def read_latest_forecast_value(forecast_id):
                               cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
