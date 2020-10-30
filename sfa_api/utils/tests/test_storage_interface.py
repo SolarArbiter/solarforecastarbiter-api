@@ -1876,22 +1876,41 @@ def test_read_report_values_denied(sql_app, invalid_user, reportid):
 
 
 def test_store_raw_report(sql_app, user, nocommit_cursor, reportid,
-                          report, raw_report_json):
+                          report, raw_report_json, report_value_id):
+    assert len(storage_interface.read_report_values(reportid)) == 1
     rr = raw_report_json.copy()
     rr['messages'] = ['first']
-    storage_interface.store_raw_report(reportid, rr)
+    storage_interface.store_raw_report(reportid, rr, [report_value_id])
     rep = storage_interface.read_report(reportid)
     raw = rep['raw_report']
     assert raw.pop('messages') == ['first']
     exp = report['raw_report']
     exp.pop('messages')
     assert raw == exp
+    assert len(storage_interface.read_report_values(reportid)) == 1
+
+
+def test_store_raw_report_no_ids(
+        sql_app, user, nocommit_cursor, reportid,
+        report, raw_report_json, report_value_id):
+    assert len(storage_interface.read_report_values(reportid)) == 1
+    rr = raw_report_json.copy()
+    rr['messages'] = ['first']
+    storage_interface.store_raw_report(reportid, rr, [reportid])
+    rep = storage_interface.read_report(reportid)
+    raw = rep['raw_report']
+    assert raw.pop('messages') == ['first']
+    exp = report['raw_report']
+    exp.pop('messages')
+    assert raw == exp
+    # reportid is not a report_value id, so all values for this report removed
+    assert len(storage_interface.read_report_values(reportid)) == 0
 
 
 def test_store_raw_report_denied(
         sql_app, invalid_user, nocommit_cursor, reportid, raw_report_json):
     with pytest.raises(storage_interface.StorageAuthError):
-        storage_interface.store_raw_report(reportid, raw_report_json)
+        storage_interface.store_raw_report(reportid, raw_report_json, [])
 
 
 def test_store_report_status(sql_app, user, nocommit_cursor, reportid):
@@ -2016,7 +2035,7 @@ def test_store_raw_report_nan_metric(
                       'aggregate_id': '', 'values': [{
                           'category': 'date', 'metric': 'r', 'index': '0',
                           'value': math.nan}]}]
-    storage_interface.store_raw_report(reportid, rr)
+    storage_interface.store_raw_report(reportid, rr, [])
     rep = storage_interface.read_report(reportid)
     raw = rep['raw_report']
     assert raw.pop('messages') == ['first']
@@ -2032,7 +2051,7 @@ def test_call_procedure_bad_json(
         sql_app, user, nocommit_cursor, reportid):
     with pytest.raises(storage_interface.BadAPIRequest):
         storage_interface._call_procedure('store_raw_report', reportid,
-                                          '{"badnan": NaN}')
+                                          '{"badnan": NaN}', '[]')
 
 
 def test_get_user_actions_on_object(

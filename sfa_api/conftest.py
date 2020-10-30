@@ -290,9 +290,15 @@ def report_values():
 
 
 @pytest.fixture()
-def report(report_parameters, raw_report_json, reportid, report_values):
+def report_value_id():
+    return 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+
+
+@pytest.fixture()
+def report(report_parameters, raw_report_json, reportid, report_values,
+           report_value_id):
     rv = report_values.copy()
-    rv['id'] = 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+    rv['id'] = report_value_id
     out = {
         'report_parameters': report_parameters,
         'name': report_parameters['name'],
