@@ -355,7 +355,6 @@ def test_post_raw_report_nonsense_values(api, reportid, raw_report_json,
                    base_url=BASE_URL,
                    json=raw)
     assert res.status_code == 400
-    breakpoint()
 
 
 def test_delete_report(api, new_report):
