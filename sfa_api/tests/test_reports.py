@@ -13,6 +13,7 @@ from solarforecastarbiter.datamodel import (
 from sfa_api.conftest import (BASE_URL, demo_observations, demo_aggregates,
                               demo_forecasts, demo_group_cdf)
 from sfa_api.schema import ALLOWED_METRICS
+from sfa_api import reports
 
 
 @pytest.fixture()
@@ -271,6 +272,76 @@ def test_post_raw_report_chksum(api, new_report, raw_report_json, chksum):
                        base_url=BASE_URL)
     report_with_raw = full_res.get_json()
     assert report_with_raw['raw_report'] == post
+
+
+def test__extract_value_ids(raw_report_json, report_value_id):
+    rep = raw_report_json.copy()
+    rep['processed_forecasts_observations'] = [
+        {'forecast_values': report_value_id, 'observation_values': None}
+    ]
+    ids = reports._extract_value_ids(rep)
+    assert ids == [report_value_id]
+
+
+def test_raw_report_value_deletion(api, new_report, report_json_w_cdf,
+                                   raw_report_json):
+    report_id = new_report(report_json_w_cdf)
+    object_pairs = report_json_w_cdf['report_parameters']['object_pairs']
+    obs_values = {
+        'object_id': object_pairs[0]['observation'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+
+    obs_values1 = {
+        'object_id': object_pairs[1]['observation'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    fx_values = {
+        'object_id': object_pairs[0]['forecast'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    fx_values1 = {
+        'object_id': object_pairs[1]['forecast'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=obs_values)
+    assert res.status_code == 201
+    obs_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=obs_values1)
+    assert res.status_code == 201
+    obs1_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=fx_values)
+    assert res.status_code == 201
+    fx_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=fx_values1)
+    assert res.status_code == 201
+    fx1_val_id = res.data.decode()
+
+    raw = raw_report_json.copy()
+    raw['processed_forecasts_observations'] = [
+        {'forecast_values': fx_val_id, 'observation_values': obs_val_id},
+        {'forecast_values': fx1_val_id}
+        # leave out obs1_val_id on purpose
+    ]
+
+    res = api.post(f'/reports/{report_id}/raw',
+                   base_url=BASE_URL,
+                   json=raw)
+    assert res.status_code == 204
+    full_res = api.get(f'/reports/{report_id}',
+                       base_url=BASE_URL)
+    report_with_raw = full_res.get_json()
+    value_ids = {d['id'] for d in report_with_raw['values']}
+    assert value_ids == {obs_val_id, fx_val_id, fx1_val_id}
+    assert obs1_val_id not in value_ids
 
 
 def test_delete_report(api, new_report):
