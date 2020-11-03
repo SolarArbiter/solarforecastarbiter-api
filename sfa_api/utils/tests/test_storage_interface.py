@@ -1890,6 +1890,17 @@ def test_store_raw_report(sql_app, user, nocommit_cursor, reportid,
     assert len(storage_interface.read_report_values(reportid)) == 1
 
 
+def test_store_raw_report_bad_keep(
+        sql_app, user, nocommit_cursor, reportid,
+        report, raw_report_json, report_value_id):
+    assert len(storage_interface.read_report_values(reportid)) == 1
+    rr = raw_report_json.copy()
+    rr['messages'] = ['first']
+    with pytest.raises(storage_interface.BadAPIRequest):
+        storage_interface.store_raw_report(reportid, rr,
+                                           ['nonsense', report_value_id])
+
+
 def test_store_raw_report_no_ids(
         sql_app, user, nocommit_cursor, reportid,
         report, raw_report_json, report_value_id):

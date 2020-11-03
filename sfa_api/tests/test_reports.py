@@ -344,6 +344,20 @@ def test_raw_report_value_deletion(api, new_report, report_json_w_cdf,
     assert obs1_val_id not in value_ids
 
 
+def test_post_raw_report_nonsense_values(api, reportid, raw_report_json,
+                                         report_value_id):
+    raw = raw_report_json.copy()
+    raw['processed_forecasts_observations'] = [
+        {'forecast_values': report_value_id, 'observation_values': 'nonsense'},
+        {'reference_forecast_values': 999}
+    ]
+    res = api.post(f'/reports/{reportid}/raw',
+                   base_url=BASE_URL,
+                   json=raw)
+    assert res.status_code == 400
+    breakpoint()
+
+
 def test_delete_report(api, new_report):
     report_id = new_report()
     res = api.get(f'/reports/{report_id}',

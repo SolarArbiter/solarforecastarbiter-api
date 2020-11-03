@@ -1706,11 +1706,23 @@ def store_raw_report(report_id, raw_report, keep_ids):
     ------
     StorageAuthError
         If the user does not have permission to update the report
+    BadAPIRequest
+        If any keep_ids are invalid UUIDs
     """
     json_raw_report = dump_json_replace_nan(raw_report)
+    ids = []
+    for k in keep_ids:
+        try:
+            uuid.UUID(k)
+        except ValueError:
+            raise BadAPIRequest(
+                processed_forecasts_observations=(
+                    '*_values fields must be valid UUIDs representing'
+                    ' report processed values already posted to the API'))
+        ids.append({'id': k})
     _call_procedure('store_raw_report', report_id,
                     json_raw_report,
-                    json.dumps([{'id': k} for k in keep_ids]))
+                    json.dumps(ids))
 
 
 def store_report_status(report_id, status):
