@@ -225,8 +225,8 @@ def _extract_value_ids(raw_report):
     """
     out = set()
     for procfxobs in raw_report['processed_forecasts_observations']:
-        for key in (
-                'forecast_values', 'observation_values', 'reference_forecast_values'):
+        for key in ('forecast_values', 'observation_values',
+                    'reference_forecast_values'):
             if key in procfxobs and isinstance(procfxobs[key], str):
                 out.add(procfxobs[key])
     return list(out)
