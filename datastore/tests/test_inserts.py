@@ -253,7 +253,8 @@ def test_store_forecast(dictcursor, fx_callargs, allow_read_sites,
         assert bin_to_uuid(res['site_id']) == fx_callargs['site_or_agg_id']
         assert res['aggregate_id'] is None
     else:
-        assert bin_to_uuid(res['aggregate_id']) == fx_callargs['site_or_agg_id']
+        assert bin_to_uuid(res['aggregate_id']) == fx_callargs[
+            'site_or_agg_id']
         assert res['site_id'] is None
     for key in ('variable', 'name', 'interval_label', 'interval_length',
                 'interval_value_type', 'issue_time_of_day', 'run_length',
@@ -1139,7 +1140,7 @@ def test_add_role_to_user_admin_role(
     perm = new_permission('create', 'roles', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        f'VALUES(%s, %s)', (role['id'], perm['id']))
+        'VALUES(%s, %s)', (role['id'], perm['id']))
     cursor.callproc('add_role_to_user', (
         user['auth0_id'], str(bin_to_uuid(user['id'])),
         str(bin_to_uuid(role['id']))))
@@ -1157,7 +1158,7 @@ def test_add_role_to_user_admin_role_outside_org(
     perm = new_permission('create', 'roles', True, org=org)
     cursor.execute(
         'INSERT INTO role_permission_mapping (role_id, permission_id) '
-        f'VALUES(%s, %s)', (role['id'], perm['id']))
+        'VALUES(%s, %s)', (role['id'], perm['id']))
     with pytest.raises(pymysql.err.OperationalError) as e:
         cursor.callproc('add_role_to_user', (
             user['auth0_id'], str(bin_to_uuid(share_user['id'])),
@@ -1357,24 +1358,57 @@ def test_store_report_values_no_write_report(
 
 def test_store_raw_report(
         dictcursor, insertuser, allow_read_reports,
-        allow_update_reports):
+        allow_update_reports, allow_write_values):
     user, _, _, obs, org, role, _, report, _ = insertuser
+    report_id = str(bin_to_uuid(report['id']))
+    dictcursor.execute('select id from forecasts limit 1')
+    fxid = dictcursor.fetchone()['id']
+    id0 = uuid_to_bin(uuid.uuid1())
+    id1 = uuid_to_bin(uuid.uuid1())
+    dictcursor.executemany(
+        'insert into report_values (id, report_id, object_id, processed_values'
+        ') values (%s, %s, %s, 0x999)',
+        [(id0, report['id'], fxid), (id1, report['id'], fxid)]
+    )
+    dictcursor.execute(
+        'select id from report_values where report_id = %s', report['id']
+    )
+    assert len(dictcursor.fetchall()) == 8
+    dictcursor.execute(
+        'select id from report_values where report_id != %s', report['id']
+    )
+    other_vals = {d['id'] for d in dictcursor.fetchall()}
     raw_report = {"a": "b", "c": "d"}
+    keep = '[{"id": "%s"}, {"id": "%s"}]' % (bin_to_uuid(id0),
+                                             bin_to_uuid(id1))
     dictcursor.callproc(
         'store_raw_report',
         (user['auth0_id'],
-         str(bin_to_uuid(report['id'])),
-         json.dumps(raw_report))
+         report_id,
+         json.dumps(raw_report),
+         keep)
     )
     dictcursor.execute(
         'SELECT * FROM arbiter_data.reports WHERE id = %s',
         (report['id'],))
     res = dictcursor.fetchall()[0]
     assert json.loads(res['raw_report']) == raw_report
+    dictcursor.execute(
+        'select id from report_values where report_id = %s', report['id']
+    )
+    res = dictcursor.fetchall()
+    assert len(res) == 2
+    assert {r['id'] for r in res} == {id0, id1}
+    # make sure other report_values unchanged
+    dictcursor.execute(
+        'select id from report_values where report_id != %s', report['id']
+    )
+    assert {d['id'] for d in dictcursor.fetchall()} == other_vals
 
 
 def test_store_raw_report_no_update(
-        dictcursor, insertuser, allow_read_reports):
+        dictcursor, insertuser, allow_read_reports,
+        allow_write_values):
     user, _, _, obs, org, role, _, report, _ = insertuser
     raw_report = {"a": "b", "c": "d"}
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -1382,7 +1416,24 @@ def test_store_raw_report_no_update(
             'store_raw_report',
             (user['auth0_id'],
              str(bin_to_uuid(report['id'])),
-             json.dumps(raw_report))
+             json.dumps(raw_report),
+             '[]')
+        )
+    assert e.value.args[0] == 1142
+
+
+def test_store_raw_report_no_write_vals(
+        dictcursor, insertuser, allow_read_reports,
+        allow_update_reports):
+    user, _, _, obs, org, role, _, report, _ = insertuser
+    raw_report = {"a": "b", "c": "d"}
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'store_raw_report',
+            (user['auth0_id'],
+             str(bin_to_uuid(report['id'])),
+             json.dumps(raw_report),
+             '[]')
         )
     assert e.value.args[0] == 1142
 

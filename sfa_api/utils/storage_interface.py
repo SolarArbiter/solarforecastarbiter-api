@@ -1691,7 +1691,7 @@ def read_report_values(report_id):
     return values
 
 
-def store_raw_report(report_id, raw_report):
+def store_raw_report(report_id, raw_report, keep_ids):
     """
     Parameters
     ----------
@@ -1699,15 +1699,32 @@ def store_raw_report(report_id, raw_report):
         UUID of the report associated with the data.
     raw_report: dict
         dict representation of the raw report.
+    keep_ids: list
+        list of report_values ids for the report that will NOT be deleted
 
     Raises
     ------
     StorageAuthError
-        If the user does not have permission to update the report
+        - If the user does not have permission to update the report
+        - If the user does not have permission to store values for the
+          report.
+    BadAPIRequest
+        If any keep_ids are invalid UUIDs
     """
     json_raw_report = dump_json_replace_nan(raw_report)
+    ids = []
+    for k in keep_ids:
+        try:
+            uuid.UUID(k)
+        except ValueError:
+            raise BadAPIRequest(
+                processed_forecasts_observations=(
+                    '*_values fields must be valid UUIDs representing'
+                    ' report processed values already posted to the API'))
+        ids.append({'id': k})
     _call_procedure('store_raw_report', report_id,
-                    json_raw_report)
+                    json_raw_report,
+                    json.dumps(ids))
 
 
 def store_report_status(report_id, status):
