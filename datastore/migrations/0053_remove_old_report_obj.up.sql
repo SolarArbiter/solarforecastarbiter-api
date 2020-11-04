@@ -6,7 +6,8 @@ BEGIN
     DECLARE binid BINARY(16);
     DECLARE allowed BOOLEAN DEFAULT FALSE;
     SET binid = UUID_TO_BIN(strid, 1);
-    SET allowed = can_user_perform_action(auth0id, binid, 'update');
+    SET allowed = (can_user_perform_action(auth0id, binid, 'update') AND
+        can_user_perform_action(auth0id, binid, 'write_values'));
     IF allowed THEN
         DELETE FROM arbiter_data.report_values WHERE report_id = binid AND id NOT IN (
             SELECT uuid_to_bin(jt.id, 1) FROM JSON_TABLE(

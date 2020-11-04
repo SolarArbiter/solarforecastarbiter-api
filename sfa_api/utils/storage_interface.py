@@ -1705,7 +1705,9 @@ def store_raw_report(report_id, raw_report, keep_ids):
     Raises
     ------
     StorageAuthError
-        If the user does not have permission to update the report
+        - If the user does not have permission to update the report
+        - If the user does not have permission to store values for the
+          report.
     BadAPIRequest
         If any keep_ids are invalid UUIDs
     """

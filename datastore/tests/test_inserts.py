@@ -1358,7 +1358,7 @@ def test_store_report_values_no_write_report(
 
 def test_store_raw_report(
         dictcursor, insertuser, allow_read_reports,
-        allow_update_reports):
+        allow_update_reports, allow_write_values):
     user, _, _, obs, org, role, _, report, _ = insertuser
     report_id = str(bin_to_uuid(report['id']))
     dictcursor.execute('select id from forecasts limit 1')
@@ -1407,7 +1407,24 @@ def test_store_raw_report(
 
 
 def test_store_raw_report_no_update(
-        dictcursor, insertuser, allow_read_reports):
+        dictcursor, insertuser, allow_read_reports,
+        allow_write_values):
+    user, _, _, obs, org, role, _, report, _ = insertuser
+    raw_report = {"a": "b", "c": "d"}
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        dictcursor.callproc(
+            'store_raw_report',
+            (user['auth0_id'],
+             str(bin_to_uuid(report['id'])),
+             json.dumps(raw_report),
+             '[]')
+        )
+    assert e.value.args[0] == 1142
+
+
+def test_store_raw_report_no_write_vals(
+        dictcursor, insertuser, allow_read_reports,
+        allow_update_reports):
     user, _, _, obs, org, role, _, report, _ = insertuser
     raw_report = {"a": "b", "c": "d"}
     with pytest.raises(pymysql.err.OperationalError) as e:
