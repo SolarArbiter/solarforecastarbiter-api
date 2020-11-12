@@ -748,3 +748,25 @@ def test_observation_update_bad_request(api, observation_id, payload, message):
                  json=payload)
     assert r.status_code == 400
     assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_post_observation_values_empty_json(api, observation_id):
+    vals = {'values': []}
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
+
+
+def test_post_observation_values_empty_csv(api, observation_id):
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data="timestamp,value,quality_flag\n")
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
