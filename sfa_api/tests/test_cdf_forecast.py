@@ -658,3 +658,56 @@ def test_post_file_invalid_mimetype(api, cdf_forecast_id):
     assert file_post.status_code == 400
     expected = '{"errors":{"error":["Unsupported Content-Type or MIME type."]}}\n' # noqa
     assert file_post.get_data(as_text=True) == expected
+
+
+def test_post_cdf_forecast_values_empty_json(api, cdf_forecast_id):
+    vals = {'values': []}
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
+
+
+def test_post_cdf_forecast_values_empty_csv(api, cdf_forecast_id):
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data="timestamp,value\n")
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
+
+
+@pytest.mark.parametrize('missing', ['timestamp', 'value'])
+def test_post_cdf_forecast_values_json_missing_field(
+        api, cdf_forecast_id, missing):
+    single_value = {'timestamp': '2020-01-01T00:00Z', 'value': 0}
+    single_value.pop(missing)
+    vals = {'values': [single_value]}
+    res = api.post(f'/forecasts/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }
+
+
+@pytest.mark.parametrize('csv,missing', [
+    ('timestamp\n2020-01-01T00:00Z', 'value'),
+    ('value\n5', 'timestamp'),
+])
+def test_post_cdf_forecast_values_csv_missing_field(
+        api, cdf_forecast_id, csv, missing):
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data=csv)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }

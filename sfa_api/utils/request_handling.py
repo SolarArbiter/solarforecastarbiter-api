@@ -246,6 +246,11 @@ def validate_parsable_values():
         decoded_data = request.get_data(as_text=True)
         mimetype = request.mimetype
     value_df = parse_values(decoded_data, mimetype)
+
+    if value_df.size == 0:
+        raise BadAPIRequest({
+            'error': ("Posted data contained no values."),
+        })
     return value_df
 
 
