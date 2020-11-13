@@ -770,3 +770,40 @@ def test_post_observation_values_empty_csv(api, observation_id):
     assert res.json['errors'] == {
         "error": ["Posted data contained no values."],
     }
+
+
+@pytest.mark.parametrize('missing', ['timestamp', 'value', 'quality_flag'])
+def test_post_observation_values_json_missing_field(
+        api, observation_id, missing):
+    single_value = {
+        'timestamp': '2020-01-01T00:00Z',
+        'value': 0,
+        'quality_flag': 0
+    }
+    single_value.pop(missing)
+    vals = {'values': [single_value]}
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }
+
+
+@pytest.mark.parametrize('csv,missing', [
+    ('timestamp,value\n2020-01-01T00:00Z,0', 'quality_flag'),
+    ('value,quality_flag\n5,0', 'timestamp'),
+    ('timestamp,quality_flag\n2020-01-01T00:00Z,0', 'value'),
+
+])
+def test_post_observation_values_csv_missing_field(
+        api, observation_id, csv, missing):
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data=csv)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }

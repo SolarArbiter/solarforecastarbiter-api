@@ -680,3 +680,34 @@ def test_post_cdf_forecast_values_empty_csv(api, cdf_forecast_id):
     assert res.json['errors'] == {
         "error": ["Posted data contained no values."],
     }
+
+
+@pytest.mark.parametrize('missing', ['timestamp', 'value'])
+def test_post_cdf_forecast_values_json_missing_field(
+        api, cdf_forecast_id, missing):
+    single_value = {'timestamp': '2020-01-01T00:00Z', 'value': 0}
+    single_value.pop(missing)
+    vals = {'values': [single_value]}
+    res = api.post(f'/forecasts/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }
+
+
+@pytest.mark.parametrize('csv,missing', [
+    ('timestamp\n2020-01-01T00:00Z', 'value'),
+    ('value\n5', 'timestamp'),
+])
+def test_post_cdf_forecast_values_csv_missing_field(
+        api, cdf_forecast_id, csv, missing):
+    res = api.post(f'/forecasts/cdf/single/{cdf_forecast_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data=csv)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }
