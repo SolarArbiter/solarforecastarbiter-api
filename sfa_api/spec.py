@@ -224,13 +224,17 @@ amount of time unlike API keys which often have no expiration.
 
 
 A valid JWT issued by Auth0 must be included as a Bearer token in the
-Authorization header for all requests to the API. A JWT will expire
-after a set period and a valid one will be required to access the
-API. Access control is strictly enforced so that only data owners and
-authorized users have access to any data.
+Authorization header for all requests to the API.  Access control is
+strictly enforced so that only data owners and authorized users have
+access to any data.
 
 
-A request to Auth0 for a valid JWT may be made in the following way
+JWTs issued by Auth0 expire in 3 hours for most Solar Forecast Arbiter
+uses. Auth0 rate limits token requests, so users should reuse a token
+if multiple requests to the API will be made in a short time span.
+
+
+One way of requesting a valid JWT from Auth0 is
 (with non-testing username and password when appropriate):
 
 ```
@@ -267,6 +271,29 @@ curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
      --url "https://api.solarforecastarbiter.org/observations/"
 ```
 The jq utility can be obtained at https://stedolan.github.io/jq/.
+
+Python users may want to use a libarary like
+[Authlib](https://docs.authlib.org/en/latest/client/oauth2.html#oauth2session-for-password)
+to fetch and automatically refresh tokens as necessary.
+
+```python
+from authlib.integrations.requests_client import OAuth2Session
+
+session = OAuth2Session(
+    client_id='c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7',
+    token_endpoint='https://solarforecastarbiter.auth0.com/oauth/token')
+ # fetch an access token and refresh token that can be used to automatically
+ # fetch a new token when the current one expires
+session.fetch_token(
+    username='testing@solarforecastarbiter.org',
+    password='Thepassword123!',
+    scope=['offline_access'],
+    audience='https://api.solarforecastarbiter.org'
+)
+
+ # we can now access the API with the token automatically added to the header
+sites = session.get('https://api.solarforecastarbiter.org/sites/')
+```
 
 For more about how to obtain a JWT using the Resource Owner Password flow, see
 [What is the OAuth2 password grant](https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant)
