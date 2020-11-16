@@ -147,7 +147,10 @@ framework. A typical upload may have the following steps:
 4. The provider sends the POST request to the [add observation
    endpoint](#tag/Observations/paths/~1observations~1{observation_id}~1values/post)
    with the ID from step 2 in the URL and the token from step 1 as the
-   Authorization Bearer header
+   Authorization Bearer header. Using curl, uploading a file named test.csv may look like:
+   ```
+   curl -H "Authorization: Bearer $ACCESS_TOKEN" https://api.solarforecastarbiter.org/observations/f8dd49fa-23e2-48a0-862b-ba0af6dec276/values --data-binary @test.csv -H 'content-type: text/csv'
+   ```
 
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
@@ -176,9 +179,12 @@ may have the following steps:
    for application/json and text/csv Request Body Schema)
 
 4. The provider sends the POST request to the [add forecast
-   endpoint](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
+   endpoint](#tag/Forecasts/paths/~1forecasts~1single~1{forecast_id}~1values/post)
    with the ID from step 2 in the URL and the token from step 1 as the
-   Authorization Bearer header
+   Authorization Bearer header. Using curl, uploading a file named test.csv may look like:
+   ```
+   curl -H "Authorization: Bearer $ACCESS_TOKEN" https://api.solarforecastarbiter.org/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/values --data-binary @test.csv -H 'content-type: text/csv'
+   ```
 
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
@@ -226,7 +232,8 @@ amount of time unlike API keys which often have no expiration.
 A valid JWT issued by Auth0 must be included as a Bearer token in the
 Authorization header for all requests to the API.  Access control is
 strictly enforced so that only data owners and authorized users have
-access to any data.
+access to any data. More information can be found at
+[https://solarforecastarbiter.org/documentation/dashboard/administration/](https://solarforecastarbiter.org/documentation/dashboard/administration/).
 
 
 JWTs issued by Auth0 expire in 3 hours for most Solar Forecast Arbiter
@@ -298,7 +305,7 @@ sites = session.get('https://api.solarforecastarbiter.org/sites/')
 For more about how to obtain a JWT using the Resource Owner Password flow, see
 [What is the OAuth2 password grant](https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant)
 and [Auth0 Resource Owner Password](https://auth0.com/docs/api/authentication#resource-owner-password).
-"""
+"""  # NOQA
 ma_plugin = MarshmallowPlugin()
 spec = APISpec(
     title='Solar Forecast Arbiter API',
