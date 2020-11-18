@@ -2,6 +2,7 @@ from collections import defaultdict
 from io import StringIO
 import json
 import re
+import string
 
 
 from flask import request, current_app
@@ -128,7 +129,8 @@ def parse_json(json_str):
         values key cannot be parsed into a DataFrame.
     """
     try:
-        json_dict = json.loads(json_str)
+        json_dict = json.loads(''.join(s for s in json_str
+                                       if s in string.printable))
     except json.decoder.JSONDecodeError:
         raise BadAPIRequest(error='Malformed JSON.')
     try:
