@@ -177,6 +177,12 @@ def test_parse_csv_success():
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
+def test_parse_csv_windows():
+    cs = '\ufeffa,b\r\n1,4\r\n2,5\r\n3,6\r\n4,7\r\n'
+    test_df = request_handling.parse_csv(cs)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
 @pytest.mark.parametrize('csv_input', [
     '',
     "a,b\n1,4\n2.56,2.45\n1,2,3\n"
