@@ -177,7 +177,7 @@ def test_parse_csv_success():
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
-def test_parse_csv_windows():
+def test_parse_csv_bom():
     cs = '\ufeffa,b\r\n1,4\r\n2,5\r\n3,6\r\n4,7\r\n'
     test_df = request_handling.parse_csv(cs)
     pdt.assert_frame_equal(test_df, expected_parsed_df)
@@ -194,6 +194,12 @@ def test_parse_csv_failure(csv_input):
 
 def test_parse_json_success():
     test_df = request_handling.parse_json(json_string)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
+def test_parse_json_bom():
+    js = '\ufeff{"values":{"a":[1,2,3,4],"b":[4,5,6,7]}}'
+    test_df = request_handling.parse_json(js)
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
