@@ -222,7 +222,8 @@ def report_post_json():
                     'observation': '123e4567-e89b-12d3-a456-426655440000',
                     'forecast': '11c20780-76ae-4b11-bef1-7a75bdc784e3'
                 }
-            ]
+            ],
+            'timezone': None
         }
     }
 

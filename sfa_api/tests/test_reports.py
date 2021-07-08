@@ -672,6 +672,18 @@ def test_post_report_forecast_fill(
     assert 'Location' in res.headers
 
 
+@pytest.mark.parametrize('timezone', [
+    None, 'America/Denver'
+])
+def test_post_report_timezone(
+        timezone, api, report_post_json, mocked_queuing):
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['timezone'] = timezone
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 201
+    assert 'Location' in res.headers
+
+
 @pytest.mark.parametrize('missing_key', [
     'forecast',
     'reference_forecast',
