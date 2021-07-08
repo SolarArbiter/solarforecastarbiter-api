@@ -1462,7 +1462,8 @@ class ReportParameters(ma.Schema):
             "statistics are calculated. If not provided, timezone will be "
             "inferred from sites."
         ),
-        required=False,
+        default=None,
+        missing=None,
         validate=TimezoneValidator()
     )
 
