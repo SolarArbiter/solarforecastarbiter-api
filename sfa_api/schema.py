@@ -1455,6 +1455,17 @@ class ReportParameters(ma.Schema):
         description="List of categories with which to group metrics.",
         required=True
     )
+    timezone = ma.String(
+        title="Timezone",
+        description=(
+            "IANA Timezone. Data will be converted to this timezone before "
+            "statistics are calculated. If not provided, timezone will be "
+            "inferred from sites."
+        ),
+        default=None,
+        missing=None,
+        validate=TimezoneValidator()
+    )
 
     @validates_schema
     def validate_cost(self, data, **kwargs):

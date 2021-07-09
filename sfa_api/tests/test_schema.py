@@ -304,6 +304,7 @@ def test_report_deserialize_defaults(report_post_json, user):
     report = schema.ReportPostSchema().loads(report_json)
     params = report['report_parameters']
     assert params['forecast_fill_method'] == 'drop'
+    assert params['timezone'] is None
     assert params['filters'] == []
     assert params['costs'] == []
 
@@ -314,6 +315,7 @@ def test_report_serialize_missing(report_post_json, user):
     report_json = schema.ReportSchema().dumps(report_dict)
     params = json.loads(report_json)['report_parameters']
     assert params['forecast_fill_method'] == 'drop'
+    assert params['timezone'] is None
     assert params['filters'] == []
     assert params['costs'] == []
 
