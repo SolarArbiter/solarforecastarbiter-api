@@ -1,12 +1,13 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
 from flask.views import MethodView
 
 
 from sfa_api import spec
-from sfa_api.schema import UserSchema, ActionList
+from sfa_api.schema import (UserSchema, ActionList, ALLOWED_OBJECT_TYPES,
+                            UserCreatePerms, ActionsOnTypeList)
 from sfa_api.utils.auth0_info import (
-    get_email_of_user, list_user_emails, get_auth0_id_of_user)
-from sfa_api.utils.errors import StorageAuthError
+    get_email_of_user, get_auth0_id_of_user)
+from sfa_api.utils.errors import StorageAuthError, BadAPIRequest
 from sfa_api.utils.storage import get_storage
 
 
@@ -27,17 +28,13 @@ class AllUsersView(MethodView):
                   type: array
                   items:
                     $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
         """
         storage = get_storage()
         users = storage.list_users()
-        emails = list_user_emails([u['auth0_id'] for u in users])
         for u in users:
-            u['email'] = emails.get(
-                u['auth0_id'], 'Unable to retrieve')
+            u['email'] = get_email_of_user(u['auth0_id'])
         return jsonify(UserSchema(many=True).dump(users))
 
 
@@ -57,10 +54,10 @@ class UserView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         user = storage.read_user(user_id)
@@ -102,10 +99,10 @@ class UserRolesManagementView(MethodView):
         responses:
           204:
             description: Role Added Successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.add_role_to_user(user_id, role_id)
@@ -124,10 +121,10 @@ class UserRolesManagementView(MethodView):
         responses:
           204:
             description: Role removed successfully..
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         storage.remove_role_from_user(user_id, role_id)
@@ -148,10 +145,10 @@ class CurrentUserView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         user_info = storage.get_current_user_info()
@@ -200,10 +197,10 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
         responses:
           204:
             description: Role Added Successfully.
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -223,10 +220,10 @@ class UserRolesManagementByEmailView(UserRolesManagementView):
         responses:
           204:
             description: Role removed successfully..
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -253,10 +250,10 @@ class UserByEmailView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/UserSchema'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         auth0_id = get_auth0_id_of_user(email)
@@ -285,16 +282,81 @@ class UserActionsView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ActionList'
-          404:
-            $ref: '#/components/responses/404-NotFound'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         actions = storage.get_user_actions_on_object(object_id)
         json_response = {'object_id': object_id,
                          'actions': actions}
         return jsonify(ActionList().dump(json_response))
+
+
+class UserCreatePermissions(MethodView):
+    def get(self):
+        """
+        ---
+        summary: List object types user can create.
+        description: |-
+          Get a list of object types the user can create.
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of object types the user has permission to create
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/UserCreatePerms'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+
+        storage = get_storage()
+        object_types = storage.get_user_creatable_types()
+        return Response(UserCreatePerms().dumps({'can_create': object_types}),
+                        mimetype="application/json")
+
+
+class UserActionsOnType(MethodView):
+    def get(self, object_type):
+        """
+        ---
+        summary: List all permitted actions on all objects of a given type.
+        description: |-
+          Get a list of object ids and the actions the user is permitted to
+          perform on each object.
+        parameters:
+        - object_type
+        tags:
+          - Users
+        responses:
+          200:
+            description: List of actions the user can make on the object.
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ActionsOnTypeList'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        if object_type not in ALLOWED_OBJECT_TYPES:
+            raise BadAPIRequest({
+                'object_type': 'Must be one of: '
+                               f'{", ".join(ALLOWED_OBJECT_TYPES)}'
+            })
+        storage = get_storage()
+        object_dict = storage.list_actions_on_all_objects_of_type(object_type)
+        json_response = {'object_type': object_type,
+                         'objects': object_dict}
+        return Response(ActionsOnTypeList().dumps(json_response),
+                        mimetype="application/json")
 
 
 spec.components.parameter(
@@ -319,6 +381,16 @@ spec.components.parameter(
         'required': 'true',
         'name': 'email'
     })
+spec.components.parameter(
+    'object_type', 'path',
+    {
+        'schema': {
+            'type': 'string',
+        },
+        'description': "The type of object to query for.",
+        'required': 'true',
+        'name': 'object_type',
+    })
 user_blp = Blueprint(
     'users', 'users', url_prefix='/users',
 )
@@ -340,6 +412,12 @@ user_blp.add_url_rule(
 user_blp.add_url_rule(
     '/actions-on/<uuid_str:object_id>',
     view_func=UserActionsView.as_view('user_actions_on_object'))
+user_blp.add_url_rule(
+    '/can-create/',
+    view_func=UserCreatePermissions.as_view('user_create_permissions'))
+user_blp.add_url_rule(
+    '/actions-on-type/<object_type>',
+    view_func=UserActionsOnType.as_view('user_actions_on_type'))
 
 user_email_blp = Blueprint(
     'users-by-email', 'users-by-email', url_prefix='/users-by-email',

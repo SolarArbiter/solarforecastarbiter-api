@@ -1,9 +1,6 @@
 from flask import current_app
 
 
-import sfa_api.utils.storage_interface as storage
-
-
 def get_storage():
     """Return a handle to the storage interface object.
     See sfa_api.utils.storage_interface.
@@ -12,5 +9,6 @@ def get_storage():
     for development by setting the 'STATIC_DATA' config variable.
     """
     if not hasattr(current_app, 'storage'):
+        import sfa_api.utils.storage_interface as storage
         current_app.storage = storage
     return current_app.storage

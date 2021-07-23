@@ -10,18 +10,25 @@ import pytz
 from sfa_api import spec, ma, json
 from sfa_api.utils.validators import (
     TimeFormat, UserstringValidator, TimezoneValidator, TimeLimitValidator,
-    UncertaintyValidator, validate_if_event)
+    UncertaintyValidator, validate_if_event, ensure_pair_compatibility,
+    AggregateIntervalValidator)
 from solarforecastarbiter.datamodel import (
     ALLOWED_VARIABLES, ALLOWED_CATEGORIES, ALLOWED_DETERMINISTIC_METRICS,
     ALLOWED_EVENT_METRICS, ALLOWED_PROBABILISTIC_METRICS,
     ALLOWED_COST_AGG_OPTIONS, ALLOWED_COST_FILL_OPTIONS,
-    ALLOWED_COST_FUNCTIONS)
+    ALLOWED_COST_FUNCTIONS, ALLOWED_QUALITY_FLAGS,
+    ALLOWED_INTERVAL_LABELS, ALLOWED_INTERVAL_VALUE_TYPES,
+    ALLOWED_AGGREGATE_TYPES)
 
 
 ALLOWED_METRICS = {}
 ALLOWED_METRICS.update(ALLOWED_DETERMINISTIC_METRICS)
 ALLOWED_METRICS.update(ALLOWED_EVENT_METRICS)
 ALLOWED_METRICS.update(ALLOWED_PROBABILISTIC_METRICS)
+
+ALLOWED_OBJECT_TYPES = ['sites', 'aggregates', 'forecasts', 'observations',
+                        'users', 'roles', 'permissions', 'cdf_forecasts',
+                        'reports']
 
 
 class ISODateTime(ma.AwareDateTime):
@@ -31,6 +38,24 @@ class ISODateTime(ma.AwareDateTime):
     """
     def __init__(self, **kwargs):
         super().__init__(format='iso', default_timezone=pytz.utc, **kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        try:
+            # to enforce ISO format, do not allow unix timestamps
+            int(value)
+        except ValueError:
+            pass
+        else:
+            raise ValidationError('Not a valid datetime.')
+        try:
+            value = pd.Timestamp(value)
+        except ValueError:
+            raise ValidationError('Not a valid datetime.')
+        if pd.isnull(value):
+            raise ValidationError('Not a valid datetime.')
+        if value.tzinfo is None:
+            value = pytz.utc.localize(value)
+        return value
 
     def _serialize(self, value, attr, obj, **kwargs):
         if value is None:
@@ -77,10 +102,6 @@ VARIABLES = ALLOWED_VARIABLES.keys()
 
 ALLOWED_REPORT_METRICS = list(ALLOWED_METRICS.keys())
 ALLOWED_REPORT_CATEGORIES = list(ALLOWED_CATEGORIES.keys())
-INTERVAL_LABELS = ['beginning', 'ending', 'instant', 'event']
-AGGREGATE_TYPES = ['sum', 'mean', 'median', 'max', 'min']
-INTERVAL_VALUE_TYPES = ['interval_mean', 'interval_max', 'interval_min',
-                        'interval_median', 'instantaneous']
 FORECAST_TYPES = ['forecast', 'event_forecast', 'probabilistic_forecast',
                   'probabilistic_forecast_constant_value']
 
@@ -88,6 +109,9 @@ EXTRA_PARAMETERS_FIELD = ma.String(
     title='Extra Parameters',
     description='Additional user specified parameters.',
     missing='')
+EXTRA_PARAMETERS_UPDATE = ma.String(
+    title='Extra Parameters',
+    description='Additional user specified parameters.')
 
 VARIABLE_FIELD = ma.String(
     title='Variable',
@@ -113,7 +137,7 @@ INTERVAL_LABEL = ma.String(
     description=('For data that represents intervals, indicates if a time '
                  'labels the beginning or ending of the interval. '
                  'instant for instantaneous data'),
-    validate=validate.OneOf(INTERVAL_LABELS),
+    validate=validate.OneOf(ALLOWED_INTERVAL_LABELS),
     required=True)
 
 INTERVAL_LENGTH = ma.Integer(
@@ -127,52 +151,129 @@ INTERVAL_VALUE_TYPE = ma.String(
     description=('For data that represents intervals, what that data '
                  'represents e.g. interval mean, min, max, etc. '
                  'instantaneous for instantaneous data'),
-    validate=validate.OneOf(INTERVAL_VALUE_TYPES),
+    validate=validate.OneOf(ALLOWED_INTERVAL_VALUE_TYPES),
     required=True)
 
 
 # Sites
-@spec.define_schema('ModelingParameters')
-class ModelingParameters(ma.Schema):
+_base_kwargs = dict(
+    required=False,
+    missing=None,
+    default=None,
+    validate=validate.Equal(None),
+)
+
+
+class BaseModelingParameters(ma.Schema):
     class Meta:
         ordered = True
-    ac_capacity = ma.Float(
-        title="AC Capacity",
-        description="Nameplate AC power rating.",
-        missing=None)
-    dc_capacity = ma.Float(
-        title="DC Capacity",
-        description="Nameplate DC power rating.",
-        missing=None)
-    temperature_coefficient = ma.Float(
-        title="Temperature Coefficient",
-        description=("The temperature coefficient of DC power in units of "
-                     "1/C. Typically -0.002 to -0.005 per degree C."),
-        missing=None)
     tracking_type = ma.String(
         title="Tracking Type",
         description=("Type of tracking system, i.e. fixed, single axis, two "
                      "axis."),
         validate=validate.OneOf(['fixed', 'single_axis']),
-        missing=None)
+        required=True,
+        default=None
+    )
+    ac_capacity = ma.Float(
+        title="AC Capacity",
+        description="Nameplate AC power rating.",
+        required=True,
+        default=None
+    )
+    dc_capacity = ma.Float(
+        title="DC Capacity",
+        description="Nameplate DC power rating.",
+        required=True,
+        default=None
+    )
+    temperature_coefficient = ma.Float(
+        title="Temperature Coefficient",
+        description=("The temperature coefficient of DC power in units of "
+                     "1/C. Typically -0.002 to -0.005 per degree C."),
+        required=True,
+        default=None
+    )
+    dc_loss_factor = ma.Float(
+        title="DC loss factor",
+        description=("Loss factor in %, applied to DC current."),
+        validate=validate.Range(0, 100),
+        required=True,
+        default=None
+    )
+    ac_loss_factor = ma.Float(
+        title="AC loss factor",
+        description=("Loss factor in %, applied to inverter power "
+                     "output."),
+        validate=validate.Range(0, 100),
+        required=True,
+        default=None
+    )
     # fixed tilt systems
     surface_tilt = ma.Float(
         title="Surface Tilt",
-        description="Tilt from horizontal of a fixed tilt system, degrees.",
-        missing=None)
+        description="Only valid for 'fixed' systems",
+        **_base_kwargs
+    )
     surface_azimuth = ma.Float(
-        title="Surface Azimuth",
-        description="Azimuth angle of a fixed tilt system, degrees.",
-        missing=None)
+        title='Surface Azimuth',
+        description="Only valid for 'fixed' systems",
+        **_base_kwargs
+    )
     # single axis tracker
     axis_tilt = ma.Float(
         title="Axis tilt",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    axis_azimuth = ma.Float(
+        title="Axis azimuth",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    ground_coverage_ratio = ma.Float(
+        title="Ground coverage ratio",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    backtrack = ma.Boolean(
+        title="Backtrack",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+    max_rotation_angle = ma.Float(
+        title="Maximum Rotation Angle",
+        description="Only valid for 'single_axis' systems",
+        **_base_kwargs
+    )
+
+
+@spec.define_schema('FixedModelingParameters')
+class FixedModelingParameters(BaseModelingParameters):
+    surface_tilt = ma.Float(
+        title="Surface Tilt",
+        description="Tilt from horizontal of a fixed tilt system, degrees.",
+        required=True
+    )
+    surface_azimuth = ma.Float(
+        title="Surface Azimuth",
+        description="Azimuth angle of a fixed tilt system, degrees.",
+        required=True
+    )
+
+
+@spec.define_schema('SingleAxisModelingParameters')
+class SingleAxisModelingParameters(BaseModelingParameters):
+    axis_tilt = ma.Float(
+        title="Axis tilt",
         description="Tilt from horizontal of the tracker axis, degrees.",
-        missing=None)
+        required=True
+    )
     axis_azimuth = ma.Float(
         title="Axis azimuth",
         description="Azimuth angle of the tracker axis, degrees.",
-        missing=None)
+        required=True
+    )
     ground_coverage_ratio = ma.Float(
         title="Ground coverage ratio",
         description=("Ratio of total width of modules on a tracker to the "
@@ -180,66 +281,64 @@ class ModelingParameters(ma.Schema):
                      "trackers each with two modules of 1m width each, and "
                      "a spacing between tracker axes of 7m, the ground "
                      "coverage ratio is 0.286(=2/7)."),
-        missing=None)
+        required=True
+    )
     backtrack = ma.Boolean(
         title="Backtrack",
         description=("True/False indicator of if a tracking system uses "
                      "backtracking."),
-        missing=None)
+        required=True
+    )
     max_rotation_angle = ma.Float(
         title="Maximum Rotation Angle",
         description=("Maximum rotation from horizontal of a single axis "
                      "tracker, degrees."),
-        missing=None)
-    dc_loss_factor = ma.Float(
-        title="DC loss factor",
-        description=("Loss factor in %, applied to DC current."),
-        validate=validate.Range(0, 100),
-        missing=None)
-    ac_loss_factor = ma.Float(
-        title="AC loss factor",
-        description=("Loss factor in %, applied to inverter power "
-                     "output."),
-        validate=validate.Range(0, 100),
-        missing=None)
+        required=True
+    )
 
-    @validates_schema
-    def validate_modeling_parameters(self, data, **kwargs):
-        common_fields = {
-            'ac_capacity', 'dc_capacity', 'temperature_coefficient',
-            'dc_loss_factor', 'ac_loss_factor'}
-        fixed_fields = {'surface_tilt', 'surface_azimuth'}
-        singleaxis_fields = {
-            'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
-            'backtrack', 'max_rotation_angle'}
-        # if tracking type is None (weather station),
-        # ensure all fields are None
-        if data['tracking_type'] is None:
-            errors = {
-                key: ['Field must be null/none when tracking_type is none']
-                for key in common_fields | fixed_fields | singleaxis_fields
-                if data[key] is not None}
-            if errors:
-                raise ValidationError(errors)
-        elif data['tracking_type'] == 'fixed':
-            errors = {
-                key: ["Field should be none with tracking_type='fixed'"]
-                for key in singleaxis_fields if data[key] is not None}
-            errors.update({key: ["Value required when tracking_type='fixed'"]
-                           for key in common_fields | fixed_fields
-                           if data[key] is None})
-            if errors:
-                raise ValidationError(errors)
-        elif data['tracking_type'] == 'single_axis':
-            errors = {
-                key: ["Field should be none with tracking_type='single_axis'"]
-                for key in fixed_fields if data[key] is not None}
-            errors.update({
-                key: ["Value required when tracking_type='single_axis'"]
-                for key in common_fields | singleaxis_fields
-                if data[key] is None})
-            if errors:
-                raise ValidationError(errors)
+
+@spec.define_schema('ModelingParameters', component={
+    "discriminator": {
+        "propertyName": "tracking_type",
+        "mapping": {
+            "fixed": "#/components/schemas/FixedModelingParameters",
+            "single_axis": "#/components/schemas/SingleAxisModelingParameters",
+        }},
+    "oneOf": [
+        {"$ref": "#/components/schemas/FixedModelingParameters"},
+        {"$ref": "#/components/schemas/SingleAxisModelingParameters"},
+    ]})
+class ModelingParameters(BaseModelingParameters):
+    # just for API docs
+    pass
+
+
+class ModelingParametersField(ma.Nested):
+    def __init__(self, *args, **kwargs):
+        super().__init__(ModelingParameters, *args, **kwargs)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        type_ = value.get('tracking_type')
+        if type_ is None:
+            if value:
+                raise ValidationError({
+                    key: ['Must be equal to None.']
+                    for key, val in value.items() if val is not None})
+            else:
+                return BaseModelingParameters().dump(value)
+        elif type_ == 'fixed':
+            return FixedModelingParameters().load(value)
+        elif type_ == 'single_axis':
+            return SingleAxisModelingParameters().load(value)
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        type_ = value.get('tracking_type')
+        if type_ == 'fixed':
+            return FixedModelingParameters().dump(value)
+        elif type_ == 'single_axis':
+            return SingleAxisModelingParameters().dump(value)
+        else:
+            return BaseModelingParameters().dump(value)
 
 
 @spec.define_schema('SiteDefinition')
@@ -271,9 +370,59 @@ class SiteSchema(ma.Schema):
         description="IANA Timezone",
         required=True,
         validate=TimezoneValidator())
-    modeling_parameters = ma.Nested(ModelingParameters,
-                                    missing=ModelingParameters().load({}))
+    modeling_parameters = ModelingParametersField(
+        description='Solar Power Plant modeling parameters',
+    )
     extra_parameters = EXTRA_PARAMETERS_FIELD
+
+
+@spec.define_schema('SiteUpdate')
+class SiteUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description="Name of the Site",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    latitude = ma.Float(
+        title='Latitude',
+        description="Latitude in degrees North",
+        validate=validate.Range(-90, 90))
+    longitude = ma.Float(
+        title='Longitude',
+        description="Longitude in degrees East of the Prime Meridian",
+        validate=validate.Range(-180, 180))
+    elevation = ma.Float(
+        title='Elevation',
+        description="Elevation in meters")
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    modeling_parameters = ModelingParametersField(
+        description='Solar Power Plant modeling parameters',
+    )
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if 'modeling_parameters' not in out:
+            # uses tracking_type 'noupdate' as a sentinel
+            # mysql would fail on it due to the enum types
+            out['modeling_parameters'] = {
+                'tracking_type': 'noupdate',
+                "ac_capacity": None,
+                "ac_loss_factor": None,
+                "axis_azimuth": None,
+                "axis_tilt": None,
+                "backtrack": None,
+                "dc_capacity": None,
+                "dc_loss_factor": None,
+                "ground_coverage_ratio": None,
+                "max_rotation_angle": None,
+                "surface_azimuth": None,
+                "surface_tilt": None,
+                "temperature_coefficient": None,
+            }
+        return out
 
 
 @spec.define_schema('SiteMetadata')
@@ -332,7 +481,7 @@ class ObservationValueSchema(ma.Schema):
     )
     value = ma.Float(
         title='Value',
-        description="Value of the measurement",
+        description="Value of the measurement. JSON null indicates NaN.",
         allow_nan=True)
     quality_flag = ma.Integer(
         title='Quality flag',
@@ -417,12 +566,35 @@ class ObservationPostSchema(ma.Schema):
     uncertainty = ma.Float(
         title='Uncertainty',
         description='A measure of the uncertainty of the observation values.',
-        required=True)
+        missing=None
+    )
     extra_parameters = EXTRA_PARAMETERS_FIELD
 
     @validates_schema
     def validate_observation(self, data, **kwargs):
         validate_if_event(self, data, **kwargs)
+
+
+@spec.define_schema('ObservationUpdate')
+class ObservationUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the observation',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    uncertainty = ma.Float(
+        title='Uncertainty',
+        description='A measure of the uncertainty of the observation values.',
+        allow_none=True,
+    )
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+    def _deserialize(self, value, **kwargs):
+        out = super()._deserialize(value, **kwargs)
+        if out.get('uncertainty', '') is None:
+            out['null_uncertainty'] = True
+        else:
+            out['null_uncertainty'] = False
+        return out
 
 
 @spec.define_schema('ObservationMetadata')
@@ -499,13 +671,30 @@ class ForecastValueSchema(ma.Schema):
     )
     value = ma.Float(
         title="Value",
-        description="Value of the forecast variable.",
+        description=(
+            "Value of the forecast variable. "
+            "NaN may be indicated with JSON null."),
         allow_nan=True)
 
 
 @spec.define_schema('ForecastValuesPost')
 class ForecastValuesPostSchema(ma.Schema):
     values = TimeseriesField(ForecastValueSchema, many=True)
+
+
+@spec.define_schema('ForecastValuesCSV', component={
+    "type": "string",
+    "description": """
+Text file with fields separated by ',' and lines separated by '\\n'.
+'#' is parsed as a comment character.
+The a header with fields "timestamp" and "value" must be included after
+any comment lines.
+Timestamp must be an ISO 8601 datetime and value may be an integer or float.
+Values that will be interpreted as NaN include the empty string,
+-999.0, -9999.0, 'nan', 'NaN', 'NA', 'N/A', 'n/a', 'null'.
+"""})
+class ForecastValuesCSVSchema(ma.Schema):
+    pass
 
 
 @spec.define_schema('ForecastValues')
@@ -613,6 +802,15 @@ class ForecastSchema(ForecastPostSchema):
     modified_at = MODIFIED_AT
 
 
+@spec.define_schema('ForecastUpdate')
+class ForecastUpdateSchema(ma.Schema):
+    name = ma.String(
+        title='Name',
+        description='Human friendly name for the forecast',
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+
+
 @spec.define_schema('ForecastLinks')
 class ForecastLinksSchema(ma.Schema):
     class Meta:
@@ -679,8 +877,26 @@ class CDFForecastTimeRangeSchema(TimeRangeSchema):
             "UUID of the probabilistic forecast associated with this data."))
 
 
+@spec.define_schema('CDFForecastValue')
+class CDFForecastValueSchema(ForecastValueSchema):
+    value = ma.Float(
+        title="Value",
+        description=(
+            'Value of the forecast variable. If axis="x", this value '
+            'has units of percent corresponding to a percentile. '
+            'If axis="y", this value has the physical units of the variable, '
+            'e.g. W/m^2 if variable="ghi". '
+            'NaN may be indicated with JSON null.'),
+        allow_nan=True)
+
+
+@spec.define_schema('CDFForecastValuesPost')
+class CDFForecastValuesPostSchema(ma.Schema):
+    values = TimeseriesField(CDFForecastValueSchema, many=True)
+
+
 @spec.define_schema('CDFForecastValues')
-class CDFForecastValuesSchema(ForecastValuesPostSchema):
+class CDFForecastValuesSchema(CDFForecastValuesPostSchema):
     forecast_id = ma.UUID(
         title="Forecast ID",
         description="UUID of the forecast associated with this data.")
@@ -693,10 +909,24 @@ class CDFForecastGroupPostSchema(ForecastPostSchema):
     constant_values = ma.List(
         ma.Float,
         title='Constant Values',
-        description=('The variable values or percentiles for the set of '
-                     'forecasts in the probabilistic forecast.'),
+        description=(
+            'The variable values or percentiles for the set of '
+            'forecasts in the probabilistic forecast. '
+            'If axis="x", these values are assumed to have the physical units '
+            'of the variable, e.g. W/m^2 if variable="ghi". If axis="y", '
+            'these values are assumed to be percentiles with units of percent,'
+            ' e.g. 90%'
+        ),
         required=True
     )
+
+
+_cv_desc = (
+    'The variable value or percentile for the probabilistic forecast. '
+    'If axis="x", this value is assumed to have the physical units of '
+    'the variable, e.g. W/m^2 if variable="ghi". If axis="y", this '
+    'value is assumed to be a percentile with units of percent, e.g. 90%.'
+)
 
 
 @spec.define_schema('CDFForecastMetadata')
@@ -707,15 +937,15 @@ class CDFForecastSchema(ForecastSchema):
     parent = ma.UUID()
     constant_value = ma.Float(
         title='Constant Value',
-        description=('The variable value or percentile for the probabilistic '
-                     'forecast'),
+        description=_cv_desc
     )
 
 
 @spec.define_schema('CDFForecastSingle')
 class CDFForecastSingleSchema(ma.Schema):
     forecast_id = ma.UUID()
-    constant_value = ma.Float()
+    constant_value = ma.Float(
+        description=_cv_desc)
     _links = CDF_LINKS
 
 
@@ -774,7 +1004,7 @@ class PermissionPostSchema(ma.Schema):
         title='Desctription',
         required=True,
         description="Description of the purpose of a permission.",
-        validate=validate.Length(max=64)
+        validate=[UserstringValidator(), validate.Length(max=64)],
     )
     action = ma.String(
         title='Action',
@@ -788,9 +1018,7 @@ class PermissionPostSchema(ma.Schema):
         title="Object Type",
         description="The type of object this permission will act on.",
         required=True,
-        validate=validate.OneOf(['sites', 'aggregates', 'forecasts',
-                                 'observations', 'users', 'roles',
-                                 'permissions', 'cdf_forecasts', 'reports']),
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES),
     )
     applies_to_all = ma.Boolean(
         title="Applies to all",
@@ -853,14 +1081,18 @@ class ReportObjectPair(ma.Schema):
         elif 'observation' not in data and 'aggregate' not in data:
             raise ValidationError(
                 "Specify one of observation or aggregate")
+        ensure_pair_compatibility(data)
 
     forecast = ma.UUID(title="Forecast UUID", required=True)
     observation = ma.UUID(title="Observation UUID")
     aggregate = ma.UUID(title="Aggregate UUID")
-    reference_forecast = ma.UUID(title="Reference Forecast UUID",
-                                 allow_none=True,
-                                 missing=None,
-                                 default=None)
+    reference_forecast = ma.UUID(
+        title="Reference Forecast UUID",
+        allow_none=True,
+        missing=None,
+        default=None,
+        description='Reference forecast to use when calculating skill metrics.'
+    )
     cost = ma.String(
         title='Cost Parameters',
         description=(
@@ -1119,6 +1351,36 @@ class ForecastFillField(ma.Field):
                 ["Must be a float or one of 'drop', 'forward'"])
 
 
+class QualityFlagFilter(ma.Schema):
+    quality_flags = ma.List(
+        ma.String(validate=validate.OneOf(ALLOWED_QUALITY_FLAGS)),
+        title='Quality Flags',
+        description=(
+            'The quality flags to exclude when computing report. '
+            'All flags listed are considered together when determining '
+            'if a point should be excluded from analysis.'
+        ),
+        required=True,
+        validate=validate.Length(min=1)
+    )
+    discard_before_resample = ma.Boolean(
+        description=(
+            'Determines if points should be discarded before resampling or '
+            'only during resampling (when ``resample_threshold_percentage``'
+            ' is exceeded).'),
+        missing=True,
+        default=True
+    )
+    resample_threshold_percentage = ma.Float(
+        validate=validate.Range(0, 100),
+        description=(
+            'Percentage of points in a resampled interval that must be '
+            'flagged in order to flag the entire interval.'),
+        missing=10.,
+        default=10.,
+    )
+
+
 @spec.define_schema('ReportParameters')
 class ReportParameters(ma.Schema):
     name = ma.String(
@@ -1130,20 +1392,23 @@ class ReportParameters(ma.Schema):
         title="Start",
         description=("The beginning of the analysis period as an ISO 8601 "
                      "datetime. Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     end = ISODateTime(
         title="End",
         description=(
             "The end of the analysis period as an ISO 8601 datetime."
             " Unlocalized times are assumed to be UTC."),
-        validate=TimeLimitValidator()
+        validate=TimeLimitValidator(),
+        required=True,
     )
     forecast_fill_method = ForecastFillField(
         title='Forecast Fill Method',
         description=(
             'How to fill missing forecast values before calculating metrics.'),
-        default='drop'
+        default='drop',
+        missing='drop',
     )
     costs = ma.Nested(
         CostSchema,
@@ -1152,15 +1417,28 @@ class ReportParameters(ma.Schema):
             'Cost definitions to use for object_pairs. '
             'If cost is to be calculated, each object pair must '
             'have a "cost" key matching the name of one of these '
-            'cost definitions.')
+            'cost definitions.'),
+        default=[],
+        missing=[],
+        doc_default=None
     )
-    object_pairs = ma.Nested(ReportObjectPair, many=True,
-                             required=True)
-    # TODO: Validate with options from core
-    filters = ma.List(
-        ma.Dict(),
+    object_pairs = ma.Nested(
+        ReportObjectPair,
+        many=True,
+        required=True,
+        description=(
+            'List of forecasts and observations or aggregates to compare. '
+            'Each pair must contain a forecast and either an observation or '
+            'aggregate.'),
+    )
+    filters = ma.Nested(
+        QualityFlagFilter,
+        many=True,
         title="Filters",
-        description="List of Filters applied to the data in the report"
+        description="List of Filters applied to the data in the report",
+        default=[],
+        missing=[],
+        doc_default=None
     )
     metrics = ma.List(
         ma.String(
@@ -1176,6 +1454,17 @@ class ReportParameters(ma.Schema):
         title="Categories",
         description="List of categories with which to group metrics.",
         required=True
+    )
+    timezone = ma.String(
+        title="Timezone",
+        description=(
+            "IANA Timezone. Data will be converted to this timezone before "
+            "statistics are calculated. If not provided, timezone will be "
+            "inferred from sites."
+        ),
+        default=None,
+        missing=None,
+        validate=TimezoneValidator()
     )
 
     @validates_schema
@@ -1287,8 +1576,10 @@ class ReportSchema(ReportPostSchema):
     report_id = ma.UUID()
     provider = ma.String(title="Provider")
     raw_report = ma.Nested(RawReportSchema, allow_none=True)
-    status = ma.String(validate=validate.OneOf(
-        ['pending', 'complete', 'failed']))
+    status = ma.String(
+        description='Status of the report',
+        validate=validate.OneOf(
+            ['pending', 'complete', 'failed']))
     created_at = CREATED_AT
     modified_at = MODIFIED_AT
 
@@ -1326,11 +1617,12 @@ class AggregatePostSchema(ma.Schema):
                      'This aggregate interval length must be greater than or '
                      'equal to the interval length of the observations that go'
                      ' into it.'),
-        required=True)
+        required=True,
+        validate=AggregateIntervalValidator())
 
     aggregate_type = ma.String(
         title='Aggregation Type',
-        validate=validate.OneOf(AGGREGATE_TYPES),
+        validate=validate.OneOf(ALLOWED_AGGREGATE_TYPES),
         required=True
     )
     extra_parameters = EXTRA_PARAMETERS_FIELD
@@ -1381,13 +1673,26 @@ class AggregateObservationSchema(AggregateObservationPostSchema):
 
 @spec.define_schema('AggregateMetadataUpdate')
 class AggregateUpdateSchema(ma.Schema):
-    # later will add things that can be updated like description
+    name = ma.String(
+        title='Name',
+        description="Human friendly name for aggregate",
+        validate=[UserstringValidator(), validate.Length(max=64)])
+    extra_parameters = EXTRA_PARAMETERS_UPDATE
+    timezone = ma.String(
+        title="Timezone",
+        description="IANA Timezone",
+        validate=TimezoneValidator())
+    description = ma.String(
+        title='Desctription',
+        description=(
+            "Description of the aggregate (e.g. Total PV power of all plants")
+    )
     observations = ma.List(ma.Nested(AggregateObservationPostSchema()),
-                           many=True, required=True)
+                           many=True)
 
     @validates_schema
     def validate_from_until(self, data, **kwargs):
-        for obs in data['observations']:
+        for obs in data.get('observations', []):
             if 'effective_from' in obs and 'effective_until' in obs:
                 raise ValidationError("Only specify one of effective_from "
                                       "or effective_until")
@@ -1447,3 +1752,24 @@ class AggregateValuesSchema(ObservationValuesPostSchema):
 class ActionList(ma.Schema):
     object_id = ma.UUID(title="Object UUID")
     actions = ma.List(ma.String(), title="Actions allowed on the object.")
+
+
+@spec.define_schema('ActionsOnTypeList')
+class ActionsOnTypeList(ma.Schema):
+    object_type = ma.String(
+        title="Object type",
+        description="Type of objects included in `objects` field.",
+        validate=validate.OneOf(ALLOWED_OBJECT_TYPES))
+    objects = ma.Nested(
+        ActionList,
+        tite="Objects",
+        description="List of object uuids and allowed actions.",
+        many=True)
+
+
+@spec.define_schema('UserCreatePerms')
+class UserCreatePerms(ma.Schema):
+    can_create = ma.List(
+        ma.String(validate=validate.OneOf(ALLOWED_OBJECT_TYPES)),
+        title="Can create",
+        description="List of types of objects the user can create.")

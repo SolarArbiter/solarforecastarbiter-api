@@ -5,8 +5,10 @@ from marshmallow import ValidationError
 
 from sfa_api import spec
 from sfa_api.schema import (SiteSchema, SiteResponseSchema,
+                            SiteUpdateSchema,
                             ForecastSchema, ObservationSchema,
                             CDFForecastGroupSchema)
+from sfa_api.utils.errors import BadAPIRequest
 from sfa_api.utils.storage import get_storage
 
 
@@ -140,6 +142,63 @@ class SiteView(MethodView):
         site = storage.read_site(site_id)
         return jsonify(SiteResponseSchema().dump(site))
 
+    def post(self, site_id, *args):
+        """
+        ---
+        summary: Update Site metadata.
+        tags:
+        - Sites
+        parameters:
+        - site_id
+        requestBody:
+          description: >-
+            JSON object of site metadata to update.
+            If modeling parameters are to be updated,
+            all parameters for a given tracking_type are
+            required even if most values are the same to
+            ensure proper validation. An empty object
+            for modeling_parameters will have the effect of
+            clearing all modeling parameters.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/SiteUpdate'
+        responses:
+          200:
+            description: Site updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated site.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated site.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = SiteUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        changes.update(changes.pop('modeling_parameters', {}))
+        storage.update_site(site_id, **changes)
+        response = make_response(site_id, 200)
+        response.headers['Location'] = url_for('sites.single',
+                                               site_id=site_id)
+        return response
+
     def delete(self, site_id, *args):
         """
         ---
@@ -150,7 +209,7 @@ class SiteView(MethodView):
         parameters:
         - site_id
         responses:
-          200:
+          204:
             description: Site deleted Successfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'

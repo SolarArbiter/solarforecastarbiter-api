@@ -11,6 +11,7 @@ from sfa_api.schema import (ForecastValuesSchema,
                             ForecastPostSchema,
                             ForecastLinksSchema,
                             ForecastTimeRangeSchema,
+                            ForecastUpdateSchema,
                             CDFForecastGroupPostSchema,
                             CDFForecastGroupSchema,
                             CDFForecastSchema,
@@ -25,6 +26,7 @@ from sfa_api.utils.storage import get_storage
 from sfa_api.utils.request_handling import (validate_parsable_values,
                                             validate_start_end,
                                             validate_index_period,
+                                            validate_event_data,
                                             validate_forecast_values,
                                             restrict_forecast_upload_window)
 
@@ -38,7 +40,7 @@ class AllForecastsView(MethodView):
         - Forecasts
         responses:
           200:
-            description:
+            description: Forecasts sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -63,7 +65,7 @@ class AllForecastsView(MethodView):
           requests to this endpoint without a trailing slash will
           result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a forecast.
+          description: JSON representation of a forecast.
           required: True
           content:
             application/json:
@@ -141,7 +143,7 @@ class ForecastView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -168,6 +170,7 @@ class ForecastValuesView(MethodView):
         - accepts
         responses:
           200:
+            description: Forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -227,19 +230,13 @@ class ForecastValuesView(MethodView):
                 $ref: '#/components/schemas/ForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields:
-                  timestamp, value, quality_flag. Timestamp must be
-                  an ISO 8601 datetime, value may be an integer or float,
-                  quality_flag may be 0 or 1 (indicating the value is not
-                  to be trusted).
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -256,7 +253,7 @@ class ForecastValuesView(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time, extra_params = (
+        interval_length, previous_time, extra_params, is_event = (
             storage.read_metadata_for_forecast_values(
                 forecast_id, forecast_df.index[0])
         )
@@ -266,6 +263,8 @@ class ForecastValuesView(MethodView):
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
+        if is_event:
+            validate_event_data(forecast_df)
         stored = storage.store_forecast_values(forecast_id, forecast_df)
         return stored, 201
 
@@ -284,6 +283,7 @@ class ForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -314,6 +314,7 @@ class ForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Time range of forecast value sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -346,6 +347,7 @@ class ForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -390,6 +392,55 @@ class ForecastMetadataView(MethodView):
         forecast = storage.read_forecast(forecast_id)
         return jsonify(ForecastSchema().dump(forecast))
 
+    def post(self, forecast_id, *args):
+        """
+        ---
+        summary: Update Forecast metadata.
+        tags:
+        - Forecasts
+        parameters:
+        - forecast_id
+        requestBody:
+          description: JSON object of forecast metadata updates.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastUpdate'
+        responses:
+          200:
+            description: Forecast updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated forecast.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = ForecastUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        storage.update_forecast(forecast_id, **changes)
+        response = make_response(forecast_id, 200)
+        response.headers['Location'] = url_for('forecasts.single',
+                                               forecast_id=forecast_id)
+        return response
+
 
 class AllCDFForecastGroupsView(MethodView):
     def get(self, *args):
@@ -430,7 +481,7 @@ class AllCDFForecastGroupsView(MethodView):
           Note that POST requests to this endpoint without a trailing
           slash will result in a redirect response.
         requestBody:
-          desctiption: JSON representation of a probabilistic forecast.
+          description: JSON representation of a probabilistic forecast.
           required: True
           content:
             application/json:
@@ -484,7 +535,7 @@ class CDFForecastGroupMetadataView(MethodView):
         - forecast_id
         responses:
           200:
-            description: Successfully retrieved Forecasts.
+            description: Successfully retrieved Probabilistic Forecasts.
             content:
               application/json:
                 schema:
@@ -500,6 +551,55 @@ class CDFForecastGroupMetadataView(MethodView):
         cdf_forecast_group = storage.read_cdf_forecast_group(forecast_id)
         return jsonify(CDFForecastGroupSchema().dump(cdf_forecast_group))
 
+    def post(self, forecast_id, *args):
+        """
+        ---
+        summary: Update Probabilistic Forecast group Metadata.
+        tags:
+          - Probabilistic Forecasts
+        parameters:
+        - forecast_id
+        requestBody:
+          description: JSON object of probabilistic forecast updates.
+          required: True
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/ForecastUpdate'
+        responses:
+          200:
+            description: Probabilistic Forecast updated successfully
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the updated probabilistic forecast.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated probabilistic forecast.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        data = request.get_json()
+        try:
+            changes = ForecastUpdateSchema().load(data)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        storage.update_cdf_forecast_group(forecast_id, **changes)
+        response = make_response(forecast_id, 200)
+        response.headers['Location'] = url_for('forecasts.single_cdf_group',
+                                               forecast_id=forecast_id)
+        return response
+
     def delete(self, forecast_id, *args):
         """
         ---
@@ -512,7 +612,7 @@ class CDFForecastGroupMetadataView(MethodView):
         parameters:
         - forecast_id
         responses:
-          200:
+          204:
             description: Forecast deleted sucessfully.
           401:
             $ref: '#/components/responses/401-Unauthorized'
@@ -559,8 +659,14 @@ class CDFForecastValues(MethodView):
         summary: Get Probabilistic Forecast data for one constant value.
         tags:
           - Probabilistic Forecasts
+        parameters:
+        - forecast_id
+        - start_time
+        - end_time
+        - accepts
         responses:
           200:
+            description: CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -569,9 +675,11 @@ class CDFForecastValues(MethodView):
                 schema:
                   type: string
                 example: |-
+                  # comment line
                   timestamp,value
                   2018-10-29T12:00:00Z,32.93
                   2018-10-29T13:00:00Z,25.17
+                  2018-10-29T14:00:00Z,  # this value is NaN
           400:
             $ref: '#/components/responses/400-TimerangeTooLarge'
           401:
@@ -617,20 +725,16 @@ class CDFForecastValues(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ForecastValuesPost'
+                $ref: '#/components/schemas/CDFForecastValuesPost'
             text/csv:
               schema:
-                type: string
-                description: |
-                  Text file with fields separated by ',' and
-                  lines separated by '\\n'. The first line must
-                  be a header with the following fields: timestamp,
-                  value. Timestamp must be an ISO 8601 datetime and
-                  value may be an integer or floatquality_flag.
+                $ref: '#/components/schemas/ForecastValuesCSV'
               example: |-
+                # comment line
                 timestamp,value
                 2018-10-29T12:00:00Z,32.93
                 2018-10-29T13:00:00Z,25.17
+                2018-10-29T14:00:00Z,  # this value is NaN
         responses:
           201:
             $ref: '#/components/responses/201-Created'
@@ -647,7 +751,7 @@ class CDFForecastValues(MethodView):
         validate_forecast_values(forecast_df)
         forecast_df = forecast_df.set_index('timestamp').sort_index()
         storage = get_storage()
-        interval_length, previous_time, extra_params = (
+        interval_length, previous_time, extra_params, is_event = (
             storage.read_metadata_for_cdf_forecast_values(
                 forecast_id, forecast_df.index[0])
         )
@@ -657,6 +761,8 @@ class CDFForecastValues(MethodView):
         )
         validate_index_period(forecast_df.index, interval_length,
                               previous_time)
+        if is_event:
+            validate_event_data(forecast_df)
         stored = storage.store_cdf_forecast_values(forecast_id, forecast_df)
         return stored, 201
 
@@ -675,6 +781,7 @@ class CDFForecastLatestView(MethodView):
           - forecast_id
         responses:
           200:
+            description: Latest CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -705,6 +812,8 @@ class CDFForecastTimeRangeView(MethodView):
           - forecast_id
         responses:
           200:
+            description: >-
+              Time range of CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -738,6 +847,7 @@ class CDFForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:
@@ -772,6 +882,7 @@ class CDFGroupForecastGapView(MethodView):
           - end_time
         responses:
           200:
+            description: Gaps in CDF forecast values sucessfully retrieved.
             content:
               application/json:
                 schema:

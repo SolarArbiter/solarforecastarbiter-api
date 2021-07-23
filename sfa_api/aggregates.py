@@ -5,6 +5,7 @@ from functools import partial
 from flask import Blueprint, request, jsonify, make_response, url_for
 from flask.views import MethodView
 from marshmallow import ValidationError
+import pandas as pd
 from solarforecastarbiter.utils import compute_aggregate
 
 
@@ -156,6 +157,7 @@ class AggregateValuesView(MethodView):
           - accepts
         responses:
           200:
+            description: Sucessfully retrieved aggregate values.
             content:
               application/json:
                 schema:
@@ -180,13 +182,44 @@ class AggregateValuesView(MethodView):
         start, end = validate_start_end()
         storage = get_storage()
         aggregate = storage.read_aggregate(aggregate_id)
+
+        interval_length = f"{aggregate['interval_length']}min"
+        interval_label = aggregate['interval_label']
+        timezone = aggregate['timezone']
+
+        # Create a timedelta to add/substract from end/start to get data
+        # outside of start/end when aggregating
+        interval_offset = pd.Timedelta(interval_length) - pd.Timedelta('1ns')
+
+        if interval_label == 'ending':
+            index_start = start.ceil(interval_length)
+            index_end = end.ceil(interval_length)
+
+            # adjust start to include all values in the previous interval
+            start = index_start - interval_offset
+            end = index_end
+        else:
+            index_start = start.floor(interval_length)
+            index_end = end.floor(interval_length)
+
+            # adjust end to include all values in the final interval
+            end = index_end + interval_offset
+            start = index_start
+
         indv_obs = storage.read_aggregate_values(aggregate_id, start, end)
+
+        request_index = pd.date_range(
+            index_start.tz_convert(timezone),
+            index_end.tz_convert(timezone),
+            freq=interval_length,
+        )
+
         # compute agg
         try:
             values = compute_aggregate(
-                indv_obs, f"{aggregate['interval_length']}min",
-                aggregate['interval_label'], aggregate['timezone'],
-                aggregate['aggregate_type'], aggregate['observations'])
+                indv_obs, interval_length, interval_label, timezone,
+                aggregate['aggregate_type'], aggregate['observations'],
+                request_index)
         except (KeyError, ValueError) as err:
             raise BaseAPIException(422, values=str(err))
         accepts = request.accept_mimetypes.best_match(['application/json',
@@ -273,13 +306,13 @@ class AggregateMetadataView(MethodView):
         ---
         summary: Update an aggregate.
         description: >-
-          For now, only adding or removing observations to the
-          aggregate is supported (i.e. only one of 'effective_until'
-          or 'effective_from' may be specified per observation). If
-          an observation is already part of an aggregate, effective_until
-          must be set until it can be added again. Any attempt to set
-          'effective_until' will apply to all observations with the given
-          ID in the aggregate.
+          Update an aggregate name, extra_parameters, timezone,
+          description, and add or remove observations (i.e. only one of
+          'effective_until' or 'effective_from' may be specified per
+          observation). If an observation is already part of an aggregate,
+          effective_until must be set before it can be added again. Any attempt
+          to set 'effective_until' will apply to all observations with the
+          given ID in the aggregate.
         tags:
         - Aggregates
         parameters:
@@ -290,9 +323,22 @@ class AggregateMetadataView(MethodView):
             application/json:
              schema:
                $ref: '#/components/schemas/AggregateMetadataUpdate'
+
         responses:
           200:
             description: Successfully updated aggregate metadata.
+            content:
+              application/json:
+                schema:
+                  type: string
+                  format: uuid
+                  description: The uuid of the created aggregate.
+            headers:
+              Location:
+                schema:
+                  type: string
+                  format: uri
+                  description: Url of the updated aggregate.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -308,10 +354,9 @@ class AggregateMetadataView(MethodView):
             raise BadAPIRequest(err.messages)
 
         storage = get_storage()
-        self._check_post_for_errs(aggregate_id, aggregate['observations'],
-                                  storage)
-
-        for i, update_obs in enumerate(aggregate['observations']):
+        self._check_post_for_errs(
+            aggregate_id, aggregate.get('observations', []), storage)
+        for i, update_obs in enumerate(aggregate.pop('observations', [])):
             obs_id = str(update_obs['observation_id'])
             if 'effective_from' in update_obs:
                 storage.add_observation_to_aggregate(
@@ -321,7 +366,12 @@ class AggregateMetadataView(MethodView):
                 storage.remove_observation_from_aggregate(
                     aggregate_id, obs_id,
                     update_obs['effective_until'])
-        return aggregate_id, 200
+        if aggregate:
+            storage.update_aggregate(aggregate_id, **aggregate)
+        response = make_response(aggregate_id, 200)
+        response.headers['Location'] = url_for('aggregates.single',
+                                               aggregate_id=aggregate_id)
+        return response
 
 
 class AggregateForecasts(MethodView):
@@ -347,6 +397,8 @@ class AggregateForecasts(MethodView):
                     $ref: '#/components/schemas/ForecastMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         forecasts = storage.list_forecasts(aggregate_id=aggregate_id)
@@ -376,10 +428,36 @@ class AggregateCDFForecastGroups(MethodView):
                     $ref: '#/components/schemas/CDFForecastGroupMetadata'
           401:
             $ref: '#/components/responses/401-Unauthorized'
+          404:
+             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
         forecasts = storage.list_cdf_forecast_groups(aggregate_id=aggregate_id)
         return jsonify(CDFForecastGroupSchema(many=True).dump(forecasts))
+
+
+class AggregateObservationView(MethodView):
+    def delete(self, aggregate_id, observation_id, *args):
+        """
+        ---
+        summary: Delete an observation from an aggregate.
+        description: Delete all instances of an observation from an aggregate.
+        tags:
+          - Aggregates
+        parameters:
+        - aggregate_id
+        - observation_id
+        responses:
+          204:
+            description: Observation deleted from aggregate successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        storage.delete_observation_from_aggregate(aggregate_id, observation_id)
+        return '', 204
 
 
 # Add path parameters used by these endpoints to the spec.
@@ -413,3 +491,6 @@ agg_blp.add_url_rule(
 agg_blp.add_url_rule(
     '/<uuid_str:aggregate_id>/forecasts/cdf',
     view_func=AggregateCDFForecastGroups.as_view('cdf_forecasts'))
+agg_blp.add_url_rule(
+    '/<uuid_str:aggregate_id>/observations/<uuid_str:observation_id>',
+    view_func=AggregateObservationView.as_view('observations'))

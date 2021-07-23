@@ -49,6 +49,10 @@ REINF = re.compile(_RESTR[0] + 'Infinity' + _RESTR[1])
 RENINF = re.compile(_RESTR[0] + '-Infinity' + _RESTR[1])
 
 
+POWER_VARIABLES = ['ac_power', 'dc_power', 'poa_global', 'curtailment',
+                   'availability']
+
+
 def generate_uuid():
     """Generate a version 1 UUID and ensure clock_seq is random"""
     return str(uuid.uuid1(clock_seq=random.SystemRandom().getrandbits(14)))
@@ -335,9 +339,10 @@ def read_observation_values(observation_id, start=None, end=None):
     obs_vals = _call_procedure('read_observation_values', observation_id,
                                start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
-        list(obs_vals), columns=['observation_id', 'timestamp',
-                                 'value', 'quality_flag']
-    ).drop(columns='observation_id').set_index('timestamp')
+        list(obs_vals),
+        columns=['observation_id', 'timestamp', 'value', 'quality_flag'],
+    ).drop(columns='observation_id').set_index('timestamp').astype(
+        {'value': 'float', 'quality_flag': 'int64'})
     return df
 
 
@@ -359,7 +364,8 @@ def read_latest_observation_value(observation_id):
     df = pd.DataFrame.from_records(
         list(obs_vals), columns=[
             'observation_id', 'timestamp', 'value', 'quality_flag']
-    ).drop(columns='observation_id').set_index('timestamp')
+    ).drop(columns='observation_id').set_index('timestamp').astype(
+        {'value': 'float', 'quality_flag': 'int64'})
     return df
 
 
@@ -396,6 +402,9 @@ def store_observation(observation):
         The UUID of the newly created Observation.
     """
     observation_id = generate_uuid()
+    _check_for_power_variables(observation['variable'],
+                               str(observation['site_id']))
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_observation', observation_id,
@@ -405,6 +414,23 @@ def store_observation(observation):
         observation['uncertainty'], observation['extra_parameters'])
 
     return observation_id
+
+
+def update_observation(observation_id, *, name=None, uncertainty=None,
+                       extra_parameters=None, null_uncertainty=False):
+    """Update observation metadata.
+
+    Parameters
+    ----------
+    observation_id: String
+        UUID of the observation to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_observation', observation_id, name,
+        uncertainty, extra_parameters, null_uncertainty)
 
 
 def read_observation(observation_id):
@@ -506,7 +532,8 @@ def _read_fx_values(procedure_name, forecast_id, start, end):
                               start, end, cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
@@ -548,7 +575,8 @@ def read_latest_forecast_value(forecast_id):
                               cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
@@ -593,9 +621,13 @@ def store_forecast(forecast):
     if forecast.get('site_id') is not None:
         site_or_agg_id = str(forecast['site_id'])
         ref_site = True
+        _check_for_power_variables(forecast['variable'], site_or_agg_id)
     else:
         site_or_agg_id = str(forecast['aggregate_id'])
         ref_site = False
+        _assert_variable_matches_aggregate(forecast['variable'],
+                                           site_or_agg_id)
+
     # the procedure expects arguments in a certain order
     _call_procedure(
         'store_forecast', forecast_id, site_or_agg_id,
@@ -605,6 +637,21 @@ def store_forecast(forecast):
         forecast['interval_value_type'], forecast['extra_parameters'],
         ref_site)
     return forecast_id
+
+
+def update_forecast(forecast_id, *, name=None, extra_parameters=None):
+    """Update forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the forecast to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_forecast', forecast_id, name, extra_parameters)
 
 
 def read_forecast(forecast_id):
@@ -720,13 +767,43 @@ def store_site(site):
         'store_site', site_id, site['name'], site['latitude'],
         site['longitude'], site['elevation'], site['timezone'],
         site['extra_parameters'],
-        *[site['modeling_parameters'][key] for key in [
+        *[site.get('modeling_parameters', {}).get(key) for key in [
             'ac_capacity', 'dc_capacity', 'temperature_coefficient',
             'tracking_type', 'surface_tilt', 'surface_azimuth',
             'axis_tilt', 'axis_azimuth', 'ground_coverage_ratio',
             'backtrack', 'max_rotation_angle', 'dc_loss_factor',
             'ac_loss_factor']])
     return site_id
+
+
+def update_site(
+        site_id, *,
+        ac_capacity, dc_capacity, temperature_coefficient,
+        tracking_type, surface_tilt, surface_azimuth,
+        axis_tilt, axis_azimuth, ground_coverage_ratio,
+        backtrack, max_rotation_angle, dc_loss_factor,
+        ac_loss_factor, name=None, latitude=None, longitude=None,
+        elevation=None, timezone=None, extra_parameters=None
+):
+    """Update site metadata.
+
+    Parameters
+    ----------
+    site_id: String
+        UUID of the site to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_site', site_id, name, latitude, longitude,
+        elevation, timezone, extra_parameters,
+        ac_capacity, dc_capacity, temperature_coefficient,
+        tracking_type, surface_tilt, surface_azimuth,
+        axis_tilt, axis_azimuth, ground_coverage_ratio,
+        backtrack, max_rotation_angle, dc_loss_factor,
+        ac_loss_factor
+    )
 
 
 def delete_site(site_id):
@@ -838,7 +915,8 @@ def read_latest_cdf_forecast_value(forecast_id):
                               cursor_type='standard')
     df = pd.DataFrame.from_records(
         list(fx_vals), columns=['forecast_id', 'timestamp', 'value']
-    ).drop(columns='forecast_id').set_index('timestamp')
+    ).drop(columns='forecast_id').set_index('timestamp').astype(
+        {'value': 'float'})
     return df
 
 
@@ -972,9 +1050,13 @@ def store_cdf_forecast_group(cdf_forecast_group):
     if cdf_forecast_group.get('site_id') is not None:
         site_or_agg_id = str(cdf_forecast_group['site_id'])
         ref_site = True
+        _check_for_power_variables(cdf_forecast_group['variable'],
+                                   site_or_agg_id)
     else:
         site_or_agg_id = str(cdf_forecast_group['aggregate_id'])
         ref_site = False
+        _assert_variable_matches_aggregate(cdf_forecast_group['variable'],
+                                           site_or_agg_id)
 
     # the procedure expects arguments in a certain order
     _call_procedure('store_cdf_forecasts_group',
@@ -1012,6 +1094,22 @@ def _set_cdf_group_forecast_parameters(forecast_dict):
         else:
             out[key] = forecast_dict[key]
     return out
+
+
+def update_cdf_forecast_group(
+        forecast_id, *, name=None, extra_parameters=None):
+    """Update CDF forecast metadata.
+
+    Parameters
+    ----------
+    forecast_id: String
+        UUID of the CDF forecast to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_cdf_forecast', forecast_id, name, extra_parameters)
 
 
 def read_cdf_forecast_group(forecast_id):
@@ -1508,7 +1606,10 @@ def read_report(report_id):
     """
     report = _decode_report_parameters(
         _call_procedure_for_single('read_report', report_id))
-    report_values = read_report_values(report_id)
+    try:
+        report_values = read_report_values(report_id)
+    except StorageAuthError:
+        report_values = []
     report['values'] = report_values
     return report
 
@@ -1590,7 +1691,7 @@ def read_report_values(report_id):
     return values
 
 
-def store_raw_report(report_id, raw_report):
+def store_raw_report(report_id, raw_report, keep_ids):
     """
     Parameters
     ----------
@@ -1598,15 +1699,32 @@ def store_raw_report(report_id, raw_report):
         UUID of the report associated with the data.
     raw_report: dict
         dict representation of the raw report.
+    keep_ids: list
+        list of report_values ids for the report that will NOT be deleted
 
     Raises
     ------
     StorageAuthError
-        If the user does not have permission to update the report
+        - If the user does not have permission to update the report
+        - If the user does not have permission to store values for the
+          report.
+    BadAPIRequest
+        If any keep_ids are invalid UUIDs
     """
     json_raw_report = dump_json_replace_nan(raw_report)
+    ids = []
+    for k in keep_ids:
+        try:
+            uuid.UUID(k)
+        except ValueError:
+            raise BadAPIRequest(
+                processed_forecasts_observations=(
+                    '*_values fields must be valid UUIDs representing'
+                    ' report processed values already posted to the API'))
+        ids.append({'id': k})
     _call_procedure('store_raw_report', report_id,
-                    json_raw_report)
+                    json_raw_report,
+                    json.dumps(ids))
 
 
 def store_report_status(report_id, status):
@@ -1633,12 +1751,13 @@ def get_current_user_info():
 
 
 def create_new_user():
-    _call_procedure('create_user_if_not_exists')
+    user_id = _call_procedure_for_single('create_user_if_not_exists')
+    return user_id
 
 
 def user_exists():
     with get_cursor('dict') as cursor:
-        query = f'SELECT does_user_exist(%s)'
+        query = 'SELECT does_user_exist(%s)'
         query_cmd = partial(cursor.execute, query, (current_user))
         try_query(query_cmd)
         exists = cursor.fetchone()
@@ -1658,13 +1777,18 @@ def _set_extra_params(out):
     return out['extra_parameters']
 
 
+def _set_is_event(out):
+    return bool(out['is_event'])
+
+
 def _read_metadata_for_write(obj_id, type_, start):
     out = _call_procedure_for_single(
         'read_metadata_for_value_write', obj_id, type_, start)
     interval_length = out['interval_length']
     previous_time = _set_previous_time(out)
     extra_parameters = _set_extra_params(out)
-    return interval_length, previous_time, extra_parameters
+    is_event = _set_is_event(out)
+    return interval_length, previous_time, extra_parameters, is_event
 
 
 def read_metadata_for_forecast_values(forecast_id, start):
@@ -1683,9 +1807,11 @@ def read_metadata_for_forecast_values(forecast_id, start):
     interval_length : int
         The interval length of the forecast
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the forecast
+        The extra parameters of the forecast
+    is_event : boolean
+        True if the forecast is an event forecast.
 
     Raises
     ------
@@ -1711,9 +1837,11 @@ def read_metadata_for_cdf_forecast_values(forecast_id, start):
     interval_length : int
         The interval length of the forecast
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the forecast
+        The extra parameters of the forecast
+    is_event : boolean
+        True if the forecast is an event forecast.
 
     Raises
     ------
@@ -1740,9 +1868,11 @@ def read_metadata_for_observation_values(observation_id, start):
     interval_length : int
         The interval length of the observation
     previous_time : pandas.Timestamp or None
-       The most recent timestamp before start or None if no times
+        The most recent timestamp before start or None if no times
     extra_parameters : str
-       The extra parameters of the observation
+        The extra parameters of the observation
+    is_event : boolean
+        True if the observation is an event observation.
 
     Raises
     ------
@@ -1776,6 +1906,23 @@ def store_aggregate(aggregate):
         aggregate['interval_label'], aggregate['interval_length'],
         aggregate['aggregate_type'], aggregate['extra_parameters'])
     return aggregate_id
+
+
+def update_aggregate(aggregate_id, *, name=None, description=None,
+                     timezone=None, extra_parameters=None):
+    """Update aggregate metadata.
+
+    Parameters
+    ----------
+    aggregate_id: String
+        UUID of the aggregate to update.
+    **kwargs
+        Fields to update. If none, field will not be
+        changed.
+    """
+    _call_procedure(
+        'update_aggregate', aggregate_id, name, description,
+        timezone, extra_parameters)
 
 
 def _set_aggregate_parameters(aggregate_dict):
@@ -1893,7 +2040,6 @@ def remove_observation_from_aggregate(
         Time after which this observation is no longer considered in the
         aggregate. Default is now.
 
-
     Raises
     ------
     StorageAuthError
@@ -1901,6 +2047,25 @@ def remove_observation_from_aggregate(
     """
     _call_procedure('remove_observation_from_aggregate', aggregate_id,
                     observation_id, effective_until)
+
+
+def delete_observation_from_aggregate(aggregate_id, observation_id):
+    """Delete all instances of Observation from an Aggregate
+
+    Parameters
+    ----------
+    aggregate_id : string
+        UUID of aggregate
+    observation_id : string
+        UUID of the observation
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have update permission on the aggregate
+    """
+    _call_procedure('delete_observation_from_aggregate', aggregate_id,
+                    observation_id)
 
 
 def read_aggregate_values(aggregate_id, start=None, end=None):
@@ -1932,7 +2097,8 @@ def read_aggregate_values(aggregate_id, start=None, end=None):
     out = {}
     for obs_id, df in groups:
         out[obs_id] = df.drop(columns='observation_id').drop_duplicates(
-        ).set_index('timestamp').sort_index()
+        ).set_index('timestamp').sort_index().astype(
+            {'value': 'float', 'quality_flag': 'int64'})
     return out
 
 
@@ -2229,3 +2395,115 @@ def find_cdf_forecast_group_gaps(cdf_group_id, start, end):
     """
     return _call_procedure('find_cdf_forecast_gaps', cdf_group_id,
                            start, end)
+
+
+def _site_has_modeling_params(site_id):
+    """Check if the site has modeling parameters.
+
+    Parameters
+    ----------
+    site_id: str
+        uuid of the site
+
+    Returns
+    -------
+    boolean
+        True if the site has modeling parameters, otherwise False.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the site
+    """
+    site = read_site(site_id)
+    modeling_parameters = site['modeling_parameters']
+    common_param_keys = ['ac_capacity', 'dc_capacity', 'ac_loss_factor',
+                         'dc_loss_factor', 'temperature_coefficient',
+                         'tracking_type']
+    has_modeling_params = all([modeling_parameters.get(key) is not None
+                               for key in common_param_keys])
+    return has_modeling_params
+
+
+def _check_for_power_variables(variable, site_id):
+    """Ensure that observations or forecasts made with power variables
+    have a site with modeling parameters.
+
+    Parameters
+    ----------
+    variable: str
+        The variable recorded by the object
+    site_id: str
+        The uuid of the site referenced by the object.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the site.
+    BadAPIRequest
+        If the variable is not allowed for the site.
+    """
+    if variable in POWER_VARIABLES:
+        if not _site_has_modeling_params(site_id):
+            raise BadAPIRequest(
+                site="Site must have modeling parameters to create "
+                     f"{', '.join(POWER_VARIABLES)} records.")
+
+
+def _assert_variable_matches_aggregate(variable, aggregate_id):
+    """Ensure that forecast variable matches the variable of the aggregate it's
+    made for.
+
+    Parameters
+    ----------
+    variable: str
+        The variable of the forecast.
+    site_id: str
+        The uuid of the site the forecast references.
+
+    Raises
+    ------
+    StorageAuthError
+        If the user does not have permission to read the aggregate.
+    BadAPIRequest
+        If the variable does not match the aggregate.
+
+    """
+    aggregate = read_aggregate(aggregate_id)
+    if variable != aggregate['variable']:
+        raise BadAPIRequest(variable="Forecast variable must match aggregate.")
+
+
+def get_user_creatable_types():
+    """Get the types of objects the user has permission to create.
+
+    Returns
+    -------
+    list
+        The list of object types the user can create.
+    """
+    object_types = _call_procedure('get_user_creatable_types',
+                                   cursor_type='standard')
+    object_types = [obj[0] for obj in object_types]
+    return object_types
+
+
+def list_actions_on_all_objects_of_type(object_type):
+    """Get a list of objects and the actions a user can take on them.
+
+    Parameters
+    ----------
+    object_type: str
+        The type of object to query for, e.g. `observations`.
+
+    Returns
+    -------
+    list
+        List of dictionaries that contain `object_id`, the uuid of the object
+        and `actions`, a list of actions the user has permission to perform
+        on the object.
+    """
+    object_action_list = _call_procedure(
+        'list_actions_on_all_objects_of_type',
+        object_type)
+    return object_action_list

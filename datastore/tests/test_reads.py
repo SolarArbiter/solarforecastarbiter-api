@@ -290,6 +290,17 @@ def test_read_observation_values_denied(cursor, obs_values, insertuser):
     assert e.value.args[0] == 1142
 
 
+def test_read_observation_values_denied_forecast(
+        cursor, obs_values, insertuser,
+        allow_read_observation_values, allow_read_forecast_values):
+    auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
+    fxid = insertuser.fx['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_observation_values',
+                        (auth0id, fxid, start, end))
+    assert e.value.args[0] == 1142
+    
+
 def test_read_observation_values_denied_can_read_meta(
         cursor, obs_values, allow_read_observations, insertuser):
     auth0id, obsid, vals, start, end = obs_values(insertuser[3]['strid'])
@@ -359,6 +370,16 @@ def test_read_forecast_values_denied_can_read_meta(
         cursor.callproc('read_forecast_values', (auth0id, fxid, start, end))
     assert e.value.args[0] == 1142
 
+
+def test_read_forecast_values_denied_observation(
+        cursor, fx_values, allow_read_forecast_values,
+        allow_read_observation_values, insertuser):
+    auth0id, fxid, vals, start, end = fx_values
+    obsid = insertuser[3]['strid']
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('read_forecast_values', (auth0id, obsid, start, end))
+    assert e.value.args[0] == 1142
+    
 
 @pytest.fixture(params=[0, 1])
 def both_cdf_fx_types(insertuser, request):
@@ -1340,6 +1361,7 @@ def test_read_metadata_for_value_write_fx(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_before(
@@ -1356,6 +1378,7 @@ def test_read_metadata_for_value_write_fx_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_no_vals(
@@ -1368,6 +1391,7 @@ def test_read_metadata_for_value_write_fx_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_fx_no_write(
@@ -1378,6 +1402,26 @@ def test_read_metadata_for_value_write_fx_no_write(
                          insertuser.fx['strid'], 'forecasts',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_fx_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE forecasts SET variable = 'event' WHERE id = %s",
+        (insertuser.fx['id'],)
+    )
+    dictcursor.execute(
+        'INSERT INTO forecasts_values (id, timestamp, value) VALUES'
+        ' (%s, %s, %s)', (insertuser.fx['id'], time_, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id, insertuser.fx['strid'],
+                         'forecasts', '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_obs(
@@ -1394,6 +1438,7 @@ def test_read_metadata_for_value_write_obs(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_obs_before(
@@ -1410,6 +1455,7 @@ def test_read_metadata_for_value_write_obs_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
 
 def test_read_metadata_for_value_write_obs_no_vals(
@@ -1422,8 +1468,9 @@ def test_read_metadata_for_value_write_obs_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 0
 
-
+    
 def test_read_metadata_for_value_write_obs_no_write(
         cursor, insertuser):
     with pytest.raises(pymysql.err.OperationalError) as e:
@@ -1432,6 +1479,27 @@ def test_read_metadata_for_value_write_obs_no_write(
                          insertuser.obs['strid'], 'observations',
                          '2019-09-30 13:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_obs_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE observations SET variable = 'event' WHERE id = %s",
+        (insertuser.obs['id'],)
+    )
+    dictcursor.execute(
+        'INSERT INTO observations_values (id, timestamp, value, quality_flag)'
+        ' VALUES (%s, %s, %s, %s)', (insertuser.obs['id'], time_, 0, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id,
+                         insertuser.obs['strid'], 'observations',
+                         '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_cdf(
@@ -1449,7 +1517,8 @@ def test_read_metadata_for_value_write_cdf(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] == time_
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_before(
         dictcursor, insertuser, allow_write_values):
@@ -1466,7 +1535,8 @@ def test_read_metadata_for_value_write_cdf_before(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_no_vals(
         dictcursor, insertuser, allow_write_values):
@@ -1479,7 +1549,8 @@ def test_read_metadata_for_value_write_cdf_no_vals(
     assert isinstance(res['interval_length'], int)
     assert res['previous_time'] is None
     assert isinstance(res['extra_parameters'], str)
-
+    assert res['is_event'] == 0
+    
 
 def test_read_metadata_for_value_write_cdf_fx_no_write(
         cursor, insertuser):
@@ -1490,6 +1561,28 @@ def test_read_metadata_for_value_write_cdf_fx_no_write(
                          'cdf_forecasts',
                          '2019-09-30 12:00'))
     assert e.value.args[0] == 1142
+
+
+def test_read_metadata_for_value_write_cdf_fx_is_event(
+        dictcursor, insertuser, allow_write_values):
+    time_ = dt.datetime(2019, 9, 30, 12, 45)
+    dictcursor.execute(
+        "UPDATE cdf_forecasts_groups SET variable = 'event' WHERE id = %s",
+        (insertuser.cdf['id'],)
+    )
+    cdf_id = list(insertuser.cdf['constant_values'].keys())[0]
+    dictcursor.execute(
+        'INSERT INTO cdf_forecasts_values (id, timestamp, value) VALUES'
+        ' (UUID_TO_BIN(%s, 1), %s, %s)', (cdf_id, time_, 0))
+    dictcursor.callproc('read_metadata_for_value_write',
+                        (insertuser.auth0id, cdf_id,
+                         'cdf_forecasts',
+                         '2019-09-30 13:00'))
+    res = dictcursor.fetchone()
+    assert isinstance(res['interval_length'], int)
+    assert res['previous_time'] == time_
+    assert isinstance(res['extra_parameters'], str)
+    assert res['is_event'] == 1
 
 
 def test_read_metadata_for_value_write_invalid(cursor, insertuser):
@@ -1574,14 +1667,14 @@ def action_combinations():
         combos = combos + list(itertools.combinations(all_actions, i))
     return combos
 
-@pytest.mark.parametrize('granted', action_combinations())  
+@pytest.mark.parametrize('granted', action_combinations())
 def test_get_user_actions_on_object(
         dictcursor, user_org_role, new_role, add_perm, granted):
     user, org, _ = user_org_role
     auth0id = user['auth0_id']
     role = new_role(org=org)
     role_id = bin_to_uuid(role['id'])
-    
+
     for action in granted:
         add_perm(action, 'roles')
 
@@ -2250,7 +2343,7 @@ def test_find_cdf_forecast_gaps(
     assert out[0] == (start, mid)
     assert out[1] == (mid, inter)
     assert out[2] == (inter, fin)
-    
+
     # single value
     start = start + dt.timedelta(days=30)
     for sid in insertuser.cdf['constant_values'].keys():
@@ -2291,3 +2384,131 @@ def test_find_cdf_forecast_gaps_is_obs(
         cursor.callproc('find_cdf_forecast_gaps',
                         (auth0id, obsid, start, end))
     assert e.value.args[0] == 1142
+
+
+all_object_types = ['sites', 'forecasts', 'observations', 'cdf_forecasts',
+                    'aggregates', 'reports', 'users', 'permissions', 'roles']
+
+
+def object_combinations():
+    combos = []
+    for i in range(1, 9):
+        combos = combos + list(itertools.combinations(all_object_types, i))
+    return combos
+
+
+@pytest.mark.parametrize('object_types', object_combinations())
+def test_get_user_creatable_types(
+        cursor, insertuser, add_perm, object_types, new_user, new_role,
+        new_permission):
+    cursor.execute('DELETE FROM permissions WHERE action = "create"')
+    for object_type in object_types:
+        add_perm('create', object_type)
+
+    auth0id = insertuser[0]['auth0_id']
+    org = insertuser[4]
+
+    cursor.callproc('get_user_creatable_types', (auth0id,))
+    create_perms = cursor.fetchall()
+    assert tuple([tup[0] for tup in create_perms]) == object_types
+
+    same_org_user = new_user(org)
+    same_org_role = new_role(org)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
+        (same_org_user['id'], same_org_role['id']))
+    for otype in all_object_types:
+        new_perm = new_permission('create', otype, False, org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (same_org_role['id'], new_perm['id']))
+
+    other_org_user = new_user()
+    other_org = {'id': other_org_user['organization_id']}
+    other_org_role = new_role(other_org)
+    cursor.execute(
+        'INSERT INTO user_role_mapping (user_id, role_id) VALUES (%s, %s)',
+        (other_org_user['id'], other_org_role['id']))
+    for otype in all_object_types:
+        new_perm = new_permission('create', otype, False, other_org)
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (other_org_role['id'], new_perm['id']))
+
+    cursor.callproc('get_user_creatable_types', (auth0id,))
+    perms_after_other_grants = cursor.fetchall()
+    assert perms_after_other_grants == create_perms
+
+
+@pytest.fixture(params=action_combinations()[::10])
+def generate_object_and_perms(
+        request, cursor, getfcn, user_org_role, new_permission):
+    new_func, object_type = getfcn
+    _, _, role = user_org_role
+
+    cursor.execute('DELETE FROM permissions')
+
+    new_obj = new_func()
+    all_actions = list(request.param)
+    object_id = bin_to_uuid(new_obj['id'])
+    for action in request.param:
+        new_perm = new_permission(action, object_type, False)
+        cursor.execute(
+            'INSERT INTO permission_object_mapping (permission_id, object_id) '
+            'VALUES (%s, %s)', (new_perm['id'], new_obj['id']))
+        cursor.execute(
+            'INSERT INTO role_permission_mapping (role_id, permission_id) '
+            'VALUES (%s, %s)', (role['id'], new_perm['id']))
+    return object_type, object_id, all_actions
+
+
+def test_list_actions_on_all_objects_of_type(
+        dictcursor, user_org_role, generate_object_and_perms):
+    auth0id = user_org_role[0]['auth0_id']
+
+    object_type, object_id, actions = generate_object_and_perms
+    dictcursor.callproc('list_actions_on_all_objects_of_type',
+                        (auth0id, object_type))
+    result = dictcursor.fetchall()
+
+    the_object = result[0]
+    assert the_object['object_id'] == object_id
+    assert json.loads(the_object['actions']).sort() == (actions).sort()
+
+
+@pytest.fixture
+def make_lots_of_one_thing(cursor, getfcn, user_org_role, new_permission):
+    _, org, role = user_org_role
+
+    action_sets = action_combinations()[::7][5:]
+    new_func, object_type = getfcn
+    the_objects = {}
+
+    for i in range(0, 7):
+        new_obj = new_func()
+        actions_on_new_obj = list(action_sets[i])
+        for action in actions_on_new_obj:
+            new_perm = new_permission(action, object_type, False, org)
+            cursor.execute(
+                'INSERT INTO permission_object_mapping (permission_id, '
+                'object_id) VALUES (%s, %s)', (new_perm['id'], new_obj['id']))
+            cursor.execute(
+                'INSERT INTO role_permission_mapping (role_id, permission_id) '
+                'VALUES (%s, %s)', (role['id'], new_perm['id']))
+        the_objects[bin_to_uuid(new_obj['id'])] = actions_on_new_obj.sort()
+    return the_objects, object_type
+
+
+def test_list_actions_on_all_objects_of_type_multiple_objects(
+        dictcursor, user_org_role, make_lots_of_one_thing):
+    auth0id = user_org_role[0]['auth0_id']
+
+    objects, object_type = make_lots_of_one_thing
+    dictcursor.callproc('list_actions_on_all_objects_of_type',
+                        (auth0id, object_type))
+    result = dictcursor.fetchall()
+    assert len(result) == 7
+    id_action_dict = {res['object_id']: json.loads(res['actions']).sort()
+                      for res in result}
+    for k, v in objects.items():
+        assert id_action_dict[k] == v

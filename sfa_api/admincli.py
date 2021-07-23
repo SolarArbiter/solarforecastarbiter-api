@@ -70,6 +70,25 @@ def create_organization(organization_name, **kwargs):
         click.echo(f'Created organization {organization_name}.')
 
 
+@admin_cli.command('create-user')
+@with_default_options
+@click.argument('auth0_id', required=True)
+def create_user(auth0_id, **kwargs):
+    """
+    Creates a new user in the Unaffiliated organization for
+    the given Auth0 id.
+    """
+    import sfa_api.utils.storage_interface as storage
+    try:
+        user_id = storage._call_procedure_for_single(
+            'create_user_if_not_exists', auth0_id,
+            with_current_user=False).get('user_id')
+    except StorageAuthError:
+        fail(f'User already exists for {auth0_id}')
+    else:
+        click.echo(f'Created user {user_id} for {auth0_id}')
+
+
 @admin_cli.command('add-user-to-org')
 @with_default_options
 @click.argument('user_id', required=True, type=click.UUID)

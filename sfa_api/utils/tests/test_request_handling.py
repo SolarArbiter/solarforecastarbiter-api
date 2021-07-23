@@ -177,6 +177,12 @@ def test_parse_csv_success():
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
+def test_parse_csv_bom():
+    cs = '\ufeffa,b\r\n1,4\r\n2,5\r\n3,6\r\n4,7\r\n'
+    test_df = request_handling.parse_csv(cs)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
 @pytest.mark.parametrize('csv_input', [
     '',
     "a,b\n1,4\n2.56,2.45\n1,2,3\n"
@@ -191,6 +197,12 @@ def test_parse_json_success():
     pdt.assert_frame_equal(test_df, expected_parsed_df)
 
 
+def test_parse_json_bom():
+    js = '\ufeff{"values":{"a":[1,2,3,4],"b":[4,5,6,7]}}'
+    test_df = request_handling.parse_json(js)
+    pdt.assert_frame_equal(test_df, expected_parsed_df)
+
+
 @pytest.mark.parametrize('json_input', [
     '',
     "{'a':[1,2,3]}"
@@ -198,6 +210,42 @@ def test_parse_json_success():
 def test_parse_json_failure(json_input):
     with pytest.raises(request_handling.BadAPIRequest):
         request_handling.parse_json(json_input)
+
+
+null_df = pd.DataFrame({
+    'timestamp': [
+        '2018-10-29T12:00:00Z',
+        '2018-10-29T13:00:00Z',
+        '2018-10-29T14:00:00Z',
+        '2018-10-29T15:00:00Z',
+    ],
+    'value': [32.93, 25.17, None, None],
+    'quality_flag': [0, 0, 1, 0]
+})
+
+
+def test_parse_csv_nan():
+    test_df = request_handling.parse_csv("""
+# comment line
+timestamp,value,quality_flag
+2018-10-29T12:00:00Z,32.93,0
+2018-10-29T13:00:00Z,25.17,0
+2018-10-29T14:00:00Z,,1  # this value is NaN
+2018-10-29T15:00:00Z,NaN,0
+""")
+    pdt.assert_frame_equal(test_df, null_df)
+
+
+def test_parse_json_nan():
+    test_df = request_handling.parse_json("""
+{"values":[
+  {"timestamp": "2018-10-29T12:00:00Z", "value": 32.93, "quality_flag": 0},
+  {"timestamp": "2018-10-29T13:00:00Z", "value": 25.17, "quality_flag": 0},
+  {"timestamp": "2018-10-29T14:00:00Z", "value": null, "quality_flag": 1},
+  {"timestamp": "2018-10-29T15:00:00Z", "value": null, "quality_flag": 0}
+]}
+""")
+    pdt.assert_frame_equal(test_df, null_df)
 
 
 @pytest.mark.parametrize('data,mimetype', [
@@ -530,3 +578,30 @@ def test_validate_latitude_longitude_success(app, lat, lon):
     url = f'/climatezones/search?latitude={lat}&longitude={lon}'
     with app.test_request_context(url):
         request_handling.validate_latitude_longitude()
+
+
+@pytest.mark.parametrize('data', [
+    pd.DataFrame({'value': []}),
+    pd.DataFrame({'value': [0, 0, 0]}),
+    pd.DataFrame({'value': [0.0, 1.0, 0.0]}, index=pd.date_range(
+        start='now', freq='5min', periods=3)),
+    pd.DataFrame({'value': [1, 0, 1], 'other': ['a', 'b', 'c']})
+])
+def test_validate_event_data_ok(data):
+    request_handling.validate_event_data(data)
+
+
+@pytest.mark.parametrize('data,exp', [
+    (pd.DataFrame({'value': [1, 2, 0]}), [1]),
+    (pd.DataFrame({'value': [2, 2, 2, 2]}), [0, 1, 2, 3]),
+    (pd.DataFrame({'value': ['a', 1.0, 0.0, 99]}, index=pd.date_range(
+        start='now', freq='5min', periods=4)), [0, 3])
+])
+def test_validate_event_data_bad(data, exp):
+    with pytest.raises(request_handling.BadAPIRequest) as err:
+        request_handling.validate_event_data(data)
+    locs = [
+        int(x) for x in
+        err.value.errors['value'][0].split('locations ')[1].split(',')
+    ]
+    assert exp == locs

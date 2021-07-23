@@ -191,6 +191,21 @@ def test_remove_object_from_permission_object_dne(
     assert objects_on_perm == new_objects_on_perm
 
 
+def test_remove_object_from_permission_object_applies_to_all(
+        api, new_perm,  new_observation):
+    # test that objects list is not altered even though 204 is returned
+    perm_id = new_perm(applies_to_all=True)
+    new_obs = new_observation()
+    # without adding to perm assert observation read allowed
+    get_perm = api.get(f'/permissions/{perm_id}', BASE_URL)
+    perm = get_perm.json
+    objects_on_perm = perm['objects']
+    assert new_obs in objects_on_perm
+    remove_object = api.delete(f'/permissions/{perm_id}/objects/{new_obs}',
+                               BASE_URL)
+    assert remove_object.status_code == 404
+
+
 @pytest.mark.parametrize('action,object_type', [
     ('update', 'permissions'),
 ])
@@ -206,3 +221,16 @@ def test_remove_object_from_permission_no_perms(
     delete_object = api.delete(f'/permissions/{perm_id}/objects/{obs_id}',
                                BASE_URL)
     assert delete_object.status_code == 404
+
+
+@pytest.mark.parametrize('desc,error', [
+    ("<script>console.log();</script>", 'Invalid characters in string.'),
+    ("a"*65, 'Longer than maximum length 64.'),
+    ("!", 'Invalid characters in string.'),
+])
+def test_create_permission_invalid_description(api, desc, error):
+    new_perm = perm('read', 'observation', desc, True)
+    create_perm = api.post('/permissions/', BASE_URL, json=new_perm)
+    assert create_perm.status_code == 400
+    errors = create_perm.json['errors']
+    assert errors['description'] == [error]

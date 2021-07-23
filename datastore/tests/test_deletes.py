@@ -356,6 +356,53 @@ def test_remove_observation_from_aggregate_denied(cursor, agg_obj,
     assert e.value.args[0] == 1142
 
 
+def test_delete_observation_from_aggregate(cursor, agg_obj,
+                                           allow_update_aggregate):
+    auth0id, aggid, agg = agg_obj
+    # add more of same obs to verify all are deleted
+    for i in range(1, 3):
+        cursor.execute(
+            'INSERT INTO arbiter_data.aggregate_observation_mapping '
+            '(aggregate_id, observation_id, _incr) VALUES '
+            '(UUID_TO_BIN(%s, 1), %s, %s)',
+            (aggid, agg['obs_list'][0]['id'], i))
+    cursor.execute(
+        'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) and observation_id = %s',
+        (aggid, agg['obs_list'][0]['id']))
+    assert cursor.fetchone()[0] == 3
+    cursor.execute(
+        'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) and observation_id != %s',
+        (aggid, agg['obs_list'][0]['id']))
+    assert cursor.fetchone()[0] == 1
+
+    cursor.callproc('delete_observation_from_aggregate',
+                    (auth0id, aggid,
+                     str(bin_to_uuid(agg['obs_list'][0]['id']))))
+    cursor.execute(
+        'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) and observation_id=%s',
+        (aggid, agg['obs_list'][0]['id']))
+    assert cursor.fetchone()[0] == 0
+
+    cursor.execute(
+        'SELECT COUNT(*) FROM arbiter_data.aggregate_observation_mapping '
+        'WHERE aggregate_id = UUID_TO_BIN(%s, 1) and observation_id != %s',
+        (aggid, agg['obs_list'][0]['id']))
+    assert cursor.fetchone()[0] == 1
+
+
+def test_delete_observation_from_aggregate_denied(cursor, agg_obj,
+                                                  allow_delete_aggregate):
+    auth0id, aggid, agg = agg_obj
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc(
+            'delete_observation_from_aggregate',
+            (auth0id, aggid, str(bin_to_uuid(agg['obs_list'][0]['id']))))
+    assert e.value.args[0] == 1142
+
+
 def test_delete_cdf_forecast(cursor, cdf_obj, allow_delete_cdf_group):
     auth0id, cdfgroupid, _ = cdf_obj
     cursor.execute(
@@ -782,6 +829,23 @@ def test_remove_object_from_permission_denied(cursor, permission_object_obj):
         cursor.callproc('remove_object_from_permission',
                         (auth0id, objid, permid))
     assert e.value.args[0] == 1142
+
+
+def test_remove_object_from_permission_applies_to_all(
+        cursor, valueset, new_permission, fx_obj, allow_update_permission):
+    org = valueset[0][0]
+    permission = new_permission('read', 'forecasts', True, org=org)
+    permuuid = permission['id']
+    auth0id, fx = fx_obj
+    cursor.execute('SELECT 1 FROM permission_object_mapping WHERE permission_id = %s'
+                   ' AND object_id = UUID_TO_BIN(%s, 1)', (permuuid, fx))
+    num = cursor.fetchone()[0]
+    assert num
+
+    with pytest.raises(pymysql.err.OperationalError) as e:
+        cursor.callproc('remove_object_from_permission',
+                        (auth0id, fx, str(bin_to_uuid(permuuid))))
+        assert e.value.args[0] == 1142
 
 
 def test_delete_report(cursor, report_obj, allow_delete_report):

@@ -31,6 +31,7 @@ def verify_access_token():
         assert auth[0] == 'Bearer'
         token = jwt.decode(
             auth[1],
+            algorithms=['RS256'],
             key=current_app.config['JWT_KEY'],
             audience=current_app.config['AUTH0_AUDIENCE'],
             issuer=current_app.config['AUTH0_BASE_URL'] + '/')

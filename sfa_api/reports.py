@@ -219,6 +219,19 @@ class ReportStatusView(MethodView):
         return '', 204
 
 
+def _extract_value_ids(raw_report):
+    """Extract all UUIDs of forecast/observat/reference forecast values
+    that have been separately posted to the API
+    """
+    out = set()
+    for procfxobs in raw_report['processed_forecasts_observations']:
+        for key in ('forecast_values', 'observation_values',
+                    'reference_forecast_values'):
+            if key in procfxobs and isinstance(procfxobs[key], str):
+                out.add(procfxobs[key])
+    return list(out)
+
+
 class RawReportView(MethodView):
     def post(self, report_id):
         """
@@ -234,11 +247,19 @@ class RawReportView(MethodView):
                 $ref: '#/components/schemas/RawReportSchema'
         parameters:
           - report_id
+        responses:
+          204:
+            description: Updated status successfully.
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#components/responses/404-NotFound'
         """
         raw_report_dict = request.get_json()
         raw_report = RawReportSchema().load(raw_report_dict)
+        keep_ids = _extract_value_ids(raw_report)
         storage = get_storage()
-        storage.store_raw_report(report_id, raw_report)
+        storage.store_raw_report(report_id, raw_report, keep_ids)
         return '', 204
 
 
@@ -258,6 +279,8 @@ class ReportValuesView(MethodView):
               application/json:
                 schema:
                   $ref: '#/components/schemas/ReportValuesSchema'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
@@ -287,6 +310,8 @@ class ReportValuesView(MethodView):
             description: UUID of the stored values.
           400:
             $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
@@ -322,10 +347,11 @@ spec.components.parameter(
     {
         'schema': {
             'type': 'string',
+            'enum': REPORT_STATUS_OPTIONS
         },
         'description': "The new status of the report",
         'required': 'true',
-        'name': 'status'
+        'name': 'status',
     })
 
 reports_blp = Blueprint(

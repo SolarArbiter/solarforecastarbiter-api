@@ -2,6 +2,7 @@ from collections import defaultdict
 from io import StringIO
 import json
 import re
+import string
 
 
 from flask import request, current_app
@@ -128,7 +129,8 @@ def parse_json(json_str):
         values key cannot be parsed into a DataFrame.
     """
     try:
-        json_dict = json.loads(json_str)
+        json_dict = json.loads(''.join(s for s in json_str
+                                       if s in string.printable))
     except json.decoder.JSONDecodeError:
         raise BadAPIRequest(error='Malformed JSON.')
     try:
@@ -246,6 +248,11 @@ def validate_parsable_values():
         decoded_data = request.get_data(as_text=True)
         mimetype = request.mimetype
     value_df = parse_values(decoded_data, mimetype)
+
+    if value_df.size == 0:
+        raise BadAPIRequest({
+            'error': ("Posted data contained no values."),
+        })
     return value_df
 
 
@@ -511,3 +518,23 @@ def validate_latitude_longitude():
     if errors:
         raise BadAPIRequest(errors)
     return lat, lon
+
+
+def validate_event_data(data):
+    """
+    Validate that the data is either 0 or 1
+
+    Parameters
+    ----------
+    data : pd.Dataframe with 'value' column
+
+    Raises
+    ------
+    BadApiRequest
+       If there are any errors
+    """
+    isbool = (data['value'] == 0) | (data['value'] == 1)
+    if not isbool.all():
+        indx = isbool.reset_index()[~isbool.values].index.astype('str')
+        raise BadAPIRequest({'value': [
+            'Invalid event values at locations %s' % ', '.join(indx)]})

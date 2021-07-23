@@ -6,7 +6,9 @@ import pytest
 
 from sfa_api.conftest import (variables, interval_labels, BASE_URL,
                               VALID_OBS_VALUE_JSON, VALID_OBS_VALUE_CSV,
-                              VALID_OBS_JSON, copy_update)
+                              VALID_OBS_JSON, copy_update,
+                              _get_large_test_payload,
+                              demo_observations)
 
 
 INVALID_NAME = copy_update(VALID_OBS_JSON, 'name', '#Nope')
@@ -16,7 +18,15 @@ INVALID_INTERVAL_LABEL = copy_update(VALID_OBS_JSON,
                                      'interval_label', 'invalid')
 
 
-empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"uncertainty":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+empty_json_response = '{"interval_label":["Missing data for required field."],"interval_length":["Missing data for required field."],"interval_value_type":["Missing data for required field."],"name":["Missing data for required field."],"site_id":["Missing data for required field."],"variable":["Missing data for required field."]}' # NOQA
+
+
+@pytest.fixture(params=['missing', 'fx'])
+def bad_id(missing_id, forecast_id, request):
+    if request.param == 'missing':
+        return missing_id
+    else:
+        return forecast_id
 
 
 def test_observation_post_success(api):
@@ -25,6 +35,24 @@ def test_observation_post_success(api):
                  json=VALID_OBS_JSON)
     assert r.status_code == 201
     assert 'Location' in r.headers
+
+
+@pytest.mark.parametrize('how', ['keep', 'pop'])
+def test_observation_post_success_no_uncertainty(api, how):
+    payload = VALID_OBS_JSON.copy()
+    if how == 'pop':
+        payload.pop('uncertainty')
+    else:
+        payload['uncertainty'] = None
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=payload)
+    obsid = r.data.decode()
+    assert r.status_code == 201
+    assert 'Location' in r.headers
+    new = api.get(f'/observations/{obsid}/metadata',
+                  base_url=BASE_URL)
+    assert new.json['uncertainty'] is None
 
 
 @pytest.mark.parametrize('payload,message', [
@@ -57,8 +85,8 @@ def test_get_observation_links(api, observation_id):
     assert '_links' in response
 
 
-def test_get_observation_links_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}',
+def test_get_observation_links_404(api, bad_id):
+    r = api.get(f'/observations/{bad_id}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -75,8 +103,8 @@ def test_get_observation_metadata(api, observation_id):
     assert response['modified_at'].endswith('+00:00')
 
 
-def test_get_observation_metadata_404(api, missing_id):
-    r = api.get(f'/observations/{missing_id}/metadata',
+def test_get_observation_metadata_404(api, bad_id):
+    r = api.get(f'/observations/{bad_id}/metadata',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -197,8 +225,37 @@ def test_post_observation_values_valid_csv(api, observation_id,
     assert r.status_code == 201
 
 
-def test_get_observation_values_404(api, missing_id, startend):
-    r = api.get(f'/observations/{missing_id}/values{startend}',
+def test_post_observation_values_event_data(
+        api, mocked_queuing, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:49Z')
+    observation_id = list(demo_observations.keys())[-1]
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json={'values': [
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T17:54:00Z",
+                        'value': 1.0},
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T17:59:00Z",
+                        'value': 0.0},
+                       {'quality_flag': 0,
+                        'timestamp': "2019-01-22T18:04:00Z",
+                        'value': 0.0}]})
+    assert res.status_code == 201
+
+
+def test_post_observation_values_bad_event_data(api, mock_previous):
+    mock_previous.return_value = pd.Timestamp('2019-01-22T17:49Z')
+    observation_id = list(demo_observations.keys())[-1]
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=VALID_OBS_VALUE_JSON)
+    assert res.status_code == 400
+    assert 'Invalid event values' in res.get_data(as_text=True)
+
+
+def test_get_observation_values_404(api, bad_id, startend):
+    r = api.get(f'/observations/{bad_id}/values{startend}',
                 base_url=BASE_URL)
     assert r.status_code == 404
 
@@ -263,13 +320,6 @@ def test_post_and_get_values_csv(api, observation_id, mocked_queuing,
                 query_string={'start': start, 'end': end})
     posted_data = r.data
     assert VALID_OBS_VALUE_CSV == posted_data.decode('utf-8')
-
-
-@pytest.fixture()
-def dummy_file():
-    def req_file(filename, contents, content_type):
-        return {filename: (contents, filename, content_type)}
-    return req_file
 
 
 @pytest.mark.parametrize('filename,str_content,content_type,start,end', [
@@ -619,14 +669,141 @@ def test_get_observation_unflagged_404_fxid(api, forecast_id, addmayvalues):
 
 
 @pytest.mark.parametrize('content_type,payload', [
-    ('application/json', '{"values": ['+"1"*17*1024*1024+']}'),
-    ('text/csv', 'timestamp,value,quality_flag\n'+"1"*17*1024*1024),
+    ('application/json', '{"values": [1, 2]}'),
+    ('text/csv', 'timestamp,value,quality_flag\n1,2'),
 ])
-def test_post_observation_too_large(
-        api, observation_id, content_type, payload):
+def test_post_observation_too_large_from_header(
+        api, observation_id, content_type, payload, mocker):
+    req_headers = mocker.patch('sfa_api.utils.request_handling.request')
+    req_headers.headers = {'Content-Length': 17*1024*1024}
     req = api.post(
             f'/observations/{observation_id}/values',
             environ_base={'Content-Type': content_type,
                           'Content-Length': 17*1024*1024},
             data=payload, base_url=BASE_URL)
     assert req.status_code == 413
+
+
+@pytest.mark.parametrize('content_type', [
+    'application/json', 'text/csv',
+])
+def test_post_observation_too_large_from_body(
+        api, observation_id, content_type, mocker):
+    payload = _get_large_test_payload(content_type)
+    req = api.post(
+            f'/observations/{observation_id}/values',
+            environ_base={'Content-Type': content_type},
+            data=payload, base_url=BASE_URL)
+    assert req.status_code == 413
+
+
+@pytest.mark.parametrize('variable', [
+    'ac_power',
+    'dc_power',
+    'poa_global',
+    'availability',
+    'curtailment'
+])
+def test_observation_post_power_at_weather_site(api, variable):
+    obs_json = copy_update(VALID_OBS_JSON, 'variable', variable)
+    r = api.post('/observations/',
+                 base_url=BASE_URL,
+                 json=obs_json)
+    assert r.status_code == 400
+
+
+@pytest.mark.parametrize('up', [
+    {'name': 'new name'},
+    {},
+    {'uncertainty': 1.11, 'extra_parameters': 'here they are'},
+    {'name': 'newname', 'uncertainty': None}
+])
+def test_observation_update_success(api, observation_id, up):
+    r = api.post(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL,
+                 json=up)
+    assert r.status_code == 200
+    assert 'Location' in r.headers
+    r2 = api.get(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL)
+    updated = r2.json
+    for k, v in up.items():
+        assert updated[k] == v
+
+
+def test_observation_update_404(api, bad_id):
+    r = api.post(f'/observations/{bad_id}/metadata',
+                 base_url=BASE_URL,
+                 json={'name': 'new name'})
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize('payload,message', [
+    ({'uncertainty': 'abc'}, '{"uncertainty":["Not a valid number."]}'),
+    ({'name': '#NOPE'}, '{"name":["Invalid characters in string."]}')
+])
+def test_observation_update_bad_request(api, observation_id, payload, message):
+    r = api.post(f'/observations/{observation_id}/metadata',
+                 base_url=BASE_URL,
+                 json=payload)
+    assert r.status_code == 400
+    assert r.get_data(as_text=True) == f'{{"errors":{message}}}\n'
+
+
+def test_post_observation_values_empty_json(api, observation_id):
+    vals = {'values': []}
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
+
+
+def test_post_observation_values_empty_csv(api, observation_id):
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data="timestamp,value,quality_flag\n")
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        "error": ["Posted data contained no values."],
+    }
+
+
+@pytest.mark.parametrize('missing', ['timestamp', 'value', 'quality_flag'])
+def test_post_observation_values_json_missing_field(
+        api, observation_id, missing):
+    single_value = {
+        'timestamp': '2020-01-01T00:00Z',
+        'value': 0,
+        'quality_flag': 0
+    }
+    single_value.pop(missing)
+    vals = {'values': [single_value]}
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   json=vals)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }
+
+
+@pytest.mark.parametrize('csv,missing', [
+    ('timestamp,value\n2020-01-01T00:00Z,0', 'quality_flag'),
+    ('value,quality_flag\n5,0', 'timestamp'),
+    ('timestamp,quality_flag\n2020-01-01T00:00Z,0', 'value'),
+
+])
+def test_post_observation_values_csv_missing_field(
+        api, observation_id, csv, missing):
+    res = api.post(f'/observations/{observation_id}/values',
+                   base_url=BASE_URL,
+                   headers={'Content-Type': 'text/csv'},
+                   data=csv)
+    assert res.status_code == 400
+    assert res.json['errors'] == {
+        missing: [f'Missing "{missing}" field.'],
+    }

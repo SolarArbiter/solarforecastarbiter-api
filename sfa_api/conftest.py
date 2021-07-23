@@ -17,7 +17,8 @@ import requests
 from sfa_api import create_app
 from sfa_api.utils import storage_interface
 from sfa_api.schema import (
-    VARIABLES, INTERVAL_VALUE_TYPES, INTERVAL_LABELS, AGGREGATE_TYPES)
+    VARIABLES, ALLOWED_INTERVAL_VALUE_TYPES, ALLOWED_INTERVAL_LABELS,
+    ALLOWED_AGGREGATE_TYPES)
 
 
 BASE_URL = 'https://localhost'
@@ -27,9 +28,9 @@ BASE_URL = 'https://localhost'
 # f'Must be one of: {interval_value_types}.' can be checked
 # against the errors returned from marshmallow
 variables = ', '.join(VARIABLES)
-agg_types = ', '.join(AGGREGATE_TYPES)
-interval_value_types = ', '.join(INTERVAL_VALUE_TYPES)
-interval_labels = ', '.join(INTERVAL_LABELS)
+agg_types = ', '.join(ALLOWED_AGGREGATE_TYPES)
+interval_value_types = ', '.join(ALLOWED_INTERVAL_VALUE_TYPES)
+interval_labels = ', '.join(ALLOWED_INTERVAL_LABELS)
 
 
 VALID_SITE_JSON = {
@@ -55,7 +56,7 @@ VALID_FORECAST_JSON = {
     "extra_parameters": '{"instrument": "pyranometer"}',
     "name": "test forecast",
     "site_id": "123e4567-e89b-12d3-a456-426655440001",
-    "variable": "ac_power",
+    "variable": "ghi",
     "interval_label": "beginning",
     "issue_time_of_day": "12:00",
     "lead_time_to_start": 60,
@@ -69,7 +70,7 @@ VALID_FORECAST_AGG_JSON = {
     "extra_parameters": '{"instrument": "pyranometer"}',
     "name": "test forecast",
     "aggregate_id": '458ffc27-df0b-11e9-b622-62adb5fd6af0',
-    "variable": "ac_power",
+    "variable": "ghi",
     "interval_label": "beginning",
     "issue_time_of_day": "12:00",
     "lead_time_to_start": 60,
@@ -105,6 +106,16 @@ VALID_CDF_FORECAST_AGG_JSON.update({
     "constant_values": [10.0, 20.0, 50.0, 80.0, 100.0]
 })
 
+VALID_AGG_JSON = {
+    "name": "Test Aggregate ghi",
+    "variable": "ghi",
+    "interval_label": "ending",
+    "interval_length": 60,
+    "aggregate_type": "sum",
+    "extra_parameters": "extra",
+    "description": "ghi agg",
+    "timezone": "America/Denver"
+}
 
 VALID_OBS_VALUE_JSON = {
     'id': '123e4567-e89b-12d3-a456-426655440000',
@@ -279,9 +290,15 @@ def report_values():
 
 
 @pytest.fixture()
-def report(report_parameters, raw_report_json, reportid, report_values):
+def report_value_id():
+    return 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+
+
+@pytest.fixture()
+def report(report_parameters, raw_report_json, reportid, report_values,
+           report_value_id):
     rv = report_values.copy()
-    rv['id'] = 'a2b6ed14-42d0-11ea-aa3c-f4939feddd82'
+    rv['id'] = report_value_id
     out = {
         'report_parameters': report_parameters,
         'name': report_parameters['name'],
@@ -2119,3 +2136,20 @@ def addmayvalues(root_cursor):
         "INSERT INTO cdf_forecasts_values (id, timestamp, value) "
         "SELECT id, '2019-05-01 00:00', 1.0 FROM cdf_forecasts_singles"
     )
+
+
+def _get_large_test_payload(content_type):
+    """Produces a large test payload, to avoid having pytest output print the
+    contents of a fixture.
+    """
+    if content_type == 'text/csv':
+        return 'timestamp,value\n'+"1"*17*1024*1024
+    else:
+        return '{"values": ['+"1"*17*1024*1024+']}'
+
+
+@pytest.fixture
+def dummy_file():
+    def req_file(filename, contents, content_type):
+        return {filename: (contents, filename, content_type)}
+    return req_file

@@ -10,8 +10,10 @@ from solarforecastarbiter.datamodel import (
     ALLOWED_CATEGORIES)
 
 
-from sfa_api.conftest import BASE_URL
+from sfa_api.conftest import (BASE_URL, demo_observations, demo_aggregates,
+                              demo_forecasts, demo_group_cdf)
 from sfa_api.schema import ALLOWED_METRICS
+from sfa_api import reports
 
 
 @pytest.fixture()
@@ -272,6 +274,89 @@ def test_post_raw_report_chksum(api, new_report, raw_report_json, chksum):
     assert report_with_raw['raw_report'] == post
 
 
+def test__extract_value_ids(raw_report_json, report_value_id):
+    rep = raw_report_json.copy()
+    rep['processed_forecasts_observations'] = [
+        {'forecast_values': report_value_id, 'observation_values': None}
+    ]
+    ids = reports._extract_value_ids(rep)
+    assert ids == [report_value_id]
+
+
+def test_raw_report_value_deletion(api, new_report, report_json_w_cdf,
+                                   raw_report_json):
+    report_id = new_report(report_json_w_cdf)
+    object_pairs = report_json_w_cdf['report_parameters']['object_pairs']
+    obs_values = {
+        'object_id': object_pairs[0]['observation'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+
+    obs_values1 = {
+        'object_id': object_pairs[1]['observation'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    fx_values = {
+        'object_id': object_pairs[0]['forecast'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    fx_values1 = {
+        'object_id': object_pairs[1]['forecast'],
+        'processed_values': '["a", "bunch", "of vals"]'
+    }
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=obs_values)
+    assert res.status_code == 201
+    obs_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=obs_values1)
+    assert res.status_code == 201
+    obs1_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=fx_values)
+    assert res.status_code == 201
+    fx_val_id = res.data.decode()
+    res = api.post(f'/reports/{report_id}/values',
+                   base_url=BASE_URL,
+                   json=fx_values1)
+    assert res.status_code == 201
+    fx1_val_id = res.data.decode()
+
+    raw = raw_report_json.copy()
+    raw['processed_forecasts_observations'] = [
+        {'forecast_values': fx_val_id, 'observation_values': obs_val_id},
+        {'forecast_values': fx1_val_id}
+        # leave out obs1_val_id on purpose
+    ]
+
+    res = api.post(f'/reports/{report_id}/raw',
+                   base_url=BASE_URL,
+                   json=raw)
+    assert res.status_code == 204
+    full_res = api.get(f'/reports/{report_id}',
+                       base_url=BASE_URL)
+    report_with_raw = full_res.get_json()
+    value_ids = {d['id'] for d in report_with_raw['values']}
+    assert value_ids == {obs_val_id, fx_val_id, fx1_val_id}
+    assert obs1_val_id not in value_ids
+
+
+def test_post_raw_report_nonsense_values(api, reportid, raw_report_json,
+                                         report_value_id):
+    raw = raw_report_json.copy()
+    raw['processed_forecasts_observations'] = [
+        {'forecast_values': report_value_id, 'observation_values': 'nonsense'},
+        {'reference_forecast_values': 999}
+    ]
+    res = api.post(f'/reports/{reportid}/raw',
+                   base_url=BASE_URL,
+                   json=raw)
+    assert res.status_code == 400
+
+
 def test_delete_report(api, new_report):
     report_id = new_report()
     res = api.get(f'/reports/{report_id}',
@@ -317,13 +402,13 @@ categories_list = ", ".join(list(ALLOWED_CATEGORIES.keys()))
     ('object_pairs', [{"forecast": "123e4567-e89b-12d3-a456-426655440000"}],
      '{"0":{"_schema":["Specify one of observation or aggregate"]}}'),
     ('filters', 'not a list',
-     '["Not a valid list."]'),
+     '["Invalid type."]'),
     ('metrics', ["bad"],
         f'{{"0":["Must be one of: {metrics_list}."]}}'),
     ('categories', ["bad"],
         f'{{"0":["Must be one of: {categories_list}."]}}'),
     ('object_pairs', [{"observation": "123e4567-e89b-12d3-a456-426655440000",
-                       "forecast": "123e4567-e89b-12d3-a456-426655440000",
+                       "forecast": "11c20780-76ae-4b11-bef1-7a75bdc784e3",
                        "cost": "nocost"}],
      '{"0":{"cost":["Must specify a \'cost\' that is present in report parameters \'costs\'"]}}'),  # NOQA: E501
     ('metrics', ['mae', 'cost'],
@@ -585,3 +670,160 @@ def test_post_report_forecast_fill(
     res = api.post('/reports/', base_url=BASE_URL, json=payload)
     assert res.status_code == 201
     assert 'Location' in res.headers
+
+
+@pytest.mark.parametrize('timezone', [
+    None, 'America/Denver'
+])
+def test_post_report_timezone(
+        timezone, api, report_post_json, mocked_queuing):
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['timezone'] = timezone
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 201
+    assert 'Location' in res.headers
+
+
+@pytest.mark.parametrize('missing_key', [
+    'forecast',
+    'reference_forecast',
+    'observation',
+])
+def test_post_report_missing_object_pairs(
+        api, report_post_json, missing_id, missing_key):
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['object_pairs'][0][missing_key] = missing_id
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    expected = ('{"errors":{"report_parameters":[{"object_pairs":%s}]}}\n' %
+                ('{"0":{"'+missing_key+'":"Does not exist."}}'))
+    assert res.get_data(as_text=True) == expected
+
+
+@pytest.mark.parametrize('field,value', [
+    ('variable', 'dni'),
+    ('interval_length', 60),
+    ('site_id', 'other_site'),
+])
+def test_post_report_observation_mismatch(
+        api, mocker, report_post_json, field, value):
+    pair = report_post_json['report_parameters']['object_pairs'][0]
+    obsid = pair['observation']
+    obs = deepcopy(demo_observations[obsid])
+    obs[field] = value
+    mocker.patch(
+        'sfa_api.utils.storage_interface.read_observation',
+        return_value=obs,
+    )
+    res = api.post('/reports/', base_url=BASE_URL, json=report_post_json)
+    assert res.status_code == 400
+    errors = res.json['errors']['report_parameters'][0]['object_pairs']['0']
+    if field == 'interval_length':
+        assert errors['observation'][field] == (
+            f'Must be less than or equal to forecast {field}.')
+    else:
+        assert errors['observation'][field] == f'Must match forecast {field}.'
+
+
+@pytest.mark.parametrize('field,value', [
+    ('variable', 'dni'),
+    ('interval_length', 120),
+    ('aggregate_id', 'other_aggregate'),
+])
+def test_post_report_aggregate_mismatch(
+        api, mocker, report_post_json, field, value):
+    forecast_id = '39220780-76ae-4b11-bef1-7a75bdc784e3'
+    aggregate_id = '458ffc27-df0b-11e9-b622-62adb5fd6af0'
+
+    payload = deepcopy(report_post_json)
+    payload['report_parameters']['object_pairs'][0].pop('observation')
+    payload['report_parameters']['object_pairs'][0]['forecast'] = forecast_id
+    payload['report_parameters']['object_pairs'][0]['aggregate'] = aggregate_id
+
+    aggregate = deepcopy(demo_aggregates[aggregate_id])
+    aggregate[field] = value
+    mocker.patch(
+        'sfa_api.utils.storage_interface.read_aggregate',
+        return_value=aggregate,
+    )
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errors = res.json['errors']['report_parameters'][0]['object_pairs']['0']
+    if field == 'interval_length':
+        assert errors['aggregate'][field] == (
+            f'Must be less than or equal to forecast {field}.')
+    else:
+        assert errors['aggregate'][field] == f'Must match forecast {field}.'
+
+
+@pytest.mark.parametrize('field,value', [
+    ('variable', 'dni'),
+    ('interval_length', 120),
+    ('site_id', 'other_site'),
+    ('interval_label', 'ending'),
+])
+def test_post_report_reference_mismatch(
+        api, mocker, report_post_json, field, value):
+    pair = report_post_json['report_parameters']['object_pairs'][0]
+    forecast_id = pair['forecast']
+    forecast = demo_forecasts[forecast_id]
+    reference_forecast = deepcopy(forecast)
+    reference_forecast['forecast_id'] = "11c20780-76ae-4b11-bef1-7a75dde784c5"
+
+    payload = deepcopy(report_post_json)
+    pair = payload['report_parameters']['object_pairs'][0]
+    pair['forecast'] = forecast_id
+    pair['reference_forecast'] = reference_forecast['forecast_id']
+
+    reference_forecast[field] = value
+    mocker.patch(
+        'sfa_api.utils.storage_interface.read_forecast',
+        side_effect=[forecast, reference_forecast],
+    )
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errors = res.json['errors']['report_parameters'][0]['object_pairs']['0']
+    assert errors['reference_forecast'][field] == (
+        f'Must match forecast {field}.')
+
+
+@pytest.mark.parametrize('field,value', [
+    ('variable', 'dni'),
+    ('interval_length', 120),
+    ('site_id', 'other_site'),
+    ('interval_label', 'ending'),
+    ('axis', 'x'),
+    ('constant_value', 50.0),
+])
+def test_post_report_reference_cdf_mismatch(
+        api, mocker, report_post_json, field, value):
+    parent_forecast_id = list(demo_group_cdf.keys())[0]
+    parent_forecast = demo_group_cdf[parent_forecast_id]
+    forecast_id = parent_forecast['constant_values'][0]['forecast_id']
+
+    forecast = deepcopy(parent_forecast)
+    forecast['forecast_id'] = forecast_id
+    cvs = forecast.pop('constant_values')
+    forecast['constant_value'] = cvs[0]['constant_value']
+    forecast['parent'] = parent_forecast_id
+
+    reference_forecast = deepcopy(forecast)
+    reference_forecast['forecast_id'] = "11c20780-76ae-4b11-bef1-7a75dde784c5"
+    reference_forecast['parent'] = "11c20780-76ae-4b11-bef1-2c75bbea84c5"
+
+    payload = deepcopy(report_post_json)
+    pair = payload['report_parameters']['object_pairs'][0]
+    pair['forecast'] = forecast_id
+    pair['reference_forecast'] = reference_forecast['forecast_id']
+    pair['forecast_type'] = 'probabilistic_forecast_constant_value'
+
+    reference_forecast[field] = value
+    mocker.patch(
+        'sfa_api.utils.storage_interface.read_cdf_forecast',
+        side_effect=[forecast, reference_forecast],
+    )
+    res = api.post('/reports/', base_url=BASE_URL, json=payload)
+    assert res.status_code == 400
+    errors = res.json['errors']['report_parameters'][0]['object_pairs']['0']
+    assert errors['reference_forecast'][field] == (
+        f'Must match forecast {field}.')

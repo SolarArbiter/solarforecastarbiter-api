@@ -59,15 +59,11 @@ spec_components = {
                 'password': {
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 },
                 'authorizationCode': {
                     'authorizationUrl': 'https://solarforecastarbiter.auth0.com/authorize',  # NOQA
                     'tokenUrl': 'https://solarforecastarbiter.auth0.com/oauth/token',  # NOQA
                     'scopes': {},
-                    'client_id': 'c16EJo48lbTCQEhqSztGGlmxxxmZ4zX',
-                    'audience': 'https://api.solarforecastarbiter.org'
                 }
             }
         }
@@ -96,13 +92,12 @@ spec_components = {
             },
         },
         'accepts': {
-            'name': 'Accepts',
+            'name': 'Accept',
             'in': 'header',
             'description': 'The mimetype the API should return '
                            '"application/json" or "text/csv".',
             'schema': {
                 'type': 'string',
-                'required': 'true',
             },
         }
     }
@@ -122,6 +117,13 @@ Most users will interact with the API indirectly through actions on
 the [dashboard](https://solarforecastarbiter.org/dashboarddoc). Those
 users who require direct access to the API may include observational
 data providers, forecast data providers, and reference data users.
+
+An OpenAPI generator such as https://github.com/OpenAPITools/openapi-generator
+may be used to generate client libraries for most languages to access
+the API. The OpenAPI spec for the Solar Forecast Arbiter API is available
+in [JSON](/openapi.json) and [YAML](/openapi.yaml) formats. Care must be
+taken to match the OpenAPI generator version with the version found in the
+spec file.
 
 ## Interaction for Observational Data Providers
 
@@ -145,7 +147,10 @@ framework. A typical upload may have the following steps:
 4. The provider sends the POST request to the [add observation
    endpoint](#tag/Observations/paths/~1observations~1{observation_id}~1values/post)
    with the ID from step 2 in the URL and the token from step 1 as the
-   Authorization Bearer header
+   Authorization Bearer header. Using curl, uploading a file named test.csv may look like:
+   ```
+   curl -H "Authorization: Bearer $ACCESS_TOKEN" https://api.solarforecastarbiter.org/observations/f8dd49fa-23e2-48a0-862b-ba0af6dec276/values --data-binary @test.csv -H 'content-type: text/csv'
+   ```
 
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
@@ -174,9 +179,12 @@ may have the following steps:
    for application/json and text/csv Request Body Schema)
 
 4. The provider sends the POST request to the [add forecast
-   endpoint](#tag/Forecasts/paths/~1forecasts~1{forecast_id}~1values/post)
+   endpoint](#tag/Forecasts/paths/~1forecasts~1single~1{forecast_id}~1values/post)
    with the ID from step 2 in the URL and the token from step 1 as the
-   Authorization Bearer header
+   Authorization Bearer header. Using curl, uploading a file named test.csv may look like:
+   ```
+   curl -H "Authorization: Bearer $ACCESS_TOKEN" https://api.solarforecastarbiter.org/forecasts/single/f8dd49fa-23e2-48a0-862b-ba0af6dec276/values --data-binary @test.csv -H 'content-type: text/csv'
+   ```
 
 5. The provider checks the response of the POST request to ensure there were
    no errors with the upload.
@@ -222,13 +230,18 @@ amount of time unlike API keys which often have no expiration.
 
 
 A valid JWT issued by Auth0 must be included as a Bearer token in the
-Authorization header for all requests to the API. A JWT will expire
-after a set period and a valid one will be required to access the
-API. Access control is strictly enforced so that only data owners and
-authorized users have access to any data.
+Authorization header for all requests to the API.  Access control is
+strictly enforced so that only data owners and authorized users have
+access to any data. More information can be found at
+[https://solarforecastarbiter.org/documentation/dashboard/administration/](https://solarforecastarbiter.org/documentation/dashboard/administration/).
 
 
-A request to Auth0 for a valid JWT may be made in the following way
+JWTs issued by Auth0 expire in 3 hours for most Solar Forecast Arbiter
+uses. Auth0 rate limits token requests, so users should reuse a token
+if multiple requests to the API will be made in a short time span.
+
+
+One way of requesting a valid JWT from Auth0 is
 (with non-testing username and password when appropriate):
 
 ```
@@ -266,10 +279,33 @@ curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
 ```
 The jq utility can be obtained at https://stedolan.github.io/jq/.
 
+Python users may want to use a libarary like
+[Authlib](https://docs.authlib.org/en/latest/client/oauth2.html#oauth2session-for-password)
+to fetch and automatically refresh tokens as necessary.
+
+```python
+from authlib.integrations.requests_client import OAuth2Session
+
+session = OAuth2Session(
+    client_id='c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7',
+    token_endpoint='https://solarforecastarbiter.auth0.com/oauth/token')
+ # fetch an access token and refresh token that can be used to automatically
+ # fetch a new token when the current one expires
+session.fetch_token(
+    username='testing@solarforecastarbiter.org',
+    password='Thepassword123!',
+    scope=['offline_access'],
+    audience='https://api.solarforecastarbiter.org'
+)
+
+ # we can now access the API with the token automatically added to the header
+sites = session.get('https://api.solarforecastarbiter.org/sites/')
+```
+
 For more about how to obtain a JWT using the Resource Owner Password flow, see
 [What is the OAuth2 password grant](https://developer.okta.com/blog/2018/06/29/what-is-the-oauth2-password-grant)
 and [Auth0 Resource Owner Password](https://auth0.com/docs/api/authentication#resource-owner-password).
-"""
+"""  # NOQA
 ma_plugin = MarshmallowPlugin()
 spec = APISpec(
     title='Solar Forecast Arbiter API',
@@ -310,9 +346,6 @@ spec = APISpec(
          'description': 'Access observation data that has been aggregated for analysis.'},  # NOQA
         {'name': 'Climate Zones',
          'description': 'Access information about climate zones.'},
-        {'name': 'Trials',
-         'description': 'Access information about forecast trials. '
-                        'API to be determined by January 2020.'},
         {'name': 'Users',
          'description': 'Access and update information about users '
                         'in your Organization.'},
