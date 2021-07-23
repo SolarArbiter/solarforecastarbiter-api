@@ -1,0 +1,3 @@
+DROP PROCEDURE add_reference_permissions_for_trial_users;
+DROP PROCEDURE create_trial_role_on_reference_data;
+DROP PROCEDURE create_trial_user;
