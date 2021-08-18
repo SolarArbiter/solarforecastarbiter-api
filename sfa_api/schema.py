@@ -190,7 +190,7 @@ class BaseModelingParameters(ma.Schema):
     temperature_coefficient = ma.Float(
         title="Temperature Coefficient",
         description=("The temperature coefficient of DC power in units of "
-                     "1/C. Typically -0.002 to -0.005 per degree C."),
+                     "%/C. Typically -0.2 to -0.5 %/C."),
         required=True,
         default=None
     )
