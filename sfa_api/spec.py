@@ -254,7 +254,13 @@ curl --request POST \\
 A valid response will resemble:
 
 ```json
-{"access_token":"BASE64_ENCODED_JWT","expires_in":10800,"token_type":"Bearer"}
+{
+  "access_token":"BASE64_ENCODED_JWT",
+  "id_token": "ENCODED_ID_INFORMATION",
+  "scope": "openid profile email",
+  "expires_in":10800,
+  "token_type":"Bearer"
+}
 ```
 
 Requests to the API need to send the access token in the Authorization header:
@@ -264,8 +270,24 @@ curl --header "Authorization: Bearer BASE64_ENCODED_JWT" \\
      --url "https://api.solarforecastarbiter.org/endpoint"
 ```
 
-Extracting and using the access token might look like:
+Extracting an access token into an environment variable and
+using it to retrieve data from the api might look like:
 
+Using GNU grep and awk:
+```
+export ACCESS_TOKEN=\\
+$(curl -s --request POST \\
+     --url 'https://solarforecastarbiter.auth0.com/oauth/token' \\
+     --header 'content-type: application/json' \\
+     --data '{"grant_type": "password", "username": "testing@solarforecastarbiter.org", "password": "Thepassword123!", "audience": "https://api.solarforecastarbiter.org", "client_id": "c16EJo48lbTCQEhqSztGGlmxxxmZ4zX7"}'\\
+| grep -oP '"access_token"\:"\K[^"]+'\\
+| awk '{ print $1 }' )
+
+curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
+     --url "https://api.solarforecastarbiter.org/observations/"
+```
+
+Using the jq utility available at: https://stedolan.github.io/jq/.
 ```
 export ACCESS_TOKEN=\\
 $(curl -s --request POST \\
@@ -277,7 +299,7 @@ $(curl -s --request POST \\
 curl --header "Authorization: Bearer $ACCESS_TOKEN" \\
      --url "https://api.solarforecastarbiter.org/observations/"
 ```
-The jq utility can be obtained at https://stedolan.github.io/jq/.
+
 
 Python users may want to use a libarary like
 [Authlib](https://docs.authlib.org/en/latest/client/oauth2.html#oauth2session-for-password)
