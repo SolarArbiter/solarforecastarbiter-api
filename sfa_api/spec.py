@@ -379,10 +379,6 @@ spec = APISpec(
          'description': 'Access and update Permissions in your organization.'},
     ],
     servers=[
-        {'url': '//dev-api.solarforecastarbiter.org/',
-         'description': 'Development server'},
-        {'url': '//testing-api.solarforecastarbiter.org/',
-         'description': 'Testing server'},
         {'url': '//api.solarforecastarbiter.org/',
          'description': 'Production server'}
     ]
