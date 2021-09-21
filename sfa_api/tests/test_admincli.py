@@ -125,8 +125,7 @@ def test_add_user_to_org_invalid_orgid(
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
         [unaffiliated_userid, 'baduuid'] + auth_args)
-    assert ("Error: Invalid value for 'ORGANIZATION_ID': baduuid "
-            "is not a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_add_user_to_org_invalid_userid(
@@ -134,8 +133,7 @@ def test_add_user_to_org_invalid_userid(
     result = app_cli_runner.invoke(
         admincli.add_user_to_org,
         ['baduuid', orgid] + auth_args)
-    assert ("Error: Invalid value for 'USER_ID': baduuid is "
-            "not a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_add_user_to_org_user_dne(
@@ -191,8 +189,7 @@ def test_promote_to_admin_invalid_userid(
     result = app_cli_runner.invoke(
         admincli.promote_to_admin,
         ['baduuid', orgid] + auth_args)
-    assert ("Error: Invalid value for 'USER_ID': baduuid is not "
-            "a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_promote_to_admin_bad_orgid(
@@ -201,8 +198,7 @@ def test_promote_to_admin_bad_orgid(
     result = app_cli_runner.invoke(
         admincli.promote_to_admin,
         [userid, 'baduuid'] + auth_args)
-    assert ("Error: Invalid value for 'ORGANIZATION_ID': baduuid "
-            "is not a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_promote_to_admin_user_dne(
@@ -306,8 +302,7 @@ def test_set_org_accepted_tou_bad_orgid(
     result = app_cli_runner.invoke(
         admincli.set_org_accepted_tou,
         ['baduuid'] + auth_args)
-    assert ("Error: Invalid value for 'ORGANIZATION_ID': baduuid "
-            "is not a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_move_user_to_unaffiliated(
@@ -328,8 +323,7 @@ def test_move_user_to_unaffiliated_invalid_userid(
     result = app_cli_runner.invoke(
         admincli.move_user_to_unaffiliated,
         ['baduuid'] + auth_args)
-    assert ("Error: Invalid value for 'USER_ID': baduuid is "
-            "not a valid UUID value") in result.output
+    assert "'baduuid' is not a valid UUID." in result.output
 
 
 def test_delete_user(
