@@ -457,3 +457,24 @@ def reference_persistence_job(
         'reference_persistence', name, user_id, cron_string, timeout,
         base_url=base_url)
     click.echo(f'Job created with id {id_}')
+
+
+@create_jobs.command('trial-data-copy')
+@with_default_options
+@base_url
+@timeout
+@name_arg
+@user_id_arg
+@cron_string
+@click.argument('copy_from', type=click.UUID)
+@click.argument('copy_to', type=click.UUID)
+def trial_data_copy_job(
+        name, user_id, cron_string, base_url, timeout, copy_from, copy_to, **kwargs):
+    """
+    Create a job to copy latest data from one observation to another.
+    """
+    from sfa_api.jobs import create_job
+    id_ = create_job(
+        'trial_data_copy', name, user_id, cron_string, timeout,
+        copy_to=str(copy_to), copy_from=str(copy_from), base_url=base_url)
+    click.echo(f'Job created with id {id_}')

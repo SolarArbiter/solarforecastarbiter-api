@@ -19,6 +19,7 @@ from solarforecastarbiter.validation.tasks import \
 from sfa_api.utils.auth0_info import exchange_refresh_token
 from sfa_api.utils.queuing import get_queue
 import sfa_api.utils.storage_interface as storage
+from sfa_api.utils.trial_jobs import copy_observation_data
 
 
 logger = logging.getLogger(__name__)
@@ -101,6 +102,8 @@ def create_job(job_type, name, user_id, cron_string, timeout=None, **kwargs):
     elif job_type in ('reference_persistence',
                       'reference_probabilistic_persistence'):
         keys = ()
+    elif job_type in ('trial_data_copy'):
+        keys = ('copy_from', 'copy_to')
     else:
         raise ValueError(f'Job type {job_type} is not supported')
     params = {}
@@ -166,6 +169,9 @@ def execute_job(name, job_type, user_id, **kwargs):
         max_run_time = utcnow()
         return make_latest_probabilistic_persistence_forecasts(
             token, max_run_time, base_url=base_url)
+    elif job_type == 'trial_data_copy':
+        return copy_observation_data(
+            token, kwargs['copy_from'], kwargs['copy_to'], base_url=base_url)
     else:
         raise ValueError(f'Job type {job_type} is not supported')
 
