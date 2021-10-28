@@ -2507,3 +2507,64 @@ def list_actions_on_all_objects_of_type(object_type):
         'list_actions_on_all_objects_of_type',
         object_type)
     return object_action_list
+
+
+def read_latest_sucessful_connection():
+    # TODO: read stored last connection.
+    return pd.Timestamp()
+
+
+def update_last_successful_connection():
+    """Store the current time as 
+    """
+    # TODO: store current timestamp
+    return
+
+def read_report_outage_values(report_id):
+    """Get report outage timeseries.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+
+    Returns
+    -------
+    pandas.Dataframe
+        
+    """
+    return pd.Dataframe({})
+
+
+def store_report_outage_values(report_id, values):
+    """Store report outage timeseries.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+
+    Returns
+    -------
+    pandas.Dataframe
+        
+    """
+    return
+
+
+def store_system_outage(outage_series):
+    """Store arbiter outage timeseries.
+
+    Parameters
+    ----------
+    outage_series: pandas.Dataframe
+        Dataframe of boolean values representing times the arbiter
+        was not available.
+    """
+    return
+
+
+def read_system_outage():
+    """Read arbiter outage timeseries.
+    """
+    return pd.Dataframe({})

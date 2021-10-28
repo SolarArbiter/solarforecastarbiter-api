@@ -331,6 +331,74 @@ class ReportValuesView(MethodView):
         return value_id, 201
 
 
+class OutageReportView(MethodView):
+    def get(self, report_id):
+        """
+        ---
+        summary: Get outage timeseries for a report
+        tags:
+        - Reports
+        parameters:
+        - report_id
+        responses:
+          200:
+            description: Successfully retrieved
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ReportValuesSchema'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        storage = get_storage()
+        values = storage.read_report_outage_values(report_id)
+        return jsonify(values)
+
+    def post(self, report_id):
+        """
+        ---
+        summary: Store Outage timeseries for the report.
+        tags:
+        - Reports
+        parameters:
+        - report_id
+        requestBody:
+          description: >-
+            JSON object mapping uuids to processed data used in report
+            generation.
+          required: True
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportValuesPostSchema'
+        responses:
+          201:
+            description: UUID of the stored values.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        # while developing, just read data as string and then
+        # storage will convert to bytes for the blob column
+        raw_values = request.get_json()
+        try:
+            report_values = ReportValuesPostSchema().load(raw_values)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        storage = get_storage()
+        value_id = storage.store_report_values(
+            report_id,
+            report_values['object_id'],
+            report_values['processed_values']
+        )
+        return value_id, 201
+
+
 spec.components.parameter(
     'report_id', 'path',
     {
@@ -380,4 +448,8 @@ reports_blp.add_url_rule(
 reports_blp.add_url_rule(
     '/<uuid_str:report_id>/recompute',
     view_func=RecomputeReportView.as_view('recompute')
+)
+reports_blp.add_url_rule(
+    '/<uuid_str:report_id>/outages',
+    view_func=OutageReportView.as_view('outage')
 )
