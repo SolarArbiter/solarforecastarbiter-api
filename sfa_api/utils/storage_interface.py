@@ -2552,7 +2552,7 @@ def store_report_outage_values(report_id, values):
     return
 
 
-def store_system_outage(outage_series):
+def store_system_outage(start, end):
     """Store arbiter outage timeseries.
 
     Parameters
@@ -2561,10 +2561,15 @@ def store_system_outage(outage_series):
         Dataframe of boolean values representing times the arbiter
         was not available.
     """
-    return
+    outage_id = generate_uuid()
+    # _call_procedure('store_system_outage', start, end)
+    return outage_id
 
 
-def read_system_outage():
-    """Read arbiter outage timeseries.
+def list_system_outages():
+    """List all system outages
     """
-    return pd.Dataframe({})
+    return [{
+        "start": pd.Timestamp("2019-04-15T17:00Z"),
+        "end": pd.Timestamp("2019-04-15T18:00Z"),
+        "outage_id": "aed6e4d0-0806-11ea-9e05-0a580a8003ab"

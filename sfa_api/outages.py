@@ -187,7 +187,7 @@ class OutagePing(MethodView):
         outage_threshold = pd.Timedelta('1T')
 
         if current_connection_time - last_connection_time > outage_threshold:
-            outage_series = pd.date_range(last_connection_time, current_connection_time)
+            storagelast_connection_time, current_connection_time)
         values = storage.read_latest_observation_value(observation_id)
         data = ObservationValuesSchema().dump(
             {"observation_id": observation_id, "values": values})
