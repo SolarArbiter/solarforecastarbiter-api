@@ -359,6 +359,20 @@ class TimeDeltaParam(click.ParamType):
             return value
 
 
+class TimestampParam(click.ParamType):
+    """Ensure a string can be parsed by pandas.Timestamp"""
+    name = 'Timestamp'
+
+    def convert(self, value, param, ctx):
+        try:
+            value = pd.Timestamp(value)
+        except ValueError:
+            self.fail(f'{value} cannot be converted into a pandas.Timestamp',
+                      param, ctx)
+        else:
+            return value
+
+
 base_url = click.option(
     '--base-url', default='https://api.solarforecastarbiter.org')
 timeout = click.option('--timeout')
@@ -483,3 +497,55 @@ def trial_data_copy_job(
         'trial_data_copy', name, user_id, cron_string, timeout,
         copy_to=str(copy_to), copy_from=str(copy_from), base_url=base_url)
     click.echo(f'Job created with id {id_}')
+
+
+@admin_cli.group()
+def outages():  # pragma: no cover
+    """Tools for administering arbiter outages"""
+    pass
+
+
+@outages.command('create')
+@with_default_options
+@click.argument('start', type=TimestampParam())
+@click.argument('end', type=TimestampParam())
+def add_system_outage(start, end, **kwargs):
+    """
+    Creates a new system outage.
+    """
+    import sfa_api.utils.storage_interface as storage
+    outage_id = storage.generate_uuid()
+    storage._call_procedure(
+        'store_system_outage', outage_id, start, end,
+        with_current_user=False
+    )
+    print(f"Created outage with id {outage_id}")
+
+
+@outages.command('list')
+@with_default_options
+def list_system_outage(**kwargs):
+    """
+    List system outages
+    """
+    import sfa_api.utils.storage_interface as storage
+    import pprint
+    outages = storage._call_procedure(
+        'list_system_outages',
+        with_current_user=False
+    )
+    click.echo(pprint.pformat(outages))
+
+
+@outages.command('delete')
+@with_default_options
+@click.argument('outage_id', type=click.UUID)
+def delete_system_outage(outage_id, **kwargs):
+    """
+    Delete a system outage.
+    """
+    import sfa_api.utils.storage_interface as storage
+    storage._call_procedure(
+        'delete_system_outage', str(outage_id),
+        with_current_user=False
+    )

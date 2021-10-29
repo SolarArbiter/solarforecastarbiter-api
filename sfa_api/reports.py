@@ -13,7 +13,8 @@ from sfa_api.utils.queuing import get_queue
 from sfa_api.utils.storage import get_storage
 from sfa_api.schema import (ReportPostSchema, ReportValuesPostSchema,
                             ReportSchema, SingleReportSchema,
-                            RawReportSchema)
+                            RawReportSchema, ReportOutageSchema,
+                            OutagePostSchema)
 
 
 REPORT_STATUS_OPTIONS = ['pending', 'failed', 'complete']
@@ -331,11 +332,11 @@ class ReportValuesView(MethodView):
         return value_id, 201
 
 
-class OutageReportView(MethodView):
+class ReportOutageView(MethodView):
     def get(self, report_id):
         """
         ---
-        summary: Get outage timeseries for a report
+        summary: Get report outage data.
         tags:
         - Reports
         parameters:
@@ -346,20 +347,62 @@ class OutageReportView(MethodView):
             content:
               application/json:
                 schema:
-                  $ref: '#/components/schemas/ReportValuesSchema'
+                  $ref: '#/components/schemas/ReportOutageSchema'
           401:
             $ref: '#/components/responses/401-Unauthorized'
           404:
             $ref: '#/components/responses/404-NotFound'
         """
         storage = get_storage()
-        values = storage.read_report_outage_values(report_id)
-        return jsonify(values)
+        outages = storage.read_report_outages(str(report_id))
+        return jsonify(ReportOutageSchema(many=True).dump(outages))
 
     def post(self, report_id):
         """
         ---
-        summary: Store Outage timeseries for the report.
+        summary: Store an outage for the report.
+        tags:
+        - Reports
+        parameters:
+        - report_id
+        requestBody:
+          description: >-
+            JSON object with start and end that represents a period
+            during which forecast submissions should not be analyzed.
+          required: True
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutagePostSchema'
+        responses:
+          201
+            description: UUID of the created outage.
+          400:
+            $ref: '#/components/responses/400-BadRequest'
+          401:
+            $ref: '#/components/responses/401-Unauthorized'
+          404:
+            $ref: '#/components/responses/404-NotFound'
+        """
+        body = request.get_json()
+        try:
+            outage_object = OutagePostSchema().load(body)
+        except ValidationError as err:
+            raise BadAPIRequest(err.messages)
+        if (outage_object['start'] > outage_object['end']):
+            raise BadAPIRequest(error="Start must occur before end")
+        storage = get_storage()
+        value_id = storage.store_report_outage(
+            report_id,
+            outage_object['start'],
+            outage_object['end']
+        )
+        return value_id, 201
+
+    def delete(self, report_id, outage_id):
+        """
+        ---
+        summary: Delete an outage object for the report
         tags:
         - Reports
         parameters:
@@ -372,10 +415,10 @@ class OutageReportView(MethodView):
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportValuesPostSchema'
+                $ref: '#/components/schemas/OutagePostSchema'
         responses:
-          201:
-            description: UUID of the stored values.
+          204:
+            description: Outage was deleted succesffully.
           400:
             $ref: '#/components/responses/400-BadRequest'
           401:
@@ -383,20 +426,9 @@ class OutageReportView(MethodView):
           404:
             $ref: '#/components/responses/404-NotFound'
         """
-        # while developing, just read data as string and then
-        # storage will convert to bytes for the blob column
-        raw_values = request.get_json()
-        try:
-            report_values = ReportValuesPostSchema().load(raw_values)
-        except ValidationError as err:
-            raise BadAPIRequest(err.messages)
         storage = get_storage()
-        value_id = storage.store_report_values(
-            report_id,
-            report_values['object_id'],
-            report_values['processed_values']
-        )
-        return value_id, 201
+        storage.delete_report_outage(str(report_id), str(outage_id))
+        return 204
 
 
 spec.components.parameter(
@@ -451,5 +483,5 @@ reports_blp.add_url_rule(
 )
 reports_blp.add_url_rule(
     '/<uuid_str:report_id>/outages',
-    view_func=OutageReportView.as_view('outage')
+    view_func=ReportOutageView.as_view('outage')
 )

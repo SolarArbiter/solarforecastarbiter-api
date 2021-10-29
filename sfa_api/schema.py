@@ -489,6 +489,47 @@ class ObservationValueSchema(ma.Schema):
         missing=False)
 
 
+@spec.define_schema('OutagePostSchema')
+class OutagePostSchema(ma.Schema):
+    start = ISODateTime(
+        title="Timestamp",
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        validate=TimeLimitValidator()
+    )
+    end = ISODateTime(
+        title="Timestamp",
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        validate=TimeLimitValidator()
+    )
+
+
+@spec.define_schema('OutageSchema')
+class OutageSchema(OutagePostSchema):
+    class Meta:
+        strict = True
+        ordered = True
+    outage_id = ma.UUID(
+        title='Outage ID',
+        description="UUID of the Outage.")
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+
+
+@spec.define_schema('ReportOutageSchema')
+class ReportOutageSchema(ma.Schema):
+    class Meta:
+        strict = True
+        ordered = True
+    report_id = ma.UUID(
+        title='Report ID',
+        description="UUID of the report associated with the outage."
+    )
+
+
 @spec.define_schema('ObservationValuesPost')
 class ObservationValuesPostSchema(ma.Schema):
     values = TimeseriesField(ObservationValueSchema, many=True)
@@ -1465,6 +1506,16 @@ class ReportParameters(ma.Schema):
         default=None,
         missing=None,
         validate=TimezoneValidator()
+    )
+    exclude_outage_periods = ma.Boolean(
+        title="",
+        description=(
+            "Whether or not to exclude forecast submissions that fall "
+            "during a period where the Solar Forecast Arbiter was not "
+            "available."
+        ),
+        default=False,
+        missing=False,
     )
 
     @validates_schema

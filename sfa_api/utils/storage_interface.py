@@ -2509,19 +2509,20 @@ def list_actions_on_all_objects_of_type(object_type):
     return object_action_list
 
 
-def read_latest_sucessful_connection():
-    # TODO: read stored last connection.
-    return pd.Timestamp()
+def list_system_outages():
+    """List all system outages
 
-
-def update_last_successful_connection():
-    """Store the current time as 
+    Returns
+    -------
+    list of objects
+        List of outage objects with keys outage_id, start, end,
+        created_at, modified_at.
     """
-    # TODO: store current timestamp
-    return
+    return _call_procedure('list_system_outages', with_current_user=False)
 
-def read_report_outage_values(report_id):
-    """Get report outage timeseries.
+
+def read_report_outages(report_id):
+    """Get report outage data.
 
     Parameters
     ----------
@@ -2531,45 +2532,37 @@ def read_report_outage_values(report_id):
     Returns
     -------
     pandas.Dataframe
-        
     """
-    return pd.Dataframe({})
+    return _call_procedure("list_report_outages", report_id)
 
 
-def store_report_outage_values(report_id, values):
-    """Store report outage timeseries.
+def store_report_outage(report_id, start, end):
+    """Store report outage.
 
     Parameters
     ----------
     report_id: str
         The UUID of the report.
-
+    start: pandas.Timestamp
+    end: pandas.Timestamp
     Returns
     -------
-    pandas.Dataframe
-        
-    """
-    return
-
-
-def store_system_outage(start, end):
-    """Store arbiter outage timeseries.
-
-    Parameters
-    ----------
-    outage_series: pandas.Dataframe
-        Dataframe of boolean values representing times the arbiter
-        was not available.
+    str
+        UUID of the created outage.
     """
     outage_id = generate_uuid()
-    # _call_procedure('store_system_outage', start, end)
+    _call_procedure('store_report_outage', outage_id, report_id, start, end)
     return outage_id
 
 
-def list_system_outages():
-    """List all system outages
+def delete_report_outage(report_id, outage_id):
+    """Delete a report outage.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+    outage_id: str
+        The UUID of the outage to delete.
     """
-    return [{
-        "start": pd.Timestamp("2019-04-15T17:00Z"),
-        "end": pd.Timestamp("2019-04-15T18:00Z"),
-        "outage_id": "aed6e4d0-0806-11ea-9e05-0a580a8003ab"
+    return _call_procedure("delete_report_outage", report_id, outage_id)
