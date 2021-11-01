@@ -180,6 +180,11 @@ def test_convert_sql_job_to_rq_job_not_cron(sql_job, mocker):
     ('reference_probabilistic_persistence',
      {},
      'sfa_api.jobs.make_latest_probabilistic_persistence_forecasts'),
+    ('trial_data_copy',
+     {'base_url': 'https://',
+      'copy_from': 'id1',
+      'copy_to': 'id2'},
+     'sfa_api.jobs.copy_observation_data')
 ])
 def test_execute_job(jtype, params, func, mocker, userid):
     mocker.patch('sfa_api.jobs.exchange_token',
