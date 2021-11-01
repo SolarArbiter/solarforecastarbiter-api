@@ -93,6 +93,22 @@ def test_copy_data_no_copy_to_read(
     assert "Read values failure for copy_to " in str(e.value)
 
 
+def test_copy_data_no_copy_to_data(
+        mocker, mock_session, mock_logging, observation_id):
+    resp = mocker.MagicMock()
+    resp.status_code = 404
+    mock_session.get_observation_time_range = mocker.MagicMock(
+        return_value=(pd.NaT, pd.NaT)
+    )
+    trial_jobs.copy_observation_data(
+        "token", observation_id, observation_id
+    )
+    mock_logging.info.assert_called_with(
+        "Copied %s points from obs %s to %s.", 9,
+        observation_id, observation_id
+    )
+
+
 def test_copy_data_no_copy_to_write(
         mocker, mock_session, observation_id):
     resp = mocker.MagicMock()
