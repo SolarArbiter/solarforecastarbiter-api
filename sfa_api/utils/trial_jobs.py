@@ -3,7 +3,11 @@ from requests.exceptions import HTTPError
 
 import pandas as pd
 from solarforecastarbiter.io.api import APISession
+from solarforecastarbiter.validation.quality_mapping import (
+    BITMASK_DESCRIPTION_DICT
+)
 
+USER_FLAGGED = BITMASK_DESCRIPTION_DICT[1]["USER FLAGGED"]
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +64,10 @@ def copy_observation_data(token, copy_from, copy_to, base_url=None):
             f"observation with error code: {e.response.status_code}"
         )
 
-    # Need to reset quality_flag so api accepts values
-    values_to_copy['quality_flag'] = 0
+    # Need to reset quality_flag and retained user flagged data, so
+    # take the & of current flags and USER_FLAGGED
+    flags = values_to_copy['quality_flag'] & USER_FLAGGED
+    values_to_copy['quality_flag'] = flags
     if not values_to_copy.empty:
         try:
             sess.post_observation_values(copy_to, values_to_copy)

@@ -469,9 +469,13 @@ def reference_persistence_job(
 @click.argument('copy_from', type=click.UUID)
 @click.argument('copy_to', type=click.UUID)
 def trial_data_copy_job(
-        name, user_id, cron_string, base_url, timeout, copy_from, copy_to, **kwargs):
+        name, user_id, cron_string, base_url, timeout, copy_from, copy_to,
+        **kwargs):
     """
-    Create a job to copy latest data from one observation to another.
+    Create a job to copy latest data from one observation to another. Cron
+    should be the observation interval length for short intervals, but
+    should be carefully considered for longer intervals and be scheduled
+    shortly after data is posted.
     """
     from sfa_api.jobs import create_job
     id_ = create_job(
