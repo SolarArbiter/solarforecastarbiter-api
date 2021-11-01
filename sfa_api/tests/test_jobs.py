@@ -261,6 +261,11 @@ def test_full_run_through_job_timeout(app, queue, mocker):
     ('periodic_report', {'report_id': 'id'}),
     ('reference_persistence', {'base_url': 'https://'}),
     ('reference_probabilistic_persistence', {'base_url': 'https://'}),
+    ('trial_data_copy', {
+        'base_url': 'https://',
+        'copy_from': 'id1',
+        'copy_to': 'id2'
+    }),
     pytest.param('badtype', {}, marks=pytest.mark.xfail(
         strict=True, raises=ValueError)),
     pytest.param('daily_observation_validation', {}, marks=pytest.mark.xfail(
