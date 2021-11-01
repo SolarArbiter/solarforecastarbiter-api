@@ -9,8 +9,6 @@ from solarforecastarbiter.validation.quality_mapping import (
 
 USER_FLAGGED = BITMASK_DESCRIPTION_DICT[1]["USER FLAGGED"]
 
-logger = logging.getLogger(__name__)
-
 
 def copy_observation_data(token, copy_from, copy_to, base_url=None):
     """Helper job to copy observation data from one observation to
@@ -35,6 +33,7 @@ def copy_observation_data(token, copy_from, copy_to, base_url=None):
         If reading values from either observation fails, or writing to
         copy_to fails.
     """
+    logger = logging.getLogger(__name__)
     sess = APISession(token, base_url=base_url)
     # Get latest values for copy_to and adjust forward by 1 minute to
     # not overwrite values
@@ -64,11 +63,12 @@ def copy_observation_data(token, copy_from, copy_to, base_url=None):
             f"observation with error code: {e.response.status_code}"
         )
 
-    # Need to reset quality_flag and retained user flagged data, so
-    # take the & of current flags and USER_FLAGGED
-    flags = values_to_copy['quality_flag'] & USER_FLAGGED
-    values_to_copy['quality_flag'] = flags
     if not values_to_copy.empty:
+        # Need to reset quality_flag and retained user flagged data, so
+        # take the & of current flags and USER_FLAGGED
+        flags = values_to_copy['quality_flag'] & USER_FLAGGED
+        values_to_copy['quality_flag'] = flags
+
         try:
             sess.post_observation_values(copy_to, values_to_copy)
         except HTTPError as e:
