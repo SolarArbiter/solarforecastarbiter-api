@@ -375,7 +375,7 @@ class ReportOutageView(MethodView):
               schema:
                 $ref: '#/components/schemas/OutagePostSchema'
         responses:
-          201
+          201:
             description: UUID of the created outage.
           400:
             $ref: '#/components/responses/400-BadRequest'
