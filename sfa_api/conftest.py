@@ -309,7 +309,8 @@ def report(report_parameters, raw_report_json, reportid, report_values,
                                    tzinfo=pytz.utc),
         'raw_report': raw_report_json,
         'status': 'failed',
-        'values': [rv]
+        'values': [rv],
+        'outages': []
     }
     out['raw_report']['generated_at'] = dt.datetime(2019, 7, 1, 12,
                                                     tzinfo=pytz.utc)
