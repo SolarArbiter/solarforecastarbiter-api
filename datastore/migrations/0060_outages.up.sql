@@ -58,7 +58,7 @@ END;
 
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_system_outages TO 'select_objects'@'localhost';
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_system_outages TO 'frameworkadmin'@'%';
--- only allow reading by apiuser on list_system_outages
+-- apiuser should only be able to list system outages, not store or delete them
 GRANT EXECUTE ON PROCEDURE arbiter_data.list_system_outages TO 'apiuser'@'%';
 
 CREATE DEFINER = 'select_objects'@'localhost' PROCEDURE read_system_outage(
