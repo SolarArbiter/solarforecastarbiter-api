@@ -35,8 +35,7 @@ def copy_observation_data(token, copy_from, copy_to, base_url=None):
     """
     logger = logging.getLogger(__name__)
     sess = APISession(token, base_url=base_url)
-    # Get latest values for copy_to and adjust forward by 1 minute to
-    # not overwrite values
+    # Get latest timestamps for copy_to
     try:
         latest_copy_to = sess.get_observation_time_range(copy_to)[1]
     except HTTPError as e:
@@ -44,12 +43,15 @@ def copy_observation_data(token, copy_from, copy_to, base_url=None):
             "Copy observation failed. Read values failure for copy_to "
             f"observation with error code: {e.response.status_code}"
         )
-    latest_copy_to += pd.Timedelta('1T')
 
-    # If no data in copy_to, start from latest copy_from value.
     try:
+        # If no data in copy_to, start from latest copy_from value.
+        # Otherwise adjust latest_copy_to forward one minute to avoid
+        # overwriting data.
         if pd.isna(latest_copy_to):
             latest_copy_to = sess.get_observation_time_range(copy_from)[1]
+        else:
+            latest_copy_to += pd.Timedelta('1T')
 
         # Get values for copy_from from latest copy_to to now.
         values_to_copy = sess.get_observation_values(

@@ -98,14 +98,19 @@ def test_copy_data_no_copy_to_data(
     resp = mocker.MagicMock()
     resp.status_code = 404
     mock_session.get_observation_time_range = mocker.MagicMock(
-        return_value=(pd.NaT, pd.NaT)
+        side_effect=[
+            (pd.NaT, pd.NaT),
+            (source_index[0], source_index[-1])
+        ]
     )
     trial_jobs.copy_observation_data(
         "token", observation_id, observation_id
     )
-    mock_logging.info.assert_called_with(
-        "Copied %s points from obs %s to %s.", 9,
-        observation_id, observation_id
+    # Mocked observation_values get will return full test data frame,
+    # so check that get_observation_values was called with the expected
+    # timestamp.
+    mock_session.get_observation_values.assert_called_with(
+        observation_id, source_index[-1], mocker.ANY
     )
 
 
