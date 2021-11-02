@@ -1,16 +1,3 @@
--- Table to store one-off single values e.g. last connection time
--- CREATE TABLE arbiter_data.system_stats(
---     stat_name VARCHAR(32) NOT NULL,
---     stat_value VARCHAR(32)
---     
--- )ENGINE=INNODB ENCRYPTION='Y' ROW_FORMAT=COMPRESSED;
-
--- GRANT SELECT ON arbiter_data.system_stats TO 'select_objects'@'localhost';
--- GRANT INSERT ON arbiter_data.system_stats TO 'insert_objects'@'localhost';
--- GRANT UPDATE ON arbiter_data.system_stats TO 'update_objects'@'localhost';
--- GRANT DELETE ON arbiter_data.system_stats TO 'delete_objects'@'localhost';
-
-
 -- Table for storing system outage information with start, end information
 CREATE TABLE arbiter_data.system_outages(
     id BINARY(16) NOT NULL DEFAULT(UUID_TO_BIN(UUID(), 1)),
