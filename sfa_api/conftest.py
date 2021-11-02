@@ -2153,3 +2153,22 @@ def dummy_file():
     def req_file(filename, contents, content_type):
         return {filename: (contents, filename, content_type)}
     return req_file
+
+
+@pytest.fixture()
+def addtestsystemoutages(root_cursor):
+    root_cursor.execute(
+        "DELETE FROM system_outages"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 07:00', '2019-04-14 10:00')"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 010:30', '2019-04-14 13:00')"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 15:00', '2019-04-14 17:00')"
+    )
