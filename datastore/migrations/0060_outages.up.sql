@@ -145,7 +145,7 @@ BEGIN
     SET allowed = (SELECT can_user_perform_action(auth0id, bin_reportid, 'read'));
 
     IF allowed THEN
-        SELECT BIN_TO_UUID(id, 1) as outage_id, BIN_TO_UUID(report_id, 1), start, end, created_at, modified_at
+        SELECT BIN_TO_UUID(id, 1) as outage_id, BIN_TO_UUID(report_id, 1) as report_id, start, end, created_at, modified_at
         FROM arbiter_data.report_outages
         WHERE report_id = bin_reportid;
     ELSE

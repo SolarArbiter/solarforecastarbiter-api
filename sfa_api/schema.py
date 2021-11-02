@@ -520,7 +520,7 @@ class OutageSchema(OutagePostSchema):
 
 
 @spec.define_schema('ReportOutageSchema')
-class ReportOutageSchema(ma.Schema):
+class ReportOutageSchema(OutageSchema):
     class Meta:
         strict = True
         ordered = True
@@ -1507,7 +1507,7 @@ class ReportParameters(ma.Schema):
         missing=None,
         validate=TimezoneValidator()
     )
-    exclude_outage_periods = ma.Boolean(
+    exclude_system_outages = ma.Boolean(
         title="",
         description=(
             "Whether or not to exclude forecast submissions that fall "
@@ -1637,10 +1637,19 @@ class ReportSchema(ReportPostSchema):
 
 @spec.define_schema('SingleReportSchema')
 class SingleReportSchema(ReportSchema):
-    """For serializing a report with values
+    """For serializing a report with values and outages.
     """
     values = ma.List(ma.Nested(ReportValuesSchema()),
                      many=True)
+    outages = ma.List(
+        ma.Nested(ReportOutageSchema()),
+        many=True,
+        title="Outages",
+        description=(
+            "List of periods for which the report will not consider "
+            "forecast submissions in analyses."
+        )
+    )
 
 
 @spec.define_schema('AggregateDefinition')

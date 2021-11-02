@@ -2172,3 +2172,26 @@ def addtestsystemoutages(root_cursor):
         "INSERT INTO system_outages (start, end) "
         "VALUES ('2019-04-14 15:00', '2019-04-14 17:00')"
     )
+
+
+@pytest.fixture()
+def addtestreportoutage(root_cursor):
+    def fn(report_id, start='2019-04-14 07:00', end='2019-04-14 10:00'):
+        root_cursor.execute(
+            "INSERT INTO report_outages (report_id, start, end) "
+            "VALUES (UUID_TO_BIN(%s, 1), %s, %s)", (report_id, start, end)
+        )
+    return fn
+
+
+def outage_exists(outages, expected):
+    """Searches a list of outages for an expected outage defined by
+    an object with start and end properties.
+    """
+    for outage in outages:
+        if (
+            outage['start'] == expected['start']
+            and outage['end'] == expected['end']
+        ):
+            return True
+    return False

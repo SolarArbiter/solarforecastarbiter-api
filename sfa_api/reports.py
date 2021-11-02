@@ -392,13 +392,34 @@ class ReportOutageView(MethodView):
         if (outage_object['start'] > outage_object['end']):
             raise BadAPIRequest(error="Start must occur before end")
         storage = get_storage()
-        value_id = storage.store_report_outage(
+
+        report_metadata = storage.read_report_parameters_and_raw(report_id)
+        report_parameters = report_metadata['report_parameters']
+        report_start = report_parameters['start']
+        report_end = report_parameters['end']
+        if (
+            outage_object['start'] < report_start or
+            outage_object['start'] > report_end
+        ):
+            raise BadAPIRequest(
+                start="Start of outage outside report start, end."
+            )
+        if (
+            outage_object['end'] > report_end or
+            outage_object['end'] < report_start
+        ):
+            raise BadAPIRequest(
+                end="End of outage outside report start, end."
+            )
+        outage_id = storage.store_report_outage(
             report_id,
             outage_object['start'],
             outage_object['end']
         )
-        return value_id, 201
+        return outage_id, 201
 
+
+class DeleteReportOutageView(MethodView):
     def delete(self, report_id, outage_id):
         """
         ---
@@ -428,7 +449,7 @@ class ReportOutageView(MethodView):
         """
         storage = get_storage()
         storage.delete_report_outage(str(report_id), str(outage_id))
-        return 204
+        return '', 204
 
 
 spec.components.parameter(
@@ -484,4 +505,8 @@ reports_blp.add_url_rule(
 reports_blp.add_url_rule(
     '/<uuid_str:report_id>/outages',
     view_func=ReportOutageView.as_view('outage')
+)
+reports_blp.add_url_rule(
+    '/<uuid_str:report_id>/outages/<uuid_str:outage_id>',
+    view_func=DeleteReportOutageView.as_view('delete_outage')
 )

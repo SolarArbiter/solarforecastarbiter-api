@@ -1611,6 +1611,14 @@ def read_report(report_id):
     except StorageAuthError:
         report_values = []
     report['values'] = report_values
+    try:
+        report_outages = _call_procedure(
+            'list_report_outages',
+            report_id
+        )
+    except StorageAuthError:
+        report_outages = []
+    report['outages'] = report_outages
     return report
 
 
@@ -2551,7 +2559,7 @@ def store_report_outage(report_id, start, end):
         UUID of the created outage.
     """
     outage_id = generate_uuid()
-    _call_procedure('store_report_outage', outage_id, report_id, start, end)
+    _call_procedure('store_report_outage', report_id, outage_id, start, end)
     return outage_id
 
 
@@ -2566,3 +2574,28 @@ def delete_report_outage(report_id, outage_id):
         The UUID of the outage to delete.
     """
     return _call_procedure("delete_report_outage", report_id, outage_id)
+
+
+def read_report_parameters_and_raw(report_id):
+    """Gets report parameters and raw report without accessing values. Useful
+    for quick access when we really just need report parmeters or a raw report.
+
+    Parameters
+    ----------
+    report_id
+        UUID of the report to read.
+
+    Returns
+    -------
+    dict
+        A dictionary of Report metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the report does not exist, or the the user does not have
+        permission to read the report.
+    """
+    report = _decode_report_parameters(
+        _call_procedure_for_single('read_report', report_id))
+    return report

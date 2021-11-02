@@ -1,20 +1,7 @@
 import pytest
 
 
-from sfa_api.conftest import BASE_URL
-
-
-def outage_exists(outages, expected):
-    """Searches a list of outages for an expected outage defined by
-    an object with start and end properties.
-    """
-    for outage in outages:
-        if (
-            outage['start'] == expected['start']
-            and outage['end'] == expected['end']
-        ):
-            return True
-    return False
+from sfa_api.conftest import BASE_URL, outage_exists
 
 
 def test_get_outages(api, addtestsystemoutages):
