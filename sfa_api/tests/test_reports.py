@@ -840,6 +840,22 @@ def test_list_report_outages(api, new_report, addtestreportoutage):
     assert outage['end'] == '2019-04-14T10:00:00+00:00'
 
 
+def test_list_report_outages_no_perms(
+        api, new_report, addtestreportoutage, remove_all_perms):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    remove_all_perms("read", "reports")
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+def test_list_report_outages_dne(api):
+    res = api.get('/reports/baduuid/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
 def test_post_report_outages(api, new_report):
     report_id = new_report()
     outage_periods = [
@@ -873,6 +889,22 @@ def test_post_report_outages(api, new_report):
         assert outage_exists(outage_list, outage)
 
 
+def test_post_report_outages_no_perms(
+        api, new_report, remove_all_perms):
+    report_id = new_report()
+    outage = {
+        "start": "2019-04-10T00:00:00+00:00",
+        "end":  "2019-04-11T00:00:00+00:00"
+    }
+    remove_all_perms('update', 'reports')
+    res = api.post(
+        f'/reports/{report_id}/outages',
+        base_url=BASE_URL,
+        json=outage
+    )
+    assert res.status_code == 404
+
+
 @pytest.mark.parametrize("outage,expected", [
     ({
         "start": "2019-03-01T00:00:00+00:00",
@@ -885,6 +917,22 @@ def test_post_report_outages(api, new_report):
         "end": "2019-07-02T00:00:00+00:00"
       },
      {"end": ["End of outage outside report start, end."]}
+     ),
+    ({
+        "start": "2019-07-01T00:00:00+00:00",
+        "end": "2019-05-02T00:00:00+00:00"
+      },
+     {"error": ["Start must occur before end"]}
+     ),
+    ({
+        "start": "2019-07-01T00:00:00+00:00",
+      },
+     {"end": ["Missing data for required field."]}
+     ),
+    ({
+        "end": "2019-07-01T00:00:00+00:00",
+      },
+     {"start": ["Missing data for required field."]}
      )
 ])
 def test_post_report_outage_errors(api, new_report, outage, expected):
@@ -915,6 +963,28 @@ def test_delete_report_outage(api, new_report, addtestreportoutage):
                   base_url=BASE_URL)
     outage_list = res.get_json()
     assert len(outage_list) == 0
+
+
+def test_delete_report_outage_no_perms(
+        api, new_report, addtestreportoutage, remove_all_perms):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    outage_list = res.get_json()
+    outage_id = outage_list[0]['outage_id']
+    remove_all_perms('update', 'reports')
+    delete_outage = api.delete(
+        f'/reports/{report_id}/outages/{outage_id}',
+        base_url=BASE_URL
+    )
+    assert delete_outage.status_code == 404
+
+
+def test_delete_report_outage_404(api):
+    res = api.get('/reports/badid/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
 
 
 @pytest.mark.parametrize("exclude_system_outages", [

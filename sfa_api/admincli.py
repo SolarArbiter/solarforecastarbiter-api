@@ -549,3 +549,4 @@ def delete_system_outage(outage_id, **kwargs):
         'delete_system_outage', str(outage_id),
         with_current_user=False
     )
+    click.echo(f"Successfully deleted outage {outage_id}")

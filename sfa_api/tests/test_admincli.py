@@ -1,5 +1,6 @@
 import click
 from cryptography.fernet import Fernet
+import pprint
 import pytest
 import pymysql
 
@@ -499,5 +500,59 @@ def test_trial_data_job(app_cli_runner, mocker, user_id, observation_id):
         admincli.trial_data_copy_job,
         ['Val Job', user_id, '* * * * *', '--base-url', 'http://test',
          observation_id, observation_id] + auth_args)
+    assert result.exit_code == 0
+    assert result.output == 'Job created with id jobid\n'
+
+
+def test_create_outage(app_cli_runner, mocker):
+    mocker.patch('sfa_api.jobs.storage._call_procedure', autospec=True)
+    result = app_cli_runner.invoke(
+        admincli.add_system_outage,
+        ["2021-01-01T00:00:00Z", "2021-01-01T01:00Z"] + auth_args)
+    assert result.exit_code == 0
+    assert result.output.startswith("Created outage with id ")
+
+
+@pytest.mark.parametrize("cliargs,expected", [
+    (["2021-01-01T00:00:00Z", "bad end"],
+     "Invalid value for 'END': bad end cannot be converted into "
+     "a pandas.Timestamp"),
+    (["bad start", "2021-01-01T01:00Z"],
+     "Invalid value for 'START': bad start cannot be converted into "
+     "a pandas.Timestamp"),
+])
+def test_create_outage_invalid(app_cli_runner, mocker, cliargs, expected):
+    mocker.patch('sfa_api.jobs.storage._call_procedure', autospec=True)
+    result = app_cli_runner.invoke(
+        admincli.add_system_outage,
+        cliargs + auth_args)
+    assert expected in result.output
+    assert result.exit_code == 2
+
+
+def test_list_outages(app_cli_runner, mocker):
+    outages = [
+        {
+            "start": "2021-01-01T00:00:00+00:00",
+            "end": "2021-01-01T01:00:00+00:00",
+            "created_at": "2021-01-01T00:00:00+00:00",
+            "modified_at": "2021-01-01T00:00:00+00:00",
+        }
+    ]
+    mocker.patch(
+        'sfa_api.jobs.storage._call_procedure',
+        return_value=outages,
+        autospec=True
+    )
+    result = app_cli_runner.invoke(admincli.list_system_outage, auth_args)
+    assert result.exit_code == 0
+    assert result.output.strip('\n') == pprint.pformat(outages)
+
+
+def test_delete_outage(app_cli_runner, mocker, user_id, observation_id):
+    mocker.patch('sfa_api.storage._call_procedure', autospec=True)
+    result = app_cli_runner.invoke(
+        admincli.delete_system_outage,
+        [] + auth_args)
     assert result.exit_code == 0
     assert result.output == 'Job created with id jobid\n'

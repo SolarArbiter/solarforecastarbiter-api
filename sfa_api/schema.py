@@ -496,6 +496,7 @@ class OutagePostSchema(ma.Schema):
         description=(
             "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
         ),
+        required=True,
         validate=TimeLimitValidator()
     )
     end = ISODateTime(
@@ -503,6 +504,7 @@ class OutagePostSchema(ma.Schema):
         description=(
             "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
         ),
+        required=True,
         validate=TimeLimitValidator()
     )
 

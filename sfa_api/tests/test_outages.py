@@ -4,6 +4,34 @@ import pytest
 from sfa_api.conftest import BASE_URL, outage_exists
 
 
+test_outages = [
+    {
+        "outage_id": "someoutageid",
+        "start": "2021-01-01T00:00Z",
+        "end": "2021-01-01T01:00Z",
+        "created_at": "2021-01-01T00:00Z",
+        "modified_at": "2021-01-01T00:00Z",
+    },
+    {
+        "outage_id": "someotheroutageid",
+        "start": "2021-01-03T00:00Z",
+        "end": "2021-01-03T01:00Z",
+        "created_at": "2021-03-01T00:00Z",
+        "modified_at": "2021-03-01T00:00Z",
+    }
+]
+
+
+@pytest.mark.parametrize("start,end,exists", [
+    ("2021-01-03T00:00Z", "2021-01-03T00:00Z", False),
+    ("2021-01-01T00:00Z", "2021-01-01T01:00Z", True),
+    ("2021-01-03T00:00Z", "2021-01-03T01:00Z", True),
+])
+def test_outage_exists(start, end, exists):
+    # test the helper function
+    assert outage_exists(test_outages, {"start": start, "end": end}) == exists
+
+
 def test_get_outages(api, addtestsystemoutages):
     req = api.get(
         '/outages/',
