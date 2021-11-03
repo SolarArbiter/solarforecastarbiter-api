@@ -1612,10 +1612,10 @@ def read_report(report_id):
         report_values = []
     report['values'] = report_values
     try:
-        report_outages = _call_procedure(
+        report_outages = list(_call_procedure(
             'list_report_outages',
             report_id
-        )
+        ))
     except StorageAuthError:
         report_outages = []
     report['outages'] = report_outages
