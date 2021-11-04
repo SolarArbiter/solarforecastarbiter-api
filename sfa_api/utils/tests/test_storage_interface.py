@@ -1794,6 +1794,7 @@ def test_list_reports(sql_app, report, user):
     exp = report.copy()
     exp.pop('raw_report', None)
     exp.pop('values', None)
+    exp.pop('outages', None)
     assert out[0] == exp
 
 

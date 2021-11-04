@@ -533,6 +533,7 @@ def test_create_outage_invalid(app_cli_runner, mocker, cliargs, expected):
 def test_list_outages(app_cli_runner, mocker):
     outages = [
         {
+            "outage_id": "someoutage",
             "start": "2021-01-01T00:00:00+00:00",
             "end": "2021-01-01T01:00:00+00:00",
             "created_at": "2021-01-01T00:00:00+00:00",
@@ -549,10 +550,22 @@ def test_list_outages(app_cli_runner, mocker):
     assert result.output.strip('\n') == pprint.pformat(outages)
 
 
-def test_delete_outage(app_cli_runner, mocker, user_id, observation_id):
-    mocker.patch('sfa_api.storage._call_procedure', autospec=True)
+def test_delete_outage(
+        app_cli_runner, mocker, user_id, observation_id, addtestsystemoutages):
+    create_result = app_cli_runner.invoke(
+        admincli.add_system_outage,
+        ["2021-01-01T00:00:00Z", "2021-01-01T01:00Z"] + auth_args)
+    outage_id = create_result.output.strip('\n').split(' ')[-1]
+    list_outages_result = app_cli_runner.invoke(
+        admincli.list_system_outage, auth_args
+    )
+    assert outage_id in list_outages_result.output
     result = app_cli_runner.invoke(
         admincli.delete_system_outage,
-        [] + auth_args)
+        [outage_id] + auth_args)
+    assert result.output == f'Successfully deleted outage {outage_id}\n'
     assert result.exit_code == 0
-    assert result.output == 'Job created with id jobid\n'
+    list_outages_result = app_cli_runner.invoke(
+        admincli.list_system_outage, auth_args
+    )
+    assert outage_id not in list_outages_result.output
