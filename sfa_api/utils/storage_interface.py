@@ -1611,7 +1611,7 @@ def read_report(report_id):
     except StorageAuthError:
         report_values = []
     report['values'] = report_values
-    
+
     # report outages only require "read" on the report, and
     # are expected to succeed if read_report did
     report_outages = list(_call_procedure(
