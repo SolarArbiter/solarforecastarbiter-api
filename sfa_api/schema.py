@@ -528,7 +528,9 @@ class ReportOutageSchema(OutageSchema):
         ordered = True
     report_id = ma.UUID(
         title='Report ID',
-        description="UUID of the report associated with the outage."
+        description="UUID of the report associated with the outage.",
+        allow_none=True,
+        default=None
     )
 
 
@@ -1510,14 +1512,18 @@ class ReportParameters(ma.Schema):
         validate=TimezoneValidator()
     )
     exclude_system_outages = ma.Boolean(
-        title="",
+        title="Exclude System Outages",
         description=(
-            "Whether or not to exclude forecast submissions that fall "
-            "during a period where the Solar Forecast Arbiter was not "
-            "available."
+            "Whether or not the report should exclude forecast submissions "
+            "that occured while the Solar Forecast Arbiter API was not "
+            "available. When set to true, the report 'outages' property "
+            "will include outages defined by system administrators and "
+            "any custom outages you have specified. Custom outages can "
+            "be added to the report after creation. See "
+            "<a href='#tag/Reports/paths/~1reports~1{report_id}~1outages/post'>Store an outage for the report</a>."
         ),
-        default=False,
         missing=False,
+        default=False
     )
 
     @validates_schema

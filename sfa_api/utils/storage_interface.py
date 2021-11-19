@@ -1618,6 +1618,10 @@ def read_report(report_id):
         'list_report_outages',
         report_id
     ))
+    
+    if report['report_parameters'].get('exclude_system_outages', False):
+        system_outages = list_system_outages()
+        report_outages += system_outages
     report['outages'] = report_outages
     return report
 
