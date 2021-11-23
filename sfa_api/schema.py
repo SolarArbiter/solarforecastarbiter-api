@@ -1520,7 +1520,7 @@ class ReportParameters(ma.Schema):
             "will include outages defined by system administrators and "
             "any custom outages you have specified. Custom outages can "
             "be added to the report after creation. See "
-            "<a href='#tag/Reports/paths/~1reports~1{report_id}~1outages/post'>Store an outage for the report</a>."
+            "<a href='#tag/Reports/paths/~1reports~1{report_id}~1outages/post'>Store an outage for the report</a>."  # NOQA
         ),
         missing=False,
         default=False

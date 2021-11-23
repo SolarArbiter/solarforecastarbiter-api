@@ -2001,7 +2001,7 @@ def new_role(api):
     def fn(**kwargs):
         role_json = ROLE.copy()
         role_json.update(kwargs)
-        role = api.post(f'/roles/', BASE_URL, json=role_json)
+        role = api.post('/roles/', BASE_URL, json=role_json)
         role_id = role.data.decode('utf-8')
         return role_id
     return fn
@@ -2010,7 +2010,7 @@ def new_role(api):
 @pytest.fixture
 def new_observation(api):
     def fn():
-        obs = api.post(f'/observations/', BASE_URL, json=VALID_OBS_JSON)
+        obs = api.post('/observations/', BASE_URL, json=VALID_OBS_JSON)
         obs_id = obs.data.decode('utf-8')
         return obs_id
     return fn
@@ -2019,7 +2019,7 @@ def new_observation(api):
 @pytest.fixture
 def new_forecast(api):
     def fn():
-        fx = api.post(f'/forecasts/single/', BASE_URL,
+        fx = api.post('/forecasts/single/', BASE_URL,
                       json=VALID_FORECAST_JSON)
         fx_id = fx.data.decode('utf-8')
         return fx_id
@@ -2031,7 +2031,7 @@ def new_perm(api):
     def fn(**kwargs):
         perm_json = PERMISSION.copy()
         perm_json.update(kwargs)
-        perm = api.post(f'/permissions/', BASE_URL, json=perm_json)
+        perm = api.post('/permissions/', BASE_URL, json=perm_json)
         perm_id = perm.data.decode('utf-8')
         return perm_id
     return fn
