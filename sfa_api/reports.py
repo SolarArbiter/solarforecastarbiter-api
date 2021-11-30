@@ -395,21 +395,13 @@ class ReportOutageView(MethodView):
 
         report_metadata = storage.read_report_parameters_and_raw(report_id)
         report_parameters = report_metadata['report_parameters']
-        report_start = report_parameters['start']
         report_end = report_parameters['end']
         if (
-            outage_object['start'] < report_start or
             outage_object['start'] > report_end
         ):
+            # Outages can occur before but not after the report.
             raise BadAPIRequest(
-                start="Start of outage outside report start, end."
-            )
-        if (
-            outage_object['end'] > report_end or
-            outage_object['end'] < report_start
-        ):
-            raise BadAPIRequest(
-                end="End of outage outside report start, end."
+                start="Start of outage after report end."
             )
         outage_id = storage.store_report_outage(
             report_id,

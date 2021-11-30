@@ -907,16 +907,10 @@ def test_post_report_outages_no_perms(
 
 @pytest.mark.parametrize("outage,expected", [
     ({
-        "start": "2019-03-01T00:00:00+00:00",
-        "end":  "2019-04-11T00:00:00+00:00"
+        "start": "2019-06-02T00:00:00+00:00",
+        "end":  "2019-06-07T00:00:00+00:00"
       },
-     {"start": ["Start of outage outside report start, end."]}
-     ),
-    ({
-        "start": "2019-05-01T00:00:00+00:00",
-        "end": "2019-07-02T00:00:00+00:00"
-      },
-     {"end": ["End of outage outside report start, end."]}
+     {"start": ["Start of outage after report end."]}
      ),
     ({
         "start": "2019-07-01T00:00:00+00:00",
