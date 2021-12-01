@@ -309,7 +309,8 @@ def report(report_parameters, raw_report_json, reportid, report_values,
                                    tzinfo=pytz.utc),
         'raw_report': raw_report_json,
         'status': 'failed',
-        'values': [rv]
+        'values': [rv],
+        'outages': []
     }
     out['raw_report']['generated_at'] = dt.datetime(2019, 7, 1, 12,
                                                     tzinfo=pytz.utc)
@@ -2000,7 +2001,7 @@ def new_role(api):
     def fn(**kwargs):
         role_json = ROLE.copy()
         role_json.update(kwargs)
-        role = api.post(f'/roles/', BASE_URL, json=role_json)
+        role = api.post('/roles/', BASE_URL, json=role_json)
         role_id = role.data.decode('utf-8')
         return role_id
     return fn
@@ -2009,7 +2010,7 @@ def new_role(api):
 @pytest.fixture
 def new_observation(api):
     def fn():
-        obs = api.post(f'/observations/', BASE_URL, json=VALID_OBS_JSON)
+        obs = api.post('/observations/', BASE_URL, json=VALID_OBS_JSON)
         obs_id = obs.data.decode('utf-8')
         return obs_id
     return fn
@@ -2018,7 +2019,7 @@ def new_observation(api):
 @pytest.fixture
 def new_forecast(api):
     def fn():
-        fx = api.post(f'/forecasts/single/', BASE_URL,
+        fx = api.post('/forecasts/single/', BASE_URL,
                       json=VALID_FORECAST_JSON)
         fx_id = fx.data.decode('utf-8')
         return fx_id
@@ -2030,7 +2031,7 @@ def new_perm(api):
     def fn(**kwargs):
         perm_json = PERMISSION.copy()
         perm_json.update(kwargs)
-        perm = api.post(f'/permissions/', BASE_URL, json=perm_json)
+        perm = api.post('/permissions/', BASE_URL, json=perm_json)
         perm_id = perm.data.decode('utf-8')
         return perm_id
     return fn
@@ -2153,3 +2154,45 @@ def dummy_file():
     def req_file(filename, contents, content_type):
         return {filename: (contents, filename, content_type)}
     return req_file
+
+
+@pytest.fixture()
+def addtestsystemoutages(root_cursor):
+    root_cursor.execute(
+        "DELETE FROM system_outages"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 07:00', '2019-04-14 10:00')"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 010:30', '2019-04-14 13:00')"
+    )
+    root_cursor.execute(
+        "INSERT INTO system_outages (start, end) "
+        "VALUES ('2019-04-14 15:00', '2019-04-14 17:00')"
+    )
+
+
+@pytest.fixture()
+def addtestreportoutage(root_cursor):
+    def fn(report_id, start='2019-04-14 07:00', end='2019-04-14 10:00'):
+        root_cursor.execute(
+            "INSERT INTO report_outages (report_id, start, end) "
+            "VALUES (UUID_TO_BIN(%s, 1), %s, %s)", (report_id, start, end)
+        )
+    return fn
+
+
+def outage_exists(outages, expected):
+    """Searches a list of outages for an expected outage defined by
+    an object with start and end properties.
+    """
+    for outage in outages:
+        if (
+            outage['start'] == expected['start']
+            and outage['end'] == expected['end']
+        ):
+            return True
+    return False

@@ -91,7 +91,7 @@ def test_create_role_invalid_json(api, role, error):
 
 def test_create_role_missing_perms(api, remove_perms_from_current_role):
     remove_perms_from_current_role('create', 'roles')
-    failed_role = api.post(f'/roles/', BASE_URL, json=ROLE)
+    failed_role = api.post('/roles/', BASE_URL, json=ROLE)
     assert failed_role.status_code == 404
 
 

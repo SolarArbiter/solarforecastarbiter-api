@@ -67,9 +67,11 @@ def create_app(config_name='ProductionConfig'):
     from sfa_api.reports import reports_blp
     from sfa_api.aggregates import agg_blp
     from sfa_api.zones import zone_blp
+    from sfa_api.outages import outage_blp
 
     for blp in (obs_blp, forecast_blp, site_blp, user_blp, user_email_blp,
-                role_blp, permission_blp, reports_blp, agg_blp, zone_blp):
+                role_blp, permission_blp, reports_blp, agg_blp, zone_blp,
+                outage_blp):
         blp.before_request(protect_endpoint)
         app.register_blueprint(blp)
 

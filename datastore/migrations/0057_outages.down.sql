@@ -1,0 +1,9 @@
+DROP TABLE arbiter_data.system_outages;
+DROP TABLE arbiter_data.report_outages;
+DROP PROCEDURE store_system_outage;
+DROP PROCEDURE list_system_outages;
+DROP PROCEDURE read_system_outage;
+DROP PROCEDURE delete_system_outage;
+DROP PROCEDURE store_report_outage;
+DROP PROCEDURE list_report_outages;
+DROP PROCEDURE delete_report_outage;

@@ -489,6 +489,51 @@ class ObservationValueSchema(ma.Schema):
         missing=False)
 
 
+@spec.define_schema('OutagePostSchema')
+class OutagePostSchema(ma.Schema):
+    start = ISODateTime(
+        title="Timestamp",
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        required=True,
+        validate=TimeLimitValidator()
+    )
+    end = ISODateTime(
+        title="Timestamp",
+        description=(
+            "ISO 8601 Datetime. Unlocalized times are assumed to be UTC."
+        ),
+        required=True,
+        validate=TimeLimitValidator()
+    )
+
+
+@spec.define_schema('OutageSchema')
+class OutageSchema(OutagePostSchema):
+    class Meta:
+        strict = True
+        ordered = True
+    outage_id = ma.UUID(
+        title='Outage ID',
+        description="UUID of the Outage.")
+    created_at = CREATED_AT
+    modified_at = MODIFIED_AT
+
+
+@spec.define_schema('ReportOutageSchema')
+class ReportOutageSchema(OutageSchema):
+    class Meta:
+        strict = True
+        ordered = True
+    report_id = ma.UUID(
+        title='Report ID',
+        description="UUID of the report associated with the outage.",
+        allow_none=True,
+        default=None
+    )
+
+
 @spec.define_schema('ObservationValuesPost')
 class ObservationValuesPostSchema(ma.Schema):
     values = TimeseriesField(ObservationValueSchema, many=True)
@@ -1466,6 +1511,20 @@ class ReportParameters(ma.Schema):
         missing=None,
         validate=TimezoneValidator()
     )
+    exclude_system_outages = ma.Boolean(
+        title="Exclude System Outages",
+        description=(
+            "Whether or not the report should exclude forecast submissions "
+            "that occured while the Solar Forecast Arbiter API was not "
+            "available. When set to true, the report 'outages' property "
+            "will include outages defined by system administrators and "
+            "any custom outages you have specified. Custom outages can "
+            "be added to the report after creation. See "
+            "<a href='#tag/Reports/paths/~1reports~1{report_id}~1outages/post'>Store an outage for the report</a>."  # NOQA
+        ),
+        missing=False,
+        default=False
+    )
 
     @validates_schema
     def validate_cost(self, data, **kwargs):
@@ -1586,10 +1645,19 @@ class ReportSchema(ReportPostSchema):
 
 @spec.define_schema('SingleReportSchema')
 class SingleReportSchema(ReportSchema):
-    """For serializing a report with values
+    """For serializing a report with values and outages.
     """
     values = ma.List(ma.Nested(ReportValuesSchema()),
                      many=True)
+    outages = ma.List(
+        ma.Nested(ReportOutageSchema()),
+        many=True,
+        title="Outages",
+        description=(
+            "List of periods for which the report will not consider "
+            "forecast submissions in analyses."
+        )
+    )
 
 
 @spec.define_schema('AggregateDefinition')

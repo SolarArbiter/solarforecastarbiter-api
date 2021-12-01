@@ -11,7 +11,7 @@ from solarforecastarbiter.datamodel import (
 
 
 from sfa_api.conftest import (BASE_URL, demo_observations, demo_aggregates,
-                              demo_forecasts, demo_group_cdf)
+                              demo_forecasts, demo_group_cdf, outage_exists)
 from sfa_api.schema import ALLOWED_METRICS
 from sfa_api import reports
 
@@ -827,3 +827,185 @@ def test_post_report_reference_cdf_mismatch(
     errors = res.json['errors']['report_parameters'][0]['object_pairs']['0']
     assert errors['reference_forecast'][field] == (
         f'Must match forecast {field}.')
+
+
+def test_list_report_outages(api, new_report, addtestreportoutage):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    outage_list = res.get_json()
+    outage = outage_list[0]
+    assert outage['start'] == '2019-04-14T07:00:00+00:00'
+    assert outage['end'] == '2019-04-14T10:00:00+00:00'
+
+
+def test_list_report_outages_no_perms(
+        api, new_report, addtestreportoutage, remove_all_perms):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    remove_all_perms("read", "reports")
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+def test_list_report_outages_dne(api):
+    res = api.get('/reports/baduuid/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+def test_post_report_outages(api, new_report):
+    report_id = new_report()
+    outage_periods = [
+        {
+            "start": "2019-04-10T00:00:00+00:00",
+            "end":  "2019-04-11T00:00:00+00:00"
+        },
+        {
+            "start": "2019-05-01T00:00:00+00:00",
+            "end": "2019-05-02T00:00:00+00:00"
+        }
+    ]
+    outage_ids = []
+    for outage in outage_periods:
+        res = api.post(
+            f'/reports/{report_id}/outages',
+            base_url=BASE_URL,
+            json=outage
+        )
+        assert res.status_code == 201
+        outage_id = res.get_data(as_text=True)
+        outage_ids.append(outage_id)
+
+    list_report_outages = api.get(
+        f'/reports/{report_id}/outages',
+        base_url=BASE_URL
+    )
+
+    outage_list = list_report_outages.get_json()
+    for outage in outage_periods:
+        assert outage_exists(outage_list, outage)
+
+
+def test_post_report_outages_no_perms(
+        api, new_report, remove_all_perms):
+    report_id = new_report()
+    outage = {
+        "start": "2019-04-10T00:00:00+00:00",
+        "end":  "2019-04-11T00:00:00+00:00"
+    }
+    remove_all_perms('update', 'reports')
+    res = api.post(
+        f'/reports/{report_id}/outages',
+        base_url=BASE_URL,
+        json=outage
+    )
+    assert res.status_code == 404
+
+
+@pytest.mark.parametrize("outage,expected", [
+    ({
+        "start": "2019-06-02T00:00:00+00:00",
+        "end":  "2019-06-07T00:00:00+00:00"
+      },
+     {"start": ["Start of outage after report end."]}
+     ),
+    ({
+        "start": "2019-07-01T00:00:00+00:00",
+        "end": "2019-05-02T00:00:00+00:00"
+      },
+     {"error": ["Start must occur before end"]}
+     ),
+    ({
+        "start": "2019-07-01T00:00:00+00:00",
+      },
+     {"end": ["Missing data for required field."]}
+     ),
+    ({
+        "end": "2019-07-01T00:00:00+00:00",
+      },
+     {"start": ["Missing data for required field."]}
+     )
+])
+def test_post_report_outage_errors(api, new_report, outage, expected):
+    report_id = new_report()
+    res = api.post(
+        f'/reports/{report_id}/outages',
+        base_url=BASE_URL,
+        json=outage
+    )
+    assert res.status_code == 400
+    errors = res.get_json()
+    assert errors["errors"] == expected
+
+
+def test_delete_report_outage(api, new_report, addtestreportoutage):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    outage_list = res.get_json()
+    outage_id = outage_list[0]['outage_id']
+    delete_outage = api.delete(
+        f'/reports/{report_id}/outages/{outage_id}',
+        base_url=BASE_URL
+    )
+    assert delete_outage.status_code == 204
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    outage_list = res.get_json()
+    assert len(outage_list) == 0
+
+
+def test_delete_report_outage_no_perms(
+        api, new_report, addtestreportoutage, remove_all_perms):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    res = api.get(f'/reports/{report_id}/outages',
+                  base_url=BASE_URL)
+    outage_list = res.get_json()
+    outage_id = outage_list[0]['outage_id']
+    remove_all_perms('update', 'reports')
+    delete_outage = api.delete(
+        f'/reports/{report_id}/outages/{outage_id}',
+        base_url=BASE_URL
+    )
+    assert delete_outage.status_code == 404
+
+
+def test_delete_report_outage_404(api):
+    res = api.get('/reports/badid/outages',
+                  base_url=BASE_URL)
+    assert res.status_code == 404
+
+
+@pytest.mark.parametrize("exclude_system_outages", [
+    True, False
+])
+def test_report_outage_defaults(
+        api, new_report, exclude_system_outages, report_post_json):
+    rpj = deepcopy(report_post_json)
+    rpj["report_parameters"]['exclude_system_outages'] = exclude_system_outages
+    report_id = new_report(rpj)
+    res = api.get(f'/reports/{report_id}',
+                  base_url=BASE_URL)
+    report = res.get_json()
+    rp = report['report_parameters']
+    assert rp["exclude_system_outages"] == exclude_system_outages
+    assert report["outages"] == []
+
+
+def test_report_outages_property(
+        api, new_report, report_post_json, addtestreportoutage):
+    report_id = new_report()
+    addtestreportoutage(report_id)
+    res = api.get(f'/reports/{report_id}',
+                  base_url=BASE_URL)
+    report = res.get_json()
+    outages = report['outages']
+    assert len(outages) == 1
+    outage = outages[0]
+    assert outage['start'] == '2019-04-14T07:00:00+00:00'
+    assert outage['end'] == '2019-04-14T10:00:00+00:00'

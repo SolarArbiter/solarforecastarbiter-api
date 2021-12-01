@@ -1611,6 +1611,18 @@ def read_report(report_id):
     except StorageAuthError:
         report_values = []
     report['values'] = report_values
+
+    # report outages only require "read" on the report, and
+    # are expected to succeed if read_report did
+    report_outages = list(_call_procedure(
+        'list_report_outages',
+        report_id
+    ))
+
+    if report['report_parameters'].get('exclude_system_outages', False):
+        system_outages = list_system_outages()
+        report_outages += system_outages
+    report['outages'] = report_outages
     return report
 
 
@@ -2507,3 +2519,87 @@ def list_actions_on_all_objects_of_type(object_type):
         'list_actions_on_all_objects_of_type',
         object_type)
     return object_action_list
+
+
+def list_system_outages():
+    """List all system outages
+
+    Returns
+    -------
+    list of objects
+        List of outage objects with keys outage_id, start, end,
+        created_at, modified_at.
+    """
+    return _call_procedure('list_system_outages', with_current_user=False)
+
+
+def read_report_outages(report_id):
+    """Get report outage data.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+
+    Returns
+    -------
+    pandas.Dataframe
+    """
+    return _call_procedure("list_report_outages", report_id)
+
+
+def store_report_outage(report_id, start, end):
+    """Store report outage.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+    start: pandas.Timestamp
+    end: pandas.Timestamp
+    Returns
+    -------
+    str
+        UUID of the created outage.
+    """
+    outage_id = generate_uuid()
+    _call_procedure('store_report_outage', report_id, outage_id, start, end)
+    return outage_id
+
+
+def delete_report_outage(report_id, outage_id):
+    """Delete a report outage.
+
+    Parameters
+    ----------
+    report_id: str
+        The UUID of the report.
+    outage_id: str
+        The UUID of the outage to delete.
+    """
+    return _call_procedure("delete_report_outage", report_id, outage_id)
+
+
+def read_report_parameters_and_raw(report_id):
+    """Gets report parameters and raw report without accessing values. Useful
+    for quick access when we really just need report parmeters or a raw report.
+
+    Parameters
+    ----------
+    report_id
+        UUID of the report to read.
+
+    Returns
+    -------
+    dict
+        A dictionary of Report metadata.
+
+    Raises
+    ------
+    StorageAuthError
+        If the report does not exist, or the the user does not have
+        permission to read the report.
+    """
+    report = _decode_report_parameters(
+        _call_procedure_for_single('read_report', report_id))
+    return report
