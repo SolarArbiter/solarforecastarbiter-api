@@ -1623,6 +1623,15 @@ class RawReportSchema(ma.Schema):
         missing=None,
         validate=[UserstringValidator(), validate.Length(equal=64)]
     )
+    outages = ma.List(
+        ma.Nested(ReportOutageSchema()),
+        many=True,
+        title="Outages",
+        description=(
+            "List of periods for which the forecast submissions were"
+            "dropped from analysis."
+        )
+    )
 
 
 @spec.define_schema('ReportSchema')
